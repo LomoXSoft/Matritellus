@@ -1,0 +1,13 @@
+# Godot's own cache and imports (rebuilt on opening the project)
+godot/.godot/
+# pictures the self-test takes
+godot/shots/
+# built games and installers (they go up as release files, not in the history)
+dist/
+# walk-through videos: too big for GitHub (over 100 MB)
+*.mp4
+# Python
+__pycache__/
+*.pyc
+# this machine's own settings
+.claude/settings.local.json

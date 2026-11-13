@@ -1,0 +1,12 @@
+{
+ "name": "stone_tile_wall",
+ "dimensions_mm": [
+  2000,
+  2000
+ ],
+ "authors": {
+  "Charlotte Baglioni": "All"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/stone_tile_wall"
+}

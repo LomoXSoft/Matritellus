@@ -1,0 +1,322 @@
+extends CanvasLayer
+## Autoload. Controls for a touch screen (phones and tablets), as the user asked for them on 13 November 2026:
+##   - a stick that appears wherever a finger lands on the left half of the screen, and follows it;
+##   - the camera turned by dragging a finger that starts on the right half (not on a button);
+##   - action buttons with words, not a pad's letters, and only those that do something now: "Hablar" / "Subir" /
+##     whatever the prompt on screen says, "Saltar" and "Golpe" on foot; "Freno", "Claxon", "Turbo" in a car;
+##     "Seguir" in a conversation; "Aceptar" / "Volver" in a menu... plus "Mapa" and pause along the top.
+## Each button is the engine's own TouchScreenButton (the most dependable thing on a phone) pressing the action a pad
+## would press (controls.gd), so the game itself does not know the difference. It shows on a touch screen (or with
+## --touch, to try it on the PC) and hides while a real pad's buttons are in use.
+
+const STICK_R := 95.0             # how far the stick's knob travels
+const DEAD := 0.18
+const MENU_REPEAT := 0.32         # holding the stick over a menu moves along it at this pace
+const LOOK_PER_PX := 0.0055       # radians the camera turns per pixel dragged (game.gd)
+
+var on := false
+var _pad := Control.new()         # where the stick and the buttons' faces are drawn
+var _stick_id := -1               # which finger holds the stick, where it went down, and how far it is pushed
+var _stick_at := Vector2.ZERO
+var _stick := Vector2.ZERO
+var _menu_dir := ""
+var _menu_t := 0.0
+var _look_id := -1
+var _look_last := Vector2.ZERO
+var look_drag := Vector2.ZERO     # pixels dragged since the game last took them
+var look := Vector2.ZERO          # (Controls.look_stick adds this: always zero now, the drag is taken by take_look)
+var _buttons: Array = []          # {node: TouchScreenButton, label, action, centre, r, big}
+var _context := ""
+var _ctx_t := 0.0
+
+func _ready() -> void:
+	layer = 90
+	on = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available() or OS.get_cmdline_user_args().has("--touch")
+	_pad.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pad.draw.connect(_draw_pad)
+	add_child(_pad)
+	for i in range(8):                       # up to eight buttons at once; what each one is changes with the moment
+		var b := TouchScreenButton.new()
+		b.shape = CircleShape2D.new()
+		b.shape_centered = true
+		b.passby_press = false
+		b.pressed.connect(_pressed.bind(i))
+		b.released.connect(_released.bind(i))
+		add_child(b)
+		_buttons.append({"node": b, "label": "", "action": "", "centre": Vector2.ZERO, "r": 0.0, "big": false, "small": false})
+	_show(on)
+
+func _size() -> Vector2:
+	return _pad.get_viewport_rect().size
+
+func _game():
+	return get_tree().current_scene
+
+# ---------------- what there is to do now ----------------
+## [label, action, kind] for each button there should be: kind "big" (the main one), "" (round it) or "top" (small,
+## along the top edge)
+func _wanted() -> Array:
+	var es: bool = Loc.lang == "es"
+	var g = _game()
+	if g == null or g.get("phase") == null:
+		return []
+	var phase: String = g.phase
+	var menu = g.get("menu")
+	if menu != null and menu.visible:
+		return [["Aceptar" if es else "OK", "m_accept", "big"], ["Volver" if es else "Back", "m_back", ""]]
+	match phase:
+		"intro", "title_in", "title", "ending":
+			return [["Seguir" if es else "Go on", "m_accept", "big"]]
+		"creator":
+			return [["Así me quedo" if es else "That's me", "m_accept", "big"], ["Al azar" if es else "Random", "radio", ""], ["Pestaña" if es else "Tab", "#tab", ""]]
+		"prologue", "flyover", "cutscene", "failed", "end":
+			return [["Seguir" if es else "Go on", "interact", "big"]]
+		"boxing":
+			return [["Pegar" if es else "Punch", "punch", "big"], ["Cubrirse" if es else "Block", "back", ""]]
+	if g.get("dlg") != null:
+		return [["Seguir" if es else "Go on", "interact", "big"]]
+	var out: Array = []
+	var prompt: String = _prompt_words(g)
+	if g.get("in_car") != null:
+		var c = g.in_car
+		out.append([prompt if prompt != "" else ("Bajar" if es else "Get out"), "interact", "big"])
+		out.append(["Freno" if es else "Brake", "handbrake", ""])
+		out.append(["Claxon" if es else "Horn", "horn", ""])
+		if c.spec.has("turbo"):
+			out.append(["Turbo", "run", ""])
+		elif g.has_method("_has_autopilot") and g._has_autopilot(c):
+			out.append(["Piloto" if es else "Autopilot", "run", ""])
+		out.append(["Radio", "radio", "top"])
+	else:
+		if prompt != "":
+			out.append([prompt, "interact", "big"])
+		out.append(["Saltar" if es else "Jump", "handbrake", ""])
+		out.append(["Golpe" if es else "Hit", "punch", ""])
+	out.append(["Mapa" if es else "Map", "map", "top"])
+	out.append(["II", "pause", "top"])
+	return out
+
+## what the prompt on screen offers to do, without the button's name ("(A) Hablar" -> "Hablar")
+func _prompt_words(g) -> String:
+	var hud = g.get("hud")
+	if hud == null or hud.get("prompt_slot") == null or not hud.prompt_slot.visible:
+		return ""
+	var t: String = hud.prompt.text
+	t = t.replace("()", "").replace("( )", "").strip_edges()
+	if t.begins_with("—") or t.begins_with("-"):
+		t = t.substr(1).strip_edges()
+	return t.left(18)
+
+func _context_tick() -> void:
+	var want := _wanted()
+	var key := str(want) + str(_size())
+	if key == _context:
+		return
+	_context = key
+	var s := _size()
+	var main := Vector2(s.x - 150.0, s.y - 160.0)           # the main one, big; the others in an arc round it
+	var g = _game()
+	if g != null and g.get("in_car") != null:
+		main = Vector2(s.x - 135.0, s.y - 320.0)               # (in a car: above the speedometer)
+	var arc: Array = [main + Vector2(-185, 30), main + Vector2(-140, -135), main + Vector2(10, -200), main + Vector2(-290, -90)]
+	var n_arc := 0
+	var n_top := 0
+	for i in range(_buttons.size()):
+		var b: Dictionary = _buttons[i]
+		var tsb: TouchScreenButton = b["node"]
+		var was: String = b["action"]
+		if i < want.size():
+			var kind: String = want[i][2]
+			b["label"] = want[i][0]
+			b["action"] = want[i][1]
+			b["big"] = kind == "big"
+			b["small"] = kind == "top"
+			if kind == "big":
+				b["centre"] = main
+				b["r"] = 80.0
+			elif kind == "top":
+				b["centre"] = Vector2(s.x - 50.0 - n_top * 82.0, 48.0)
+				b["r"] = 34.0
+				n_top += 1
+			else:
+				b["centre"] = arc[mini(n_arc, arc.size() - 1)]
+				b["r"] = 58.0
+				n_arc += 1
+			if tsb.is_pressed() and was != b["action"]:
+				_send(was, false)
+			(tsb.shape as CircleShape2D).radius = b["r"] * 1.12
+			tsb.position = b["centre"]
+			tsb.visible = on
+		else:
+			if tsb.is_pressed() and was != "":
+				_send(was, false)
+			b["action"] = ""
+			tsb.visible = false
+	_pad.queue_redraw()
+
+# ---------------- pressing ----------------
+func _send(action: String, down: bool) -> void:
+	if action == "":
+		return
+	if action == "#tab":                    # the creator changes tab on a pad's shoulder button
+		if down:
+			for d in [true, false]:
+				var j := InputEventJoypadButton.new()
+				j.button_index = JOY_BUTTON_RIGHT_SHOULDER
+				j.pressed = d
+				j.device = -2
+				Input.parse_input_event(j)
+		return
+	var e := InputEventAction.new()
+	e.action = action
+	e.pressed = down
+	e.strength = 1.0 if down else 0.0
+	Input.parse_input_event(e)
+	if down:
+		Input.action_press(action)
+	else:
+		Input.action_release(action)
+
+func _pressed(i: int) -> void:
+	Controls.pad = true
+	_send(_buttons[i]["action"], true)
+	_pad.queue_redraw()
+
+func _released(i: int) -> void:
+	_send(_buttons[i]["action"], false)
+	_pad.queue_redraw()
+
+func _on_button(p: Vector2) -> bool:
+	for b in _buttons:
+		if (b["node"] as TouchScreenButton).visible and p.distance_to(b["centre"]) < float(b["r"]) * 1.15:
+			return true
+	return false
+
+func _input(e: InputEvent) -> void:
+	if e is InputEventJoypadButton and e.pressed and e.device >= 0:
+		if on:
+			_show(false)                 # a real pad has been picked up
+		return
+	if not (e is InputEventScreenTouch or e is InputEventScreenDrag):
+		return
+	if not on:
+		_show(true)
+	if e is InputEventScreenTouch:
+		if e.pressed:
+			if _on_button(e.position):
+				return                   # (that one is the button's)
+			if e.position.x < _size().x * 0.5 and _stick_id < 0:
+				_stick_id = e.index
+				_stick_at = e.position
+				_move_stick(e.position)
+			elif e.position.x >= _size().x * 0.5 and _look_id < 0:
+				_look_id = e.index
+				_look_last = e.position
+		else:
+			if e.index == _stick_id:
+				_stick_id = -1
+				_move_stick(_stick_at)
+			if e.index == _look_id:
+				_look_id = -1
+		_pad.queue_redraw()
+	else:
+		if e.index == _stick_id:
+			_move_stick(e.position)
+			_pad.queue_redraw()
+		elif e.index == _look_id:
+			look_drag += e.position - _look_last
+			_look_last = e.position
+
+## the pixels dragged since last asked (game.gd turns the camera by them, once a frame)
+func take_look() -> Vector2:
+	var d := look_drag
+	look_drag = Vector2.ZERO
+	return d
+
+func _show(v: bool) -> void:
+	on = v
+	_pad.visible = v
+	for b in _buttons:
+		(b["node"] as TouchScreenButton).visible = v and b["action"] != ""
+	if not v:
+		for b in _buttons:
+			if b["action"] != "":
+				_send(b["action"], false)
+		_stick_id = -1
+		_look_id = -1
+		_move_stick(_stick_at)
+	else:
+		Controls.pad = true
+		_context = ""
+		_context_tick()
+	Controls.device_changed.emit()
+
+## the stick drives the four directions as a pad's left stick does, by how far it is pushed
+func _move_stick(p: Vector2) -> void:
+	var v := (p - _stick_at) / STICK_R
+	if v.length() > 1.0 and _stick_id >= 0:      # (the stick's centre follows a finger that goes further)
+		_stick_at = p - v.normalized() * STICK_R
+		v = v.normalized()
+	_stick = v if _stick_id >= 0 else Vector2.ZERO
+	var x := _stick.x if absf(_stick.x) > DEAD else 0.0
+	var y := _stick.y if absf(_stick.y) > DEAD else 0.0
+	for pair in [["right", maxf(x, 0.0)], ["left", maxf(-x, 0.0)], ["back", maxf(y, 0.0)], ["forward", maxf(-y, 0.0)]]:
+		if pair[1] > 0.0:
+			Input.action_press(pair[0], pair[1])
+		else:
+			Input.action_release(pair[0])
+	var dir := ""                                 # ...and steps through menus and the creator while it is held
+	if _stick.length() > 0.55:
+		if absf(_stick.x) > absf(_stick.y):
+			dir = "m_right" if _stick.x > 0.0 else "m_left"
+		else:
+			dir = "m_down" if _stick.y > 0.0 else "m_up"
+	if dir != _menu_dir:
+		if _menu_dir != "":
+			_send(_menu_dir, false)
+		_menu_dir = dir
+		if dir != "":
+			_send(dir, true)
+			_menu_t = MENU_REPEAT * 1.6
+
+func _process(dt: float) -> void:
+	if not on:
+		return
+	if _menu_dir != "":
+		_menu_t -= dt
+		if _menu_t <= 0.0:
+			_menu_t = MENU_REPEAT
+			_send(_menu_dir, true)
+	_ctx_t -= dt
+	if _ctx_t <= 0.0:
+		_ctx_t = 0.12
+		_context_tick()
+	_pad.queue_redraw()
+
+func _draw_pad() -> void:
+	if not on:
+		return
+	var font := ThemeDB.fallback_font
+	if _stick_id >= 0:                            # the stick, only while a finger holds it
+		_pad.draw_circle(_stick_at, STICK_R + 22.0, Color(0, 0, 0, 0.18))
+		_pad.draw_arc(_stick_at, STICK_R + 22.0, 0, TAU, 48, Color(1, 1, 1, 0.4), 3.0, true)
+		_pad.draw_circle(_stick_at + _stick * STICK_R, 44.0, Color(1, 1, 1, 0.42))
+	for b in _buttons:
+		var tsb: TouchScreenButton = b["node"]
+		if not tsb.visible:
+			continue
+		var c: Vector2 = b["centre"]
+		var r: float = b["r"]
+		var held := tsb.is_pressed()
+		var face := Color(0.98, 0.96, 0.9, 0.7 if held else 0.42) if b["big"] else Color(0.12, 0.12, 0.14, 0.66 if held else 0.4)
+		_pad.draw_circle(c, r, face)
+		_pad.draw_arc(c, r, 0, TAU, 40, Color(1, 1, 1, 0.7), 2.5, true)
+		var t: String = b["label"]
+		var fs := 25 if b["big"] else (16 if b["small"] else 20)
+		while fs > 11 and font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > r * 1.75:
+			fs -= 1
+		var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var ink := Color(0.12, 0.1, 0.08) if b["big"] else Color(1, 1, 1, 0.96)
+		_pad.draw_string_outline(font, c + Vector2(-w / 2.0, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(1, 1, 1, 0.45) if b["big"] else Color(0, 0, 0, 0.5))
+		_pad.draw_string(font, c + Vector2(-w / 2.0, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)

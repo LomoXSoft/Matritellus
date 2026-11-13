@@ -1,0 +1,7 @@
+Muebles y comida del Kebab Luis. Todo de Kenney (https://www.kenney.nl), licencia CC0 (dominio publico):
+no obliga a citar a nadie; se apunta de donde viene.
+
+mueble_*.glb  --  "Furniture Kit" de Kenney  --  CC0  --  https://opengameart.org/content/furniture-kit
+                  (los OBJ del kit, pasados a GLB con Blender; originales en tools/descargas/kenney_furniture_kit/)
+comida_*.glb  --  "Food Kit" de Kenney  --  CC0  --  https://opengameart.org/content/food-kit
+                  (originales en tools/descargas/kenney_food_kit/)

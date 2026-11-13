@@ -1,0 +1,7 @@
+# CANCIÓN DE ENTRADA
+# Una de estas, al azar, suena en la pantalla de título cada vez que arrancas el juego.
+# Una por línea: basta con un trozo del nombre del fichero (de cualquier emisora).
+# Las líneas que empiezan por # no cuentan. Si no queda ninguna, suena la marcha de siempre.
+El Mancheguito
+Ojalá no te fueras
+Y así arrancó

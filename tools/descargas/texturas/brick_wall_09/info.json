@@ -1,0 +1,13 @@
+{
+ "name": "brick_wall_09",
+ "dimensions_mm": [
+  2009.9999904632568,
+  2009.9999904632568
+ ],
+ "authors": {
+  "Rob Tuytel": "Processing",
+  "Matterfield": "Processing"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/brick_wall_09"
+}

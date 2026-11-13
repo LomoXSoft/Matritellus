@@ -1,0 +1,34 @@
+EMISORAS DE LA RADIO DEL COCHE
+==============================
+
+Cada carpeta radio1, radio2, radio3... es una emisora. El juego las lee al arrancar, por orden, hasta que falta un
+número: para añadir una emisora nueva basta con crear la carpeta siguiente (radio9, radio10...).
+
+Dentro de cada carpeta:
+
+  emisora.json   El nombre y la descripción de la emisora. Se edita con el Bloc de notas:
+                     {
+                       "nombre": "Radio Matritellus",
+                       "descripcion": "La del pueblo. Esquelas, el tiempo y quién ha aparcao mal."
+                     }
+                 (Ojo con las comillas y la coma entre las dos líneas. Si el fichero está mal escrito, la emisora
+                 sale como «Radio 3» sin descripción, y el juego sigue.)
+
+  logo.png       El logo. Sale unos segundos abajo en pantalla, junto al nombre y la descripción, al cambiar de
+                 emisora. Cuadrado, mejor de 256 x 256 o más. Si falta, sale solo el texto.
+
+  la música      Cualquier fichero .ogg, .mp3 o .wav que haya en la carpeta. Si hay varios suenan uno detrás de otro
+                 por orden alfabético y vuelta a empezar (ponles 01_, 02_... delante para ordenarlos). Si solo hay uno,
+                 suena en bucle. Los «provisional.wav» son los de relleno: bórralos cuando metas los buenos.
+                 El nombre del fichero (sin el número de delante) es lo que sale en pantalla como canción que
+                 suena: «01_Körnamenta - La Tijera.ogg» se anuncia como «Körnamenta - La Tijera».
+
+La carpeta _reserva guarda emisoras que de momento no suenan (Radio Matritellus, Kiss Mancha, Radio Olé Tú, Cadena
+Pipa), con su nombre, descripción y logo. Para recuperar una: cópiala fuera con el número siguiente (radio5, por
+ejemplo) y métele música.
+
+La canción de entrada (la de la pantalla de título) sale al azar de las que diga el fichero entrada.txt, que está
+junto a estas carpetas: un trozo del nombre de cada canción, una por línea. Están puestas las de banda sin letra; para
+añadir o quitar alguna basta con editarlo con el Bloc de notas.
+
+No hace falta tocar nada más: ni el código ni el editor de Godot.

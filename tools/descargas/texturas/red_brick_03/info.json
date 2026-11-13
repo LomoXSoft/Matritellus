@@ -1,0 +1,12 @@
+{
+ "name": "red_brick_03",
+ "dimensions_mm": [
+  1000,
+  1000
+ ],
+ "authors": {
+  "Rob Tuytel": "All"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/red_brick_03"
+}

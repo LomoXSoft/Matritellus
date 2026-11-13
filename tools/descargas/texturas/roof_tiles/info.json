@@ -1,0 +1,12 @@
+{
+ "name": "roof_tiles",
+ "dimensions_mm": [
+  2000,
+  2000
+ ],
+ "authors": {
+  "Stephan Seeliger": "All"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/roof_tiles"
+}

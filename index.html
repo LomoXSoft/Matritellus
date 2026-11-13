@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matritellus — Prologue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="objective"><div class="tag">DAY 0 · MORNING</div><div id="objText"></div></div>
+  <div id="timer" class="hidden"><span id="timerVal">2:00</span><div id="bottles"></div></div>
+  <div id="stash"><span title="Saffron picked">🌷 <b id="saffron">0</b></span><span title="Neighbours bumped">🤕 <b id="bumped">0</b></span></div>
+  <div id="street"></div>
+  <div id="speedo" class="hidden"><b id="kmh">0</b><span>km/h</span><div id="carName"></div></div>
+  <canvas id="minimap" width="200" height="200"></canvas>
+  <div id="prompt" class="hidden"></div>
+  <div id="toast" class="hidden"></div>
+  <div id="bubbles"></div>
+  <div id="dialog" class="hidden"><div id="dName"></div><div id="dText"></div><div id="dNext">E ▸</div></div>
+</div>
+
+<canvas id="bigmap" class="hidden"></canvas>
+
+<div id="title" class="overlay">
+  <div class="card">
+    <div class="badge">16+</div>
+    <h1>Matritellus</h1>
+    <h2>Prologue · Day 0 · “The Oil Crisis”</h2>
+    <p class="blurb">A cosy little day in Madridejos (Toledo). Lovely neighbours. Questionable brakes.<br>Contains dark humour, vehicular slapstick and one judgemental goat.</p>
+    <div class="keys">
+      <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move / drive</span>
+      <span><kbd>E</kbd> talk · get in / out</span>
+      <span><kbd>Shift</kbd> run</span>
+      <span><kbd>Space</kbd> handbrake</span>
+      <span><kbd>←</kbd><kbd>→</kbd> or drag: camera</span>
+      <span><kbd>M</kbd> map · <kbd>P</kbd> pause</span>
+    </div>
+    <button id="startBtn">Press Enter to wake up</button>
+    <div class="credit">Streets © OpenStreetMap contributors. All characters are fictional. The goat is real in spirit.</div>
+  </div>
+</div>
+
+<div id="pause" class="overlay hidden"><div class="card small"><h2>Paused</h2><p>The town waits. Judgementally.</p><button id="resumeBtn">Resume (P)</button></div></div>
+
+<div id="fail" class="overlay hidden"><div class="card small"><h2 id="failTitle"></h2><p id="failText"></p><button id="retryBtn">Try again (Enter)</button></div></div>
+
+<div id="end" class="overlay hidden"><div class="card">
+  <h1 class="smallh">Day 0 complete</h1>
+  <h2 id="rank"></h2>
+  <table id="stats"></table>
+  <p class="blurb" id="endNote"></p>
+  <div class="row"><button id="roamBtn">Keep roaming</button><button id="replayBtn">Replay the day</button></div>
+  <div class="credit">Tomorrow: Day 1 — not built yet. Abuela is “thinking of something”.</div>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="js/mapdata.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,554 @@
+{
+ "_como": "Datos del árbol de relaciones. Al meter un personaje o una relación nueva: añádelo aquí, saca su foto con --selftest --portraits y ejecuta tools/make_relaciones.py. 'pos' es [columna, fila] en la rejilla del dibujo. 'foto': false = solo se le nombra, no sale en el juego.",
+ "people": [
+  {
+   "id": "eufrasia",
+   "name": "La Eufrasia",
+   "foto": false,
+   "pos": [
+    1,
+    1
+   ],
+   "role": "Tu tía abuela segunda. Murió con 97 años «y mu mala leche».",
+   "where": "No sale: es la herencia que te trae al pueblo.",
+   "notes": "En el pueblo eres «el/la de la Eufrasia»."
+  },
+  {
+   "id": "padre",
+   "name": "Tu padre",
+   "foto": false,
+   "pos": [
+    2,
+    1
+   ],
+   "role": "Solo se le nombra.",
+   "where": "—",
+   "notes": "La Maruja: «A tu edad tu padre ya se había perdío dos veces»."
+  },
+  {
+   "id": "madre",
+   "name": "Tu madre",
+   "foto": false,
+   "pos": [
+    3,
+    1
+   ],
+   "role": "Solo se le nombra. Habla con la Maruja.",
+   "where": "—",
+   "notes": "Dice que te estás «buscando a ti mismo»."
+  },
+  {
+   "id": "tu",
+   "name": "Tú",
+   "foto": true,
+   "pos": [
+    2,
+    2
+   ],
+   "role": "Vienes de la capital a por la herencia de la Eufrasia.",
+   "where": "Vives en casa de la tía Paca.",
+   "notes": "Aspecto, nombre y peña los elige el jugador. La foto es el personaje por defecto."
+  },
+  {
+   "id": "paca",
+   "name": "Tía Paca",
+   "foto": true,
+   "pos": [
+    4,
+    2
+   ],
+   "role": "Te acoge y te manda los recados. Dueña de la Z15 blanca.",
+   "where": "Su casa (punto de partida y donde duermes).",
+   "notes": "«Prima segunda de tu madre, o algo. Aquí semos tos primos»."
+  },
+  {
+   "id": "josefa",
+   "name": "La Josefa",
+   "foto": true,
+   "pos": [
+    6,
+    2
+   ],
+   "role": "Viuda. Se le desconfigura el móvil. Paga en pesetas.",
+   "where": "Vecina puerta con puerta de la tía Paca.",
+   "notes": "Te manda al V.I.P. y luego al Alberto."
+  },
+  {
+   "id": "maruja",
+   "name": "La Maruja",
+   "foto": true,
+   "pos": [
+    5,
+    1
+   ],
+   "role": "«Yo no cotilleo. Yo archivo.» Va a todos los velatorios.",
+   "where": "Por la calle; la llevas al tanatorio.",
+   "notes": "Sabe cosas de tus padres."
+  },
+  {
+   "id": "venancio",
+   "name": "El Venancio",
+   "foto": true,
+   "pos": [
+    7,
+    1
+   ],
+   "role": "El de la funeraria. Reparte tarjetas que valen de cupón.",
+   "where": "Tanatorio.",
+   "notes": "Conoce a la tía Paca: «es de las que cuentan los minutos»."
+  },
+  {
+   "id": "julian",
+   "name": "El Julián",
+   "foto": false,
+   "pos": [
+    5,
+    0
+   ],
+   "role": "Vecino al que te puedes llevar por delante con la Maruja en el coche.",
+   "where": "—",
+   "notes": "«¡Ese era el Julián! Bueno, ya tengo de qué hablar»."
+  },
+  {
+   "id": "panadera",
+   "name": "La panadera",
+   "foto": false,
+   "pos": [
+    6,
+    0
+   ],
+   "role": "Va por el tercer marido. Los otros dos están «en Cuenca».",
+   "where": "—",
+   "notes": "Sin nombre todavía."
+  },
+  {
+   "id": "eusebio",
+   "name": "El Eusebio",
+   "foto": true,
+   "pos": [
+    1,
+    3
+   ],
+   "role": "Lleva el bar del kiosco. Sin aceite no hay tostás.",
+   "where": "Kiosco de la Plaza del Ayuntamiento.",
+   "notes": "La Paca le llama «tu primo Eusebio»."
+  },
+  {
+   "id": "loli",
+   "name": "La Loli",
+   "foto": true,
+   "pos": [
+    3,
+    3
+   ],
+   "role": "La de la Cooperativa. Te abre el portón y te carga el aceite.",
+   "where": "Cooperativa, Avenida de la Constitución.",
+   "notes": "Te conoce como «el sobrino / la sobrina de la Paca»."
+  },
+  {
+   "id": "vip",
+   "name": "El Fonsi",
+   "foto": true,
+   "pos": [
+    5,
+    3
+   ],
+   "role": "Dueño del V.I.P. («Vendo e Instalo»). Cobra por mirar. Tiene un ring en la trastienda.",
+   "where": "V.I.P., calle Santa Ana 14.",
+   "notes": "Primer rival de boxeo. «La P es de Pegar ostias como Panes»."
+  },
+  {
+   "id": "hijx",
+   "name": "La hija / el hijo del Fonsi",
+   "foto": false,
+   "pos": [
+    5,
+    4
+   ],
+   "role": "Te la/lo ofrece en matrimonio si pagas los 605 € del tirón.",
+   "where": "—",
+   "notes": "Es hija si juegas de hombre, hijo si juegas de mujer. Sin nombre todavía."
+  },
+  {
+   "id": "prima2",
+   "name": "La prima segunda de la Josefa",
+   "foto": false,
+   "pos": [
+    7,
+    3
+   ],
+   "role": "Solo se la nombra: es la tía del Alberto.",
+   "where": "—",
+   "notes": "Sin nombre todavía."
+  },
+  {
+   "id": "alberto",
+   "name": "El Alberto",
+   "foto": true,
+   "pos": [
+    7,
+    4
+   ],
+   "role": "Fundador de la Plataforma Vecinal «El Puente No Se Toca». Pide firmas a todo el mundo.",
+   "where": "Calle del Arroyuelo Medio, junto al puente viejo (cerca de Matías Pérez).",
+   "notes": "«Buen muchacho. Un poco pesao.» Se desbloquea en la Agenda al entregarle las cinco firmas."
+  },
+  {
+   "id": "plataforma",
+   "name": "Plataforma «El Puente No Se Toca»",
+   "foto": false,
+   "pos": [
+    6,
+    4
+   ],
+   "role": "Catorce miembros: nueve son familia del Alberto y dos no saben que están.",
+   "where": "—",
+   "notes": "43 firmas de 19 personas (48 de 24 tras la misión). La Josefa ha firmado cuatro veces. Defienden el puente de 1911, que el Ayuntamiento quiere tirar «pa los coches»."
+  },
+  {
+   "id": "kevin",
+   "name": "Kevin-José",
+   "foto": true,
+   "pos": [
+    0,
+    4
+   ],
+   "role": "8 años. «No me he perdío. Estoy sin vigilar.» Quiere ser notario.",
+   "where": "Por la calle.",
+   "notes": ""
+  },
+  {
+   "id": "abuelo",
+   "name": "El abuelo de Kevin-José",
+   "foto": false,
+   "pos": [
+    1,
+    4
+   ],
+   "role": "Tiene azafrán. Ha pesado al nieto para comparar. Dos veces.",
+   "where": "—",
+   "notes": "Sin nombre todavía."
+  },
+  {
+   "id": "henry",
+   "name": "El Henry",
+   "foto": true,
+   "pos": [
+    2,
+    4
+   ],
+   "role": "Cocinero. Los jueves, jamón asao.",
+   "where": "La Cocina de Henry, calle de la Palma.",
+   "notes": "Misión de los jueves: el vecino que llama le «debe tres»."
+  },
+  {
+   "id": "madre_henry",
+   "name": "La madre del Henry",
+   "foto": false,
+   "pos": [
+    3,
+    4
+   ],
+   "role": "Suya es la receta. Y el microondas.",
+   "where": "—",
+   "notes": "Sin nombre todavía."
+  },
+  {
+   "id": "anselmo",
+   "name": "Don Anselmo",
+   "foto": true,
+   "pos": [
+    1,
+    5
+   ],
+   "role": "El cura. «Tengo enterrao a medio pueblo. El otro medio me debe dinero.»",
+   "where": "Por la iglesia.",
+   "notes": "Sin parentescos todavía."
+  },
+  {
+   "id": "ramirez",
+   "name": "Cabo Ramírez",
+   "foto": true,
+   "pos": [
+    3,
+    5
+   ],
+   "role": "Municipal (de Los Pitufos). Tiene una lista, por orden alfabético.",
+   "where": "De ronda.",
+   "notes": "Sin parentescos todavía."
+  },
+  {
+   "id": "genaro",
+   "name": "Tío Genaro",
+   "foto": true,
+   "pos": [
+    5,
+    5
+   ],
+   "role": "El del molino. Te deja el tractor.",
+   "where": "Los molinos.",
+   "notes": "«Tío» es tratamiento, no parentesco (de momento)."
+  },
+  {
+   "id": "goat",
+   "name": "Una cabra",
+   "foto": true,
+   "pos": [
+    7,
+    5
+   ],
+   "role": "Beeeh. Ha visto cosas de noche por las viñas.",
+   "where": "Suelta.",
+   "notes": "Sin dueño conocido."
+  },
+  {
+   "id": "chiki",
+   "name": "La Chiki",
+   "foto": true,
+   "pos": [
+    6,
+    5
+   ],
+   "role": "Artista. Veinteañera que no asume que tiene casi 30. Si no tiene nada que hacer, se apunta a un bombardeo; todo le da un poco igual.",
+   "where": "Encima del puente viejo del Arroyuelo Medio.",
+   "notes": "Muy manchega, pero ha vivido en Madrid, Barcelona y Berlín. Chaqueta de cuero negro. Se desbloquea en la Agenda al terminar la misión de las firmas."
+  },
+  {
+   "id": "luis",
+   "name": "Don Luis",
+   "foto": true,
+   "pos": [
+    6,
+    6
+   ],
+   "role": "El del Kebab Luis. Informático que lo dejó to pa montar un kebab; doble grado en la Universidad de Cuenca de software y durum avanzado. Gordo, faltón y graciosillo.",
+   "where": "Kebab Luis, en la Calle de los Segadores, detrás de la barra.",
+   "notes": "Inspirado en un amigo del autor. Da la misión secundaria «En el amor y en kebab»: sabotear los otros tres kebabs siguiendo al camión del reparto (guion/kebab_luis_diseno.md). Entra en la Agenda al terminarla."
+  },
+  {
+   "id": "nazario",
+   "name": "Nazario",
+   "foto": false,
+   "pos": [
+    8,
+    4
+   ],
+   "role": "Personaje futuro: estará siempre en la plaza del pueblo para contar historias.",
+   "where": "Aún no sale. Plaza del pueblo.",
+   "notes": "Don Luis (y por tanto La Chiki) desciende de él, sin especificar cómo."
+  },
+  {
+   "id": "repartidor",
+   "name": "El repartidor",
+   "foto": true,
+   "pos": [
+    7,
+    6
+   ],
+   "role": "Reparte el género a los cuatro kebabs del pueblo. Habla en «árabe», que nunca es árabe («Lo siento, no sé árabe, esto es un texto de ejemplo»).",
+   "where": "En su camión de reparto, del Kebab Luis al Kebab Deluxe, al Tele Durum y al ShawarMadridejos. Solo sale durante la misión de Don Luis.",
+   "notes": "Sin nombre. Personaje y camión provisionales (un Z15 negro): el modelo definitivo está por hacer. La broma, del autor: se ha metido un personaje árabe sin tener ni idea de su idioma."
+  }
+ ],
+ "links": [
+  {
+   "a": "tu",
+   "b": "eufrasia",
+   "kind": "familia",
+   "label": "tía abuela 2.ª",
+   "detail": "La Eufrasia es tu tía abuela segunda; heredas de ella.",
+   "source": "story (pregón inicial)"
+  },
+  {
+   "a": "tu",
+   "b": "padre",
+   "kind": "familia",
+   "label": "padre",
+   "detail": "Tu padre.",
+   "source": "maruja"
+  },
+  {
+   "a": "tu",
+   "b": "madre",
+   "kind": "familia",
+   "label": "madre",
+   "detail": "Tu madre.",
+   "source": "maruja, paca_intro"
+  },
+  {
+   "a": "madre",
+   "b": "paca",
+   "kind": "familia",
+   "label": "primas 2.as «o algo»",
+   "detail": "La Paca es prima segunda de tu madre, «o algo».",
+   "source": "paca (presentación)"
+  },
+  {
+   "a": "tu",
+   "b": "paca",
+   "kind": "familia",
+   "label": "tía",
+   "detail": "La llamas tía; te tiene en su casa.",
+   "source": "paca (presentación)"
+  },
+  {
+   "a": "tu",
+   "b": "eusebio",
+   "kind": "familia",
+   "label": "primo (dice la Paca)",
+   "detail": "La Paca dice «tu primo Eusebio». Grado sin concretar.",
+   "source": "paca_intro"
+  },
+  {
+   "a": "paca",
+   "b": "loli",
+   "kind": "trato",
+   "label": "le aparta el aceite",
+   "detail": "La Loli le guarda las botellas a la Paca y te conoce por ella.",
+   "source": "paca_intro, loli_load"
+  },
+  {
+   "a": "eusebio",
+   "b": "loli",
+   "kind": "negocio",
+   "label": "aceite pa'l bar",
+   "detail": "El bar del Eusebio gasta el aceite de la Cooperativa.",
+   "source": "paca_intro"
+  },
+  {
+   "a": "paca",
+   "b": "josefa",
+   "kind": "trato",
+   "label": "vecinas",
+   "detail": "Vecinas puerta con puerta. «No le cobres, que es viuda».",
+   "source": "paca_phone"
+  },
+  {
+   "a": "josefa",
+   "b": "vip",
+   "kind": "negocio",
+   "label": "clienta",
+   "detail": "La Josefa le lleva el móvil. «Ese cobra por mirar».",
+   "source": "josefa_problem"
+  },
+  {
+   "a": "vip",
+   "b": "hijx",
+   "kind": "familia",
+   "label": "hija / hijo",
+   "detail": "El Fonsi tiene una hija o un hijo en edad de casar, y tierras.",
+   "source": "vip_paid"
+  },
+  {
+   "a": "josefa",
+   "b": "prima2",
+   "kind": "familia",
+   "label": "primas 2.as",
+   "detail": "Prima segunda de la Josefa.",
+   "source": "josefa_bridge"
+  },
+  {
+   "a": "prima2",
+   "b": "alberto",
+   "kind": "familia",
+   "label": "sobrino",
+   "detail": "El Alberto es sobrino de la prima segunda de la Josefa.",
+   "source": "josefa_bridge"
+  },
+  {
+   "a": "alberto",
+   "b": "plataforma",
+   "kind": "trato",
+   "label": "fundador",
+   "detail": "Fundó la plataforma contra el derribo del puente; nueve de los catorce son familia suya.",
+   "source": "alberto_bridge"
+  },
+  {
+   "a": "madre",
+   "b": "maruja",
+   "kind": "trato",
+   "label": "se hablan",
+   "detail": "La Maruja sabe por tu madre lo que haces.",
+   "source": "maruja"
+  },
+  {
+   "a": "maruja",
+   "b": "venancio",
+   "kind": "trato",
+   "label": "fija en sus velatorios",
+   "detail": "«Has llegao antes que la familia. Como siempre».",
+   "source": "venancio_m2"
+  },
+  {
+   "a": "maruja",
+   "b": "julian",
+   "kind": "trato",
+   "label": "lo conoce",
+   "detail": "Lo reconoce cuando lo atropellas.",
+   "source": "t_maruja_bump"
+  },
+  {
+   "a": "maruja",
+   "b": "panadera",
+   "kind": "trato",
+   "label": "la tiene archivá",
+   "detail": "Cotillea de sus tres maridos.",
+   "source": "maruja"
+  },
+  {
+   "a": "kevin",
+   "b": "abuelo",
+   "kind": "familia",
+   "label": "nieto",
+   "detail": "El abuelo dice que el azafrán vale más que él.",
+   "source": "kevin"
+  },
+  {
+   "a": "henry",
+   "b": "madre_henry",
+   "kind": "familia",
+   "label": "hijo",
+   "detail": "La receta es de su madre.",
+   "source": "henry_idle"
+  },
+  {
+   "a": "alberto",
+   "b": "chiki",
+   "kind": "trato",
+   "label": "amigos",
+   "detail": "Ha ido a la manifestación solo por ser amiga del Alberto.",
+   "source": "chiki_idle"
+  },
+  {
+   "a": "luis",
+   "b": "chiki",
+   "kind": "familia",
+   "label": "hermanos",
+   "detail": "Don Luis es hermano de La Chiki.",
+   "source": "autor (13 nov. 2026)"
+  },
+  {
+   "a": "luis",
+   "b": "nazario",
+   "kind": "familia",
+   "label": "descendiente",
+   "detail": "Don Luis es descendiente, sin especificar, de Nazario.",
+   "source": "autor (13 nov. 2026)"
+  },
+  {
+   "a": "luis",
+   "b": "repartidor",
+   "kind": "negocio",
+   "label": "le trae el género",
+   "detail": "El mismo camión reparte a los cuatro kebabs; Don Luis te manda seguirlo para sabotear a los otros tres.",
+   "source": "luis_go"
+  }
+ ],
+ "cabos": [
+  "El Eusebio: «tu primo» según la Paca, pero no se dice por qué rama.",
+  "La hija / el hijo del Fonsi, la prima segunda de la Josefa, el abuelo de Kevin-José, la panadera y la madre del Henry no tienen nombre.",
+  "De la familia del Alberto en la plataforma (nueve) no se conoce a nadie todavía.",
+  "Don Anselmo, el cabo Ramírez, el tío Genaro y la cabra no tienen parentescos ni tratos dichos en los diálogos (aunque todos tienen su manera de firmar, o de no firmar, por el puente).",
+  "La Chiki: no se sabe de quién es hija ni dónde vive (es hermana de Don Luis; los dos descienden de Nazario, no se dice cómo). La madre del Alberto (dueña de la hucha) no tiene nombre."
+ ]
+}

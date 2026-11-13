@@ -1,0 +1,12 @@
+{
+ "name": "white_rough_plaster",
+ "dimensions_mm": [
+  1000,
+  1000
+ ],
+ "authors": {
+  "Rob Tuytel": "All"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/white_rough_plaster"
+}

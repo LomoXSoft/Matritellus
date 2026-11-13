@@ -1,0 +1,12 @@
+{
+ "name": "painted_plaster_wall",
+ "dimensions_mm": [
+  2000,
+  2000
+ ],
+ "authors": {
+  "Amal Kumar": "All"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/painted_plaster_wall"
+}

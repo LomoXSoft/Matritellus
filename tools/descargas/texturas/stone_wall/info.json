@@ -1,0 +1,13 @@
+{
+ "name": "stone_wall",
+ "dimensions_mm": [
+  2000,
+  2000
+ ],
+ "authors": {
+  "Dario Barresi": "Processing",
+  "Charlotte Baglioni": "Photography"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/stone_wall"
+}

@@ -1,0 +1,31 @@
+Matritellus bench · AMD Radeon RX 9060 XT · Intel(R) Core(TM) i7-10700F CPU @ 2.90GHz · drawn at 2560 x 1440 · MSAA 4x
+(view: on foot in the Plaza del Ayuntamiento, midday; 178 neighbours, 75 parked cars, 3754 lanterns)
+as the game is                        65.5 fps   15.27 ms/frame | script 14.84 ms  physics tick  7.41 ms | render cpu  5.32 ms  gpu  6.86 ms |  4677 draw calls    5523 objects   6.88 M tris
+    neighbours (_update_npcs)               0.621 ms a call
+      of which keeping them apart           0.108 ms a call
+    traffic (tick)                          0.933 ms a call
+    police (tick, no chase)                 0.001 ms a call
+    tow truck (tick)                        0.001 ms a call
+    sky (clouds, birds)                     0.216 ms a call
+    lanterns (tick)                         0.001 ms a call
+    light of day (_apply_sky)               0.070 ms a call
+    what is near me (_find_interaction)     0.267 ms a call
+    GPS (update_route)                      0.000 ms a call
+    sound (_update_audio)                   0.004 ms a call
+    camera (_update_camera)                 0.009 ms a call
+    garages, door, gate                     0.007 ms a call
+no ink outline                        59.8 fps   16.72 ms/frame | script 177.23 ms  physics tick  7.66 ms | render cpu  5.23 ms  gpu  6.54 ms |  4685 draw calls    5534 objects   6.89 M tris
+no SSAO (contact shadows)             59.6 fps   16.78 ms/frame | script 15.07 ms  physics tick  5.41 ms | render cpu  5.20 ms  gpu  6.60 ms |  4682 draw calls    5531 objects   6.88 M tris
+no glow                               60.5 fps   16.53 ms/frame | script 17.33 ms  physics tick  5.42 ms | render cpu  5.17 ms  gpu  6.31 ms |  4669 draw calls    5519 objects   6.88 M tris
+no sun shadows                        68.4 fps   14.62 ms/frame | script 13.58 ms  physics tick  5.42 ms | render cpu  4.28 ms  gpu  6.02 ms |  3268 draw calls    3805 objects   2.86 M tris
+no MSAA (it is 4x)                    61.6 fps   16.24 ms/frame | script 140.16 ms  physics tick  5.47 ms | render cpu  5.15 ms  gpu  5.57 ms |  4674 draw calls    5515 objects   6.88 M tris
+3D at half resolution                 62.2 fps   16.08 ms/frame | script 17.07 ms  physics tick  5.46 ms | render cpu  5.12 ms  gpu  4.28 ms |  4672 draw calls    5512 objects   6.88 M tris
+no HUD at all                         65.0 fps   15.38 ms/frame | script 15.00 ms  physics tick  4.85 ms | render cpu  5.07 ms  gpu  6.74 ms |  4563 draw calls    5232 objects   6.87 M tris
+no minimap                            65.2 fps   15.34 ms/frame | script 17.75 ms  physics tick  4.65 ms | render cpu  5.06 ms  gpu  6.86 ms |  4648 draw calls    5315 objects   6.89 M tris
+no clouds, birds, stars               63.5 fps   15.76 ms/frame | script 16.75 ms  physics tick  5.95 ms | render cpu  5.14 ms  gpu  6.87 ms |  4677 draw calls    5512 objects   6.83 M tris
+at night (lanterns, windows)          57.6 fps   17.35 ms/frame | script 15.58 ms  physics tick  7.27 ms | render cpu  5.46 ms  gpu  7.36 ms |  5096 draw calls    6125 objects   7.03 M tris
+- neighbours gone                     86.1 fps   11.61 ms/frame | script 16.62 ms  physics tick  5.38 ms | render cpu  4.98 ms  gpu  6.80 ms |  4698 draw calls    5727 objects   6.89 M tris
+- and no traffic                     111.4 fps    8.98 ms/frame | script 15.47 ms  physics tick  3.25 ms | render cpu  4.64 ms  gpu  6.78 ms |  4638 draw calls    5471 objects   6.86 M tris
+- and no parked cars                 128.9 fps    7.76 ms/frame | script 14.51 ms  physics tick  2.25 ms | render cpu  4.32 ms  gpu  6.53 ms |  4498 draw calls    5301 objects   6.79 M tris
+- and no outline/SSAO/glow/MSAA      140.6 fps    7.11 ms/frame | script 14.30 ms  physics tick  1.98 ms | render cpu  4.07 ms  gpu  3.82 ms |  4496 draw calls    5299 objects   6.79 M tris
+- and no shadows                     168.7 fps    5.93 ms/frame | script  7.37 ms  physics tick  1.98 ms | render cpu  3.28 ms  gpu  2.85 ms |  3116 draw calls    3601 objects   2.80 M tris

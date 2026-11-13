@@ -1,0 +1,11 @@
+Models from Sketchfab (https://sketchfab.com), downloaded 2026-11-12 with the user's account. Each must be credited in the game (CC Attribution).
+
+panda.glb  "Low Poly 1990 Fiat Panda" by 3DShinobi (@3DShinobi)  --  CC Attribution  --  https://sketchfab.com/3d-models/low-poly-1990-fiat-panda-bff7e6912fee462fb50e1d1acaf777d1  --  used for: Zeat Panda y Pitufos
+z15.glb  "1984 Citroën C15 RD" by tonielpro520 (@tonielpro520)  --  CC Attribution  --  https://sketchfab.com/3d-models/1984-citroen-c15-rd-704324eda30743a2b14f893965426c38  --  used for: Z15
+hebro.glb  "Tractor Low Poly" by bhagathgoud (@bhagathgoud)  --  CC Attribution  --  https://sketchfab.com/3d-models/tractor-low-poly-6a585922ed344639824958d82d15d0f5  --  used for: Super Hebro 555
+yondir.glb  "Tractor | Low Poly | Farming" by samaru (@samaru3D)  --  CC Attribution  --  https://sketchfab.com/3d-models/tractor-low-poly-farming-61bd830ac58b46778fa5d3fe30bce842  --  used for: Yondir
+tunero.glb  "1996 Seat Ibiza (Free Download)" by Ricy (@ngon_3d)  --  CC Attribution  --  https://sketchfab.com/3d-models/1996-seat-ibiza-free-download-aca74285d9874785bff308c7c288f445  --  used for: El Tunero
+edison.glb  "Tesla Model Y" by Man City Fan (@ManchesterCityFan)  --  CC Attribution  --  https://sketchfab.com/3d-models/tesla-model-y-3593508ee9764ad3b7016861ea97707a  --  used for: Edison Model Y
+julietta.glb  "Alfa Romeo Giulia Spider" by Carrozze DÄULARI (@alhertenberger)  --  CC Attribution  --  https://sketchfab.com/3d-models/alfa-romeo-giulia-spider-58cde4dfe9064356a1dc8c9aa44350a7  --  used for: Omega Julietta
+grua.glb  "Tow Truck" by Yo.Ri (@grox777)  --  CC Attribution  --  https://sketchfab.com/3d-models/tow-truck-568eecbaaff347d5b62c952d591605ac  --  used for: Grua El Enganche
+tricornio.glb  "Todoterreno Guardia Civil" by Duendek86 (@duendek86)  --  CC Attribution  --  https://sketchfab.com/3d-models/todoterreno-guardia-civil-6a18e281e1ef44ae87bf8627a6114381  --  used for: Patrulla de los Tricornios

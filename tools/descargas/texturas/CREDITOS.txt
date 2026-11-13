@@ -1,0 +1,26 @@
+Texturas de las casas. Todas de Poly Haven (https://polyhaven.com), licencia CC0 (dominio publico):
+no obligan a citar a nadie; se apunta de donde viene cada una.
+
+brick_wall_003 -- Rob Tuytel, Dimitrios Savva -- CC0 -- https://polyhaven.com/a/brick_wall_003
+brick_wall_006 -- Jan Burghardt -- CC0 -- https://polyhaven.com/a/brick_wall_006
+brick_wall_07 -- Dimitrios Savva -- CC0 -- https://polyhaven.com/a/brick_wall_07
+brick_wall_09 -- Rob Tuytel, Matterfield -- CC0 -- https://polyhaven.com/a/brick_wall_09
+brick_wall_10 -- Dimitrios Savva -- CC0 -- https://polyhaven.com/a/brick_wall_10
+brown_planks_03 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/brown_planks_03
+clay_roof_tiles -- Amal Kumar -- CC0 -- https://polyhaven.com/a/clay_roof_tiles
+clay_roof_tiles_02 -- Amal Kumar -- CC0 -- https://polyhaven.com/a/clay_roof_tiles_02
+granite_tile_03 -- Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/granite_tile_03
+granite_tile_04 -- Amal Kumar -- CC0 -- https://polyhaven.com/a/granite_tile_04
+medieval_blocks_03 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/medieval_blocks_03
+old_planks_02 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/old_planks_02
+painted_plaster_wall -- Amal Kumar -- CC0 -- https://polyhaven.com/a/painted_plaster_wall
+plastered_wall_04 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/plastered_wall_04
+red_brick_03 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/red_brick_03
+roof_tiles -- Stephan Seeliger -- CC0 -- https://polyhaven.com/a/roof_tiles
+stone_tile_wall -- Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/stone_tile_wall
+stone_wall -- Dario Barresi, Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/stone_wall
+stone_wall_02 -- Dario Barresi, Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/stone_wall_02
+weathered_planks -- Dario Barresi, Dimitrios Savva -- CC0 -- https://polyhaven.com/a/weathered_planks
+white_plaster_02 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/white_plaster_02
+white_rough_plaster -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/white_rough_plaster
+yellow_brick -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/yellow_brick

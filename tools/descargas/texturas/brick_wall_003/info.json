@@ -1,0 +1,13 @@
+{
+ "name": "brick_wall_003",
+ "dimensions_mm": [
+  4000,
+  4000
+ ],
+ "authors": {
+  "Rob Tuytel": "Processing",
+  "Dimitrios Savva": "Photography"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/brick_wall_003"
+}

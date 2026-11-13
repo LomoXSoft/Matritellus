@@ -1,0 +1,42 @@
+Sonidos de vehículos de Matritellus: de dónde salen
+=================================================
+
+Todos son CC0 (dominio público): se pueden usar, modificar y distribuir, también en un juego comercial, sin pedir
+permiso ni citar. Se citan igualmente, por gratitud y para saber de dónde vino cada cosa. Descargados el 13 de
+noviembre de 2026. Lo que el juego usa, recortado y convertido a OGG, está en godot/assets/audio/vehiculos/.
+
+BigSoundBank (https://bigsoundbank.com), autor de casi todo: Joseph Sardin / LaSonothèque. Licencia CC0.
+  frenazo_1.ogg            Screeching Tires #1         https://bigsoundbank.com/screeching-tires-1-s2368.html
+  frenazo_2.ogg            Screeching tires #2         https://bigsoundbank.com/screeching-tires-2-s2369.html
+  frenazo_3.ogg            Screeching Tires #3         https://bigsoundbank.com/screeching-tires-3-s2370.html
+  frenazo_4.ogg            Screeching Tires #4         https://bigsoundbank.com/screeching-tires-4-s2371.html
+  derrape_largo.ogg        Tire squeal                 https://bigsoundbank.com/tire-squeal-s0500.html
+  claxon_coche_1.ogg       Recent Car Horn #2          https://bigsoundbank.com/recent-car-horn-2-s0258.html   (DenisChardonnet)
+  claxon_coche_2.ogg       Car horn #4                 https://bigsoundbank.com/car-horn-4-s0260.html
+  claxon_autobus.ogg       Bus horn                    https://bigsoundbank.com/bus-horn-s3594.html
+  motor_peugeot107.ogg     Small gasoline engine       https://bigsoundbank.com/small-gasoline-engine-s0966.html
+  motor_ford_courier.ogg   Ford Courier Engine         https://bigsoundbank.com/ford-courier-engine-s0896.html
+  motor_iveco_daily.ogg    Truck engine                https://bigsoundbank.com/truck-engine-s1145.html
+  motor_tractor_pequeno.ogg Small Tractor              https://bigsoundbank.com/small-tractor-s0499.html
+  motor_escape_roto.ogg    Damaged muffler (accel.)    https://bigsoundbank.com/damaged-muffler-accelerations-parked-car-s0675.html
+  motor_aston_martin.ogg   Acceleration Aston Martin   https://bigsoundbank.com/acceleration-aston-martin-s0600.html
+
+Freesound (https://freesound.org), cada uno de su autor. Licencia CC0.
+  claxon_tractor.wav            "Maquina de vapor .wav" (the tractor horn)   Camilo_Vargas13  https://freesound.org/s/429834/
+  tractores_protesta.wav        Tractor Horns                                tomwilkinson     https://freesound.org/s/807913/
+  frenazo_ruedas.aiff           Tires Squeaking.aif                          RutgerMuller     https://freesound.org/s/104026/
+  derrape_volvo.flac            AE0090 Volvo 740 GLE handbrake turn 01       audible-edge     https://freesound.org/s/76804/
+  derrape_nissan.wav            Nissan Maxima handbrake turn                 audible-edge     https://freesound.org/s/71741/
+  derrape_chrysler.wav          Chrysler LHS tire squeal 03                  audible-edge     https://freesound.org/s/71738/
+  motor_mini_ralenti.wav        car idle (2002 Mini Cooper)                  seth-m           https://freesound.org/s/269771/
+  motor_maquinaria_ralenti.flac Truck Engine Idle Loops                      qubodup          https://freesound.org/s/187564/
+  motor_vw_t4_ralenti.wav       T4-19TD-2000-Engine-Loop                     grauxonen        https://freesound.org/s/679693/
+  motor_diesel_ralenti.wav      idling diesel loop                           cognito perceptu https://freesound.org/s/21187/
+  motor_peugeot308_ralenti.wav  Vehicle_Car_Peugeot_308_Idle_Exterior_Loop   Nox_Sound        https://freesound.org/s/522225/
+  claxon_aire_industrial.wav    Industrial Air Horn                          mcpable          https://freesound.org/s/131930/
+  claxon_pickup_varios.wav      truck pickup horn honk aggressive annoyed    kyles            https://freesound.org/s/450821/
+  claxon_furgoneta_lluvia.wav   Van horn on rainy day                        rodrigocswm      https://freesound.org/s/449430/
+  claxon_uga.wav                R18-31-Old Car Ahooga Horn                   craigsmith       https://freesound.org/s/480002/
+  claxon_coche_3.wav            car horn.wav                                 keweldog         https://freesound.org/s/182474/
+  claxon_coche_4.wav            Car Honking                                  MicktheMicGuy    https://freesound.org/s/434878/
+  claxon_coche_5.wav            Car Horn.wav                                 BeatsbyCasper    https://freesound.org/s/170243/

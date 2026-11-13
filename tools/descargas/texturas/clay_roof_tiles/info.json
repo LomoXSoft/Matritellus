@@ -1,0 +1,12 @@
+{
+ "name": "clay_roof_tiles",
+ "dimensions_mm": [
+  4000,
+  4000
+ ],
+ "authors": {
+  "Amal Kumar": "All"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/clay_roof_tiles"
+}

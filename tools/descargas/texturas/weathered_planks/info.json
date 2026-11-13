@@ -1,0 +1,13 @@
+{
+ "name": "weathered_planks",
+ "dimensions_mm": [
+  2000,
+  2000
+ ],
+ "authors": {
+  "Dario Barresi": "Processing",
+  "Dimitrios Savva": "Photography"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/weathered_planks"
+}
