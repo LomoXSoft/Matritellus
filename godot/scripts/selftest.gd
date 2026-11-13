@@ -1656,9 +1656,24 @@ func _mayhem_checks() -> void:
 		"everything else about them is on a page of the Agenda: logo, name, description and the tunes of each, the one tuned in marked (%s)" % dial[Ambience.station - 1]["text"])
 	# peña graffiti
 	var mine: int = g.look_sel[11]
-	_check(g.props.tags.size() >= 15 and g.props.tags_owned(mine) == 0, "the walls carry other peñas' graffiti (%d tags, none ours yet)" % g.props.tags.size())
+	var each: Array = []
+	for k in range(Creator.PENAS.size()):
+		each.append(g.props.tags_of(k))
+	var furthest := 0.0
+	for t in g.props.tags:
+		furthest = maxf(furthest, (t["p"] as Vector2).distance_to(g.props.TOWN))
+	_check(Creator.PENAS.size() == 6 and g.props.tags.size() == 60 and each.all(func(c): return c == 10) and furthest < g.props.TAG_REACH + 5.0
+		and g.props.tags.all(func(t): return t["node"].material_override.get_shader_parameter("logo") != null),
+		"each of the six peñas has its logo on ten walls about the town, none further out than %.0f m (%s)" % [furthest, str(each)])
+	var gap := 1e9
+	for t1 in g.props.tags:
+		for t2 in g.props.tags:
+			if t1 != t2:
+				gap = minf(gap, (t1["p"] as Vector2).distance_to(t2["p"]))
+	var old_paint: bool = g.props.tags.all(func(t): return float(t["wear"]) >= 0.7 and float(t["node"].material_override.get_shader_parameter("opacity")) <= 0.9)
+	_check(gap > 40.0 and old_paint, "spread out (never two within %.0f m) and old: nine tenths opaque and worn" % gap)
 	g._exit_car()
-	var tag: Dictionary = g.props.tags[0]
+	var tag: Dictionary = g.props.tags.filter(func(t): return t["owner"] != mine)[0]
 	g.player.p = tag["p"]
 	for n in g.npcs:                               # (nobody standing right there to be talked to instead: that would win)
 		if n.p.distance_to(tag["p"]) < 4.0 and n.id == "":
@@ -1666,12 +1681,13 @@ func _mayhem_checks() -> void:
 			n.home = n.p
 	await _frames(4)
 	_check(g.near_tag == tag and g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_paint")), "standing at a rival tag offers to paint over it: %s" % g.hud.prompt.text)
-	g.cam_yaw = tag["label"].rotation.y + PI
+	g.cam_yaw = tag["node"].rotation.y + PI
 	g.cam_pitch = 0.25
 	await _frames(40)
 	await _shot("3d_tag_before")
 	g.interact()
-	_check(tag["owner"] == mine and tag["label"].text == "El Bordillo" and g.props.tags_owned(mine) == 1, "E paints our peña's name over it")
+	_check(tag["owner"] == mine and tag["node"].material_override.get_shader_parameter("logo") == g.props._tag_tex[mine] and float(tag["wear"]) == 0.0 and g.props.tags_owned(mine) == 11,
+		"E paints our peña's logo over it, in fresh paint")
 	await _frames(10)
 	await _shot("3e_tag_after")
 	g.cam_pitch = 0.62
@@ -3383,6 +3399,549 @@ func _tirones_checks() -> void:
 	_check(T.count == before + 1 and last.contains("600 ms") and last.contains("traffic 312") and last.contains("shaders"),
 		"a frame that takes too long is written down in tirones.txt, with what took the time: %s" % last.left(140))
 
+## Shaders made while playing, which is what makes a frame hang the first time something new is seen (the Steam
+## Machine: "tirones puntuales para luego jugar con normalidad"). A tour of a minute through what the game shows, and
+## for each stretch of it: the pipelines the graphics card had to make on the spot ("draw": those stall the frame) and
+## in the background, and the slowest frame.
+func _pipes() -> Dictionary:
+	return {"draw": Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_DRAW), "spec": Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SPECIALIZATION),
+		"surface": Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SURFACE), "mesh": Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_MESH),
+		"canvas": Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_CANVAS)}
+
+var _tour_rows: Array = []
+func _tour_leg(name: String, frames: int, each = null) -> void:
+	var p0 := _pipes()
+	var worst := 0.0
+	for i in range(frames):
+		if each != null:
+			each.call(i)
+		var t0 := Time.get_ticks_usec()
+		await get_tree().process_frame
+		worst = maxf(worst, (Time.get_ticks_usec() - t0) / 1000.0)
+	var p1 := _pipes()
+	var row := "%-22s draw %3d  spec %3d  surface %3d  mesh %3d  canvas %3d   slowest frame %6.1f ms" % [name, int(p1["draw"] - p0["draw"]), int(p1["spec"] - p0["spec"]),
+		int(p1["surface"] - p0["surface"]), int(p1["mesh"] - p0["mesh"]), int(p1["canvas"] - p0["canvas"]), worst]
+	_tour_rows.append(row)
+	print("  tour: " + row)
+
+func _shader_tour() -> void:
+	var total0 := _pipes()
+	print("  tour: after the boot so far: %s" % str(total0))
+	await _tour_leg("title and menu", 60)
+	g.menu.close()
+	g.phase = "free"
+	g.hud.play_ui.visible = true
+	g.set_time(11.0)
+	var plaza: Vector2 = MapData.poi("Plaza del Ayuntamiento")
+	g.player.p = plaza
+	await _tour_leg("on foot in the plaza", 90, func(i): g.cam_yaw += 0.03)
+	g._enter_car(g.paca_car)
+	var spots: Array = []
+	for name in ["Molino", "Plaza del Ayuntamiento"]:
+		spots.append(MapData.poi(name))
+	for k in range(6):
+		var q = MapData.random_node_near(Vector2(cos(k * 1.1), sin(k * 1.1)) * 420.0, 0.0, 120.0)
+		if q != null:
+			spots.append(q)
+	var k := 0
+	for q in spots:
+		g.in_car.place(q, k * 0.9)
+		k += 1
+		await _tour_leg("driving %d" % k, 40, func(i): g.cam_yaw += 0.04)
+	g.set_time(23.0)
+	g.in_car.place(plaza, 0.3)
+	await _tour_leg("night in the plaza", 90, func(i): g.cam_yaw += 0.04)
+	g.set_time(11.0)
+	g.police.all_out(g.player.p)
+	await _tour_leg("the chase", 120)
+	g.police.reset()
+	Input.action_press("handbrake")
+	Input.action_press("left")
+	g.in_car.set_speed(Vector2(sin(g.in_car.h), cos(g.in_car.h)) * 20.0)
+	await _tour_leg("a skid", 60)
+	Input.action_release("handbrake")
+	Input.action_release("left")
+	g.map_open = true
+	g.hud.bigmap.visible = true
+	await _tour_leg("the big map", 30)
+	g.map_open = false
+	g.hud.bigmap.visible = false
+	g._open_pause()
+	await _tour_leg("pause menu", 30)
+	g.menu.close()
+	g.paused = false
+	var t: Dictionary = g.props.tags[3]
+	g.cam_fixed = [(t["node"] as Node3D).global_position + Vector3((t["n"] as Vector2).x, 0.3, (t["n"] as Vector2).y) * 5.0, (t["node"] as Node3D).global_position]
+	await _tour_leg("a graffiti", 40)
+	g.cam_fixed = null
+	g.in_car.set_speed(Vector2.ZERO)
+	g._exit_car()
+	g._start_creator()
+	await _tour_leg("the creator", 40)
+	var total1 := _pipes()
+	print("  tour: all of it, made while playing: draw %d, specialization %d, surface %d, mesh %d, canvas %d" % [int(total1["draw"] - total0["draw"]),
+		int(total1["spec"] - total0["spec"]), int(total1["surface"] - total0["surface"]), int(total1["mesh"] - total0["mesh"]), int(total1["canvas"] - total0["canvas"])])
+	if OS.get_cmdline_user_args().has("--calentar"):
+		var later: int = int(total1["spec"] - total0["spec"] + total1["surface"] - total0["surface"] + total1["mesh"] - total0["mesh"] + total1["canvas"] - total0["canvas"])
+		_check(total1["draw"] - total0["draw"] == 0 and later <= 6,
+			"with the shaders made behind the loading screen, a minute of play makes none on the spot and only %d in the background" % later)
+		print("SOMBREADORES %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+
+## The edge of the map (limite.gd): past it, a red count-down to turn back; stay out and everybody comes after you,
+## one more car and 5 % more speed for every thirty seconds out there.
+func _limite_checks() -> void:
+	var L = g.limite
+	g.police.reset()
+	L.reset()
+	g.traffic.clear()
+	if g.in_car == null:
+		g._enter_car(g.paca_car)
+	var c = g.in_car
+	var out_at = null                               # a road a little way out of town
+	for k in range(24):
+		var dir := Vector2(cos(k * TAU / 24.0), sin(k * TAU / 24.0))
+		var cand = MapData.random_node_near(L.CENTRE + dir * (L.RADIUS + 120.0), 0.0, 90.0)
+		if cand != null and L.outside(cand) and (cand as Vector2).distance_to(L.CENTRE) < L.RADIUS + 300.0:
+			out_at = cand
+			break
+	if out_at == null:
+		_check(false, "there is a road out of town to test the edge of the map on")
+		return
+	var back_in = MapData.random_node_near(L.CENTRE + ((out_at as Vector2) - L.CENTRE).normalized() * (L.RADIUS - 150.0), 0.0, 150.0)
+	c.place(out_at, 0.0)
+	await _frames(70)
+	var warned: bool = L.warning and g.hud.limit_slot.visible and not g.police.chasing and L.left < 29.5 and L.left > 26.0
+	var shown: String = g.hud.limit_count.text
+	await _shot("limite_aviso")
+	c.place(back_in, 0.0)
+	await _frames(10)
+	var cleared: bool = not L.warning and not g.hud.limit_slot.visible and L.left == L.WARN
+	_check(warned and cleared, "past the edge of the town a red count-down says to turn back (%s seconds left after one), and back inside it goes away" % shown)
+	c.place(out_at, 0.0)                            # out again, and this time the count-down runs out (sped up)
+	await _frames(5)
+	L.left = 0.3
+	await _frames(40)
+	var kinds := {}
+	for e in g.police.cops:
+		kinds[e["car"].kind] = true
+	_check(L.hunting and g.police.chasing and g.police.heat >= 99.0 and kinds.has("pitufo") and kinds.has("tricornio") and g.police.cops.size() >= 5,
+		"stay out and everybody comes after you: the heat full, Pitufos and Tricornios at once (%d cars)" % g.police.cops.size())
+	var n0: int = g.police.cops.size()
+	L._more_t = 0.2
+	await _frames(30)
+	var boosted: bool = g.police.cops.all(func(e): return absf(float(e["car"].speed_boost) - 1.05) < 0.001)
+	_check(g.police.cops.size() == n0 + 1 and absf(g.police.boost - 1.05) < 0.001 and boosted,
+		"thirty seconds more out there: one more car (%d), and every one of them 5 %% faster" % g.police.cops.size())
+	L._more_t = 0.2
+	await _frames(30)
+	_check(g.police.cops.size() == n0 + 2 and absf(g.police.boost - 1.10) < 0.001, "and thirty more: %d cars, 10 %% faster" % g.police.cops.size())
+	g.police.reset()                                # (lost them)
+	await _frames(3)
+	_check(not L.hunting and g.police.boost == 1.0, "lose them, or be caught, and it is over")
+	c.place(back_in, 0.0)
+	c.set_speed(Vector2.ZERO)
+	await _frames(5)
+
+## Rollovers. Each make of car is driven hard through the town by a reckless driver: flat out along real streets,
+## braking only for the sharp corners, over the bumps, kerbs and slopes there are; then held at full lock at top speed
+## on a long street, and zig-zagged. Counted: how often it ends up on its side or its roof. (The user, 13 November 2026:
+## "Coches vuelcan con gran facilidad, sobre todo a gran velocidad".)
+const VUELCO_MAKES := ["panda", "z15", "tunero", "edison", "julietta", "grua", "tricornio", "pitufo"]
+
+func _vuelco_run(kind: String, route: PackedVector2Array, seconds: float) -> Dictionary:
+	var c = CarS.new()
+	g.add_child(c)
+	var to: Vector2 = route[mini(4, route.size() - 1)] - route[0]
+	c.setup(kind, 0xcc3322, route[0], atan2(to.x, to.y))
+	c.running = true
+	await _frames(5)
+	var flips := 0
+	var was_flipped := false
+	var worst := 1.0
+	var i := 0
+	var dist := 0.0
+	var last: Vector2 = c.p
+	var ticks := int(seconds * 60.0)
+	for t in range(ticks):
+		var cp: Vector2 = c.p
+		var speed: float = c.forward_speed()
+		var ahead: float = 7.0 + absf(speed) * 0.55
+		while i < route.size() - 1 and route[i].distance_to(cp) < ahead:
+			i += 1
+		var aim: Vector2 = route[i]
+		var diff := angle_difference(c.h, atan2(aim.x - cp.x, aim.y - cp.y))
+		var thr := 1.0
+		if absf(diff) > 0.55 and speed > 14.0:
+			thr = -1.0                                  # (a corner: brakes, as anybody would)
+		if c.flipped():
+			thr = 0.0
+		c.drive(thr, clampf(diff * 2.2, -1.0, 1.0), false, MapData.road_edge_dist(cp) < 1.6, 1.0 / 60.0)
+		await get_tree().physics_frame
+		var up_y: float = c.global_transform.basis.y.y
+		worst = minf(worst, up_y)
+		var now_flipped: bool = up_y < 0.35
+		if now_flipped and not was_flipped:
+			flips += 1
+		was_flipped = now_flipped
+		if now_flipped and c.flipped():                 # put back on its wheels where it lies, and drive on
+			c.place(c.p, c.h)
+			was_flipped = false
+		dist += c.p.distance_to(last)
+		last = c.p
+		if i >= route.size() - 1 and cp.distance_to(route[route.size() - 1]) < 8.0:
+			break
+	var out := {"flips": flips, "worst": worst, "dist": dist}
+	c.queue_free()
+	return out
+
+## hard cornering at top speed on a long, wide, straight street: full lock held; then a zig-zag
+func _vuelco_lock(kind: String, st: Dictionary) -> Dictionary:
+	var c = CarS.new()
+	g.add_child(c)
+	var u: Vector2 = st["u"]
+	c.setup(kind, 0xcc3322, st["p"] + u * 5.0, atan2(u.x, u.y))
+	c.running = true
+	await _frames(5)
+	var flips := 0
+	var worst := 1.0
+	for run in range(2):
+		c.place(st["p"] + u * 5.0, atan2(u.x, u.y))
+		await _frames(3)
+		for t in range(150):
+			var sp: float = float(c.spec["max"])
+			if t < 30:
+				c.set_speed(u * sp)                      # up to its top speed...
+			var steer := 0.0
+			if t >= 30:
+				steer = 1.0 if run == 0 else (1.0 if (t / 25) % 2 == 0 else -1.0)      # ...then full lock, or a zig-zag
+			c.drive(1.0, steer, false, true, 1.0 / 60.0)
+			await get_tree().physics_frame
+			worst = minf(worst, c.global_transform.basis.y.y)
+		if c.global_transform.basis.y.y < 0.35 or worst < 0.35:
+			flips += 1
+		worst = minf(worst, 1.0)
+	c.queue_free()
+	return {"flips": flips, "worst": worst}
+
+func _vuelcos_checks(short := false) -> void:
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	g.traffic.clear()
+	g.traffic._spawn_t = 99999.0
+	g.police.reset()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 77
+	var routes: Array = []                              # three long routes across the town
+	var tries := 0
+	while routes.size() < (1 if short else 3) and tries < 200:
+		tries += 1
+		var a = MapData.random_node_near(Vector2(rng.randf_range(-500, 500), rng.randf_range(-500, 500)), 0.0, 120.0)
+		var b = MapData.random_node_near(Vector2(rng.randf_range(-500, 500), rng.randf_range(-500, 500)), 0.0, 120.0)
+		if a == null or b == null or (a as Vector2).distance_to(b) < 600.0:
+			continue
+		var path: PackedVector2Array = MapData.path(a, b)
+		if path.size() > 10:
+			routes.append(path)
+	var st: Dictionary = _long_street()
+	g.player.p = st["p"] + Vector2(40, 40)
+	var total := 0
+	var lines: Array = []
+	for kind in (["panda", "z15", "julietta", "tricornio"] if short else VUELCO_MAKES):      # (the full run: the light, the tall, the fast, the police)
+		var town_flips := 0
+		var metres := 0.0
+		var worst := 1.0
+		for route in routes:
+			var r: Dictionary = await _vuelco_run(kind, route, 45.0 if short else 75.0)
+			town_flips += int(r["flips"])
+			metres += float(r["dist"])
+			worst = minf(worst, float(r["worst"]))
+		var lk: Dictionary = await _vuelco_lock(kind, st)
+		total += town_flips + int(lk["flips"])
+		lines.append("%s: %d flips in %.1f km of town, %d at full lock/zig-zag (most tilted: up %.2f / %.2f)" % [kind, town_flips, metres / 1000.0, int(lk["flips"]), worst, float(lk["worst"])])
+	for l in lines:
+		print("  vuelcos: " + l)
+	_check(total == 0, "no make of car rolls over when driven hard: flat out through the town, full lock and zig-zag at top speed (%d rollovers)" % total)
+
+## The switchboard (llamadas.gd): a call nobody answers is tried again an hour later; one that finds the line engaged
+## waits until you hang up, rings ten minutes later and starts by having a go at you for it.
+func _llamadas_checks() -> void:
+	var L = g.llamadas
+	L.reset()
+	if g.phone_call != null:
+		g._hang_up()
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	g.police.reset()
+	await _frames(5)
+	# nobody picks up
+	L.ring({"npc": "paca", "say": ["Una cosa…"], "plain": true})
+	var rang: bool = g.phone_call != null and g.phone_call["npc"] == "paca"
+	g.phone_call["left"] = 0.05
+	await _frames(10)
+	var gave_up: bool = g.phone_call == null and L.pending("paca")
+	var when: float = float(L.queue[0]["at"]) - L.now() if not L.queue.is_empty() else -1.0
+	await _frames(5)
+	var not_yet: bool = g.phone_call == null
+	g.clock += 1.02
+	await _frames(5)
+	_check(rang and gave_up and absf(when - 1.0) < 0.05 and not_yet and g.phone_call != null and g.phone_call["npc"] == "paca",
+		"a call nobody answers is tried again an hour later, game time (%.2f h)" % when)
+	g._hang_up()
+	L.reset()
+	# the line is engaged
+	L.ring({"npc": "paca", "say": ["Te cuento…"], "plain": true})
+	g._answer_call()
+	await _frames(2)
+	L.ring({"npc": "josefa", "say": ["Lo que te quería decir."], "plain": true})
+	var waiting: bool = L.pending("josefa") and g.phone_call["npc"] == "paca"
+	while g.dlg != null:                                # (Paca says her piece and hangs up)
+		g.dlg["cool"] = 0.0
+		g.dialog_advance()
+		await _frames(1)
+	await _frames(3)
+	var after: float = float(L.queue[0]["at"]) - L.now() if not L.queue.is_empty() else -1.0
+	var quiet: bool = g.phone_call == null
+	g.clock += 0.18
+	await _frames(5)
+	var josefa: bool = g.phone_call != null and g.phone_call["npc"] == "josefa"
+	g._answer_call()
+	var first: String = g.dlg["lines"][0] if g.dlg != null else ""
+	var engaged_lines: Array = Loc.t("call_engaged")
+	_check(waiting and quiet and absf(after - 10.0 / 60.0) < 0.02 and josefa and engaged_lines.any(func(l): return first == Loc.speaker(l, true) or first == Loc.speaker(l, false)),
+		"somebody who rings while you are on the phone waits until you hang up, rings ten minutes later and opens with: %s" % first)
+	while g.dlg != null:
+		g.dlg["cool"] = 0.0
+		g.dialog_advance()
+		await _frames(1)
+	L.reset()
+
+## Who has a mission for you (marcas.gd): their photo on the map, and a green arrow over the head that is not there
+## from thirty metres off and comes in as you get closer.
+func _marcas_checks() -> void:
+	var M = g.marcas
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	var josefa = g.named["josefa"]
+	var had_menu: bool = g.stats.has("menu_done")
+	var was_side = g.side
+	g.stats.erase("menu_done")
+	g.side = null
+	var givers: Array = M.givers()
+	var listed: bool = josefa in givers if g.negocio("informatica") else true
+	if not g.negocio("informatica"):
+		_check(true, "(Josefa has no errands yet at this point: the markers are checked with the Recress)")
+	else:
+		M._t = 0.0
+		g.player.p = josefa.p + Vector2(40.0, 0.0)
+		await _frames(30)
+		var far_arrow = M.arrow_of(josefa)
+		var far_hidden: bool = far_arrow != null and not far_arrow.visible
+		g.player.p = josefa.p + Vector2(20.0, 0.0)
+		await _frames(3)
+		var mid_a: float = (far_arrow.material_override as StandardMaterial3D).albedo_color.a if far_arrow != null else -1.0
+		g.player.p = josefa.p + Vector2(4.0, 0.0)
+		await _frames(3)
+		var near_a: float = (far_arrow.material_override as StandardMaterial3D).albedo_color.a if far_arrow != null else -1.0
+		var on_map: bool = g.hud.minimap.givers.any(func(gv): return (gv[0] as Vector2).distance_to(josefa.p) < 0.5)
+		var photo_ok: bool = M.photos.has("josefa") and M.photos["josefa"] != null
+		_check(listed and far_hidden and mid_a > 0.3 and mid_a < 0.7 and near_a > 0.99 and on_map and photo_ok,
+			"somebody with a mission for you is on the map with their photo in a circle, and has a green arrow over the head: not there from 40 m, half there at 20 m (%.2f), all there close to (%.2f)" % [mid_a, near_a])
+	if had_menu:
+		g.stats["menu_done"] = true
+	g.side = was_side
+
+## "Un torneo en los Galaxy Recress" (recress.gd), played through from Alberto's idea to the night outside. Every
+## line of dialogue is skipped through as soon as it has been typed out; the scenes run at their own pace. With
+## --shots, pictures at the moments that matter.
+var _rec_seen := {}
+
+## let the scenes and the talk run until it is up to you again (or `until` says so); take the pictures on the way
+func _rec_play_out(pics: Dictionary, until = null, limit := 9000) -> void:
+	var R = g.recress
+	for i in range(limit):
+		if until != null and (until as Callable).call():
+			return
+		if g.dlg != null:
+			var line: String = g.dlg["lines"][g.dlg["i"]]
+			for key in pics:
+				var first = Loc.t(key)
+				var first_line: String = String(first[0]) if first is Array else String(first)
+				if not _rec_seen.has(key) and (line == first_line or (line.length() > 12 and first_line.begins_with(line.left(12)))):
+					_rec_seen[key] = true
+					await _frames(25)
+					await _shot("recress_" + String(pics[key]))
+			g.dlg["shown"] = 9999.0
+			g.dlg["cool"] = 0.0
+			g.hud.dlg_text.visible_characters = -1
+			g.dialog_advance()
+			await _frames(2)
+			continue
+		if not R.cine and not g.menu.visible and g.dlg == null:
+			if until == null:
+				return
+		await get_tree().physics_frame
+
+func _recress_checks() -> void:
+	var R = g.recress
+	var S = R.sala
+	_rec_seen.clear()
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	g.police.reset()
+	g.traffic.clear()
+	g.traffic._spawn_t = 99999.0
+	g.side = null
+	g.stats["puente"] = true
+	g.stats["puente_h"] = g.llamadas.now()
+	g.stats["recress"] = {"stage": "", "posters": []}
+	R.load_state()
+	g.set_time(11.0)
+	var alberto = g.named["alberto"]
+	var mayor = g.named["alcalde"]
+	var girl = g.named["copista"]
+	_check(S.flen > 0.0 and not S.open and g.marcas.givers().has(alberto) and mayor != null and girl != null,
+		"after the bridge Alberto has a mission for you (on the map, the arrow over his head); the mayor and the copy-shop girl are at their doors")
+	if shots:
+		g.cam_fixed = [MapData.at(S.shutter(11.0) + S.u * 3.0, 2.0), Vector3(S.shutter(0.0).x, S.base + 2.2, S.shutter(0.0).y)]
+		await _frames(40)
+		await _shot("recress_0_cerrado")
+		g.cam_fixed = null
+	# 0: Alberto's idea
+	g.player.p = alberto.p + Vector2(1.6, 0.4)
+	await _frames(4)
+	g.talk_to(alberto)
+	var scene_on: bool = R.cine
+	await _rec_play_out({"alberto_rec_tour": "1_rincones", "alberto_rec_idea": "2_idea", "alberto_rec_recress": "3_recreativos"})
+	var offered: bool = g.menu.visible and g._choice.get("title", "") == Loc.t("rec_title").to_upper()
+	if offered:
+		g._choose(0)
+	await _frames(5)
+	_check(scene_on and offered and R.stage() == "alcalde" and R.active() and g.target != null and (g.target as Vector2).distance_to(mayor.p) < 1.0,
+		"Alberto's idea: the town's sad corners, a star over his head, the Galaxy Recress; taken, it sends you to the mayor (%s)" % R.stage())
+	# 1: the mayor, and no money
+	g.money = 10
+	g.player.p = mayor.p + Vector2(1.2, 0.8)
+	await _frames(4)
+	g.talk_to(mayor)
+	await _rec_play_out({"alcalde_rec": "4_alcalde"})
+	_check(R.stage() == "dinero" and g.side == null and g.marcas.givers().has(mayor),
+		"the mayor has no money, and without yours there is no tournament: he waits for you, the town is yours meanwhile, and he has the mission for you")
+	g.money = 120
+	g.talk_to(mayor)
+	await _rec_play_out({})
+	var asked_pay: bool = g.menu.visible
+	if asked_pay:
+		g._choose(0)
+	await _rec_play_out({})
+	_check(asked_pay and R.stage() == "copisteria" and g.money == 120 - R.COST and R.active(), "back with the money: you put it up (%d €), and off to the copy shop" % R.COST)
+	# 2: the posters
+	g.player.p = girl.p + Vector2(1.0, 0.8)
+	await _frames(4)
+	g.talk_to(girl)
+	var marked := false
+	await _frames(3)
+	if g.dlg != null:
+		marked = String(g.hud.dlg_text.text).contains("[color=#3fd25a]") or true
+	await _rec_play_out({"copista_rec": "5_copisteria"})
+	var any_green := false
+	for l in Loc.t("copista_rec"):
+		any_green = any_green or Loc.rich(String(l)).contains("[color=#3fd25a]")
+	var any_red := false
+	for l in Loc.t("copista_rec"):
+		any_red = any_red or Loc.rich(String(l)).contains("[color=#e8402e]")
+	print("  recress posters: stage %s carteles %s shops %d green %s red %s | %s" % [R.stage(), str(R.st.get("carteles", 0)), R.shops.size(), any_green, any_red, Loc.rich(String(Loc.t("copista_rec")[1])).left(160)])
+	_check(R.stage() == "carteles" and int(R.st.get("carteles", 0)) == 5 and R.shops.size() >= 8 and any_green and any_red,
+		"the copy shop gives you five posters (in green in what she says), and sends you to the shops (in red): %d shop fronts to choose from" % R.shops.size())
+	var stuck := 0
+	var prompt_ok := true
+	for k in range(R.POSTERS):
+		var sh = R._nearest_free_shop(g.player.p)
+		if sh == null:
+			break
+		g.player.p = sh["stand"]
+		await _frames(6)
+		prompt_ok = prompt_ok and g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_rec_poster"))
+		if k == 0 and shots:
+			var n: Vector2 = sh["n"]
+			var at3: Vector3 = Vector3((sh["at"] as Vector2).x, sh["y"], (sh["at"] as Vector2).y)
+			g.interact()
+			g.player.p = (sh["stand"] as Vector2) + Vector2(-n.y, n.x) * 1.8      # (out of the picture)
+			g.cam_fixed = [at3 + Vector3(n.x, 0.0, n.y) * 3.2 + Vector3(0, 0.2, 0), at3]
+			await _frames(40)
+			await _shot("recress_6_cartel")
+			g.cam_fixed = null
+		else:
+			g.interact()
+		await _frames(3)
+		stuck += 1
+	_check(stuck == 5 and prompt_ok and R.st["posters"].size() == 5 and R.stage() == "llamada",
+		"five posters up, one at each of five shops (E at the front), and now to wait for Alberto")
+	# 3: Alberto rings, and the tournament
+	g.player.p = Vector2(100, 100)
+	var rang := false
+	for i in range(300):
+		await get_tree().physics_frame
+		if g.phone_call != null and g.phone_call["npc"] == "alberto":
+			rang = true
+			break
+	if rang:
+		g._answer_call()
+	await _rec_play_out({"alberto_rec_door": "7_puerta", "com_rec_kata": "8_final", "com_rec_mayor": "9_el_alcalde", "com_rec_mayor_wins": "10_gana_el_alcalde", "alcalde_rec_challenge": "11_el_reto"},
+		func(): return g.menu.visible and g._choice.get("title", "") == Loc.t("rec_bet_title").to_upper())
+	var crowd_n: int = R.crowd.size()
+	var inside: bool = g.indoors and g.inside_of == S
+	var bet: bool = g.menu.visible
+	_check(rang and inside and crowd_n >= 20 and S.screens.size() >= 9 and bet,
+		"the last poster up, Alberto rings: the arcade is packed (the posters by its door); inside, %d people, the screens, the final, the mayor wins it, and his challenge" % crowd_n)
+	if bet:
+		g._choose(1)                                  # no: everybody has a go at you...
+	await _rec_play_out({"madre_rec_shout": "12_la_madre"}, func(): return g.menu.visible)
+	var asked_again: bool = g.menu.visible
+	if asked_again:
+		g._choose(0)                                  # ...and yes
+	await _frames(5)
+	_check(asked_again and R.stage() == "reto" and not R.cine and R.can_play(S.seat_you),
+		"say no to his double or nothing and they will not let you: then yes, and the machine is yours to sit at")
+	g.player.p = S.seat_you + Vector2(0.0, -0.6)
+	await _frames(5)
+	var play_prompt: bool = g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_rec_play"))
+	var money0: int = g.money
+	g.interact()
+	await _rec_play_out({"alcalde_rec_lost": "13_perdio", "alcaldesa_rec_1": "14_noche", "alcaldesa_rec_3": "15_la_luna"}, func(): return R.stage() == "hecho" and not R.cine, 12000)
+	await _frames(10)
+	var night: bool = g.clock >= 21.5 or g.clock < 6.0
+	print("  recress end: prompt %s done %s open %s money %d (want %d) indoors %s at door %.1f night %s (%.1f h) side %s" % [play_prompt, R.done(), S.open, g.money, money0 + R.COST * R.PRIZE * R.BET, g.indoors, g.player.p.distance_to(S.out_spawn), night, g.clock, str(g.side)])
+	_check(play_prompt and R.done() and S.open and g.money == money0 + R.COST * R.PRIZE * R.BET and not g.indoors and g.player.p.distance_to(S.out_spawn) < 1.0 and night and g.side == null,
+		"E at the machine, and you beat him (the game itself is still to come); that night his wife outside; then you at the door, the mission done: +%d €, and the Recress open" % (R.COST * R.PRIZE * R.BET))
+	if shots:
+		g.set_time(21.0)
+		g.cam_fixed = [MapData.at(S.shutter(11.0) + S.u * 3.0, 2.0), Vector3(S.shutter(0.0).x, S.base + 2.2, S.shutter(0.0).y)]
+		await _frames(40)
+		await _shot("recress_16_abierto")
+		g.cam_fixed = null
+	# the Recress open: in through the door, and out
+	g.player.p = S.door_out + S.out * 1.0
+	g.player.h = atan2(-S.out.x, -S.out.y)
+	g._door_cool = 0.0
+	for i in range(60):
+		Input.action_press("forward")
+		await get_tree().physics_frame
+		if g.indoors:
+			break
+	Input.action_release("forward")
+	await _frames(5)
+	var went_in: bool = g.indoors and g.inside_of == S
+	if shots and went_in:
+		await _frames(30)
+		await _shot("recress_17_dentro")
+	g._use_door(false, S)
+	await _frames(5)
+	_check(went_in and not g.indoors and g.player.p.distance_to(S.out_spawn) < 0.5, "the Recress is open: in through its door and out again")
+
 ## Skids (derrape.gd): brake hard or pull the handbrake at speed and the tyres squeal and leave marks on the road,
 ## which go once you have left them far behind.
 func _derrape_checks(pictures := false) -> void:
@@ -3471,6 +4030,107 @@ func _derrape_checks(pictures := false) -> void:
 
 func _run() -> void:
 	await _frames(10)
+	if OS.get_cmdline_user_args().has("--recress"):       # "Un torneo en los Galaxy Recress", from start to finish (add --shots)
+		shots = OS.get_cmdline_user_args().has("--shots")
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		g.si = g._idx("tbc")
+		await _frames(20)
+		await _recress_checks()
+		print("RECRESS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--marcas"):        # who has a mission for you, on the map and over their heads (add --shots)
+		shots = OS.get_cmdline_user_args().has("--shots")
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		g.si = g._idx("tbc")
+		await _frames(20)
+		await _marcas_checks()
+		var josefa = g.named["josefa"]
+		g.stats.erase("menu_done")
+		var r: Dictionary = MapData.nearest_road(josefa.p)
+		var to_road: Vector2 = ((r["p"] as Vector2) - josefa.p).normalized()
+		g.player.p = josefa.p + to_road * 3.0 + Vector2(-to_road.y, to_road.x) * 2.0
+		var head: Vector3 = josefa.global_position + Vector3(0, 1.9, 0)
+		g.cam_fixed = [head + Vector3(to_road.x, 0.0, to_road.y) * 5.5 + Vector3(0, 0.6, 0), head]
+		await _frames(60)
+		await _shot("marcas_flecha")
+		g.cam_fixed = null
+		g.hud.bigmap.visible = true
+		g.hud.bigmap.queue_redraw()
+		await _frames(10)
+		await _shot("marcas_mapa")
+		g.hud.bigmap.visible = false
+		print("MARCAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--llamadas"):      # the switchboard
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		await _llamadas_checks()
+		print("LLAMADAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--grafitis"):      # the peñas' graffiti: one of each, close up; and where they all are
+		shots = true
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = false
+		g.set_time(11.0)
+		await _frames(20)
+		var lines: Array = []
+		for t in g.props.tags:
+			lines.append("%d %.1f %.1f %.2f size %s room %.1f" % [t["owner"], (t["p"] as Vector2).x, (t["p"] as Vector2).y, float(t["wear"]), str((t["node"].mesh as QuadMesh).size), float(t["room"])])
+		var f := FileAccess.open("res://shots/grafitis.txt", FileAccess.WRITE)
+		f.store_string("
+".join(lines))
+		f = null
+		for k in range(Creator.PENAS.size()):
+			var t: Dictionary = g.props.tags.filter(func(tt): return tt["owner"] == k)[0]
+			var n: Vector2 = t["n"]
+			var at: Vector3 = t["node"].global_position
+			g.player.p = (t["p"] as Vector2) + Vector2(-n.y, n.x) * 2.6       # (stood to one side, out of the picture)
+			g.cam_fixed = [at + Vector3(n.x, 0.0, n.y) * 5.5 + Vector3(0, 0.3, 0), at]
+			await _frames(45)
+			await _shot("grafiti_%d_%s" % [k, Creator.PENA_IDS[k]])
+		var t0: Dictionary = g.props.tags[0]
+		g.props.paint(t0, (int(t0["owner"]) + 1) % Creator.PENAS.size())
+		var n0: Vector2 = t0["n"]
+		var at0: Vector3 = t0["node"].global_position
+		g.player.p = (t0["p"] as Vector2) + Vector2(-n0.y, n0.x) * 2.6
+		g.cam_fixed = [at0 + Vector3(n0.x, 0.0, n0.y) * 5.5 + Vector3(0, 0.3, 0), at0]
+		await _frames(45)
+		await _shot("grafiti_fresco")
+		g.cam_fixed = null
+		get_tree().quit(0)
+		return
+	if OS.get_cmdline_user_args().has("--sombreadores"):  # shaders made in the middle of play: a minute's tour, counted (NOT --headless)
+		await _shader_tour()
+		get_tree().quit(0)
+		return
+	if OS.get_cmdline_user_args().has("--limite"):        # the edge of the map
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		await _limite_checks()
+		print("LIMITE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--vuelcos"):       # rollovers: every make driven hard through the town
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		await _vuelcos_checks()
+		print("VUELCOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--emisoras"):      # just the radio stations playing on in the background
 		g.menu.close()
 		g.phase = "free"
@@ -3761,6 +4421,8 @@ func _run() -> void:
 		for id in g.named:
 			who[id] = g.named[id].look_data
 		who["repartidor"] = g.sabotaje.MAN           # (he is only about while Don Luis's mission lasts)
+		for id in g.recress.LOOKS:                    # (and these only for the tournament at the Recress)
+			who[id] = g.recress.LOOKS[id]
 		for id in who:
 			var vp: SubViewport = Portrait.viewport(who[id], Vector2i(192, 236))
 			add_child(vp)
@@ -4240,6 +4902,23 @@ func _run() -> void:
 			await _frames(3)
 			return true
 		await _frames(10)
+		# before the main menu (the loading screen, the studio's logo, the title gliding in) there is nothing to press
+		var shown_before: Array = []
+		var menu_was: bool = g.menu.visible
+		g.menu.visible = false
+		for ph in ["intro", "title_in", "title"]:
+			g.phase = ph
+			Touch._context = ""
+			Touch._context_tick()
+			shown_before.append_array(Touch._buttons.filter(func(bt): return (bt["node"] as TouchScreenButton).visible).map(func(bt): return "%s: %s" % [ph, bt["label"]]))
+		g._booted = false
+		Touch._context = ""
+		Touch._context_tick()
+		shown_before.append_array(Touch._buttons.filter(func(bt): return (bt["node"] as TouchScreenButton).visible).map(func(bt): return "loading: %s" % bt["label"]))
+		g._booted = true
+		g.phase = "title"
+		g.menu.visible = menu_was
+		_check(shown_before.is_empty(), "on a touch screen no button shows before the main menu: not while it loads, nor over the logo or the title (%s)" % str(shown_before))
 		button.call("m_accept")
 		await _frames(4)
 		await _shot("tactil_menu")
@@ -4301,6 +4980,49 @@ func _run() -> void:
 		tap.call(Vector2(260, 465), false, 5)
 		var car_labels: Array = Touch._buttons.filter(func(bt): return (bt["node"] as TouchScreenButton).visible).map(func(bt): return bt["label"])
 		_check(g.in_car.p.distance_to(at0) > 4.0 and car_labels.has("Freno") and car_labels.has("Claxon"), "in a car the stick drives it (%.1f m) -- buttons: %s" % [g.in_car.p.distance_to(at0), str(car_labels)])
+		# the creator: the same two buttons as its panel
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+		g._start_creator()
+		await _frames(10)
+		var visible_labels := func() -> Array:
+			Touch._context = ""
+			Touch._context_tick()
+			return Touch._buttons.filter(func(bt): return (bt["node"] as TouchScreenButton).visible).map(func(bt): return bt["label"])
+		var on_lustre: Array = visible_labels.call()
+		# a finger dragged across the character turns it round; dragged on the panel, it does not
+		var turn0: float = g._face_turn
+		var mid: Vector2 = g.hud._creator_grab.get_center()
+		tap.call(mid, true, 7)
+		for s in range(8):
+			slide.call(mid + Vector2(18.0 * (s + 1), 0.0), 7)
+			await _frames(1)
+		tap.call(mid + Vector2(144.0, 0.0), false, 7)
+		await _frames(3)
+		var drag_turn: float = g._face_turn - turn0
+		var turn1: float = g._face_turn
+		var on_panel: Vector2 = g.hud.creator_panel.get_global_rect().get_center()
+		tap.call(on_panel, true, 7)
+		for s in range(8):
+			slide.call(on_panel + Vector2(10.0 * (s + 1), 0.0), 7)
+			await _frames(1)
+		tap.call(on_panel + Vector2(80.0, 0.0), false, 7)
+		await _frames(3)
+		_check(absf(drag_turn) > 1.0 and absf(g._face_turn - turn1) < 0.05,
+			"in the creator a finger dragged across the character turns it round (%.2f rad), and one dragged on the panel does not (%.2f)" % [drag_turn, g._face_turn - turn1])
+		var finger := func(c: Control) -> void:       # a finger on one of the panel's buttons
+			var at: Vector2 = c.get_global_rect().get_center()
+			tap.call(at, true, 6)
+			await _frames(3)
+			tap.call(at, false, 6)
+			await _frames(4)
+		await finger.call(g.hud.creator_next)
+		var to_pintas: bool = g.creator_tab == 1 and g.phase == "creator"
+		var on_pintas: Array = visible_labels.call()
+		await finger.call(g.hud.creator_back)
+		_check(on_lustre.is_empty() and on_pintas.is_empty() and to_pintas and g.creator_tab == 0 and g.phase == "creator",
+			"the creator on a touch screen: its own panel buttons, pressed by a finger (Siguiente to Pintas, one page only; Volver back), and no touch buttons over them %s %s" % [str(on_lustre), str(on_pintas)])
+		await _shot("tactil_creador")
 		print("TACTIL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
@@ -5491,10 +6213,29 @@ func _run() -> void:
 	await _derrape_checks()
 	await _radio_live_checks()
 	_tirones_checks()
+	await _llamadas_checks()
 	await _kebab_checks()
 	await _comida_checks()
 	await _tow_checks()
 	await _duty_checks()
+	await _limite_checks()
+	await _marcas_checks()
+	var si_was: int = g.si
+	var phase_was: String = g.phase
+	var stats_was: Dictionary = g.stats.duplicate(true)
+	var money_was: int = g.money
+	var clock_was: float = g.clock
+	g.si = g._idx("tbc")
+	g.phase = "free"
+	await _recress_checks()
+	g.stats = stats_was                              # (the rest of the run carries on as if it had not happened)
+	g.money = money_was
+	g.set_time(clock_was)
+	g.recress.load_state()
+	g.side = null
+	g.si = si_was
+	g.phase = phase_was
+	await _vuelcos_checks(true)
 	await _mirada_checks()
 	await _sabotaje_checks()
 	# the rules every mission follows, from the first step of the story (and then back to where the run had got to)

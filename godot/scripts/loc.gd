@@ -39,14 +39,32 @@ func speaker(v, fem_speaker: bool):
 
 ## dialogue text as BBCode with the names of people (and the police) picked out in red
 const NAMES := ["Paca", "Loli", "Eusebio", "Maruja", "Venancio", "Genaro", "Anselmo", "Ramírez", "Kevin-José", "Eufrasia", "Julián", "Josefa", "Fonsi", "Alberto", "Henry", "Chiki"]
+var _marks = null
+const OBJ_A := "{{o:"                # (placeholders for the marks, while the other colours go in)
+const OBJ_B := ":o}}"
+const AIM_A := "{{a:"
+const AIM_B := ":a}}"
+
+## (the letters a line shows, without the marks of mission objects and objectives: for the speed it is spoken at)
+func plain_len(text: String) -> int:
+	return text.replace("*", "").replace("#", "").length()
+
 func rich(text: String) -> String:
+	# *a mission object* in green and #an objective# in red, both outlined (the user, 13 November 2026). They are
+	# taken out first, before any colour goes in: the colours' own "#" would otherwise be taken for marks.
+	if _marks == null:
+		_marks = [RegEx.create_from_string("[*]([^*]+)[*]"), RegEx.create_from_string("#([^#]+)#")]
+	var t: String = _marks[0].sub(text, OBJ_A + "$1" + OBJ_B, true)
+	t = _marks[1].sub(t, AIM_A + "$1" + AIM_B, true)
 	if _names == null:
 		_names = RegEx.create_from_string("(?<![\\p{L}])(" + "|".join(NAMES) + ")(?![\\p{L}])")
-	var out := _names.sub(text.replace("[", "[lb]"), "[color=#c0392b]$1[/color]", true)
+	var out := _names.sub(t.replace("[", "[lb]"), "[color=#c0392b]$1[/color]", true)
 	if _forces == null:
 		_forces = [RegEx.create_from_string("(?<![\\p{L}])((?:Los |los )?Pitufos?)(?![\\p{L}])"), RegEx.create_from_string("(?<![\\p{L}])((?:Los |los )?Tricornios?)(?![\\p{L}])")]
 	out = _forces[0].sub(out, "[color=#2f6bff]$1[/color]", true)
-	return _forces[1].sub(out, "[color=#2f8f55]$1[/color]", true)
+	out = _forces[1].sub(out, "[color=#2f8f55]$1[/color]", true)
+	out = out.replace(OBJ_A, "[outline_size=7][outline_color=#14301a][color=#3fd25a]").replace(OBJ_B, "[/color][/outline_color][/outline_size]")
+	return out.replace(AIM_A, "[outline_size=7][outline_color=#101010][color=#e8402e]").replace(AIM_B, "[/color][/outline_color][/outline_size]")
 
 func _gender(v):
 	if v is String:
@@ -113,7 +131,7 @@ const TX := {
 			["Marrones", "Negros", "Azules", "Verdes", "Miel"], ["Finas", "Poblás", "Cejijunto", "Ningunas"],
 			["{Afeitao|Afeitá}", "Bigote", "Barba", "Perilla", "Mostacho", "De tres días", "Barbaza", "Patillas", "Candao"], ["Un tío", "Una tía"],
 			["Corto", "Moño", "Melena", "Rapao", "Afro", "Coleta", "Cresta", "Dos coletas", "Tupé", "Media melena", "Calvo por arriba", "Rizos", "Trenza"],
-			["Nietos de Marzo", "La Croquetilla", "El Bordillo", "Los Centraditos"],
+			["Nietos de Mayo", "La Croquetilla", "El Bordillo", "Peña Centradito", "Costrola Peña", "Peña Al Prao'"],
 			["Ningunas", "Finas", "De pasta", "De tubo", "Opacas", "De sol", "De aviador"], ["Ningunos", "Bolitas", "Aros", "Uno solo", "Largos", "Perlas", "Aros de plata"],
 			["Ninguno", "Cadena de oro", "Medalla", "Cruz", "Collar de perlas", "Pañuelo de la peña"],
 			["Camiseta", "Camisa", "Camiseta de rayas", "Camisa de cuadros", "Chándal", "Peto", "Camisa con tirantes", "Bata de flores", "Camiseta imperio"],
@@ -126,7 +144,7 @@ const TX := {
 			["Brown", "Black", "Blue", "Green", "Honey"], ["Thin", "Bushy", "Unibrow", "None"],
 			["Shaved", "Moustache", "Beard", "Goatee", "Big moustache", "Stubble", "Long beard", "Sideburns", "Moustache and goatee"], ["A man", "A woman"],
 			["Short", "Bun", "Long", "Cropped", "Afro", "Ponytail", "Mohawk", "Pigtails", "Quiff", "Bob", "Bald on top", "Curls", "Plait"],
-			["Nietos de Marzo", "La Croquetilla", "El Bordillo", "Los Centraditos"],
+			["Nietos de Mayo", "La Croquetilla", "El Bordillo", "Peña Centradito", "Costrola Peña", "Peña Al Prao'"],
 			["None", "Thin", "Thick", "Tube goggles", "Opaque", "Sunglasses", "Aviators"], ["None", "Studs", "Hoops", "Just the one", "Long", "Pearls", "Silver hoops"],
 			["Nothing", "Gold chain", "Medal", "Cross", "Pearls", "Peña neckerchief"],
 			["T-shirt", "Shirt", "Striped T-shirt", "Checked shirt", "Tracksuit", "Dungarees", "Shirt and braces", "Flowery housecoat", "Vest"],
@@ -611,7 +629,163 @@ const TX := {
 	"mg_box_unlock": {"es": "Gánale un combate al Fonsi en la trastienda del V.I.P.", "en": "Beat Fonsi in a fight in the back room of V.I.P."},
 	"t_trust": {"es": "%s · confianza %s  (%d)", "en": "%s · trust %s  (%d)"},
 	"t_trust_gold": {"es": "%s confía en ti del to. Eso ya no te lo quita nadie.", "en": "%s trusts you completely. Nothing can take that away now."},
-	"t_missed": {"es": "Llamada perdida de %s. Se lo va a apuntar.", "en": "Missed call from %s. They’ll remember that."},
+	# ---------- Un torneo en los Galaxy Recress (recress.gd): the Civismo line, Alberto's second ----------
+	# In dialogue, *word* is a mission object (green, outlined) and #word# an objective (red, outlined): Loc.rich.
+	"rec_title": {"es": "Un torneo en los Galaxy Recress", "en": "A tournament at the Galaxy Recress"},
+	"n_alcalde": {"es": "El alcalde", "en": "The mayor"},
+	"n_copista": {"es": "La de la copistería", "en": "The copy-shop girl"},
+	"n_alcaldesa": {"es": "La mujer del alcalde", "en": "The mayor's wife"},
+	"n_madre_alcalde": {"es": "Una señora mayor", "en": "An old lady"},
+	"n_comentarista": {"es": "El comentarista", "en": "The commentator"},
+	"n_katakumba": {"es": "Katakumba69", "en": "Katakumba69"},
+	"alberto_rec_1": {
+		"es": ["¡Hombre! ¿Qué tal llevas lo de las actividades cívicas? ¿Has hecho mucho por el pueblo?",
+			"A mí es que lo del pueblo me tira mucho, oye. Que yo el noventa por ciento del año estoy fuera: Madrid, Valencia, donde me mande el curro…",
+			"Pero lo mío es esto. El pueblo. Lo de toa la vida."],
+		"en": ["Hey! How's the civic business going? Done much for the town?",
+			"The town really pulls at me, you know. Ninety per cent of the year I'm away: Madrid, Valencia, wherever work sends me…",
+			"But this is what I'm about. The town. The way it's always been."]},
+	"alberto_rec_tour": {
+		"es": ["El caso es que, cuando no son fiestas, el pueblo está muy dejao. Mira esto: escombros, y ahí se quedan.",
+			"El puente, que si no llegamos a echarle mano, lo tiran.",
+			"Locales cerraos que no se abren ni pa ventilar.",
+			"La antena esa, que no sé ni pa qué sirve ya.",
+			"Y las urgencias, pa lo que hay…"],
+		"en": ["Thing is, when it isn't fiesta time the town's half dead. Look at that: rubble, and there it stays.",
+			"The bridge, that they'd have knocked down if we hadn't stepped in.",
+			"Shops shut up that aren't even opened to air them.",
+			"That mast there, I don't even know what it's for any more.",
+			"And the casualty unit, for all the use it gets…"]},
+	"alberto_rec_idea": {
+		"es": ["Le hace falta vidilla, al pueblo. Algo pa que la gente salga de casa…", "¡Espera! ¡Ya lo tengo! ¿Tú te acuerdas de los Galaxy Recress?"],
+		"en": ["What the town needs is some life in it. Something to get people out of the house…", "Wait! I've got it! Do you remember the Galaxy Recress?"]},
+	"alberto_rec_recress": {
+		"es": ["Los recreativos de la calle Zaragoza. Ahí echábamos las tardes enteras, hasta mediaos de los dos mil.", "Llevan veinte años cerraos. Veinte. Con lo que fueron."],
+		"en": ["The arcade on the Calle de Zaragoza. We spent whole afternoons in there, until the middle of the two-thousands.", "Twenty years shut. Twenty. After everything it was."]},
+	"alberto_rec_tokken": {
+		"es": ["¿Y si los abrimos pa un día? ¡Un torneo de Tokken 9! El de lucha, el que está ahora de moda.", "Pa eso hace falta el permiso del #alcalde#. ¿Te encargas tú? Yo te echo una mano en lo que pueda."],
+		"en": ["What if we opened it up for a day? A Tokken 9 tournament! The fighting one, the one everybody's playing now.", "For that we need the #mayor#'s say-so. Will you see to it? I'll lend a hand however I can."]},
+	"alberto_rec_busy": {"es": ["¿Cómo va lo del torneo? Tú tira, que yo voy diciéndolo por ahí."], "en": ["How's the tournament coming on? You carry on, I'm spreading the word."]},
+	"alberto_rec_call": {"es": ["¡Ey! Soy Alberto. Oye, ¿tienes un rato? Pásate por el puente, que se me ha ocurrido una cosa pa darle vidilla al pueblo."],
+		"en": ["Hey! It's Alberto. Listen, got a minute? Come by the bridge, I've had an idea to put some life into the town."]},
+	"alberto_rec_packed": {"es": ["¡Pero bueno! ¿Qué has hecho? ¡Los recreativos están hasta arriba de gente!", "¡Vente ya pa'cá, que esto empieza!"],
+		"en": ["Well I never! What have you done? The arcade's packed to the rafters!", "Get yourself over here, it's about to start!"]},
+	"alberto_rec_hey": {"es": "¡Eeeh! ¡Aquí!", "en": "Heeey! Over here!"},
+	"alberto_rec_door": {"es": ["¡Mírate esto! ¡Está hasta los topes!", "El alcalde ha estao llamando a gente y moviendo contactos, y él mismo ha ido pegando carteles por to el pueblo."],
+		"en": ["Look at this! It's packed out!", "The mayor's been ringing round and pulling strings, and he's been sticking posters up all over town himself."]},
+	"alberto_rec_door2": {"es": ["Dicen que va a empezar ya. ¡Vamos pa dentro!"], "en": ["They say it's starting now. Let's get inside!"]},
+	"alberto_rec_dale": {"es": ["¡Venga, dale una paliza, que está muy subidito!"], "en": ["Go on, give him a hiding, he's getting far too cocky!"]},
+	"alberto_rec_won": {"es": ["¡Le has ganao! ¡Al alcalde! ¡Esto no lo olvida el pueblo en la vida!"], "en": ["You beat him! The mayor! The town will never forget this!"]},
+	# the mayor speaks like a politician: no Manchego, many words and nothing in them
+	"alcalde_rec": {
+		"es": ["Buenos días. Qué alegría ver a la ciudadanía implicada en el día a día del municipio.",
+			"Un torneo en los antiguos recreativos… Mire, es una propuesta que valoro muy positivamente y que se enmarca en nuestra hoja de ruta de dinamización.",
+			"Desde este equipo de gobierno siempre hemos apostado por el ocio, por la juventud, por la cultura y, en definitiva, por las personas.",
+			"Ahora bien: hay que ser responsables, poner en valor los recursos existentes y abordarlo desde una perspectiva transversal y sostenible.",
+			"…",
+			"Bueno. Para que nos entendamos: no hay dinero. No puedo justificar ese gasto.",
+			"A no ser, claro, que lo pusiera usted. Serían %d euros. Se le devolverían, ¿eh? Con creces."],
+		"en": ["Good morning. What a pleasure to see citizens involved in the day-to-day life of the municipality.",
+			"A tournament in the old arcade… Look, it's a proposal I view very positively, and it fits squarely within our roadmap for revitalisation.",
+			"This administration has always been committed to leisure, to young people, to culture and, at the end of the day, to people.",
+			"That said: we have to be responsible, make the most of existing resources and approach it from a cross-cutting, sustainable perspective.",
+			"…",
+			"Right. Let's be clear: there's no money. I can't justify the expense.",
+			"Unless, of course, you were to put it up. That would be %d euros. You'd get it back, mind. With interest."]},
+	"alcalde_rec_back": {"es": ["Hombre, de nuevo por aquí. ¿Ha podido usted reunir la cantidad? Eran %d euros."], "en": ["Ah, back again. Have you managed to raise the sum? It was %d euros."]},
+	"alcalde_rec_nomoney": {"es": ["Ya veo. Lo siento, de verdad, pero no hay otra manera.", "Le espero aquí. Esta institución no se va a ninguna parte."],
+		"en": ["I see. I'm sorry, truly, but there's no other way.", "I'll wait for you here. This institution isn't going anywhere."]},
+	"alcalde_rec_later": {"es": ["Lo entiendo perfectamente. Cuando lo tenga claro, aquí estaré."], "en": ["I understand perfectly. When you've made up your mind, I'll be here."]},
+	"alcalde_rec_paid": {"es": ["Muchas gracias. Este gesto le honra, y así constará. En mi memoria, al menos.", "Pásese por la #copistería# a por los *carteles*. Yo voy llamando a gente para organizarlo todo."],
+		"en": ["Thank you very much. This gesture does you credit, and it shall be recorded. In my memory, at least.", "Call in at the #copy shop# for the *posters*. I'll start ringing round to get everything organised."]},
+	"alcalde_rec_wait": {"es": ["Usted a lo suyo, que yo estoy moviendo los hilos."], "en": ["You get on with your part, I'm pulling the strings."]},
+	"alcalde_after": {"es": [["Aquel torneo marcó un antes y un después. Lo digo siempre en los plenos."], ["La revancha, cuando usted quiera. Bueno, cuando quiera yo."]],
+		"en": [["That tournament was a turning point. I always say so at council meetings."], ["A rematch whenever you like. Well, whenever I like."]]},
+	"alcalde": {"es": [["Buenos días. Aquí estamos, trabajando por y para el municipio.", "Mi puerta siempre está abierta. La del ayuntamiento, quiero decir."],
+			["Estamos estudiando una batería de medidas transversales.", "En próximas fechas se informará puntualmente a la ciudadanía."]],
+		"en": [["Good morning. Here we are, working by and for the municipality.", "My door is always open. The town hall's door, I mean."],
+			["We are studying a raft of cross-cutting measures.", "Citizens will be duly informed in due course."]]},
+	"alcalde_rec_born": {"es": ["¿Qué? Yo nací siendo alcalde.", "Llevo matando bichos desde antes de que nacierais la mayoría."], "en": ["What? I was born mayor.", "I've been killing monsters since before most of you were born."]},
+	"alcalde_rec_thanks": {"es": ["Gracias, gracias. A todos. Al pueblo. Esto demuestra que, cuando remamos todos en la misma dirección…"],
+		"en": ["Thank you, thank you. All of you. The town. This goes to show that, when we all row in the same direction…"]},
+	"alcalde_rec_more": {"es": ["…esto me ha sabido a poco."], "en": ["…that wasn't nearly enough for me."]},
+	"alcalde_rec_challenge": {
+		"es": ["Hagamos una cosa. Me da la impresión de que a usted le gustan los videojuegos.", "¿Por qué no combate contra mí, ya que ha organizado todo esto?",
+			"Y para hacerlo más interesante: doble o nada. El ganador se lleva el premio del torneo, y el otro le paga el doble. ¿Qué me dice?"],
+		"en": ["Let's do something. I get the impression you like video games.", "Why not take me on, since you organised all this?",
+			"And to make it more interesting: double or nothing. The winner takes the tournament prize, and the loser pays him double. What do you say?"]},
+	"alcalde_rec_mum": {"es": ["Mamá, por favor, aquí no."], "en": ["Mum, please, not here."]},
+	"alcalde_rec_again": {"es": ["¿Otra? Cuando usted quiera. Siéntese, siéntese."], "en": ["Another? Whenever you like. Sit down, sit down."]},
+	"alcalde_rec_lost": {"es": ["No… no puede ser… He perdido… ¿Yo?"], "en": ["No… it can't be… I've lost… Me?"]},
+	"alcalde_rec_excuse": {"es": ["Sí, bueno, es que los nuevos sistemas de combos y cancelaciones son muy raros.", "El juego no es el mismo desde que cambiaron el motor gráfico…"],
+		"en": ["Yes, well, these new combo and cancel systems are very odd.", "The game hasn't been the same since they changed the graphics engine…"]},
+	"alcalde_rec_curse": {"es": "Motor gráfico… Tokken 2, eso sí que era un juego…", "en": "Graphics engine… Tokken 2, now that was a game…"},
+	"firma_si_alcalde": {"es": ["Firmo, firmo. A título personal, ¿eh? No en calidad de alcalde."], "en": ["I'll sign, I'll sign. In a personal capacity, mind. Not as mayor."]},
+	"firma_no_alcalde": {"es": ["Comprenderá que el consistorio no puede posicionarse sobre ese particular."], "en": ["You'll understand the council cannot take a position on that matter."]},
+	"copista": {"es": [["¿Fotocopias? Hoy no, que se ha atascao la máquina otra vez."], ["Anoche me vi cuatro capítulos seguidos en el Nerflis. Cuatro. Y madrugo, ¿eh?"]],
+		"en": [["Photocopies? Not today, the machine's jammed again."], ["Last night I watched four episodes back to back on Nerflis. Four. And I'm up early, mind."]]},
+	"copista_rec": {
+		"es": ["¡Ah, eres tú! El alcalde ya ha llamao. Es raro que paguen por adelantao, en cosas del ayuntamiento… Pero yo no me voy a quejar, encima.",
+			"Aquí tienes los *carteles*: cinco. Yo de videojuegos no entiendo, ¿eh? Yo soy más de ver el Nerflis.",
+			"Yo si fuera tú iría a algún #comercio# a pegar los *carteles*. A cinco, uno en cada uno."],
+		"en": ["Oh, it's you! The mayor's already rung. Funny, the council paying in advance… Not that I'm going to complain.",
+			"Here are the *posters*: five of them. I don't know a thing about video games, mind. I'm more of a Nerflis person.",
+			"If I were you I'd stick the *posters* up in some #shops#. Five of them, one in each."]},
+	"copista_rec_again": {"es": ["¿Ya los has pegao? Venga, a algún #comercio#, que se vean."], "en": ["Stuck them up yet? Go on, in some #shops#, where people will see them."]},
+	"firma_si_copista": {"es": ["Trae, que firmo. Ese puente es de cuando mi abuela."], "en": ["Give it here, I'll sign. That bridge goes back to my gran's day."]},
+	"firma_no_copista": {"es": ["Uy, no, que luego me llaman pa todo."], "en": ["Ooh, no, then they'll ring me about everything."]},
+	"comentarista": {"es": [["¡Probando, probando! ¿Se me oye al fondo?"]], "en": [["Testing, testing! Can you hear me at the back?"]]},
+	"katakumba": {"es": [["¿Tú juegas? Juega. Con Tokken se aprende más que en el instituto.", "Combos, cancelaciones, frame data… la vida, vaya."], ["El alcalde se dejó ganar. Lo sé. Lo sabemos todos."]],
+		"en": [["You play? You should. Tokken teaches you more than school.", "Combos, cancels, frame data… life, basically."], ["The mayor let you win. I know it. We all know it."]]},
+	"alcaldesa": {"es": [["Treinta años casá con él, y todavía me sorprende."]], "en": [["Thirty years married to him, and he still surprises me."]]},
+	"madre_alcalde": {"es": [["Mi hijo es muy bueno, ¿eh? Muy bueno. Pero le pierde el orgullo."]], "en": [["My son's very good, you know. Very good. But his pride gets the better of him."]]},
+	"com_rec_final": {"es": ["¡Señoras y señores, barrudos y barrudas! ¡Llega el momento de la gran final!", "En esta esquina…"],
+		"en": ["Ladies and gentlemen, barrudos and barrudas! It's time for the grand final!", "In this corner…"]},
+	"com_rec_kata": {"es": ["¡…Katakumba69! Invicto en el foro del pueblo, y con más horas de Tokken que el reloj del ayuntamiento."],
+		"en": ["…Katakumba69! Unbeaten on the town forum, and with more hours of Tokken than the town hall clock."]},
+	"com_rec_mayor": {"es": ["Contra…", "¡…DoomAssasin78! ¡Más conocido como… el alcalde!"], "en": ["Against…", "…DoomAssasin78! Better known as… the mayor!"]},
+	"com_rec_go": {"es": ["¡Muy bien! ¡Que comience el combate!"], "en": ["Right then! Let the fight begin!"]},
+	"com_rec_mayor_wins": {"es": ["¡K.O.! ¡Gana DoomAssasin78! ¡Gana el alcalde!"], "en": ["K.O.! DoomAssasin78 wins! The mayor wins!"]},
+	"com_rec_champion": {"es": ["¡No me lo creo! ¡Le ha ganao! ¡Al tricampeón manchego de Tokken 2 de los ochenta!", "¡Al mismísimo alcalde! ¡Tenemos {nuevo campeón|nueva campeona}!"],
+		"en": ["I don't believe it! They've beaten him! The three-times Manchego Tokken 2 champion of the eighties!", "The mayor himself! We have a new champion!"]},
+	"madre_rec_shout": {"es": ["¡¡Revientale la puta cara!!"], "en": ["Smash his fucking face in!!"]},
+	"alcaldesa_rec_1": {"es": ["¿Sabes? Es curioso. En treinta años no te he visto perder ni una vez a ese juego."], "en": ["You know? It's funny. In thirty years I've never once seen you lose at that game."]},
+	"alcaldesa_rec_2": {"es": ["Ya… Jeje."], "en": ["Right… Heh heh."]},
+	"alcaldesa_rec_3": {"es": ["Creo que el pueblo se va a animar mucho a partir de ahora…"], "en": ["I think the town's going to liven up a lot from now on…"]},
+	"rec_shit_talk": {
+		"es": ["¡Esa patá la has aprendío de tu abuela!", "¡Pulsa botones a lo loco, que así ganas tú!", "¡Tres partidas y tres palizas, zanguango!", "¡Tú juegas con los pies, como pa la aceituna!", "¡Zas! ¡Combo de los gordos!", "¡Que me has pisao el mando, so cuesco!"],
+		"en": ["You learnt that kick off your gran!", "Mash the buttons, that's how you win, isn't it!", "Three games, three hidings, you lazy lump!", "You play with your feet, like at the olive harvest!", "Bam! One fat combo!", "You've trodden on my controller, you big-headed lump!"]},
+	"rec_gasp": {"es": ["¡¿El alcalde?!", "¡Anda la osa!"], "en": ["The mayor?!", "Well I never!"]},
+	"rec_fight": {"es": ["¡Dale, dale!", "No tenía que haber apostao en contra del alcalde… ¡Mi sueldo!"], "en": ["Go on, go on!", "I should never have bet against the mayor… My wages!"]},
+	"rec_cheer": {"es": ["¡¡Bieeen!!", "¡Toma ya!", "¡Qué máquina!", "¡Olé!"], "en": ["Yeaaah!", "Get in!", "What a legend!", "Olé!"]},
+	"rec_cheer_you": {"es": ["¡{Campeón|Campeona}!", "¡Toma, toma y toma!", "¡Al alcalde, ni más ni menos!", "¡Esto hay que celebrarlo!"], "en": ["Champion!", "Take that, and that, and that!", "The mayor, no less!", "This calls for a celebration!"]},
+	"rec_jeer": {"es": ["¡Gallina!", "¡Que le tiés miedo!", "¡Venga ya, hombre!", "¡{Rajao|Rajá}!"], "en": ["Chicken!", "You're scared of him!", "Oh come on!", "Bottler!"]},
+	"rec_pay": {"es": "Poner %d €", "en": "Put up %d €"},
+	"rec_bet_title": {"es": "Doble o nada", "en": "Double or nothing"},
+	"rec_bet_yes": {"es": "Aceptar el reto", "en": "Take him on"},
+	"rec_bet_no": {"es": "Negarte", "en": "Refuse"},
+	"obj_rec_mayor": {"es": "Habla con el alcalde en la puerta del ayuntamiento", "en": "Talk to the mayor at the town hall door"},
+	"obj_rec_money": {"es": "Reúne %d € para el alcalde (llevas %d €)", "en": "Raise %d € for the mayor (you have %d €)"},
+	"obj_rec_copy": {"es": "Recoge los carteles en la copistería", "en": "Pick up the posters at the copy shop"},
+	"obj_rec_posters": {"es": "Pega los carteles en comercios (%d/%d)", "en": "Stick the posters up in shops (%d/%d)"},
+	"obj_rec_wait": {"es": "Espera noticias de Alberto", "en": "Wait to hear from Alberto"},
+	"obj_rec_play": {"es": "Siéntate a la máquina para jugar contra el alcalde", "en": "Sit down at the machine to play the mayor"},
+	"t_rec_poster": {"es": "Cartel pegado (%d/%d)", "en": "Poster up (%d/%d)"},
+	"t_rec_posters_done": {"es": "¡Todos los carteles pegados!", "en": "All the posters are up!"},
+	"t_rec_posters": {"es": "Tienes los carteles: cinco", "en": "You have the posters: five of them"},
+	"t_rec_paused": {"es": "Misión en pausa: vuelve con el dinero cuando lo tengas", "en": "Mission on hold: come back with the money when you have it"},
+	"t_rec_soon": {"es": "Tokken 9 todavía no se puede jugar: muy pronto", "en": "Tokken 9 can't be played yet: coming soon"},
+	"p_rec_poster": {"es": "<interact> Pegar cartel", "en": "<interact> Stick up poster"},
+	"p_rec_play": {"es": "<interact> Jugar", "en": "<interact> Play"},
+	"log_rec_open": {"es": "Alberto tiene una idea", "en": "Alberto has an idea"},
+	"log_rec_money": {"es": "El alcalde espera el dinero", "en": "The mayor is waiting for the money"},
+	# the switchboard (llamadas.gd): somebody kept waiting by an engaged line has a go at you first
+	"call_engaged": {
+		"es": ["¡Hombre, {Don Ocupado|Doña Ocupada}! ¿Ya has terminao de cascar?", "¿Qué pasa, que no tienes cobertura? Te estaba llamando.",
+			"¿Con quién hablabas tanto rato, con {tu novia|tu novio}?", "Comunicando, comunicando… ¡Paeces la centralita del ayuntamiento!"],
+		"en": ["Well, if it isn't {Mr Busy|Miss Busy}! Finished nattering, have we?", "What's up, no signal? I was ringing you.",
+			"Who were you on to all that time, {your girlfriend|your boyfriend}?", "Engaged, engaged… You're worse than the town hall switchboard!"]},
+	"t_missed": {"es": "Llamada perdida de %s. Se lo apunta, y te vuelve a llamar en una hora.", "en": "Missed call from %s. They’ll remember that, and ring again in an hour."},
 	"thu_call": {"es": ["…"], "en": ["…"]},
 	"tow_called": {"es": ["Que ya viene, dice. Eso dijeron también del AVE.", "«En cinco minutos». Cinco minutos manchegos.", "Me han puesto musiquita. Media hora de musiquita."],
 		"en": ["It’s on its way, he says. They said that about the high-speed train too.", "“Five minutes.” Five minutes, La Mancha time.", "They put me on hold. Half an hour of hold music."]},
@@ -836,6 +1010,11 @@ const TX := {
 	"who_tricornios": {"es": "Los Tricornios", "en": "Los Tricornios"},
 	"t_tricornios": {"es": "Los Tricornios están aquí.", "en": "Los Tricornios are here."},
 	"t_reinforce": {"es": "Vienen más. Arrea.", "en": "More on the way. Move."},
+	"limit_title": {"es": "¡DATE LA VUELTA!", "en": "TURN BACK!"},
+	"loading_warm": {"es": "Calentando el motor, que la primera vez cuesta…", "en": "Warming up the engine: the first time takes a while…"},
+	"limit_sub": {"es": "¿Ande vas? Eso ya no es el pueblo", "en": "Where d'you think you're going? That's not the town any more"},
+	"t_limit_chase": {"es": "¡Te has escapao del pueblo! Van a por ti Pitufos y Tricornios", "en": "You've left the town! Los Pitufos and the Tricornios are after you"},
+	"t_limit_more": {"es": "Otro coche más a por ti. Y corren más", "en": "Another car on your tail. And they're all faster"},
 	"dlg_next": {"es": "<interact>", "en": "<interact>"},
 	"tow_call": {"es": ["¿Grúas El Enganche? Que se me ha quedao el coche tirao. Sí, otra vez. Sí, el mismo.",
 			"Mándame la grúa y espáchate, que estoy aquí al ventestate.",

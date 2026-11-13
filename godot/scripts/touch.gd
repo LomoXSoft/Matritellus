@@ -61,15 +61,23 @@ func _wanted() -> Array:
 	var g = _game()
 	if g == null or g.get("phase") == null:
 		return []
+	if not g.get("_booted"):
+		return []                                 # the loading screen: nothing to press yet
 	var phase: String = g.phase
 	var menu = g.get("menu")
 	if menu != null and menu.visible:
 		return [["Aceptar" if es else "OK", "m_accept", "big"], ["Volver" if es else "Back", "m_back", ""]]
 	match phase:
-		"intro", "title_in", "title", "ending":
+		"intro", "title_in", "title":
+			# the studio's logo and the title gliding in: no buttons until the main menu (the user, 13 November 2026;
+			# a tap anywhere still skips the logo: intro.gd)
+			return []
+		"ending":
 			return [["Seguir" if es else "Go on", "m_accept", "big"]]
 		"creator":
-			return [["Así me quedo" if es else "That's me", "m_accept", "big"], ["Al azar" if es else "Random", "radio", ""], ["Pestaña" if es else "Tab", "#tab", ""]]
+			# none of ours: the creator's panel has its own buttons (Siguiente on Lustre; Volver and Así me quedo on
+			# Pintas: hud.gd), and a finger presses them. One of ours over the same spot took a single tap twice.
+			return []
 		"prologue", "flyover", "cutscene", "failed", "end":
 			return [["Seguir" if es else "Go on", "interact", "big"]]
 		"boxing":
@@ -206,7 +214,13 @@ func _input(e: InputEvent) -> void:
 		if e.pressed:
 			if _on_button(e.position):
 				return                   # (that one is the button's)
-			if e.position.x < _size().x * 0.5 and _stick_id < 0:
+			var spot := _creator_spot(e.position)
+			if spot == "panel":
+				return                   # (the creator's own buttons)
+			if spot == "turn" and _look_id < 0:
+				_look_id = e.index       # a finger on the character in the creator turns it round (game.gd)
+				_look_last = e.position
+			elif e.position.x < _size().x * 0.5 and _stick_id < 0:
 				_stick_id = e.index
 				_stick_at = e.position
 				_move_stick(e.position)
@@ -228,7 +242,14 @@ func _input(e: InputEvent) -> void:
 			look_drag += e.position - _look_last
 			_look_last = e.position
 
-## the pixels dragged since last asked (game.gd turns the camera by them, once a frame)
+## in the character creator, what a finger put down here is for (hud.gd creator_spot): "panel", "turn" or ""
+func _creator_spot(p: Vector2) -> String:
+	var g = _game()
+	if g == null or g.get("phase") != "creator" or g.get("hud") == null:
+		return ""
+	return g.hud.creator_spot(p)
+
+## the pixels dragged since last asked (game.gd turns the camera by them, once a frame; in the creator, the character)
 func take_look() -> Vector2:
 	var d := look_drag
 	look_drag = Vector2.ZERO

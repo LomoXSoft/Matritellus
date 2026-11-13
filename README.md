@@ -89,6 +89,7 @@ Versiones:
 | Versión | Fecha | Notas |
 |---|---|---|
 | 0.0.1 | 13/11/2026 | Primera con control de versiones. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.1 |
+| 0.0.2 | 13/11/2026 | Grafitis de las seis peñas, dos peñas nuevas, coches que no vuelcan, límite del mapa con persecución, sombreadores precompilados, Galaxy Recress, centralita y marcadores, casas nuevas de la Alameda y Matías Pérez. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.2 |
 
 ## Varias sesiones en la misma carpeta
 
@@ -96,6 +97,8 @@ Versiones:
 - **Archivos de cada sesión:**
   - Texturas de las casas: `casas.gd`, `casas_calles.gd`, `texturas.gd`, `tela.gd`, `tools/bake_godot.py`, `godot/data/map.json` (y el horneado del mapa).
   - Principal: `touch.gd` (controles táctiles) y el preset 1, Android, de `godot/export_presets.cfg`.
+  - Recreativos: `recress.gd`, `recress_sala.gd`, `llamadas.gd` (la centralita), `marcas.gd` (marcadores con foto y flecha) y `godot/assets/recress/`.
+  - Kebab Luis / sistemas: clientes, comida, sabotaje, motín, derrapes, sonidos, grafitis de las peñas (`props.gd`, `tools/make_penas.py`), límite del mapa (`limite.gd`), precalentado de sombreadores (`calentar.gd`), iconos de botones (`tools/make_botones.py`).
 - **Presets de exportación:** el 0 es Windows, el 1 Android y el 2 Linux.
 
 ## Datos útiles
@@ -117,4 +120,7 @@ Versiones:
   - La grúa yendo a un aviso y la policía persiguiendo no frenan por los vecinos: los atropellan, sin culpa para el jugador (`traffic.gd: on_duty`, `game.gd: _duty_hits`).
   - Una futura ambulancia solo necesita `e["duty"] = true`.
 - **Radio:** las emisoras suenan siempre de fondo; cada una guarda cuándo empezó su canción (`ambience.gd: _radio_live`).
+- **Pruebas a la vez:** dos pruebas completas al mismo tiempo comparten `user://` (las partidas de prueba) y pueden pisarse. Se lanzan de una en una, avisando a las demás sesiones.
+- **Límite del mapa:** círculo de 1100 m alrededor de (51, −33). Fuera, 30 s de aviso en rojo; luego persecución con Pitufos y Tricornios, y cada 30 s fuera un coche más y +5 % de velocidad (`limite.gd`, `police.boost`, `car.speed_boost`).
+- **Precalentado de sombreadores:** la primera vez de cada versión en cada gráfica (`calentar.gd`, clave `warm` de los ajustes). Si un día se dibujan cosas nuevas, se sube `VERSION` en `calentar.gd`. Para medirlo: `--selftest --sombreadores --calentar --window` (sin `--headless`).
 - **Diseño de Kebab Luis y misiones:** en `guion/kebab_luis_diseno.md` y `guion/misiones_y_puntos_civicos.md`, cada uno con lo construido al final.

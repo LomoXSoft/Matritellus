@@ -23,6 +23,11 @@ const SabotajeS = preload("res://scripts/sabotaje.gd")
 const MotinS = preload("res://scripts/motin.gd")
 const DerrapeS = preload("res://scripts/derrape.gd")
 const TironesS = preload("res://scripts/tirones.gd")
+const LimiteS = preload("res://scripts/limite.gd")
+const LlamadasS = preload("res://scripts/llamadas.gd")
+const MarcasS = preload("res://scripts/marcas.gd")
+const RecressS = preload("res://scripts/recress.gd")
+const CalentarS = preload("res://scripts/calentar.gd")
 const GarageS = preload("res://scripts/garage.gd")
 const PuenteS = preload("res://scripts/puente.gd")
 const PasarelaS = preload("res://scripts/pasarela.gd")
@@ -252,6 +257,11 @@ var _street_t := 0.0
 var _start: Dictionary
 
 var tirones = null              # the hitch log: tirones.gd
+var limite                      # the edge of the map: limite.gd
+var llamadas                    # the switchboard: who rings you, and when they try again (llamadas.gd)
+var marcas                      # who has a mission for you: photo on the map, green arrow over the head (marcas.gd)
+var recress                     # "Un torneo en los Galaxy Recress", the Civismo line's second mission (recress.gd)
+var inside_of = null            # which set you are inside when `indoors`: V.I.P. (vip) or the Recress (recress.sala)
 var prof = null                 # for hunting hitches (selftest --tirones): {part: the most milliseconds it took in one tick since last asked}
 var _prof_t := 0
 
@@ -264,6 +274,7 @@ func _mark(part: String) -> void:
 	_prof_t = now
 
 var _booted := false            # everything is built and the game can run
+var _warming := false           # the shaders are being made behind the loading screen (calentar.gd)
 var _boot: CanvasLayer          # what is on the screen meanwhile: the studio's logo on black
 
 ## Building the town takes a good many seconds. It is done a piece at a time with a frame drawn between pieces, so
@@ -348,6 +359,18 @@ func _ready() -> void:
 	var thinned := 0 if OS.get_cmdline_user_args().has("--todo") else Parts.thin(self)      # (--todo: everything drawn from any distance, as it was, to compare)
 	if timing:
 		print("boot: %d small pieces will not be drawn from far away" % thinned)
+	if CalentarS.needed():                       # the first time on this graphics card: its shaders made now, not while playing
+		var t_warm := Time.get_ticks_msec()
+		_warming = true
+		apply_graphics()                         # (as they will be drawn: the shaders depend on it)
+		var warm = CalentarS.new()
+		add_child(warm)
+		await warm.run(self, func(line: String): doing.text = line)
+		warm.queue_free()
+		_warming = false
+		bar.value = 100.0
+		if timing:
+			print("boot: shaders made  %5d ms" % (Time.get_ticks_msec() - t_warm))
 	_booted = true
 	_boot.queue_free()
 	_boot = null
@@ -355,7 +378,7 @@ func _ready() -> void:
 
 ## The graphics options (settings.gd), put into effect: called when the game is up and each time one of them changes.
 func apply_graphics() -> void:
-	if not _booted:
+	if not _booted and not _warming:
 		return
 	var d: Dictionary = Settings.data
 	var vp := get_viewport()
@@ -1147,6 +1170,18 @@ func _setup_places_and_actors() -> void:
 	derrape = DerrapeS.new()
 	add_child(derrape)
 	derrape.setup(self)
+	limite = LimiteS.new()
+	add_child(limite)
+	limite.setup(self)
+	llamadas = LlamadasS.new()
+	add_child(llamadas)
+	llamadas.setup(self)
+	marcas = MarcasS.new()
+	add_child(marcas)
+	marcas.setup(self)
+	recress = RecressS.new()
+	add_child(recress)
+	recress.setup(self)
 	if not OS.get_cmdline_user_args().has("--tirones"):      # the hitch log (tirones.gd); the self-test's own hitch hunt times the parts itself
 		tirones = TironesS.new()
 		add_child(tirones)
@@ -1788,7 +1823,12 @@ func start_game(from_step := 0) -> void:
 	hud.ov_logo.visible = false
 	if not _tags_done:
 		_tags_done = true
-		props.assign_tags(look_sel[11])   # every wall starts out tagged by the other peñas
+		props.assign_tags(look_sel[11])   # every wall back to the peña that painted it
+	limite.reset()
+	llamadas.reset()
+	recress.load_state()
+	if stats.has("puente") and not stats.has("puente_h"):
+		stats["puente_h"] = llamadas.now()        # (a game saved before this was kept: Alberto's call counts from now)
 	hud.hide_overlay()
 	hud.play_ui.visible = true
 	hud.fade.modulate.a = 0.0
@@ -1853,10 +1893,9 @@ func begin_step(i: int) -> void:
 		"sign":                          # out collecting signatures: nowhere in particular to go
 			set_target(null, false)
 			_firmas_begin(s)
-		"call":                          # the phone rings until you pick it up
+		"call":                          # the phone rings (llamadas.gd: if you do not pick up, they try again in an hour)
 			set_target(null, false)
-			phone_call = {"npc": s["npc"], "lines": s["lines"], "ring": 1.2, "on": false, "sulk": 25.0}
-			hud.phone(true, named[s["npc"]].shown_name(), Loc.t("ph_incoming"), named[s["npc"]].look_data)
+			llamadas.ring({"npc": s["npc"], "lines": s["lines"], "ring_first": 1.2, "valid": func(): return phase == "play" and si >= 0 and steps[si]["type"] == "call" and steps[si]["npc"] == s["npc"]})
 		"tbc":                           # the next mission is announced, but it is not built yet
 			set_target(null, false)
 			_tbc_t = 9.0
@@ -1891,6 +1930,9 @@ func _answer_call() -> void:
 	hud.phone(true, who.shown_name(), Loc.t("ph_talking"), who.look_data)
 	Sfx.beep(880.0, 0.08, 1, -14.0)
 	var said = phone_call["say"] if phone_call.has("say") else Loc.t(phone_call["lines"])
+	var first: Array = llamadas.opening(phone_call)          # (kept waiting by an engaged line: they say so first)
+	if not first.is_empty():
+		said = first + (said if said is Array else [said])
 	var kind: String = "ham" if side_call else "step"
 	say(who.shown_name(), said, who.voice, func():
 		if phone_call != null and phone_call.get("late", false):       # (you rang back about something that is over)
@@ -1974,18 +2016,22 @@ func _recall(r: Dictionary, dialled := false) -> void:
 	var who = named[r["npc"]]
 	var fem: bool = who.voice.ends_with("_f")
 	var ham: bool = r["kind"] == "ham"
-	phone_call = {"npc": r["npc"], "lines": "", "say": [Loc.speaker(Loc.t("call_back" if dialled else "call_again").pick_random(), fem)], "ring": 0.4, "on": false}
+	var call := {"npc": r["npc"], "lines": "", "say": [Loc.speaker(Loc.t("call_back" if dialled else "call_again").pick_random(), fem)]}
 	if ham:
-		phone_call["side"] = true
-		phone_call["after"] = _ham_start.bind(r["npc"])
-		phone_call["left"] = 22.0
+		call["side"] = true
+		call["after"] = _ham_start.bind(r["npc"])
 		if not _ham_hours() or side != null or in_mission():      # too late for that: they have eaten
-			phone_call["say"] = [Loc.speaker(Loc.t("call_late").pick_random(), fem)]
-			phone_call["late"] = true
+			call["say"] = [Loc.speaker(Loc.t("call_late").pick_random(), fem)]
+			call["late"] = true
 			_forget_call(r["npc"], "ham")
-	hud.phone(true, who.shown_name(), Loc.t("ph_talking" if dialled else "ph_incoming"), who.look_data)
-	if dialled:
-		_answer_call()
+	if not dialled:                              # they ring you: through the switchboard, like everybody (llamadas.gd)
+		llamadas.ring(call)
+		return
+	call["ring"] = 0.4
+	call["on"] = false
+	phone_call = call
+	hud.phone(true, who.shown_name(), Loc.t("ph_talking"), who.look_data)
+	_answer_call()
 
 ## You have finished a mission: whoever is waiting for an answer rings again in a little while
 func _mission_done() -> void:
@@ -2068,14 +2114,17 @@ func _blink() -> void:
 	hud.fade.modulate.a = 1.0
 	create_tween().tween_property(hud.fade, "modulate:a", 0.0, 0.6)
 
-## through the shop door, one way or the other
-func _use_door(into: bool) -> void:
+## through the shop door, one way or the other (`place`: V.I.P. or the Recress, whichever's door it is)
+func _use_door(into: bool, place = null) -> void:
+	if place == null:
+		place = inside_of if inside_of != null else vip
 	indoors = into
+	inside_of = place if into else null
 	_door_cool = 1.0
 	_blink()
 	Sfx.jingle([1319, 1047], 0.16)
-	player.p = vip.in_spawn if into else vip.out_spawn
-	player.h = 0.0 if into else vip.out_h
+	player.p = place.in_spawn if into else place.out_spawn
+	player.h = 0.0 if into else place.out_h
 	player.sync()
 	cam_yaw = player.h
 	var at: Vector2 = player.p
@@ -2340,6 +2389,9 @@ func _agenda_page(id: String) -> Dictionary:
 				items.append(_plain("%s  ·  %s" % [Loc.t("josefa_menu_title"), Loc.t("log_done") if stats.has("menu_done") else (Loc.t("log_now") if side != null and side["id"] == "menu" else Loc.t("log_josefa_open"))], 17))
 			if negocio("restaurantes") or stats.has("luis_seen") or sabotaje.done():      # Don Luis's
 				items.append(_plain("%s  ·  %s" % [Loc.t(SabotajeS.TITLE), Loc.t("log_done") if sabotaje.done() else (Loc.t("log_now") if sabotaje.active() else Loc.t("log_luis_open"))], 17))
+			if stats.has("puente"):                  # Alberto's (the Civismo line)
+				var rs: String = recress.stage()
+				items.append(_plain("%s  ·  %s" % [Loc.t("rec_title"), Loc.t("log_done") if recress.done() else (Loc.t("log_now") if recress.active() else (Loc.t("log_rec_money") if rs == "dinero" else Loc.t("log_rec_open")))], 17))
 			if stats.has("ham_seen"):
 				items.append(_plain("%s  ·  %s" % [Loc.t("ham_title"), Loc.t("log_now") if side != null and side["id"] == "ham" else Loc.t("log_ham") % int(stats.get("ham_done", 0))], 17))
 			elif items.size() == 1:
@@ -2566,6 +2618,8 @@ func talk_to(n, chat_only := false) -> void:
 		else:
 			_vip_spar()
 			return
+	if n.id in ["alberto", "alcalde", "copista"] and not chat_only and (phase == "play" or phase == "free") and recress.talk(n):
+		return
 	if n.id == "repartidor":
 		sabotaje.spoken(n)
 		return
@@ -2661,6 +2715,7 @@ func _unlock_bridge() -> void:
 		return
 	pc -= cost
 	stats["puente"] = true
+	stats["puente_h"] = llamadas.now()
 	_refresh_counts()
 	bridge.close_off(false)
 	Sfx.noise(0.5, -12.0)
@@ -3252,6 +3307,12 @@ func interact() -> void:
 		_exit_car()
 	elif sabotaje.can_act():
 		sabotaje.act()
+	elif recress.shop_near(player.p) != null:
+		recress.stick(recress.shop_near(player.p))
+	elif recress.can_play(player.p):
+		recress.play()
+	elif recress.at_machine(player.p):
+		hud.toast(Loc.t("t_rec_soon"), 3.0)
 	elif _can_unlock():
 		_unlock_bridge()
 	elif near_npc != null:
@@ -3415,6 +3476,9 @@ func _update_audio(dt: float) -> void:
 					track = "radio_%d" % Ambience.station; db = -14.0
 			else:
 				track = "lofi"; db = -23.0          # on foot: there to keep you company, not to be listened to
+	if recress != null and recress.music()[0] != "" and (phase == "play" or phase == "free" or phase == "talking"):
+		track = recress.music()[0] if recress.music()[0] != "none" else ""
+		db = recress.music()[1]
 	Ambience.music(track, db)
 	_terraza_t -= dt
 	if _terraza_t <= 0.0:
@@ -3474,10 +3538,12 @@ func _physics_process(delta: float) -> void:
 		var f := Vector2(sin(_face), cos(_face))
 		var at: Vector2 = player.p
 		var side: Vector2 = ((_start["p"] as Vector2) - at).normalized()      # towards the middle of the street
-		# Q / E, the pad's lower triggers (LT / RT), the right stick or dragging the mouse turn the character
+		# Q / E, the pad's lower triggers (LT / RT), the right stick, dragging the mouse, or a finger dragged across the
+		# character or the right of a touch screen (touch.gd) turn the character
 		var turn := float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q))
 		turn += Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) - Input.get_joy_axis(0, JOY_AXIS_TRIGGER_LEFT) + Controls.look_stick().x
 		_face_turn += clampf(turn, -1.0, 1.0) * 2.6 * dt
+		_face_turn += Touch.take_look().x * 0.012
 		var feet_at: Vector3 = player.global_position
 		if not cam.is_position_behind(feet_at):
 			hud.creator_turn_at(cam.unproject_position(feet_at), cam.unproject_position(feet_at + Vector3.UP * 1.75))
@@ -3518,18 +3584,16 @@ func _physics_process(delta: float) -> void:
 	world.coop.gate_open = (phase == "play" or phase == "talking" or phase == "failed") and steps[si].get("gate", false)
 	world.coop.tick(dt)
 	if phone_call != null and not phone_call["on"] and not frozen:      # how long they will put up with you not answering
-		if phone_call.has("sulk"):           # a call the story needs keeps ringing, but they notice
-			phone_call["sulk"] -= dt
-			if phone_call["sulk"] <= 0.0:
-				phone_call.erase("sulk")
-				folk.missed_call(phone_call["npc"])
 		if phone_call.has("left"):
 			phone_call["left"] -= dt
-			if phone_call["left"] <= 0.0:
+			if phone_call["left"] <= 0.0:        # they give up, and try again in an hour (llamadas.gd)
 				folk.missed_call(phone_call["npc"])
 				hud.toast(Loc.t("t_missed") % named[phone_call["npc"]].shown_name(), 4.0)
 				hud.phone(false)
+				var gone: Dictionary = phone_call
 				phone_call = null
+				if not gone.get("late", false):
+					llamadas.missed(gone)
 	if phone_call != null and not phone_call["on"]:        # ring ring
 		phone_call["ring"] -= dt
 		if phone_call["ring"] <= 0.0:
@@ -3626,12 +3690,19 @@ func _physics_process(delta: float) -> void:
 	_door_cool -= dt
 	vip.tick(dt, in_car == null and not indoors and player.p.distance_to(vip.door_out) < 5.5)
 	if in_car == null and not frozen and _door_cool <= 0.0 and (phase == "play" or phase == "free"):
-		var door: Vector2 = vip.in_door if indoors else vip.door_out
-		var to_door: Vector2 = door - player.p
-		if to_door.length() < (1.0 if indoors else 1.25) and Vector2(sin(player.h), cos(player.h)).dot(to_door.normalized()) > 0.35:
-			_use_door(not indoors)
+		var places_in: Array = [vip]
+		if recress.sala.open:
+			places_in.append(recress.sala)
+		for place in places_in:
+			if indoors and place != (inside_of if inside_of != null else vip):
+				continue
+			var door: Vector2 = place.in_door if indoors else place.door_out
+			var to_door: Vector2 = door - player.p
+			if to_door.length() < (1.0 if indoors else 1.25) and Vector2(sin(player.h), cos(player.h)).dot(to_door.normalized()) > 0.35:
+				_use_door(not indoors, place)
+				break
 	var pp: Vector2 = player.p
-	var map_p: Vector2 = vip.out_spawn if indoors else pp      # where you are as far as the map is concerned
+	var map_p: Vector2 = ((inside_of if inside_of != null else vip).out_spawn) if indoors else pp      # where you are as far as the map is concerned
 	_mark("player and car")
 	_update_npcs(dt, pp)
 	_mark("neighbours")
@@ -3648,9 +3719,13 @@ func _physics_process(delta: float) -> void:
 	_garages_tick(dt, pp)
 	_protest_tick(dt, pp)
 	_recall_tick(dt)
+	llamadas.tick(dlg == null and not menu.visible and not indoors and not cine_lock and (phase == "play" or phase == "free") and comida.faint == null and not motin.busy())
+	marcas.tick(dt, pp)
+	recress.tick(dt, pp)
 	sabotaje.tick(dt, pp)
 	motin.tick(dt, pp)
 	derrape.tick(dt, pp)
+	limite.tick(dt, pp, frozen or indoors or not (phase == "play" or phase == "free"))
 	_mark("garages, missions")
 
 	# --- day steps ---
@@ -3750,6 +3825,10 @@ func _physics_process(delta: float) -> void:
 				for gar in garages:              # at the door with a dented car: they do not work in the street
 					if pp.distance_to(gar.mouth) < 16.0 and not gar.holds(pp, 0.0):
 						pr = Loc.t("p_garage_in")
+		elif recress.shop_near(pp) != null:
+			pr = Loc.t("p_rec_poster")
+		elif recress.can_play(pp) or recress.at_machine(pp):
+			pr = Loc.t("p_rec_play")
 		elif near_npc != null:
 			pr = Loc.t("p_talk")                 # (who it is you can see: the tag hangs over their head)
 		elif near_car != null:
@@ -3908,6 +3987,9 @@ func _side_drop() -> void:
 	if side["id"] == "luis":
 		sabotaje.abort(true)
 		return
+	if side["id"] == "recress":
+		recress.abort()
+		return
 	var what: String = side["id"]
 	side = null
 	police.muted = false
@@ -3928,8 +4010,8 @@ func _weekly_call() -> void:
 		return
 	stats["thu"] = day_n
 	var id: String = who.pick_random()
-	phone_call = {"npc": id, "lines": "ham_call", "ring": 0.4, "on": false, "left": 22.0, "side": true, "after": _ham_start.bind(id)}
-	hud.phone(true, named[id].shown_name(), Loc.t("ph_incoming"), named[id].look_data)
+	llamadas.ring({"npc": id, "lines": "ham_call", "side": true, "after": _ham_start.bind(id),
+		"valid": func(): return _ham_hours() and side == null and not in_mission() and int(stats.get("thu", -1)) == day_n})
 
 func _ham_start(who: String) -> void:
 	side = {"id": "ham", "who": who, "stage": "fetch", "t": 0.0}
@@ -3945,6 +4027,9 @@ func _side_show() -> void:
 		return
 	if side["id"] == "luis":
 		sabotaje.show()
+		return
+	if side["id"] == "recress":
+		recress.show()
 		return
 	var menu_job: bool = side["id"] == "menu"
 	if side["stage"] == "fetch":
@@ -3983,7 +4068,7 @@ func side_bump() -> void:
 	pass
 
 func _side_tick(dt: float, pp: Vector2) -> void:
-	if side["id"] == "luis":
+	if side["id"] == "luis" or side["id"] == "recress":
 		return
 	if side["stage"] == "fetch":
 		if motin.in_the_way():                   # there is a crowd after the same ham: it has to be fought for (motin.gd)
@@ -4299,6 +4384,42 @@ func _clear_to(pp: Vector2, yaw: float, dist: float, height: float) -> float:
 		return 1.0
 	return clampf((from.distance_to(hit["position"]) - 0.7) / from.distance_to(to), 0.0, 1.0)
 
+## In a scene (a camera put somewhere), whoever the camera ends up too close to is not drawn: the heads here are a metre
+## across, and from inside one, or a hand's breadth from it, you see nothing else (the user's idea, 13 November 2026).
+## Only the model goes (they are still there for everything else), and only those hidden here are shown again.
+const CAM_TOO_CLOSE := 0.85                  # metres from the middle of a head (half a metre of head, and a bit)
+var _cam_hid: Array = []
+
+func _clear_lens(on: bool) -> void:
+	if not on and _cam_hid.is_empty():
+		return
+	var close: Array = []
+	if on:
+		var c: Vector3 = cam.global_position
+		for n in npcs + [player]:
+			if not is_instance_valid(n) or not n.visible:
+				continue
+			var ld = n.get("look_data")
+			var tall: float = float(ld.get("scale", 1.0)) if ld is Dictionary else 1.0
+			var at: Vector3 = n.global_position
+			if absf(c.x - at.x) > 2.0 or absf(c.z - at.z) > 2.0:
+				continue
+			if c.distance_to(at + Vector3(0.0, 1.38 * tall, 0.0)) < CAM_TOO_CLOSE * tall or c.distance_to(at + Vector3(0.0, 0.62 * tall, 0.0)) < 0.75 * tall:
+				close.append(n)
+	var still: Array = []
+	for n in _cam_hid:                           # those hidden here: still too close, or shown again
+		if not is_instance_valid(n):
+			continue
+		if n in close:
+			still.append(n)
+		else:
+			n.vis.visible = true
+	for n in close:
+		if not (n in still) and n.vis.visible:
+			n.vis.visible = false
+			still.append(n)
+	_cam_hid = still
+
 func _update_camera(dt: float, pp: Vector2, speed: float, _cl: float) -> void:
 	if cam_fixed != null:                        # standing outside, watching the shutter
 		cam_pos = cam_pos.lerp(cam_fixed[0], 1.0 - exp(-3.5 * dt))
@@ -4306,7 +4427,9 @@ func _update_camera(dt: float, pp: Vector2, speed: float, _cl: float) -> void:
 		cam.position = cam_pos
 		if cam.position.distance_to(cam_look) > 0.1:
 			cam.look_at(cam_look)
+		_clear_lens(true)
 		return
+	_clear_lens(false)
 	if motin.fighting():                         # the riot: close in over your right shoulder
 		var mf := Vector2(sin(cam_yaw), cos(cam_yaw))
 		var mr := Vector2(-mf.y, mf.x)

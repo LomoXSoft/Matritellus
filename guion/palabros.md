@@ -33,6 +33,17 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
 - **Martes y domingos hay pollos asaos en Pollos Javi** (el de verdad se llama de otra manera). El martes coincide
   con el mercado; el domingo es el pollo de no cocinar. Quien llega tarde se queda sin pollo.
 
+- **Las peñas** (en el juego, los grafitis de cada una salen por las paredes del pueblo; Luis hizo sus logos):
+  - **Nietos de Mayo**: azul y naranja, un sol sobre un tejado en triángulo. (Hasta el 13/11/2026 se llamaban «Nietos de
+    Marzo» en el juego; Luis lo dejó como en su logo.)
+  - **La Croquetilla** («Peña Manchega»): una croqueta con zapatillas y un botellín en la mano.
+  - **El Bordillo**: la silla de plástico blanca y las latas a la puerta de casa. Como «cerquillo» y «bordillo» son lo
+    mismo, hay quien les dice **El Cerquillo**.
+  - **Peña Centradito** (antes «Los Centraditos» en el juego): un caballo con gafas de sol y el lema «Iustitia ·
+    Exactitudo · Perfectio». Son los **cabalitos** del pueblo: quisquillosos, todo exacto, todo en su sitio.
+  - **Costrola Peña** (nueva): un bandido con sombrero y pañuelo rojo, una torre y un árbol; rojo y amarillo.
+  - **Peña Al Prao'** (nueva), de 1978: verde y blanco, «Madridejos» encima.
+
 ## Hacer cosas
 
 | Palabro | Qué quiere decir |
@@ -107,8 +118,8 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
 
 ## Cosas
 
-apichusques (trastos sin valor) · atalines (cuerdas) · cacharra (recipiente, garrafa) · cerquillo (el escalón de
-la puerta de la calle) · guaril (el pequeño de un montón) · guisopo (fregona, brocha gorda) · hato (la ropa) ·
+apichusques (trastos sin valor) · atalines (cuerdas) · cacharra (recipiente, garrafa) · cerquillo (el bordillo:
+el escalón de la puerta de la calle y el de la acera; «cerquillo» y «bordillo» se dicen igual, son lo mismo) · guaril (el pequeño de un montón) · guisopo (fregona, brocha gorda) · hato (la ropa) ·
 nidos (rincones donde se amontona todo) · paereja (tapia de linde) · ruillo (apero para amontonar la parva) ·
 salicón (la bola de pinchos seca que rueda por el campo; en Consuegra, calamino) · senapismo (trasto inútil, cosa
 o persona).
@@ -139,7 +150,7 @@ Salen en las frases de la pantalla de carga (loc.gd «loading_chores»).
 | ajoprisas | el que todo lo quiere ya |
 | andurriero / andorrero | el que está todo el día en la calle haciendo que hace |
 | bocarán / bocalán | el que habla de más |
-| cabalito | el que lo quiere todo exacto |
+| cabalito | quisquilloso: el que lo quiere todo exacto. Despectivo, lo que en fino sería «perfeccionista» |
 | cacero | cazador |
 | celemín | torpe (era una medida de grano) |
 | chichiribaile | el que no para quieto |

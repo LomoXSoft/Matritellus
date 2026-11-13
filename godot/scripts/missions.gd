@@ -71,6 +71,8 @@ const STEPS := [
 const LINES := {
 	"josefa": {"needs": "the main mission of her phone (step josefa_back)", "missions": [{"id": "menu", "title": "josefa_menu_title", "done": "menu_done", "opens": "restaurantes"}]},
 	"luis": {"needs": "restaurantes", "missions": [{"id": "luis", "title": "luis_title", "done": "luis_done"}]},
+	# the Civismo line, Alberto's: it opens with the bridge (the first was the bridge itself, in the story)
+	"alberto": {"needs": "the bridge unlocked (step puente)", "missions": [{"id": "recress", "title": "rec_title", "done": "recress.gd: stats.recress.stage == hecho"}]},
 }
 ## The kinds of business you get to know, and who is in each so far
 const BUSINESSES := {"informatica": "neg_informatica", "restaurantes": "neg_restaurantes"}

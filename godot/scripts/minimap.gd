@@ -8,6 +8,7 @@ var round := false           # on its plate: no frame of its own, and it turns s
 var spin := 0.0              # ...which is this way (the camera's heading)
 var radius := 150.0
 var target = null            # Vector2 or null
+var givers: Array = []       # [where, round photo (or null)]: who has a mission for you (marcas.gd)
 var cars: Array = []
 var cops: Array = []
 var repairs: Array = []
@@ -47,6 +48,7 @@ func _draw() -> void:
 		k = sz.x / (2.0 * radius)
 		c = center
 	var half := sz / 2.0
+	var mid := half                               # (the middle of the control, whatever the turning does to `half`)
 	draw_rect(Rect2(Vector2.ZERO, sz), Color("e9d9a6"))
 	if round and not full:                        # from here on everything is drawn from the middle, turned
 		draw_set_transform(half, spin - PI, Vector2.ONE)
@@ -109,6 +111,26 @@ func _draw() -> void:
 			tp = tp.normalized() * edge
 		draw_circle(tp + half, 8.0, Color("4a3424"))
 		draw_circle(tp + half, 6.0, Color("f2a900"))
+	# who has a mission for you: their photo in a circle, kept upright however the map turns; at the edge if far off
+	if not givers.is_empty():
+		var turn := (spin - PI) if (round and not full) else 0.0
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		for gv in givers:
+			var gp: Vector2 = ((gv[0] as Vector2) - c) * k
+			var r := 15.0 if full else 13.0
+			if not full:
+				var edge2 := sz.x / 2.0 - (26.0 if round else 14.0)
+				if gp.length() > edge2:
+					gp = gp.normalized() * edge2
+					r = 10.0
+			var at := mid + gp.rotated(turn) if not full else gp + mid
+			draw_circle(at, r + 1.5, Color("1a1612"))
+			if gv[1] != null:
+				draw_texture_rect(gv[1], Rect2(at - Vector2(r, r), Vector2(r, r) * 2.0), false)
+			else:
+				draw_circle(at, r - 1.0, Color("f2e6c8"))
+		if round and not full:
+			draw_set_transform(mid, spin - PI, Vector2.ONE)
 	var pp := (center - c) * k + half
 	var arrow := PackedVector2Array()
 	for v in [Vector2(0, -10), Vector2(7, 8), Vector2(0, 4), Vector2(-7, 8)]:

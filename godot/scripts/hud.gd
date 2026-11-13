@@ -29,6 +29,10 @@ var prompt_slot: Control
 var prompt: RichTextLabel
 var toast_slot: Control
 var toast_label: RichTextLabel
+var limit_slot: Control                # out of town: the count-down to turn back (limite.gd)
+var limit_title: Label
+var limit_count: Label
+var limit_sub: Label
 var _toast_t := 0.0
 var card_box: Control
 var fx                          # what speed, nitro and a wrecked car do to the edges of the screen (hud_bits.gd ScreenFx)
@@ -126,6 +130,8 @@ var creator_turn_l: Array = []         # [arrow, button picture] on each side
 var creator_turn_r: Array = []
 var creator_drag: TextureRect          # the mouse, dragged (keyboard and mouse only)
 var _creator_page := 0
+var creator_panel: Control             # the creator's panel itself (what a finger presses there is its buttons)
+var _creator_grab := Rect2()            # round the character and its arrows: a finger dragged there turns it
 
 func _ready() -> void:
 	root = Control.new()
@@ -259,6 +265,19 @@ func _ready() -> void:
 	top.add_child(toast_label)
 	toast_slot = _slot(play_ui, top, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_BEGIN, 16, 118)
 	toast_slot.visible = false
+	# out of town: TURN BACK and the seconds left, big and red (limite.gd)
+	var lim := VBoxContainer.new()
+	lim.add_theme_constant_override("separation", -6)
+	limit_title = _label(34, Color("ff3b30"))
+	limit_count = _label(92, Color("ff3b30"))
+	limit_sub = _label(19, Color.WHITE)
+	for l in [limit_title, limit_count, limit_sub]:
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.add_theme_constant_override("outline_size", 12)
+		l.add_theme_color_override("font_outline_color", Color(0.08, 0.02, 0.02, 0.85))
+		lim.add_child(l)
+	limit_slot = _slot(play_ui, lim, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_BEGIN, 16, 190)
+	limit_slot.visible = false
 
 	# the car radio: when you change station (or the tune changes) the front of the radio slides up out of the bottom of
 	# the screen, between the map and the dials, for a few seconds: the station's logo, who is playing and what. Then it
@@ -457,6 +476,7 @@ func _ready() -> void:
 
 	# character creation panel (right-hand side)
 	var crp := _panel(CREAM, 30, 4)
+	creator_panel = crp
 	var crv := VBoxContainer.new()
 	crv.add_theme_constant_override("separation", 10)
 	creator_title = _label(28, TERRA)
@@ -881,6 +901,17 @@ func set_bottles(n: int) -> void:
 	for i in range(bottle_rects.size()):
 		bottle_rects[i].color = Color("d8c53a") if i < n else Color(1, 1, 1, 0.18)
 
+## out of town: turn back, `left` seconds to go
+func show_limit(left: float) -> void:
+	limit_title.text = Loc.t("limit_title")
+	limit_sub.text = Loc.t("limit_sub")
+	limit_count.text = str(maxi(0, int(ceil(left))))
+	limit_count.modulate.a = 0.7 + 0.3 * sin(Time.get_ticks_msec() / 110.0)
+	limit_slot.visible = true
+
+func hide_limit() -> void:
+	limit_slot.visible = false
+
 func toast(text: String, dur := 3.0) -> void:
 	rt(toast_label, text)
 	toast_slot.visible = true
@@ -1121,6 +1152,17 @@ func creator_turn_at(feet: Vector2, head: Vector2) -> void:
 	kl.position = al.position + Vector2(-kl.size.x * 0.4, al.size.y - 6.0)
 	kr.position = ar.position + Vector2(ar.size.x - kr.size.x * 0.6, ar.size.y - 6.0)
 	creator_drag.position = Vector2(feet.x - creator_drag.size.x / 2.0, feet.y + 14.0)
+	_creator_grab = Rect2(Vector2(al.position.x - 20.0, head.y - 40.0), Vector2(ar.position.x + ar.size.x - al.position.x + 40.0, feet.y - head.y + 80.0))
+
+## on a touch screen, in the creator: what a finger put down here is for: "panel" (its buttons), "turn" (the character), ""
+func creator_spot(p: Vector2) -> String:
+	if not creator_slot.visible:
+		return ""
+	if creator_panel.get_global_rect().has_point(p):
+		return "panel"
+	if _creator_grab.has_point(p):
+		return "turn"
+	return ""
 
 ## the phone slides up (or away). status: "Llamada entrante", a call timer...
 ## `look` (as chara.gd takes it) is the caller: their photo comes up on the screen, as on any phone

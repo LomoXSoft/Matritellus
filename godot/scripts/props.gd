@@ -231,6 +231,37 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int) -> void:
 			var slash := Parts.part("box", 0xd23b2e, Vector3(0, 1.95, 0.08), Vector3(0.42, 0.045, 0.01))
 			slash.rotation.z = -PI / 4.0
 			b.add_child(slash)
+		"stop":           # STOP: the red octagon in its white rim, and the word
+			size = Vector3(0.6, 2.8, 0.2)
+			b.mass = 15.0
+			b.add_child(Parts.part("cyl", 0x9aa0a6, Vector3(0, 1.25, 0), Vector3(0.04, 2.5, 0.04)))
+			for layer in [[0xf4f4f0, 0.33, 0.0], [0xd23b2e, 0.29, 0.012]]:
+				var cm := CylinderMesh.new()
+				cm.top_radius = 1.0
+				cm.bottom_radius = 1.0
+				cm.height = 1.0
+				cm.radial_segments = 8
+				cm.rings = 1
+				var oct := MeshInstance3D.new()
+				oct.mesh = cm
+				oct.material_override = Parts.mat(layer[0])
+				oct.rotation.y = PI / 8.0             # (a flat edge on top, as the real ones)
+				oct.scale = Vector3(layer[1], 0.03, layer[1])
+				var face := Node3D.new()
+				face.position = Vector3(0, 2.3, 0.04 + layer[2])
+				face.rotation.x = PI / 2.0
+				face.add_child(oct)
+				b.add_child(face)
+			var word := Label3D.new()
+			word.text = "STOP"
+			word.font_size = 64
+			word.pixel_size = 0.0036
+			word.modulate = Parts.col(0xffffff)
+			word.outline_size = 0
+			word.shaded = false
+			word.double_sided = false
+			word.position = Vector3(0, 2.3, 0.075)
+			b.add_child(word)
 		"table":
 			size = Vector3(0.85, 0.76, 0.85)
 			b.mass = 12.0
@@ -445,70 +476,200 @@ func _try_terraza(s, rng: RandomNumberGenerator, spacing: float) -> bool:
 	return false
 
 # ================= peña graffiti =================
-## The names of the peñas sprayed on walls that face a street. For now a tag is just the name.
+## Each peña's logo sprayed on walls that face a street (Luis's logos, tools/make_penas.py): ten of each, spread over
+## the town and not out at its edges (the user, 13 November 2026). The paint is old: nine tenths opaque, a little faded
+## and flaking, as if it had been there for years. Paint over another peña's and your own goes on in its place, fresh.
+const TAGS_EACH := 10
+const TAG_REACH := 650.0                 # metres from the middle of the town, at most
+const TOWN := preload("res://scripts/limite.gd").CENTRE      # the middle of the town (where its buildings average out)
+const TAG_H := 1.7                       # how tall a logo is painted (less, if the wall is short)
+const TAG_FOOT := 0.55                   # how far off the ground it starts
+const TAG_SHADER := """
+shader_type spatial;
+render_mode blend_mix, depth_draw_never, cull_back, specular_disabled;
+uniform sampler2D logo : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
+uniform sampler2D wear_tex : filter_linear_mipmap, repeat_enable;
+uniform float opacity = 0.9;
+uniform float wear = 1.0;
+void fragment() {
+	vec4 c = texture(logo, UV);
+	vec2 seed = fract(NODE_POSITION_WORLD.xz * 0.0173);           // (each wall worn its own way)
+	float blotch = smoothstep(0.5, 0.82, texture(wear_tex, UV * 1.3 + seed * 7.0).r);
+	float flake = smoothstep(0.68, 0.92, texture(wear_tex, UV * 5.0 + seed * 3.0).g);
+	float keep = 1.0 - wear * (blotch * 0.28 + flake * 0.5);       // faded patches, and specks where it has flaked off
+	float grey = dot(c.rgb, vec3(0.3, 0.59, 0.11));
+	vec3 sunned = mix(c.rgb, vec3(grey) * 0.92 + 0.05, 0.22);      // the sun has had at it, a little
+	ALBEDO = mix(c.rgb, sunned, wear);
+	ALPHA = c.a * opacity * keep;
+	ROUGHNESS = 0.95;
+}
+"""
+## Where on a house front a logo can go without covering its door or windows. A front's picture repeats every 7 m or so
+## along the wall (world.gd _facade: 256 units across); on the ground floor each style leaves these stretches plain, or
+## has a garage door or a warehouse's sheet, which take paint as well as any wall. Some run on into the next repeat.
+const TAG_SPANS := {
+	0: [[100, 156], [206, 306]],                 # añil skirting: between the door and the window; window to next door
+	1: [[34, 144], [218, 290]],                  # ochre: the garage door itself; window to the next garage door
+	2: [[102, 158], [206, 308]],                 # balconies
+	3: [[104, 164], [204, 310]],                 # green shutters
+	4: [[0, 256]],                               # a warehouse: all of it
+	6: [[102, 160], [204, 314]],                 # brick flats
+}
+const TAG_MIN_SPAN := 1.7                       # metres of plain wall a logo needs (the wide ones still come out a metre tall)
+
+## [metres along the wall to the middle of its widest plain stretch, how wide that is] (or [] if it has none)
+func _widest_span(style: int, length: float) -> Array:
+	var reps := maxf(1.0, roundf(length / 7.0))
+	var unit := length / reps / 256.0
+	var best: Array = []
+	for r in range(-1, int(reps)):
+		for sp in TAG_SPANS[style]:
+			var x0 := clampf((r * 256.0 + float(sp[0])) * unit, 0.0, length)
+			var x1 := clampf((r * 256.0 + float(sp[1])) * unit, 0.0, length)
+			var wide := x1 - x0
+			if wide >= TAG_MIN_SPAN and (best.is_empty() or wide > float(best[1])):
+				best = [(x0 + x1) / 2.0, wide]
+	return best
+
+var _tag_tex: Array = []
+var _tag_shader: Shader
+var _wear_tex: Texture2D
+
+static func _v2(x) -> Vector2:
+	return x if x is Vector2 else Vector2(float(x[0]), float(x[1]))
+
+## places no graffiti goes: the houses built by hand from photos, and the landmarks ([where, how far off])
+func _tag_keep_off() -> Array:
+	var out: Array = []
+	for h in MapData.houses:
+		var o := _v2(h["o"])
+		var u := _v2(h["u"])
+		var length := float(h.get("len", 10.0))
+		out.append([o + u * length / 2.0, length / 2.0 + 3.0])
+	if MapData.church.has("o"):
+		out.append([_v2(MapData.church["o"]), 45.0])
+	if MapData.townhall.has("m"):
+		out.append([_v2(MapData.townhall["m"]), 30.0])
+	if MapData.salud.has("o"):
+		out.append([_v2(MapData.salud["o"]), 45.0])
+	if MapData.coop.has("o"):
+		out.append([_v2(MapData.coop["o"]), 40.0])
+	return out
+
 func _place_tags() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 31
+	_tag_shader = Shader.new()
+	_tag_shader.code = TAG_SHADER
+	_wear_tex = load("res://assets/penas/desgaste.png")
+	for id in Creator.PENA_IDS:
+		_tag_tex.append(load("res://assets/penas/%s.png" % id))
+	var keep_off := _tag_keep_off()
 	var cands: Array = []
-	for w in MapData.walls:
+	for style in range(MapData.walls.size()):
+		if not TAG_SPANS.has(style):
+			continue                                                     # (landmarks, and the fronts drawn by hand)
+		var w: Array = MapData.walls[style]
+		var wy: Array = MapData.wall_y[style] if style < MapData.wall_y.size() else []
 		for i in range(w.size() / 7):
 			var o := i * 7
 			var a := Vector2(w[o], w[o + 1])
 			var b := Vector2(w[o + 2], w[o + 3])
 			var length := a.distance_to(b)
-			if length < 6.5 or float(w[o + 4]) < 3.0:
+			if length < 4.2 or float(w[o + 4]) < 3.0 or a.distance_to(TOWN) > TAG_REACH + 40.0:
 				continue
-			var mid := (a + b) / 2.0
-			if mid.length() > 1000.0:
+			var u := (b - a) / length
+			var n := Vector2(u.y, -u.x)                              # outwards (walls are baked counter-clockwise)
+			var best: Array = _widest_span(style, length)
+			if best.is_empty():
 				continue
-			var n := Vector2(b.y - a.y, -(b.x - a.x)).normalized()      # outwards (walls are baked counter-clockwise)
-			if MapData.road_edge_dist(mid + n * 2.5) > 2.5 or MapData.room_at(mid + n * 1.2) < 0.9:
+			var at := a + u * float(best[0])
+			if at.distance_to(TOWN) > TAG_REACH:
+				continue
+			if MapData.road_edge_dist(at + n * 2.5) > 2.5 or MapData.room_at(at + n * 1.2) < 0.9:
 				continue                                                 # must face a street you can stand in
-			cands.append([mid, n, length])
-	for i in range(cands.size() - 1, 0, -1):          # shuffle
-		var j := rng.randi() % (i + 1)
-		var tmp = cands[i]; cands[i] = cands[j]; cands[j] = tmp
-	for cnd in cands:
-		if tags.size() >= 28:
+			if keep_off.any(func(k): return at.distance_to(k[0]) < k[1]):
+				continue
+			var base: float = float(wy[i]) if i < wy.size() else MapData.height(at + n * 0.4)
+			cands.append([at, n, float(best[1]), maxf(base, MapData.height(at + n * 0.4))])
+	if cands.is_empty():
+		return
+	# Spread out: each one as far as it can be from all those already picked (the first at random). The order they
+	# are picked in is spread out too, so dealing them round the peñas in turn spreads each peña's ten over the town.
+	var nearest := PackedFloat32Array()
+	nearest.resize(cands.size())
+	nearest.fill(1e12)
+	var cur := rng.randi() % cands.size()
+	var picked: Array = []
+	while picked.size() < TAGS_EACH * Creator.PENAS.size():
+		picked.append(cands[cur])
+		var here: Vector2 = cands[cur][0]
+		var best := -1.0
+		var nxt := -1
+		for j in range(cands.size()):
+			var d2: float = (cands[j][0] as Vector2).distance_squared_to(here)
+			if d2 < nearest[j]:
+				nearest[j] = d2
+			if nearest[j] > best:
+				best = nearest[j]
+				nxt = j
+		if nxt < 0 or best < 25.0:
 			break
-		var mid: Vector2 = cnd[0]
-		var n: Vector2 = cnd[1]
-		var ok := true
-		for t in tags:
-			if (t["p"] as Vector2).distance_to(mid) < 60.0:
-				ok = false
-		if not ok:
-			continue
-		var label := Label3D.new()
-		label.font_size = 110
-		label.outline_size = 26
-		label.shaded = false
-		label.double_sided = false
-		label.outline_modulate = Color(0.1, 0.08, 0.08)
-		label.position = Vector3(mid.x + n.x * 0.06, MapData.height(mid + n * 0.4) + 1.75, mid.y + n.y * 0.06)
-		label.rotation = Vector3(0, atan2(n.x, n.y), rng.randf_range(-0.09, 0.09))
-		label.set_meta("room", float(cnd[2]) - 1.2)
-		add_child(label)
-		var t := {"p": mid + n * 1.1, "label": label, "owner": 0}
-		tags.append(t)
-		_style_tag(t)
+		cur = nxt
+	for k in range(picked.size()):
+		tags.append(_make_tag(picked[k], k % Creator.PENAS.size(), rng))
 
+func _make_tag(cand: Array, owner: int, rng: RandomNumberGenerator) -> Dictionary:
+	var mid: Vector2 = cand[0]
+	var n: Vector2 = cand[1]
+	var mi := MeshInstance3D.new()
+	mi.mesh = QuadMesh.new()
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.visibility_range_end = 240.0
+	mi.material_override = ShaderMaterial.new()
+	mi.material_override.shader = _tag_shader
+	mi.material_override.set_shader_parameter("wear_tex", _wear_tex)
+	add_child(mi)
+	var gy: float = cand[3]
+	var wear := rng.randf_range(0.7, 1.0)
+	var t := {"p": mid + n * 1.1, "node": mi, "owner": owner, "first": owner, "wear": wear, "first_wear": wear,
+		"room": float(cand[2]) * 0.9, "at": Vector3(mid.x + n.x * 0.035, gy, mid.y + n.y * 0.035), "n": n, "roll": rng.randf_range(-0.05, 0.05)}
+	_style_tag(t)
+	return t
+
+## the logo of the peña it belongs to now, as big as the wall allows, and as worn as it is
 func _style_tag(t: Dictionary) -> void:
-	var label: Label3D = t["label"]
-	var name: String = Creator.PENAS[t["owner"]]
-	label.text = name
-	label.modulate = Creator.PENA_COLORS[t["owner"]]
-	label.pixel_size = minf(0.011, float(label.get_meta("room")) / (name.length() * 62.0))      # fit the wall
+	var mi: MeshInstance3D = t["node"]
+	var tex: Texture2D = _tag_tex[t["owner"]]
+	var aspect := float(tex.get_width()) / float(tex.get_height())
+	var h := TAG_H
+	if h * aspect > float(t["room"]):
+		h = float(t["room"]) / aspect
+	(mi.mesh as QuadMesh).size = Vector2(h * aspect, h)
+	var n: Vector2 = t["n"]
+	mi.position = (t["at"] as Vector3) + Vector3(0.0, TAG_FOOT + h / 2.0, 0.0)
+	mi.rotation = Vector3(0.0, atan2(n.x, n.y), t["roll"])
+	var m: ShaderMaterial = mi.material_override
+	m.set_shader_parameter("logo", tex)
+	m.set_shader_parameter("wear", t["wear"])
+	m.set_shader_parameter("opacity", 0.9 if float(t["wear"]) > 0.0 else 0.94)
 
-## at the start of a game: every wall belongs to somebody else's peña
-func assign_tags(mine: int) -> void:
+## at the start of a game: each wall back to the peña that had it, as worn as it was (some of them are yours already)
+func assign_tags(_mine: int) -> void:
 	for t in tags:
-		t["owner"] = (mine + 1 + randi() % (Creator.PENAS.size() - 1)) % Creator.PENAS.size()
+		t["owner"] = t["first"]
+		t["wear"] = t["first_wear"]
 		_style_tag(t)
 
+## your peña's logo over another's: fresh paint
 func paint(t: Dictionary, mine: int) -> void:
 	t["owner"] = mine
+	t["wear"] = 0.0
 	_style_tag(t)
+
+## how many walls each peña has (for the tests and the tally)
+func tags_of(pena: int) -> int:
+	return tags.filter(func(t): return t["owner"] == pena).size()
 
 ## the nearest tag within reach that is not yours yet, or null
 func tag_near(p: Vector2, mine: int):

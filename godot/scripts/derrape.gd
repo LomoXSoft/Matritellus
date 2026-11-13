@@ -129,6 +129,15 @@ func tick(dt: float, pp: Vector2) -> void:
 				_mm.set_instance_transform(i, hide)
 				_at[i] = null
 
+## every mark taken off the ground (calentar.gd lays a few to have their shader made)
+func clear() -> void:
+	var hide := Transform3D(Basis().scaled(Vector3.ZERO), Vector3(0, -1000, 0))
+	for i in range(MAX):
+		if _at[i] != null:
+			_mm.set_instance_transform(i, hide)
+			_at[i] = null
+	_last.clear()
+
 ## how many marks are on the ground now
 func count() -> int:
 	return _at.filter(func(a): return a != null).size()

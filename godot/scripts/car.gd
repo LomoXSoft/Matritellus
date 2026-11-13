@@ -89,6 +89,7 @@ var last_air := 0.0      # length (s) of the jump that just ended; game.gd reads
 var _prev_v := Vector3.ZERO
 var _flipped := 0.0
 var pushes := 0          # shoves received while lying flipped (three put it back on its wheels)
+var speed_boost := 1.0   # top speed and pull, times this (the police chasing you out of town: limite.gd)
 var flip_told := false
 var last_impact := 0.0   # set when the speed changed violently this physics tick; game.gd reads and clears it
 
@@ -719,8 +720,8 @@ func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> vo
 	var vf := forward_speed()
 	# off the road most cars drop to 55 % of their top speed; "offroad" in the spec overrides that
 	# (the Z15 barely notices, the tractors do not notice at all)
-	var max_v: float = spec["max"] * (1.0 if on_road else float(spec.get("offroad", 0.55)))
-	var push: float = spec["acc"] * mass
+	var max_v: float = spec["max"] * speed_boost * (1.0 if on_road else float(spec.get("offroad", 0.55)))
+	var push: float = spec["acc"] * mass * speed_boost
 	if broken() or flipped():
 		thr = 0.0
 		hand = true
@@ -807,6 +808,7 @@ func _physics_process(dt: float) -> void:
 			apply_central_force((Vector3.UP - up * up.y) * mass * 9.8 + Vector3(back.x, 0.0, back.y) * mass * 30.0 - flat * mass * 9.0)
 	else:
 		_held = false
+	_keep_upright(dt)
 	# A car on its roof or side stays there until someone gets out and shoves it back (game.gd).
 	# Only patrol cars right themselves, or a flipped one would end every chase.
 	if global_transform.basis.y.y < 0.35:
@@ -817,6 +819,44 @@ func _physics_process(dt: float) -> void:
 		_flipped = 0.0
 		pushes = 0
 		flip_told = false
+
+## Keeping it on its wheels. Cars rolled over far too easily, above all at speed (the user, 13 November 2026), so:
+##  - an anti-roll bar: a twist about the car's own length that brings it back level with the ground under it,
+##    springy and damped like a real car's, as stiff as its width and height call for (on its wheels; much weaker in
+##    the air, and only while it is moving, so a car that has come to rest on its side stays there for the shove);
+##  - the faster it goes, the harder the air presses it down (a fifth more weight at top speed), so bumps and kerbs do
+##    not throw it about.
+const ROLL_FREQ := 9.0          # how quickly the anti-roll bar brings it back (radians a second)
+const ROLL_DAMP := 0.9          # and how little it lets it rock (1 = not at all)
+const DOWNFORCE := 0.2          # extra weight at top speed, as a share of its own
+
+func _keep_upright(dt: float) -> void:
+	if freeze:
+		return
+	var touching := 0
+	for w in wheels:
+		if w.is_in_contact():
+			touching += 1
+	var moving := linear_velocity.length() > 3.0
+	if touching < 2 and (not moving or _flipped > 0.0):
+		return                                   # lying still on its side or roof: that is for a shove
+	var b := global_transform.basis
+	var fwd := b.z
+	var ground := MapData.normal(p) if touching >= 2 else Vector3.UP
+	var tilt := b.y.cross(ground)               # the turn that would set it level again (its size: sin of the angle)
+	var roll := tilt.dot(fwd)
+	var roll_rate := angular_velocity.dot(fwd)
+	var wid: float = spec["wid"]
+	var tall: float = spec["body"] + spec["cab"] + spec["wheel"]
+	var inertia: float = mass * (wid * wid + tall * tall) / 12.0
+	var k := inertia * ROLL_FREQ * ROLL_FREQ
+	var d := 2.0 * inertia * ROLL_DAMP * ROLL_FREQ
+	var share := 1.0 if touching >= 2 else 0.3
+	apply_torque(fwd * (roll * k - roll_rate * d) * share)
+	if touching >= 2:
+		var v := linear_velocity.length()
+		var top: float = spec["max"]
+		apply_central_force(-b.y * mass * 9.8 * DOWNFORCE * clampf(v / top, 0.0, 1.3) ** 2)
 
 ## lying on its roof or side for a moment (not just mid-jump)
 func flipped() -> bool:

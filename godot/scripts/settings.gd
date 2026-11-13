@@ -8,7 +8,8 @@ var path := "user://matritellus_settings.json"
 var testing := false
 var intro_seen := false                          # so going back to the main menu does not replay the studio logo
 var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8, "music": 7, "sfx": 8, "lang": "es", "keys": {},
-	"window": 0, "shadows": 3, "textures": 2, "draw": 1, "fov": 55, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1}
+	"window": 0, "shadows": 3, "textures": 2, "draw": 1, "fov": 55, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1,
+	"warm": ""}         # (warm: which version of the game has had its shaders made on this graphics card: calentar.gd)
 
 ## The graphics options (game.gd, apply_graphics, does what they say). The defaults are the game as it always was.
 ##   window     0 in a window · 1 full screen (borderless) · 2 full screen, exclusive

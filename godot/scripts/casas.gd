@@ -445,6 +445,12 @@ func _alemania_7() -> void:
 #       "signs": [[from, to, colour, what it says, the letters' colour], ...] -- the boards over the shops. They say what
 #           is sold, never whose it is: the real shops' names are not ours to use
 #       "awnings": [[from, to, colour], ...] -- over a shop window
+#       "plates": [[at, y, kind, z, colour, style, lado], ...] -- a notice on the front, its middle at (at, y) and z out from the
+#           wall (on a window's grille: about 0.12): "sevende"/"sealquila" (a board for sale or to let: colour is its
+#           band, or with style 1 its letters on a white board), "vado" (the town's plate for a garage way), "noaparcar"
+#           (the yellow one people paint themselves), "papel" (a sheet taped to a gate, written by hand). colour -1 and
+#           style 0 are the usual. lado 1: on the house's longest wall to another street instead (at along it,
+#           from its left end as you face it). In the short form: "cartel at y kind [z=..] [c=colour] [t=1] [lado=1]"
 #       "band": a string course at its foot, of this colour or masonry
 #   "eaves": "tiles" (the plain edge of the roof), "brackets" (deep, on wooden brackets), "cornice" (a moulded one), "flat"
 #   "tol": how far off the straight line of the front the plot's own outline may wander and still be the front
@@ -454,6 +460,7 @@ var _rz := -6.0                 # where the ridge is (z, in the house's frame)
 var _ey := 0.0                  # the roof at the edge of the eaves...
 var _ez := 0.3                  # ...and where that edge is
 var _flat_roof := false
+var _flank := false             # the side front being built is the house's longest to another street (its notices: lado=1)
 
 func _mat(spec):
 	if spec is int:
@@ -517,6 +524,10 @@ static func _unpack(a: Array) -> Dictionary:
 					if not f.has("signs"):
 						f["signs"] = []
 					f["signs"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]).hex_to_int(), String(words[3]).replace("_", " "), String(words[4]).hex_to_int()])
+				"cartel":                         # a notice: cartel at y kind (sevende, sealquila, vado, noaparcar, papel) [z=out] [c=colour] [t=1] [lado=1]
+					if not f.has("plates"):
+						f["plates"] = []
+					f["plates"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]), float(o.get("z", 0.04)), int(o.get("c", -1)), int(o.get("t", 0)), int(o.get("lado", 0))])
 				"awn":
 					if not f.has("awnings"):
 						f["awnings"] = []
@@ -802,6 +813,10 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 				for k in range(5):                    # (it slopes: five strips, each a little lower and further out)
 					box(ax0, y + 2.56 - k * 0.07, fly + k * 0.19, aww, 0.04, 0.2, int(aw[2]))
 				box(ax0, y + 2.1, fly + 0.93, aww, 0.2, 0.025, _dark(int(aw[2]), 0.12))
+		if not side or _flank:
+			for nt in f.get("plates", []):           # the notices people put up: for sale, a garage way, no parking
+				if (nt.size() > 6 and int(nt[6]) == 1) == side:     # (lado=1: on the long side to another street, not on the front)
+					_plate(float(nt[0]) * L, y + float(nt[1]), fly + float(nt[3]), String(nt[2]), int(nt[4]) if nt.size() > 4 else -1, int(nt[5]) if nt.size() > 5 else 0)
 		if f.has("terrace") and not side:
 			var tr: Array = f["terrace"]
 			var tx: float = float(tr[0]) * L
@@ -815,6 +830,73 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 		y += h
 		prev_fly = fly
 	return prev_fly
+
+## A notice on the front, its middle at (x, y) and `z` out from the wall, in the frame of the front being built.
+## The words are generic: no telephone number, no real licence.
+func _plate(x: float, y: float, z: float, kind: String, colour := -1, style := 0) -> void:
+	var n := Node3D.new()
+	n.transform = _xf * Transform3D(Basis(), Vector3(x, y, z))
+	add_child(n)
+	var words := "SE VENDE" if kind != "sealquila" else "SE ALQUILA"
+	match kind:
+		"sevende", "sealquila":
+			if style == 1:                   # an agency's board: white, the words big in its colour (black, blue...)
+				var ink: int = colour if colour >= 0 else 0x1c1c1e
+				n.add_child(Parts.part("box", 0xf6f5f0, Vector3(0, 0, 0), Vector3(0.7, 0.48, 0.012)))
+				n.add_child(Parts.part("box", ink, Vector3(0, 0.205, 0.008), Vector3(0.7, 0.05, 0.004)))
+				_words(n, words, Vector3(0, 0.05, 0.009), 64, ink, 0.0023 if kind == "sevende" else 0.002, 0.62)
+				_words(n, "6__ ___ ___", Vector3(0, -0.14, 0.009), 48, ink, 0.0024, 0.62)
+			else:                            # a printed board: a band with the words in white, white below for the phone
+				var band: int = colour if colour >= 0 else (0xc8202a if kind == "sevende" else 0x1f55c4)
+				n.add_child(Parts.part("box", 0xf4f2ec, Vector3(0, 0, 0), Vector3(0.66, 0.44, 0.012)))
+				n.add_child(Parts.part("box", band, Vector3(0, 0.09, 0.008), Vector3(0.62, 0.2, 0.004)))
+				_words(n, words, Vector3(0, 0.09, 0.012), 64, 0xffffff, 0.0021 if kind == "sevende" else 0.0019, 0.56)
+				_words(n, "TEL. 6__ ___ ___", Vector3(0, -0.11, 0.009), 40, 0x1c1c1e, 0.0018, 0.58)
+			for sx in [-0.28, 0.28]:         # the wire it hangs by
+				n.add_child(Parts.part("box", 0x6a6a6a, Vector3(sx, 0.26, -0.02), Vector3(0.006, 0.08, 0.006)))
+		"vado":                              # the town's plate, as they are here: the council over the disc, the yellow licence band
+			n.add_child(Parts.part("box", 0xf4f4f0, Vector3(0, 0, 0), Vector3(0.32, 0.5, 0.012)))
+			n.add_child(Parts.part("box", 0x3a3c40, Vector3(0, 0, -0.003), Vector3(0.335, 0.515, 0.008)))
+			_words(n, "AYUNTAMIENTO", Vector3(0, 0.205, 0.008), 32, 0x1c1c1e, 0.0011, 0.28)
+			for layer in [[0xc8202a, 0.12, 0.008], [0x1f55c4, 0.094, 0.011]]:
+				var disc := Parts.part("cyl", layer[0], Vector3(0, 0.05, layer[2]), Vector3(layer[1], 0.004, layer[1]))
+				disc.rotation.x = PI / 2.0
+				n.add_child(disc)
+			var bar := Parts.part("box", 0xc8202a, Vector3(0, 0.05, 0.014), Vector3(0.22, 0.028, 0.003))
+			bar.rotation.z = -PI / 4.0
+			n.add_child(bar)
+			n.add_child(Parts.part("box", 0xf4f4f0, Vector3(0, 0.05, 0.017), Vector3(0.21, 0.045, 0.002)))
+			_words(n, "VADO PERMANENTE", Vector3(0, 0.05, 0.019), 28, 0xa81c24, 0.00095, 0.19)
+			n.add_child(Parts.part("box", 0xf0c419, Vector3(0, -0.17, 0.008), Vector3(0.3, 0.12, 0.003)))
+			_words(n, "LICENCIA MUNICIPAL", Vector3(0, -0.14, 0.011), 28, 0x1c1c1e, 0.00095, 0.27)
+			_words(n, "Nº %d" % (100 + absi(hash(id)) % 800), Vector3(0, -0.19, 0.011), 36, 0x1c1c1e, 0.0014, 0.27)
+		"noaparcar":                         # painted on a yellow board by whoever owns the gate
+			n.add_child(Parts.part("box", 0xf0c419, Vector3(0, 0, 0), Vector3(0.6, 0.42, 0.012)))
+			_words(n, "NO APARCAR", Vector3(0, 0.1, 0.008), 64, 0xc8202a, 0.0021, 0.54)
+			_words(n, "SALIDA DE
+VEHÍCULOS", Vector3(0, -0.1, 0.008), 40, 0x1c1c1e, 0.0018, 0.54)
+		"papel":                             # a sheet of paper taped on, written with a marker, a little askew
+			n.rotation.z = 0.05
+			n.add_child(Parts.part("box", 0xf2f0e8, Vector3(0, 0, 0), Vector3(0.3, 0.21, 0.004)))
+			_words(n, "NO APARCAR", Vector3(0, 0.035, 0.004), 48, 0x22305a, 0.001, 0.27)
+			_words(n, "SALIDA DE COCHES", Vector3(0, -0.04, 0.004), 32, 0x22305a, 0.00085, 0.27)
+			for c in [Vector2(-0.14, 0.095), Vector2(0.14, 0.095), Vector2(-0.14, -0.095), Vector2(0.14, -0.095)]:
+				n.add_child(Parts.part("box", 0xd9d6c8, Vector3(c.x, c.y, 0.003), Vector3(0.045, 0.02, 0.002)))
+
+## words on a notice, their middle at `at`, `size` metres to a pixel of a `px` font; smaller if need be, so that they
+## are no wider than `fit` (the board they are written on)
+func _words(on: Node3D, text: String, at: Vector3, px: int, hex: int, size: float, fit: float) -> void:
+	var wide: float = ThemeDB.fallback_font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x
+	var l := Label3D.new()
+	l.text = text
+	l.font_size = px
+	l.pixel_size = minf(size, fit / maxf(1.0, wide))
+	l.modulate = Parts.col(hex)
+	l.outline_size = 0
+	l.shaded = false
+	l.double_sided = false
+	l.position = at
+	on.add_child(l)
 
 ## the edge of the roof over a front `L` long whose top floor stands `zf` out: returns how far out the roof's edge is
 func _eaves(L: float, zf: float, kind: String) -> float:
@@ -949,6 +1031,16 @@ func _from_spec(spec: Dictionary) -> void:
 	var tol: float = spec.get("tol", 0.6)
 	var floors: Array = spec["floors"]
 	var side_key = _mat(spec.get("side", floors[-1].get("wall", spec.get("wall", 0xf2efe6))))
+	var flank := 0.0                                          # the longest wall that gives on to another street
+	for pc in pieces:
+		for e in pc["edges"]:
+			var a: Vector2 = e[0]
+			var b: Vector2 = e[1]
+			if (_on_front(a, tol) and _on_front(b, tol)) or e[2] or not e[3]:
+				continue
+			if minf(a.y, b.y) > -0.05 and maxf(a.y, b.y) > 0.3 and maxf(a.x, b.x) < L + 0.6 and minf(a.x, b.x) > -0.6:
+				continue
+			flank = maxf(flank, a.distance_to(b))
 	for pc in pieces:
 		var ring: PackedVector2Array = pc["ring"]
 		var zmin := 0.0
@@ -977,7 +1069,9 @@ func _from_spec(spec: Dictionary) -> void:
 				_plain(a, b, nrm, top - 0.02, side_key)
 			elif e[3] and ln >= 3.0:                          # it gives on to another street: a front of its own
 				_xf = Transform3D(Basis(Vector3(-d.x, 0.0, -d.y), Vector3.UP, Vector3(nrm.x, 0.0, nrm.y)), Vector3(b.x, 0.0, b.y))
+				_flank = ln >= flank - 0.001
 				_facade(ln, spec, true)
+				_flank = false
 				_acera(ln)
 				if not _flat_roof:
 					box(-0.05, top - 0.05, 0.0, ln + 0.1, 0.11, 0.14, 0xc9a07a)
@@ -1396,7 +1490,7 @@ const SPECS := {
 		{"wall": "brick_red", "fly": 0.6, "open": [["win", 0.5, 2.0, 0.9, 1.5, {"f": 0x3a3028, "d": 0.0}]]},
 		{"wall": "brick_red", "fly": 0.6}]},
 	"alemania_t10": {"eaves": "brackets", "floors": [      # 1980: sand render, the windows framed in brown, a skirting of brown tiles (its front is on the Travesía)
-		{"wall": 0xd9b98a, "plinth": [0.9, "tile_brown"], "open": [["win", 0.5, 1.1, 1.0, 1.3, {"g": "bars", "s": 0x8a4a38}]]},
+		{"wall": 0xd9b98a, "plinth": [0.9, "tile_brown"], "open": [["win", 0.5, 1.1, 1.0, 1.3, {"g": "bars", "s": 0x8a4a38}]], "plates": [[0.5, 2.05, "sevende", 0.12]]},
 		{"wall": 0xd9b98a, "open": [["win", 0.5, 1.1, 1.0, 1.2, {"s": 0x8a4a38, "bal": "iron"}]]}]},
 	"alemania_16": {"eaves": "brackets", "floors": [       # 1998: red brick on a foot of stone; a curtain at the door, an iron grille, the brown doors of the store
 		{"wall": "brick_red", "plinth": [1.0, "stone"], "open": [["door", 0.1, 1.0, 2.2, {"k": "curtain"}], ["win", 0.38, 1.3, 1.0, 1.3, {"g": "bars", "b": 0x8a6a4a}], ["gar", 0.74, 3.2, 2.8, {"k": "planks", "c": 0x6a3a30}]]},

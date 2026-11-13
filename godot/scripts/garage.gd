@@ -105,6 +105,13 @@ func build(def: Dictionary) -> void:
 	door_h = look["door_h"]
 	spot = mouth - out * (d * 0.55)
 	apron = mouth + out * 6.0
+	# (where a car is set down to drive in: the self-test's. In a narrow street, such as df's in the Calle del Palo, six
+	# metres out is right against the houses across the way and the car would be put half inside them: brought nearer
+	# the door until a car fits. Found by the texturas session, 13 November 2026.)
+	for k in range(20):
+		if MapData.room_at(apron) >= 2.6 or apron.distance_to(mouth) <= 3.5:
+			break
+		apron -= out * 0.25
 	middle = (float(def["right"]) - float(def["left"])) / 2.0
 	_f = Node3D.new()
 	_f.position = MapData.at(mouth)

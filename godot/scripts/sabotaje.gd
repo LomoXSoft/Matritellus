@@ -331,13 +331,12 @@ func _after_pause(what: String) -> void:
 				_stage("follow")
 				G.hud.toast(Loc.t("t_sab_car"), 5.0)
 		"ring":                                  # Don Luis has heard
-			if G.phone_call != null or G.dlg != null:      # (the line is busy: in a moment)
+			if G.dlg != null:                          # (talking to somebody: in a moment. An engaged line is the switchboard's: llamadas.gd)
 				_pause = 2.0
 				_then = "ring"
 				return
 			_rang = true
-			G.phone_call = {"npc": "luis", "lines": "luis_fail_call", "ring": 0.4, "on": false, "left": 22.0, "side": true, "plain": true, "after": _to_retry}
-			G.hud.phone(true, _luis().shown_name(), Loc.t("ph_incoming"), _luis().look_data)
+			G.llamadas.ring({"npc": "luis", "lines": "luis_fail_call", "side": true, "plain": true, "once": true, "after": _to_retry})
 
 ## at a kebab: out he gets, with the two boxes
 func _unload() -> void:
@@ -591,7 +590,7 @@ func tick(dt: float, pp: Vector2) -> void:
 			elif t <= 0.0:
 				_acted()
 		"failed":
-			if _rang and G.phone_call == null and G.dlg == null:      # (you let it ring out: he is waiting all the same)
+			if _rang and G.phone_call == null and G.dlg == null and not G.llamadas.pending("luis"):      # (you let it ring out: he is waiting all the same)
 				_to_retry()
 
 ## A parked car the lorry cannot get past is taken out of its way (its owner has moved it, shall we say): the lorry

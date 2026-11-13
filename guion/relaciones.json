@@ -348,6 +348,78 @@
    "role": "Reparte el género a los cuatro kebabs del pueblo. Habla en «árabe», que nunca es árabe («Lo siento, no sé árabe, esto es un texto de ejemplo»).",
    "where": "En su camión de reparto, del Kebab Luis al Kebab Deluxe, al Tele Durum y al ShawarMadridejos. Solo sale durante la misión de Don Luis.",
    "notes": "Sin nombre. Personaje y camión provisionales (un Z15 negro): el modelo definitivo está por hacer. La broma, del autor: se ha metido un personaje árabe sin tener ni idea de su idioma."
+  },
+  {
+   "id": "alcalde",
+   "name": "El alcalde",
+   "foto": true,
+   "pos": [
+    9,
+    3
+   ],
+   "role": "El alcalde del pueblo. Habla en «político», sin acento manchego: muchas palabras y ninguna cosa.",
+   "where": "En la puerta del ayuntamiento (provisional: aún sin nombre ni aspecto propios).",
+   "notes": "En el torneo de los Galaxy Recress resulta ser DoomAssasin78, tricampeón manchego de Tokken 2 en los ochenta. Pierde contra ti… o se deja."
+  },
+  {
+   "id": "alcaldesa",
+   "name": "La mujer del alcalde",
+   "foto": true,
+   "pos": [
+    10,
+    3
+   ],
+   "role": "Lleva treinta años casada con él y nunca le había visto perder al Tokken.",
+   "where": "Sale en la escena de noche a la puerta de los recreativos.",
+   "notes": "«Creo que el pueblo se va a animar mucho a partir de ahora…»"
+  },
+  {
+   "id": "madre_alcalde",
+   "name": "Una señora mayor (la madre del alcalde)",
+   "foto": true,
+   "pos": [
+    9,
+    2
+   ],
+   "role": "La madre del alcalde: «¡¡Revientale la puta cara!!».",
+   "where": "Entre el público del torneo.",
+   "notes": "El alcalde: «Mamá, por favor, aquí no»."
+  },
+  {
+   "id": "copista",
+   "name": "La de la copistería",
+   "foto": true,
+   "pos": [
+    9,
+    5
+   ],
+   "role": "La chica de la copistería: de videojuegos no entiende, ella es más de ver el Nerflis.",
+   "where": "En la puerta de la copistería (provisional: aún sin nombre ni aspecto propios).",
+   "notes": "Te da los cinco carteles del torneo, pagados por adelantado por el alcalde."
+  },
+  {
+   "id": "comentarista",
+   "name": "El comentarista",
+   "foto": true,
+   "pos": [
+    10,
+    5
+   ],
+   "role": "Presenta la final del torneo de Tokken 9.",
+   "where": "En los Galaxy Recress, junto al micrófono.",
+   "notes": ""
+  },
+  {
+   "id": "katakumba",
+   "name": "Katakumba69",
+   "foto": true,
+   "pos": [
+    10,
+    4
+   ],
+   "role": "El friki del Tokken: finalista del torneo contra el alcalde.",
+   "where": "En los Galaxy Recress (se queda allí cuando reabren).",
+   "notes": "Está convencido de que el alcalde se dejó ganar."
   }
  ],
  "links": [
@@ -542,6 +614,62 @@
    "label": "le trae el género",
    "detail": "El mismo camión reparte a los cuatro kebabs; Don Luis te manda seguirlo para sabotear a los otros tres.",
    "source": "luis_go"
+  },
+  {
+   "a": "tu",
+   "b": "alcalde",
+   "kind": "trato",
+   "label": "el torneo",
+   "detail": "Pones el dinero del torneo; en la final le ganas a doble o nada.",
+   "source": "recress"
+  },
+  {
+   "a": "alcalde",
+   "b": "alcaldesa",
+   "kind": "familia",
+   "label": "casados",
+   "detail": "Treinta años casados.",
+   "source": "alcaldesa_rec_1"
+  },
+  {
+   "a": "alcalde",
+   "b": "madre_alcalde",
+   "kind": "familia",
+   "label": "madre",
+   "detail": "Su madre, entre el público del torneo.",
+   "source": "alcalde_rec_mum"
+  },
+  {
+   "a": "alberto",
+   "b": "alcalde",
+   "kind": "trato",
+   "label": "el torneo",
+   "detail": "Alberto tiene la idea; el alcalde llama a la gente y pega carteles.",
+   "source": "alberto_rec_door"
+  },
+  {
+   "a": "copista",
+   "b": "alcalde",
+   "kind": "negocio",
+   "label": "los carteles",
+   "detail": "El alcalde le paga los carteles por adelantado.",
+   "source": "copista_rec"
+  },
+  {
+   "a": "katakumba",
+   "b": "alcalde",
+   "kind": "trato",
+   "label": "la final",
+   "detail": "Pierde la final contra él.",
+   "source": "com_rec_kata"
+  },
+  {
+   "a": "comentarista",
+   "b": "katakumba",
+   "kind": "trato",
+   "label": "la final",
+   "detail": "Presenta la final.",
+   "source": "com_rec_final"
   }
  ],
  "cabos": [

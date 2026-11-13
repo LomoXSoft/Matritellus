@@ -15,7 +15,7 @@ const OPTIONS := [
 	{"key": "face", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8]},                       # beards (see chara.gd)
 	{"key": "gender", "values": [0, 1]},          # 0 man, 1 woman: only changes how people talk to you
 	{"key": "hair_style", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},
-	{"key": "pena", "values": [0, 1, 2, 3]},      # your peña (crew): Nietos de Marzo, La Croquetilla, El Bordillo, Los Centraditos
+	{"key": "pena", "values": [0, 1, 2, 3, 4, 5]},      # your peña (crew): see PENAS
 	{"key": "glasses", "values": [0, 1, 2, 3, 4, 5, 6]},
 	{"key": "earrings", "values": [0, 1, 2, 3, 4, 5, 6]},
 	{"key": "pendant", "values": [0, 1, 2, 3, 4, 5]},
@@ -40,9 +40,12 @@ static func where(option: int) -> Array:
 			return [tab, row + 1]
 	return [0, 0]
 
-const PENAS := ["Nietos de Marzo", "La Croquetilla", "El Bordillo", "Los Centraditos"]
-const PENA_COLORS := [Color("e23b3b"), Color("f2a900"), Color("2f8f5b"), Color("3b6fd9")]
-const KERCHIEFS := [0xe23b3b, 0xf2a900, 0x2f8f5b, 0x3b6fd9]      # the same colours, for the neckerchief
+## The peñas. Their logos (Luis's, 13 November 2026) are what they spray on the walls: assets/penas/<PENA_IDS>.png
+## (tools/make_penas.py). Each one's colour is its logo's, for the neckerchief its members wear.
+const PENAS := ["Nietos de Mayo", "La Croquetilla", "El Bordillo", "Peña Centradito", "Costrola Peña", "Peña Al Prao'"]      # (as their logos say)
+const PENA_IDS := ["nietos", "croquetilla", "bordillo", "centradito", "costrola", "al_prao"]
+const PENA_COLORS := [Color("2f63d6"), Color("f28a00"), Color("f2c200"), Color("8cc63f"), Color("d42a1e"), Color("1e8c3a")]
+const KERCHIEFS := [0x2f63d6, 0xf28a00, 0xf2c200, 0x8cc63f, 0xd42a1e, 0x1e8c3a]      # the same colours, for the neckerchief
 
 
 static func defaults() -> Array:

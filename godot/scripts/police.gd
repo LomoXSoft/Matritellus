@@ -30,6 +30,7 @@ var bust_t := 0.0
 var _calm := 0.0             # seconds since the last offence
 var _siren := 0.0
 var _blink := 0.0
+var boost := 1.0             # every patrol car's top speed, times this (out of town for a while: limite.gd)
 
 func setup(game_) -> void:
 	game = game_
@@ -51,12 +52,15 @@ func reset() -> void:
 	elite = false
 	_due = 0.0
 	_streak = 0.0
+	boost = 1.0
 	for e in cops:
 		e["car"].queue_free()
 	cops.clear()
 
 func _spawn(pp: Vector2, kind := "pitufo", ace := false) -> void:
 	var spot = MapData.random_node_near(pp, 80.0, 150.0)
+	if spot == null:
+		spot = MapData.random_node_near(pp, 30.0, 450.0)      # (out in the fields the roads are few and far between)
 	if spot == null:
 		return
 	var c = CarS.new()
@@ -97,6 +101,24 @@ func _start_chase() -> void:
 	_due = HEAD_START
 	game.hud.toast(Loc.t("t_chase"), 3.5)
 	Sfx.jingle([880, 660, 880, 660], 0.18)
+
+## Out of the town past the warning (limite.gd): everybody at once, with no head start. The heat full, two patrol cars
+## of Los Pitufos and the Tricornios' three.
+func all_out(pp: Vector2) -> void:
+	heat = 100.0
+	_calm = 0.0
+	if not chasing:
+		chasing = true
+		bust_t = 0.0
+		_streak = 0.0
+	arrive()
+	if not elite:
+		_call_tricornios(pp)
+
+## one more car after you: the Tricornios' and the Pitufos' in turn
+func one_more(pp: Vector2) -> void:
+	var kind := "tricornio" if cops.size() % 2 == 0 else "pitufo"
+	_spawn(pp, kind, kind == "tricornio")
 
 ## the patrol cars turn up (until there are two of them)
 func arrive() -> void:
@@ -148,6 +170,7 @@ func tick(dt: float, pp: Vector2, pvel: Vector2, in_car, frozen: bool, on_the_ga
 	seen = false
 	for e in cops:
 		var c = e["car"]
+		c.speed_boost = boost
 		for i in range(c.lights.size()):
 			c.lights[i].visible = (int(_blink * 6.0) + i) % 2 == 0
 		if frozen:
@@ -205,7 +228,7 @@ func tick(dt: float, pp: Vector2, pvel: Vector2, in_car, frozen: bool, on_the_ga
 		e["off"] = off
 		var steer := clampf(off * 2.6, -1.0, 1.0)
 		# --- how fast: flat out when the way is clear, but never faster than they can stop or take the corner ---
-		var top: float = c.spec["max"] * (1.0 if e["sees"] else (0.92 if ace else 0.8))             # searching is slower than chasing
+		var top: float = c.spec["max"] * boost * (1.0 if e["sees"] else (0.92 if ace else 0.8))             # searching is slower than chasing
 		var v := top
 		if clear < reach - 0.5:
 			v = minf(v, sqrt(2.0 * 9.5 * maxf(0.0, clear - nose - 1.4)))
