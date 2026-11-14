@@ -11,12 +11,18 @@ clay_roof_tiles -- Amal Kumar -- CC0 -- https://polyhaven.com/a/clay_roof_tiles
 clay_roof_tiles_02 -- Amal Kumar -- CC0 -- https://polyhaven.com/a/clay_roof_tiles_02
 granite_tile_03 -- Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/granite_tile_03
 granite_tile_04 -- Amal Kumar -- CC0 -- https://polyhaven.com/a/granite_tile_04
+granular_concrete -- Dario Barresi, Michael Jenkins -- CC0 -- https://polyhaven.com/a/granular_concrete
 medieval_blocks_03 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/medieval_blocks_03
+medieval_red_brick -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/medieval_red_brick
 old_planks_02 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/old_planks_02
 painted_plaster_wall -- Amal Kumar -- CC0 -- https://polyhaven.com/a/painted_plaster_wall
+plaster_stone_wall_02 -- Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/plaster_stone_wall_02
 plastered_wall_04 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/plastered_wall_04
 red_brick_03 -- Rob Tuytel -- CC0 -- https://polyhaven.com/a/red_brick_03
+rock_wall -- Dario Barresi, Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/rock_wall
+rock_wall_15 -- Dimitrios Savva -- CC0 -- https://polyhaven.com/a/rock_wall_15
 roof_tiles -- Stephan Seeliger -- CC0 -- https://polyhaven.com/a/roof_tiles
+square_cobblestone -- Sơn Nguyễn -- CC0 -- https://polyhaven.com/a/square_cobblestone
 stone_tile_wall -- Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/stone_tile_wall
 stone_wall -- Dario Barresi, Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/stone_wall
 stone_wall_02 -- Dario Barresi, Charlotte Baglioni -- CC0 -- https://polyhaven.com/a/stone_wall_02

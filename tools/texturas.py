@@ -41,6 +41,19 @@ SETS = {
     'clay_roof_tiles': ('keep', 0.42, 1.0),
     'clay_roof_tiles_02': ('keep', 0.5, 1.0),
     'roof_tiles': ('keep', 0.5, 1.0),
+    # the Petril (the old convent of San Francisco, godot/scripts/petril.gd), 14 November 2026: chosen against crops of
+    # the real walls. Hand-made brick with thick lime joints, brought to the bleached terracotta it has in the sun;
+    # the ochre rubble of the retaining wall; the dark rubble of the plinths; and a granular concrete that, tinted,
+    # is the bush-hammered granite of steps, copings and columns and the sandy floor of the little square
+    # (second pass, the same day: brick and panels measured patch by patch against the council's photographs taken
+    # square-on in the afternoon sun -- there the brick is paler and yellower than in Street View's, so it is set
+    # between the two; and the panels of the long front are nearly its colour, their stones hardly showing: a fourth
+    # figure softens a set's light and dark)
+    'medieval_red_brick': ('recolour', (0.85, 0.65, 0.46), 1.0),
+    'plaster_stone_wall_02': ('keep', 0.72, 1.0, 0.7),
+    'rock_wall': ('keep', 0.55, 0.85),
+    'rock_wall_15': ('keep', 0.40, 1.1),
+    'granular_concrete': ('tint', 50, 0.95, 1.6),
 }
 # the size of a repeat in metres, where the source's own figure is not to be trusted (judged from the courses of brick)
 METRES = {'brick_wall_003': 1.2, 'brick_wall_006': 2.6, 'brick_wall_07': 1.45, 'brick_wall_09': 2.0, 'brick_wall_10': 1.75,
@@ -66,6 +79,9 @@ def main():
             a = a * gain
             lum = a.mean(axis=2, keepdims=True)
             a = lum + (a - lum) * how[2]
+            if len(how) > 3:                                     # (softer: its light and dark drawn in towards its mean)
+                mean = a.reshape(-1, 3).mean(axis=0)
+                a = mean + (a - mean) * how[3]
             img = Image.fromarray((np.clip(a, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8))
         elif how[0] == 'recolour':
             mean = a.reshape(-1, 3).mean(axis=0)

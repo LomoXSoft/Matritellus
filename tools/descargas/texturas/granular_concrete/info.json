@@ -1,0 +1,13 @@
+{
+ "name": "granular_concrete",
+ "dimensions_mm": [
+  2400.0000953674316,
+  2400.0000953674316
+ ],
+ "authors": {
+  "Dario Barresi": "Processing",
+  "Michael Jenkins": "Photography"
+ },
+ "licence": "CC0",
+ "source": "https://polyhaven.com/a/granular_concrete"
+}

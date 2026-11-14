@@ -183,6 +183,25 @@ salud_poly = unary_union([Polygon([salud_at(*q) for q in ring]) for ring in (
     [(35.8, 3.5), (48.3, 3.5), (48.3, 4.8), (64.4, 4.8), (64.4, 13), (35.8, 13)])])
 salud = {'o': list(SALUD['o']), 'u': list(SALUD['u'])}
 
+# The Petril: the old convent of San Francisco, its church and the little raised square in front of them, at the
+# corner of the Calle de las Cruces and the Calle de San Francisco (godot/scripts/petril.gd; the user, 14 November
+# 2026, with street photos kept in referencias/petril/). Catastro's parts of its two parcels stay what they are for
+# everybody else -- a block to bump into, a neighbour that hides walls, a roof on the map -- but nothing is drawn for
+# them: petril.gd builds the lot. Each part: how high its walls stand (None: not even a block -- the porch of the
+# church, which people walk under). Its own frame: the origin is the south-west corner of the church (San Francisco
+# and the square), u runs east along the church's south front, and the square lies to the south of that line.
+PETRIL_PARTS = {'4289026VJ5648N': {'part1': 11.6, 'part3': 14.2, 'part2': 3.4, 'part4': None},      # the church: nave, head, the lean-to by the head, the porch
+                '4289023VJ5648N': {'part1': 7.3}}                                                    # the convent
+PETRIL = {'o': (-108.9, 261.7), 'u': (0.9784, 0.2066)}
+def petril_at(s, t, o=PETRIL['o'], u=PETRIL['u']): return (o[0] + u[0] * s - u[1] * t, o[1] + u[1] * s + u[0] * t)      # t: metres south of the church's front
+# nothing of the town's own grows or stands in the square, on its retaining wall or at the foot of it
+petril_zone = Polygon([petril_at(-4.5, -30.0), petril_at(35.5, -27.0), petril_at(34.0, 27.5), petril_at(16.0, 25.5), petril_at(-6.5, 21.0)])
+petril = {'o': list(PETRIL['o']), 'u': list(PETRIL['u'])}
+petril_parts = []
+_petril_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'petril.gd')
+if not (os.path.exists(_petril_gd) and 'const READY := true' in open(_petril_gd, encoding='utf-8').read()):      # (not built yet: the convent stays an ordinary building)
+    PETRIL_PARTS, petril, petril_zone = {}, {}, Polygon()
+
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
 # the avenue and the compound lies to the east of it. Catastro parts and generic trees are kept out of that rectangle.
@@ -359,6 +378,10 @@ for pid, floors, v in raw:
             was = p.area
             p = p.difference(bay).buffer(-0.3, join_style=2).buffer(0.3, join_style=2)      # (no slivers left standing)
             print('garage', GARAGES[gi]['id'], 'cuts part', bid, 'floors', floors, 'area %.0f -> %.0f' % (was, p.area))
+    if bid in PETRIL_PARTS:                 # (the Petril: solid, but built by petril.gd)
+        ph = PETRIL_PARTS[bid].get(pid.split('_')[-1])
+        if ph is not None: petril_parts.append((bid, floors, p, ph))
+        continue
     hand = house_of(bid, floors)
     if hand:                                # (it stays a part: it is still a block to bump into, a roof on the map, a neighbour that hides walls; only its own walls and roof are not drawn)
         hd = HOUSES[hand]
@@ -384,6 +407,12 @@ for hand, (bid, floors, pieces) in hand_groups.items():
     u = unary_union([q.buffer(0.2, join_style=2) for q in pieces]).buffer(-0.2, join_style=2)
     for g in (u.geoms if u.geom_type == 'MultiPolygon' else [u]):
         add_part(g, bid, floors, None, hand)
+for bid, floors, p, ph in petril_parts:
+    for g in (p.geoms if p.geom_type == 'MultiPolygon' else [p]):
+        g = orient(Polygon(g.exterior).simplify(0.3), 1.0)
+        if g.is_empty or g.area < 5 or not g.is_valid: continue
+        parts.append({'poly': g, 'h': ph, 'floors': min(floors, 5), 'style': 5, 'tint': 0, 'roofc': 0, 'bid': bid, 'look': None, 'hand': 'petril'})
+print('the Petril: %d parts kept solid and left to petril.gd, %.0f m2' % (len(petril_parts), sum(q[2].area for q in petril_parts)))
 for (bid, name, floors), (look, pieces) in look_groups.items():
     u = unary_union([q.buffer(0.2, join_style=2) for q in pieces]).buffer(-0.2, join_style=2)
     n0 = len(parts)
@@ -666,6 +695,9 @@ trees = [t for t in trees if not any(m.contains(Point(t[0], t[1])) for m in gara
 if church:          # the church plants its own
     u = church['u']; _yard = frame_rect(church['o'], u, (-u[1], u[0]), -13, church['len'] + 6, -church['wid'] - 13, 13)
     trees = [t for t in trees if not _yard.contains(Point(t[0], t[1]))]
+_n_trees = len(trees)
+trees = [t for t in trees if not petril_zone.contains(Point(t[0], t[1]))]      # the Petril plants its own (a tree and its cypresses)
+print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
 for e in els:
@@ -677,7 +709,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

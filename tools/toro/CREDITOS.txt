@@ -1,0 +1,10 @@
+Toro de Osborne de la A-4, km 120 (Madridejos)
+
+- Silueta: calcada del alzado sur (proyección paralela) del modelo "Toro en Madridejos" de Fdiaz.osborne en
+  3D Warehouse (https://3dwarehouse.sketchup.com/model/d50627259e4922fd291260f0bd0e36a1), tal como lo dibuja su
+  visor: alzado_sur.jpg. Licencia de modelos de 3D Warehouse (Trimble). No se ha descargado ni se reparte el modelo:
+  solo el contorno calcado (godot/data/toro.json, hecho por silueta.py).
+- Sitio y orientación: dos panorámicas de Street View desde la A-4, la del camino de atrás y la ficha de Google
+  "Toro de Osborne de Madridejos (Toledo)"; coinciden con la geolocalización del modelo a menos de 3 m.
+- La estructura de acero y el talud de arcilla se hacen en godot/scripts/toro.gd a partir de esas fotos.
+- La silueta del toro es marca registrada de Osborne; en el juego sale sin letras, como en las carreteras.

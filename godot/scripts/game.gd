@@ -664,7 +664,10 @@ func _apply_sky() -> void:
 	var hor: Color = (a[4] as Color).lerp(b[4], t)
 	if clock >= SUNRISE and clock <= SUNSET:
 		var d := (clock - SUNRISE) / (SUNSET - SUNRISE)
-		sun.rotation_degrees = Vector3(-maxf(3.0, 72.0 * sin(d * PI)), lerpf(-100.0, 100.0, d), 0.0)
+		# Up in the east, over the south at midday, down in the west. (The light shines down the lamp's -z; the map's x is
+		# east and its z south. It was lerpf(-100, 100): the sun came up in the west and set in the east -- found by the
+		# Petril session against the convent's photos, the user, 14 November 2026.)
+		sun.rotation_degrees = Vector3(-maxf(3.0, 72.0 * sin(d * PI)), lerpf(100.0, -100.0, d), 0.0)
 	else:
 		sun.rotation_degrees = Vector3(-48.0, 150.0, 0.0)              # the moon
 	sun.light_color = (a[1] as Color).lerp(b[1], t)
@@ -672,7 +675,10 @@ func _apply_sky() -> void:
 	sky_mat.sky_top_color = top
 	sky_mat.sky_horizon_color = hor
 	sky_mat.ground_horizon_color = hor
-	env.ambient_light_color = hor.lerp(top, 0.25).lerp(Color.WHITE, 0.35)      # shade takes its colour from the sky
+	# shade takes its colour from the sky; by day much of it is the white of the town's own walls bouncing back, so
+	# white render in the shade still reads white (the user's rule), while the night stays blue
+	var day := smoothstep(SUNRISE - 0.3, SUNRISE + 1.2, clock) * (1.0 - smoothstep(SUNSET - 1.2, SUNSET + 0.3, clock))
+	env.ambient_light_color = hor.lerp(top, 0.25).lerp(Color.WHITE, lerpf(0.35, 0.72, day))
 	env.ambient_light_energy = lerpf(a[5], b[5], t)
 	env.fog_light_color = hor
 	world.set_clock(clock)

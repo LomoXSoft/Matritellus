@@ -35,6 +35,7 @@ var rnx := 0
 var rnz := 0
 var salud: Dictionary = {}       # the health centre's frame: {o: south-west corner, u: east along the Callejón Pando}
 var church: Dictionary = {}      # the parish church's frame: {o: south-west corner, u: east along the south wall, len, wid, tower}
+var petril: Dictionary = {}      # the Petril's frame (petril.gd): {o: south-west corner of its church, u: east along the church's front}
 var decks: Array = []            # things people walk over: {o, ax: along it, half, wide (half-width), top: its height, ramp} (the old bridge)
 var _blocked := {}               # stretches of street no car can use (Seg -> true)
 var garages: Array = []          # the garages you drive into: {id, m: doorway [x, z], n: out into the street, w, d, left, right}
@@ -82,6 +83,7 @@ func _ready() -> void:
 	garages = data.get("garages", [])
 	church = data.get("church", {})
 	salud = data.get("salud", {})
+	petril = data.get("petril", {})
 	wall_y = data.get("wall_y", [])
 	looks = data.get("looks", [])
 	houses = data.get("houses", [])

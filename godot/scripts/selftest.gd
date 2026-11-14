@@ -985,6 +985,69 @@ func _casas_checks() -> void:
 		_check(MapData.road_edge_dist(casa.spot(casa.length / 2.0, 1.0)) > 0.3,
 			"and the upper floor, its balconies and its eaves fly over the pavement, not over the road (%.1f m of pavement left beyond them)" % MapData.road_edge_dist(casa.spot(casa.length / 2.0, 1.0)))
 
+## The Petril (petril.gd): the old convent, its church and their raised square. `walk`: also go up its steps and its
+## ramp on foot (left out of the full run, which has enough walking of its own).
+func _petril_checks(walk := false) -> void:
+	var pt = g.world.petril
+	_check(pt != null and not MapData.petril.is_empty() and pt.pieces > 900, "the Petril is built by hand: the church, the convent and their square (%d pieces)" % (pt.pieces if pt != null else 0))
+	if pt == null or MapData.petril.is_empty():
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var lv: float = pt.level
+	# the square is a floor of its own, over the two streets; the steps and the ramp bring you up to it
+	var mid_steps: float = (pt.STEPS.x + pt.STEPS.y) / 2.0
+	var on_floor: float = MapData.foot(pt.spot(9.0, 9.0))
+	var street: float = MapData.foot(pt.spot(-1.5, mid_steps))
+	var half_way: float = MapData.foot(pt.spot(pt.P_NW.x + 0.15 + pt.STEPS_IN / 2.0, mid_steps))
+	var on_ramp: float = MapData.foot(pt.spot(17.1, (pt.RAMP_TOP + pt.RAMP_FOOT) / 2.0))
+	var ramp_foot: float = MapData.foot(pt.spot(16.0, pt.RAMP_FOOT + 0.6))
+	_check(absf(on_floor - lv) < 0.01 and lv - street > 0.6 and lv - street < 1.1 and half_way > street + 0.2 and half_way < lv - 0.2,
+		"its square stands %.2f m over the Calle de San Francisco, and its steps take you up by halves (%.2f half way)" % [lv - street, half_way - street])
+	_check(on_ramp < lv - 0.3 and on_ramp > ramp_foot + 0.3 and absf(MapData.foot(pt.spot(17.1, pt.RAMP_TOP - 0.5)) - lv) < 0.01,
+		"the ramp from the Calle de las Cruces climbs %.2f m along the convent to the same floor" % (lv - ramp_foot))
+	var floor_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(MapData.at(pt.spot(9.0, 9.0), 6.0), MapData.at(pt.spot(9.0, 9.0), -3.0), 1))
+	var ramp_at: Vector2 = pt.spot(17.1, (pt.RAMP_TOP + pt.RAMP_FOOT) / 2.0)
+	var ramp_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(MapData.at(ramp_at, 6.0), MapData.at(ramp_at, -3.0), 1))
+	_check(not floor_hit.is_empty() and absf(floor_hit["position"].y - lv) < 0.03 and not ramp_hit.is_empty() and absf(ramp_hit["position"].y - on_ramp) < 0.06,
+		"and both are solid under wheels as well as feet")
+	# nobody walks through its walls, its pretil or its doors
+	var blocked := 0
+	var ways: Array = [[Vector2(-2.5, 4.0), Vector2(3.0, 4.0)], [Vector2(6.0, 22.5), Vector2(6.0, 16.0)], [Vector2(4.4, 3.0), Vector2(4.4, -4.0)], [Vector2(14.0, 8.7), Vector2(22.0, 8.7)],
+		[Vector2(13.6, 3.0), Vector2(13.6, -4.0)], [Vector2(-3.0, -8.0), Vector2(4.0, -8.0)], [Vector2(22.0, 27.5), Vector2(22.0, 20.0)]]
+	for way in ways:
+		var a: Vector2 = pt.spot(way[0].x, way[0].y)
+		var b: Vector2 = pt.spot(way[1].x, way[1].y)
+		var h: float = maxf(MapData.foot(a), MapData.foot(b)) + 0.6
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, h, a.y), Vector3(b.x, h, b.y), 1)).is_empty():
+			blocked += 1
+	_check(blocked == ways.size(), "the pretil, the church, the convent and their doors are solid (%d of %d ways in blocked)" % [blocked, ways.size()])
+	# ...and the two streets beside it are as open as they were
+	var open := 0
+	for lane in [[Vector2(-4.0, -27.0), Vector2(-4.4, 21.0)], [Vector2(-3.0, 23.4), Vector2(29.0, 29.0)]]:
+		var a2: Vector3 = MapData.at(pt.spot(lane[0].x, lane[0].y), 1.0)
+		var b2: Vector3 = MapData.at(pt.spot(lane[1].x, lane[1].y), 1.0)
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(a2, b2, 1))
+		if hit.is_empty() or (hit["position"] as Vector3).y < minf(a2.y, b2.y) - 0.6:        # (the street itself, where it rises, is no obstacle)
+			open += 1
+	var nearest := 99.0
+	for q in pt.yard:
+		nearest = minf(nearest, MapData.road_edge_dist(q))
+	_check(open == 2 and pt.yard.size() >= 20 and nearest >= 0.2, "nothing of it stands in the Calle de San Francisco or the Calle de las Cruces: of %d walls, pillars, trees and benches the nearest to the asphalt is %.1f m off" % [pt.yard.size(), nearest])
+	if not walk:
+		return
+	var was: Vector2 = g.player.p
+	g.player.p = pt.spot(-1.2, mid_steps)
+	await _frames(3)
+	var left: float = await _walk_at(pt.spot(6.0, mid_steps), 5.0)
+	_check(left < 0.6 and absf(g.player.global_position.y - lv) < 0.05, "on foot you go up the steps into the square (%.1f m short, %.2f m off its floor)" % [left, g.player.global_position.y - lv])
+	g.player.p = pt.spot(17.0, pt.RAMP_FOOT + 1.2)
+	await _frames(3)
+	left = await _walk_at(pt.spot(17.2, pt.RAMP_TOP - 1.5), 6.0)
+	_check(left < 0.6 and absf(g.player.global_position.y - lv) < 0.05, "...and up the ramp (%.1f m short, %.2f m off its floor)" % [left, g.player.global_position.y - lv])
+	left = await _walk_at(pt.spot(pt.CHURCH_W / 2.0, 1.2), 6.0)
+	_check(left < 0.6, "...and across it under the porch to the door of the church (%.1f m short)" % left)
+	g.player.p = was
+
 func _church_checks() -> void:
 	var ch = g.world.church
 	var space := get_tree().root.get_world_3d().direct_space_state
@@ -5209,6 +5272,29 @@ func _run() -> void:
 		print("FIRMAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--petril"):        # the Petril, from all round
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.apply_moment("noon", true)
+		var pt = g.world.petril
+		for v in [["esquina", Vector2(-6.0, 25.0), 1.7, Vector2(8.0, 6.0), 4.5], ["cruces", Vector2(10.0, 27.5), 1.7, Vector2(9.0, 8.0), 3.5], ["san_francisco", Vector2(-5.5, 11.0), 1.7, Vector2(8.0, 6.0), 3.0],
+				["rampa", Vector2(20.0, 29.5), 1.7, Vector2(13.0, 12.0), 3.0], ["plazuela", Vector2(1.5, 16.5), 2.5, Vector2(12.0, 0.0), 5.0], ["iglesia", Vector2(9.5, 17.0), 2.5, Vector2(5.5, 0.0), 6.5],
+				["convento", Vector2(1.5, 9.5), 2.5, Vector2(18.2, 9.5), 4.6], ["costado", Vector2(-6.5, -22.0), 1.7, Vector2(0.5, -8.0), 7.0], ["cabecera", Vector2(-6.0, -34.0), 1.7, Vector2(3.0, -22.0), 8.0],
+				["aire", Vector2(-14.0, 36.0), 28.0, Vector2(10.0, 2.0), 3.0], ["aire_norte", Vector2(-10.0, -48.0), 30.0, Vector2(12.0, -8.0), 6.0]]:
+			var eye: Vector2 = pt.spot(v[1].x, v[1].y)
+			var at: Vector2 = pt.spot(v[3].x, v[3].y)
+			g.player.p = pt.spot(40.0, 60.0)
+			g.cam.position = MapData.at(eye, v[2])
+			g.cam.look_at(MapData.at(at, v[4]))
+			await _frames(6)
+			await _shot("petril_" + v[0])
+		g.phase = "free"
+		await _petril_checks(true)
+		print("PETRIL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--church"):        # the parish church, from all round
 		shots = true
 		g.menu.close()
@@ -5649,7 +5735,7 @@ func _run() -> void:
 		print("LLEGADA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
-	for arg in OS.get_cmdline_user_args():                # --vistas=name:x,z,h,tx,tz,th;... : pictures from anywhere (metres on the map; h over the ground there)
+	for arg in OS.get_cmdline_user_args():                # --vistas=name:x,z,h,tx,tz,th[,fov];... : pictures from anywhere (metres on the map; h over the ground there)
 		if String(arg).begins_with("--vistas="):
 			shots = true
 			g.menu.close()
@@ -5677,7 +5763,15 @@ func _run() -> void:
 				var from := Vector2(float(v[0]), float(v[1]))
 				var to := Vector2(float(v[3]), float(v[4]))
 				vcam.position = Vector3(from.x, MapData.height(from) + float(v[2]), from.y)
-				vcam.look_at(Vector3(to.x, MapData.height(to) + float(v[5]), to.y))
+				var look := Vector3(to.x, MapData.height(to) + float(v[5]), to.y)
+				if label.begins_with("pt_") and g.world.petril != null:          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square)
+					var pt = g.world.petril
+					from = pt.spot(float(v[0]), float(v[1]))
+					to = pt.spot(float(v[3]), float(v[4]))
+					vcam.position = Vector3(from.x, pt.level + float(v[2]), from.y)
+					look = Vector3(to.x, pt.level + float(v[5]), to.y)
+				vcam.look_at(look)
+				vcam.fov = float(v[6]) if v.size() > 6 else 65.0          # (a seventh number: the field of view, as Street View's fov)
 				if label.begins_with("pj"):          # (a view named pj...: the player stands at what is looked at, a step this side of it)
 					g.player.p = to + (from - to).normalized() * 0.55
 				await _frames(12)
@@ -6541,6 +6635,7 @@ func _run() -> void:
 	await _driving_checks()
 	await _relief_checks()
 	await _church_checks()
+	await _petril_checks()
 	_looks_checks()
 	_casas_checks()
 	_tester_checks()

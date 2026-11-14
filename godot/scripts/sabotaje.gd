@@ -629,6 +629,9 @@ func _follow(dt: float, pp: Vector2) -> void:
 			_unload()
 		return
 	_make_way()
+	if c.forward_speed() < -0.5:                 # backing out of somewhere, towards you: if it brings you within its mirror,
+		armed = false                            # that is not you following too close -- not until you have dropped back again
+		seen = 0.0
 	if not armed and d > CLOSE + 5.0:
 		armed = true
 	# "he sees you in the mirror": close behind it while it is going along. (Not while it stands in a jam or backs out of
