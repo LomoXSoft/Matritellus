@@ -14,6 +14,8 @@ func _ready() -> void:
 	g = get_parent()
 	g.dwell = 0.0                                  # (a mission's circle counts at once here; _reglas_checks tries the two seconds)
 	shots = OS.get_cmdline_user_args().has("--shots")
+	if DisplayServer.get_name() != "headless":      # (a test's window takes no keys: whatever is being typed on the PC meanwhile went to it, and pressed through its menus)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	_run.call_deferred()
 
 func _frames(n: int) -> void:
@@ -521,7 +523,12 @@ func _traffic_checks() -> void:
 		jul.drive(1.0, 0.0, false, true, 0.016)
 		await get_tree().physics_frame
 	var plain: float = jul.forward_speed()
-	jul.place(seg.a + u * 4.0 + rightv * lane, heading)
+	var hp_after: float = jul.hp
+	var first_end: Vector2 = jul.p
+	jul.queue_free()                                   # (a fresh one for the turbo's run: the one put back in its place stuck at 0 km/h, now and then)
+	jul = CarS.new()
+	g.add_child(jul)
+	jul.setup("julietta", 0, seg.a + u * 4.0 + rightv * lane, heading)
 	await _frames(10)
 	jul.turbo = true
 	var lit := false
@@ -530,7 +537,9 @@ func _traffic_checks() -> void:
 		await get_tree().physics_frame
 		lit = lit or (jul.flame != null and jul.flame.emitting)
 	var boosted: float = jul.forward_speed()
-	_check(plain > 12.0 and boosted > plain * 1.3 and lit, "the Julietta's turbo pushes much harder (%.0f km/h after 2.5 s instead of %.0f) and spits fire" % [boosted * 3.6, plain * 3.6])
+	_check(plain > 12.0 and boosted > plain * 1.3 and lit, "the Julietta's turbo pushes much harder (%.0f km/h after 2.5 s instead of %.0f) and spits fire%s" % [boosted * 3.6, plain * 3.6,
+		"" if boosted > plain * 1.3 else " -- first run ended %.0f m on at %.0f hp; now at %s, %.1f m from the start, sleeping %s, frozen %s, flipped %s, broken %s, wheels on the ground %d, near: %s" % [first_end.distance_to(seg.a + u * 4.0), hp_after, str(jul.p.round()), jul.p.distance_to(seg.a + u * 4.0 + rightv * lane), jul.sleeping, jul.freeze, jul.flipped(), jul.broken(),
+			jul.wheels.filter(func(w): return w.is_in_contact()).size(), str(g.cars.filter(func(c): return is_instance_valid(c) and c != jul and c.p.distance_to(jul.p) < 8.0).map(func(c): return "%s %s" % [c.kind, str(c.p.round())]))]])
 	# the nitro is a bottle: it runs down, burns out, and fills again at speed
 	var left_half: float = jul.nitro
 	for i in range(220):
@@ -1596,7 +1605,9 @@ func _mayhem_checks() -> void:
 	g.player.p = solo.get_meta("p") - Vector2(0, 0.9)
 	g.player.h = 0.0
 	await _frames(3)
+	g._punch_cool = 0.0
 	g._punch()
+	await _frames(12)                              # (with Henry's bat the hit gets there a moment later)
 	_check(not solo.freeze, "a punch knocks a bin over")
 	g._enter_car(c)
 	g.police.reset()
@@ -1624,7 +1635,12 @@ func _mayhem_checks() -> void:
 	g.police.reset()
 	g.traffic._spawn_t = 1.0
 	# pause menu
+	c.set_speed(Vector2(sin(c.h), cos(c.h)) * 6.0)  # (rolling along when the pause comes)
+	var held_at: Vector3 = c.global_position
 	g._open_pause()
+	await _frames(20)
+	_check(c.global_position.distance_to(held_at) < 0.2 and Sfx.held() and not Ambience._players.any(func(p): return p.playing and not p.stream_paused),
+		"the pause stops the world: the car stays where it was (%.2f m) and the music and the engine wait" % c.global_position.distance_to(held_at))
 	var pause_items: Array = g._menu_page("pause")["items"].map(func(it): return it["text"])
 	_check(g.paused and g.menu.visible and pause_items == [Loc.t("m_resume"), Loc.t("m_log"), Loc.t("m_save"), Loc.t("m_settings"), Loc.t("m_quit")], "pause menu: Resume, Log, Save, Settings, Quit")
 	g.money = 77
@@ -1633,6 +1649,9 @@ func _mayhem_checks() -> void:
 	g.money = 0
 	g._close_pause()
 	_check(not g.paused and not g.menu.visible, "Resume closes it")
+	await _frames(10)
+	_check(c.global_position.distance_to(held_at) > 0.2 and not Sfx.held(), "and the world goes on: the car rolls on (%.1f m) and the sound comes back" % c.global_position.distance_to(held_at))
+	c.set_speed(Vector2.ZERO)
 	_check(g._menu_page("main")["items"][0]["text"] == Loc.t("menu_continue") and g._slot_label(g.slot).contains("77"), "with a save, the main menu offers Continue and the slot shows its mission and money")
 	# radio
 	var first: Dictionary = Ambience.next_station()
@@ -1646,12 +1665,15 @@ func _mayhem_checks() -> void:
 	var radio_gone: bool = g.hud.radio_slot.get_theme_constant("margin_bottom") == g.hud.RADIO_IN and g.hud.radio_box.modulate.a == 0.0 \
 		and g.hud.street_slot.get_theme_constant("margin_bottom") == 16
 	g.hud.radio_card(first)
-	_check(not first.is_empty() and first == Ambience.stations[Ambience.station - 1] and Ambience.stations.size() == 5
+	var folders := 0                                 # (as many stations as there are folders radio1, radio2...: the user adds them)
+	while DirAccess.dir_exists_absolute(Ambience.radio_root().path_join("radio%d" % (folders + 1))):
+		folders += 1
+	_check(not first.is_empty() and first == Ambience.stations[Ambience.station - 1] and Ambience.stations.size() == folders and folders >= 5
 		and Ambience.stations.all(func(s): return s["logo"] != null and s["about"] != "" and not s["tracks"].is_empty() and Ambience._radio_stream(Ambience.stations.find(s) + 1) != null)
-		and g.hud.radio_box.logo == first["logo"] and g.hud.radio_box.who == Ambience.playing(first)[0] and g.hud.radio_box.what == Ambience.playing(first)[1] and g.hud.radio_box.preset == Ambience.station and g.hud.radio_box.presets == 5 and radio_hid and radio_up and radio_gone,
-		"the car radio has five stations, each a folder with its name, description, logo and music; tuning one in slides the radio's front up from the bottom and back down: its logo, who is playing what, and its button lit (%s / %s, button %d)" % [g.hud.radio_box.who, g.hud.radio_box.what, g.hud.radio_box.preset])
+		and g.hud.radio_box.logo == first["logo"] and g.hud.radio_box.who == Ambience.playing(first)[0] and g.hud.radio_box.what == Ambience.playing(first)[1] and g.hud.radio_box.preset == Ambience.station and g.hud.radio_box.presets == folders and radio_hid and radio_up and radio_gone,
+		"the car radio has a station for each folder (%d), each with its name, description, logo and music; tuning one in slides the radio's front up from the bottom and back down: its logo, who is playing what, and its button lit (%s / %s, button %d)" % [folders, g.hud.radio_box.who, g.hud.radio_box.what, g.hud.radio_box.preset])
 	var dial: Array = g._menu_page("log_radio")["items"].filter(func(it): return it.has("logo"))
-	_check(dial.size() == 5 and dial.all(func(it): return it["logo"] != null and it["sub"] != "" and it["songs"] != "") and dial.filter(func(it): return it["on"]).size() == 1 and g.AGENDA.size() == 5
+	_check(dial.size() == folders and dial.all(func(it): return it["logo"] != null and it["sub"] != "" and it["songs"] != "") and dial.filter(func(it): return it["on"]).size() == 1 and g.AGENDA.size() == 5
 		and dial[Ambience.station - 1]["text"] == first["name"] and String(dial[Ambience.station - 1]["songs"]).contains(Ambience.playing(first)[1]),
 		"everything else about them is on a page of the Agenda: logo, name, description and the tunes of each, the one tuned in marked (%s)" % dial[Ambience.station - 1]["text"])
 	# peña graffiti
@@ -1679,6 +1701,10 @@ func _mayhem_checks() -> void:
 		if n.p.distance_to(tag["p"]) < 4.0 and n.id == "":
 			n.p = n.p + (n.p - tag["p"]).normalized() * 6.0
 			n.home = n.p
+	for beside in g.cars + g.traffic.list.map(func(e): return e["car"]):      # (nor a car parked or stopped beside it: "Conducir" won once)
+		if is_instance_valid(beside) and beside.p.distance_to(tag["p"]) < 6.0:
+			var off: Vector2 = (beside.p - tag["p"]).normalized() if beside.p.distance_to(tag["p"]) > 0.1 else Vector2(1, 0)
+			beside.place(beside.p + off * 9.0, beside.h)
 	await _frames(4)
 	_check(g.near_tag == tag and g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_paint")), "standing at a rival tag offers to paint over it: %s" % g.hud.prompt.text)
 	g.cam_yaw = tag["node"].rotation.y + PI
@@ -2356,7 +2382,24 @@ func _reglas_checks(pictures := false) -> void:
 	# the graphics options: each row does something, and the defaults are the game as it always was
 	_check(Settings.preset() == 2 and g.get_viewport().msaa_3d == Viewport.MSAA_4X and g.env.ssao_enabled and g.sun.shadow_enabled and is_equal_approx(g.cam.fov, 55.0) and PartsS.draw == 1.0,
 		"the graphics options start at High: the game as it always was")
-	_check(g._menu_page("graphics")["items"].size() == 16, "(sixteen rows on the graphics page)")
+	_check(g._menu_page("graphics")["items"].size() == 19, "(nineteen rows on the graphics page)")
+	_check(g.get_viewport().use_occlusion_culling and g.occluders != null and (g.occluders.occluder as ArrayOccluder3D).vertices.size() > 20000 and is_equal_approx(g.get_viewport().mesh_lod_threshold, 2.5) and is_equal_approx(PartsS.detail, PartsS.LOD_NEAR),
+		"High has occlusion culling (the town's walls hide what is behind them: %d corners) and automatic LOD on" % ((g.occluders.occluder as ArrayOccluder3D).vertices.size() if g.occluders != null else 0))
+	Settings.data["lod"] = false
+	Settings.data["dynres"] = true
+	Settings.apply()
+	_check(is_equal_approx(g.get_viewport().mesh_lod_threshold, 0.0) and is_equal_approx(PartsS.detail, 1.0) and g.get_viewport().scaling_3d_mode == Viewport.SCALING_3D_MODE_FSR,
+		"LOD off draws everything at its fullest; dynamic resolution on keeps FSR ready to bring a smaller 3D up")
+	var ups_seen: Array = []
+	for i in range(Settings.upscalers()):
+		g._step_upscale(1)
+		ups_seen.append(int(Settings.data["upscale"]))
+	ups_seen.sort()
+	_check(ups_seen == range(Settings.upscalers()), "the spatial upscaling goes round the ways there are here (%s of Bilineal, FSR 1, FSR 2: a phone has no FSR 2)" % str(ups_seen))
+	Settings.data["lod"] = true
+	Settings.data["dynres"] = false
+	Settings.data["upscale"] = 1
+	Settings.apply()
 	Settings.step_preset(-1)
 	Settings.step_preset(-1)
 	_check(Settings.preset() == 0 and g.sun.shadow_enabled and g.sun.directional_shadow_max_distance == 60.0 and g.get_viewport().msaa_3d == Viewport.MSAA_DISABLED
@@ -2367,7 +2410,7 @@ func _reglas_checks(pictures := false) -> void:
 		if n.has_meta("far0") and float(n.get_meta("far0")) == 32.0:
 			a_far = n.visibility_range_end
 			break
-	_check(is_equal_approx(a_far, 32.0 * 0.6), "(and what was already built takes the shorter distance at once: %.1f m)" % a_far)
+	_check(is_equal_approx(a_far, 32.0 * 0.6 * PartsS.LOD_NEAR), "(and what was already built takes the shorter distance at once: %.1f m, with the LOD's)" % a_far)
 	Settings.data["shadows"] = 0
 	Settings.data["fx"] = 0
 	Settings.apply()
@@ -2380,15 +2423,15 @@ func _reglas_checks(pictures := false) -> void:
 		await _frames(10)
 		await _shot("graficos_1_menu")
 		g._close_pause()
-	for key in ["window", "shadows", "textures", "draw", "fov", "fx", "aa", "ssao", "glow", "scale", "traffic"]:
+	for key in ["window", "shadows", "textures", "draw", "fov", "fx", "aa", "ssao", "glow", "scale", "traffic", "dynres", "upscale", "lod", "occlusion"]:
 		Settings.data[key] = {"window": 0, "fov": 55}.get(key, Settings.PRESETS[2].get(key))
 	Settings.apply()
 	_check(Settings.preset() == 2 and g.sun.shadow_enabled and is_equal_approx(g.cam.fov, 55.0) and PartsS.draw == 1.0 and PartsS.fx == 1.0 and g.get_viewport().scaling_3d_scale == 1.0, "and back to High, as it was")
 	# the cars put away to be used again are nowhere near the town (where they were left, they were invisible walls)
 	_check(g.traffic._pool.all(func(c): return not c.visible and c.p.length() > 4000.0), "the traffic's spare cars are kept out of the town, not standing invisible in its streets")
 	# on a pad the stick sets the pace: no run button
-	_check(g.stick_speed(0.25) < 2.5 and absf(g.stick_speed(0.5) - 5.3) < 0.5 and is_equal_approx(g.stick_speed(0.85), 9.0) and is_equal_approx(g.stick_speed(1.0), 9.0),
-		"with a pad, how far the stick is pushed is how fast you go: a stroll (%.1f), a walk (%.1f), a run (%.1f)" % [g.stick_speed(0.25), g.stick_speed(0.5), g.stick_speed(1.0)])
+	_check(g.stick_speed(0.25) < 2.0 and g.stick_speed(0.5) < 3.0 and g.stick_speed(0.85) < 4.0 and g.stick_speed(0.85) > g.stick_speed(0.5) and is_equal_approx(g.stick_speed(1.0), 9.0),
+		"with a pad (or a phone's stick), how far it is pushed is how fast you go, little by little: a stroll (%.1f), a walk (%.1f), a brisk walk (%.1f), and a run only all the way (%.1f)" % [g.stick_speed(0.25), g.stick_speed(0.5), g.stick_speed(0.85), g.stick_speed(1.0)])
 	# a mission's circle: two seconds inside it, not the moment you touch it
 	g.dwell = 2.0
 	g.begin_step(g._idx("home"))
@@ -3000,6 +3043,22 @@ func _civicos_checks(pictures := false) -> void:
 	g.talk_to(josefa)
 	_check(g.dlg != null and g.side == null and g.dlg["lines"][0] in Loc.t("josefa_no_more"), "she has no more errands for now")
 	await _skip_dialog()
+	# Henry's bat is yours now: a hit is a swing of it, and whoever is in front of you goes to the ground
+	var away_dir: Vector2 = (g.player.p - josefa.p).normalized()
+	g.player.h = atan2(away_dir.x, away_dir.y)
+	var batted = g.spawn_neighbour(g.player.p + away_dir * 1.2, true)
+	await _frames(3)
+	g._punch_cool = 0.0
+	g._punch()
+	await _frames(4)
+	var bat_out: bool = g.player._bat != null and g.player._bat.visible
+	await _frames(14)
+	_check(g.has_bat() and bat_out and (batted.state == "fly" or batted.state == "down") and josefa.state != "fly" and josefa.state != "down",
+		"with the ham delivered you keep Henry's bat: a hit draws it, swings it, and the neighbour in front goes to the ground (%s)" % batted.state)
+	await _frames(20)
+	_check(not g.player._bat.visible, "and the bat is put away again")
+	g.npcs.erase(batted)
+	batted.queue_free()
 	# what knowing the restaurants opens
 	g.player.p = henry.p + Vector2(1.2, 0.8)
 	await _frames(5)
@@ -3535,6 +3594,20 @@ func _shader_tour() -> void:
 ## one more car and 5 % more speed for every thirty seconds out there.
 func _limite_checks() -> void:
 	var L = g.limite
+	# everywhere the game sends you is well inside it (the first mission, the oil, was out of it: the user, 14 Nov 2026)
+	var spots: Array = []
+	for k in g.places:
+		var pl = g.places[k]
+		if pl is Dictionary and pl.has("p"):
+			spots.append([String(k), pl["p"]])
+	for r in g.props.repairs:                       # (not the people: the ones behind a counter are on sets built far off, where the edge does not count -- their doors are places)
+		spots.append(["garage", r["p"]])
+	for q in MapData.pois:
+		spots.append([String(q["n"]), Vector2(q["x"], q["z"])])
+	spots.sort_custom(func(a, b): return (a[1] as Vector2).distance_to(L.CENTRE) > (b[1] as Vector2).distance_to(L.CENTRE))
+	print("limit: farthest from the middle: %s" % ", ".join(spots.slice(0, 10).map(func(s): return "%s %.0f m" % [s[0], (s[1] as Vector2).distance_to(L.CENTRE)])))
+	var outs: Array = spots.filter(func(s): return (s[1] as Vector2).distance_to(L.CENTRE) > L.RADIUS - 150.0 or L.outside(s[1]))
+	_check(outs.is_empty(), "every place a mission sends you to, every garage and every place on the map with a name is 150 m or more inside the edge (%s)" % ("all of them" if outs.is_empty() else ", ".join(outs.map(func(s): return "%s at %.0f m" % [s[0], (s[1] as Vector2).distance_to(L.CENTRE)]))))
 	g.police.reset()
 	L.reset()
 	g.traffic.clear()
@@ -4306,6 +4379,35 @@ func _tokken_checks(matches := 12) -> void:
 
 ## Skids (derrape.gd): brake hard or pull the handbrake at speed and the tyres squeal and leave marks on the road,
 ## which go once you have left them far behind.
+## The title, calmly: the town from the air, the name fading in, "press any button", and the menu only after that
+func _titulo_checks(pictures := false) -> void:
+	g.menu.close()
+	g._after_intro()
+	await _frames(int(30.0 * (1.5 + g.TITLE_NAME_AT + 0.5)))
+	var coming: bool = g.phase == "title_in" and g.hud.title_name.modulate.a > 0.02 and not g.menu.visible
+	await _frames(int(30.0 * (g.TITLE_PRESS_AT + 1.0)))
+	_check(coming and g.phase == "press" and g.hud.title_name.modulate.a > 0.95 and g.hud.title_press.modulate.a > 0.3 and g.hud.title_press.text == Loc.t("t_press_any") and not g.menu.visible,
+		"the title: the town from the air, the name fading in in a joined-up hand, then \"%s\" at the foot, and no menu yet" % Loc.t("t_press_any"))
+	if pictures:
+		await _shot("titulo_1_nombre")
+	var key := InputEventKey.new()
+	key.keycode = KEY_SPACE
+	key.physical_keycode = KEY_SPACE
+	key.pressed = true
+	Input.parse_input_event(key)
+	await _frames(3)
+	var going: bool = g.phase == "title_out" and not g.menu.visible
+	var up := key.duplicate()
+	up.pressed = false
+	Input.parse_input_event(up)
+	await _frames(15)
+	var half: float = g.menu.modulate.a if g.menu.visible else 0.0
+	await _frames(30)
+	_check(going and g.phase == "title" and g.menu.visible and g.hud.title_name.modulate.a < 0.05 and half < 0.95 and g.menu.modulate.a > 0.95,
+		"a key pressed: the name goes, and only then the menu fades in (%.2f on the way, then all there)" % half)
+	if pictures:
+		await _shot("titulo_2_menu")
+
 func _derrape_checks(pictures := false) -> void:
 	var D = g.derrape
 	if g.in_car == null:
@@ -4325,6 +4427,32 @@ func _derrape_checks(pictures := false) -> void:
 		c.drive(1.0, 0.0, false, true, 1.0 / 60.0)
 		await get_tree().physics_frame
 	_check(D.laid == laid0 and D.skidding == 0.0, "driving along at speed leaves no marks")
+	# driving as anyone drives: foot down, a gentle bend, a bump under a wheel: not a squeal (it squealed nearly all the
+	# time, on a slight turn or going straight over the bumps: the user, 14 November 2026)
+	c.place(st["p"] + u * 6.0, atan2(u.x, u.y))
+	await _frames(5)
+	var heard := false
+	var peak := 0.0
+	var top_v := 0.0
+	Input.action_press("forward")
+	for i in range(200):
+		if i == 90:
+			Input.action_press("left", 0.3)
+		if i == 120 or i == 160:                     # (a bump under a front wheel, then under a back one)
+			c.apply_impulse(Vector3(0, c.mass * 2.5, 0), c.global_transform.basis * Vector3(0.6, 0.0, 1.3 if i == 120 else -1.3))
+		await get_tree().physics_frame
+		peak = maxf(peak, D.skidding)
+		top_v = maxf(top_v, c.vel.length())
+		heard = heard or Sfx._skid.playing or Sfx._screech.playing
+	Input.action_release("forward")
+	Input.action_release("left")
+	_check(not heard, "driving as anyone does (up to %.0f km/h), a gentle bend and two bumps: not a squeal (skid reading at most %.2f)" % [top_v * 3.6, peak])
+	c.place(st["p"] + u * 6.0, atan2(u.x, u.y))
+	await _frames(5)
+	for i in range(90):                            # (up to speed again for the handbrake)
+		c.set_speed(u * minf(16.0, 4.0 + i * 0.3))
+		c.drive(1.0, 0.0, false, true, 1.0 / 60.0)
+		await get_tree().physics_frame
 	var most := 0.0
 	Input.action_press("handbrake")                # then the handbrake, and the wheel hard over
 	Input.action_press("left")
@@ -4892,6 +5020,7 @@ func _run() -> void:
 		for page in ["main", "settings", "credits", "settings"]:
 			g.menu.open(page)
 			await _shot("menu_" + page)
+			print("menu: opened %s, showing %s" % [page, g.menu.page])
 		get_tree().quit(0)
 		return
 	if OS.get_cmdline_user_args().has("--plaza"):         # just the Plaza del Ayuntamiento: from the front, and straight down like the aerial photo
@@ -5407,13 +5536,29 @@ func _run() -> void:
 		g._enter_car(g.paca_car)
 		await _frames(20)
 		var at0: Vector2 = g.in_car.p
-		tap.call(Vector2(260, 560), true, 5)
+		tap.call(Vector2(260, 560), true, 5)          # the stick pushed straight up: at the wheel it only steers, so nothing
 		slide.call(Vector2(260, 465), 5)
+		await _frames(30)
+		tap.call(Vector2(260, 465), false, 5)
+		var crept: float = g.in_car.p.distance_to(at0)
+		var gas: Vector2 = button.call("forward")
+		tap.call(gas, true, 6)
 		await _frames(90)
 		await _shot("tactil_coche")
-		tap.call(Vector2(260, 465), false, 5)
 		var car_labels: Array = Touch._buttons.filter(func(bt): return (bt["node"] as TouchScreenButton).visible).map(func(bt): return bt["label"])
-		_check(g.in_car.p.distance_to(at0) > 4.0 and car_labels.has("Freno") and car_labels.has("Claxon"), "in a car the stick drives it (%.1f m) -- buttons: %s" % [g.in_car.p.distance_to(at0), str(car_labels)])
+		tap.call(gas, false, 6)
+		var went: float = g.in_car.p.distance_to(at0)
+		_check(crept < 1.0 and went > 4.0 and car_labels.has("Acelerar") and car_labels.has("Freno") and car_labels.has("Claxon"),
+			"in a car the stick only steers (%.1f m with it pushed up), Acelerar drives it (%.1f m), and moving, the other pedal says Freno -- buttons: %s" % [crept, went, str(car_labels)])
+		var pedal: Vector2 = button.call("back")           # held down: the car stops, and then backs up
+		tap.call(pedal, true, 7)
+		await _frames(150)
+		Touch._context = ""
+		Touch._context_tick()
+		var stop_labels: Array = Touch._buttons.filter(func(bt): return (bt["node"] as TouchScreenButton).visible).map(func(bt): return bt["label"])
+		var backing: float = g.in_car.forward_speed()
+		tap.call(pedal, false, 7)
+		_check(backing < -0.5 and stop_labels.has("Atrás") and not stop_labels.has("Freno"), "held down, Freno stops the car and then backs it up, and says so: Atrás (%.1f m/s) -- %s" % [backing, str(stop_labels)])
 		# the creator: the same two buttons as its panel
 		g.in_car.set_speed(Vector2.ZERO)
 		g._exit_car()
@@ -5994,6 +6139,153 @@ func _run() -> void:
 		print("TOW %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	for a in OS.get_cmdline_user_args():                  # --vidrios=kind: the colours of the texture over the top half of its bodywork (to find its windows)
+		if a.begins_with("--vidrios="):
+			var vk := a.substr(10)
+			var vc = CarS.new()
+			g.add_child(vc)
+			vc.setup(vk, 0, g.player.p, 0.0)
+			var tall_y: float = vc.model.get_meta("size").y
+			var tally := {}
+			for mi in vc.model.get_children():
+				if not (mi is MeshInstance3D) or String(mi.name).begins_with("wheel"):
+					continue
+				var mesh: Mesh = mi.mesh
+				for s in range(mesh.get_surface_count()):
+					var arr: Array = mesh.surface_get_arrays(s)
+					var mat = mesh.surface_get_material(s)
+					if not (mat is StandardMaterial3D) or mat.albedo_texture == null or arr[Mesh.ARRAY_TEX_UV] == null:
+						continue
+					var img: Image = mat.albedo_texture.get_image()
+					if img.is_compressed():
+						img.decompress()
+					var vs: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+					var uv: PackedVector2Array = arr[Mesh.ARRAY_TEX_UV]
+					var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array(range(vs.size()))
+					for t in range(0, idx.size() - 2, 3):
+						var cy: float = ((mi.transform * vs[idx[t]]).y + (mi.transform * vs[idx[t + 1]]).y + (mi.transform * vs[idx[t + 2]]).y) / 3.0
+						var area: float = ((mi.transform * vs[idx[t + 1]]) - (mi.transform * vs[idx[t]])).cross((mi.transform * vs[idx[t + 2]]) - (mi.transform * vs[idx[t]])).length() / 2.0
+						var c: Vector2 = (uv[idx[t]] + uv[idx[t + 1]] + uv[idx[t + 2]]) / 3.0
+						var px: Color = img.get_pixel(clampi(int(fposmod(c.x, 1.0) * img.get_width()), 0, img.get_width() - 1), clampi(int(fposmod(c.y, 1.0) * img.get_height()), 0, img.get_height() - 1))
+						var key := "%02x%02x%02x %s" % [int(px.r * 15) * 17, int(px.g * 15) * 17, int(px.b * 15) * 17, "high" if cy > tall_y * 0.6 else "low"]
+						tally[key] = float(tally.get(key, 0.0)) + area
+			var keys: Array = tally.keys()
+			keys.sort_custom(func(x, y): return tally[x] > tally[y])
+			print("vidrios %s: %s" % [vk, ", ".join(keys.slice(0, 16).map(func(k): return "%s %.2f m2" % [k, tally[k]]))])
+			get_tree().quit(0)
+			return
+	if OS.get_cmdline_user_args().has("--bate"):          # Henry's bat swung at a neighbour, in pictures (with --window)
+		shots = true
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = false
+		g.set_time(11.0)
+		g.stats["menu_done"] = true
+		var street := _long_street()
+		var su: Vector2 = street["u"]
+		var sn := Vector2(-su.y, su.x)
+		g.player.p = street["p"]
+		g.player.h = atan2(su.x, su.y)
+		g.player.sync()
+		var victim = g.spawn_neighbour(street["p"] + su * 1.3, true)
+		victim.h = atan2(-su.x, -su.y)
+		victim.sync()
+		await _frames(20)
+		g.cam_fixed = [MapData.at(street["p"] + su * 0.6 + sn * 4.2, 1.6), MapData.at(street["p"] + su * 0.6, 1.0)]
+		await _frames(20)
+		g._punch_cool = 0.0
+		Engine.time_scale = 0.05                     # (slowed right down: a picture takes longer to save than the swing lasts)
+		g._punch()
+		for i in range(5):
+			await get_tree().create_timer(0.12).timeout
+			await RenderingServer.frame_post_draw          # (straight away: _shot waits two-thirds of a second first)
+			get_viewport().get_texture().get_image().save_png("res://shots/bate_%d.png" % i)
+		Engine.time_scale = 1.0
+		await _frames(30)
+		await _shot("bate_5_suelo")
+		print("BATE %s" % victim.state)
+		get_tree().quit(0)
+		return
+	if OS.get_cmdline_user_args().has("--titulo"):        # the title screen, as after the loading screen (add --shots, with --window)
+		shots = OS.get_cmdline_user_args().has("--shots")
+		await _titulo_checks(shots)
+		print("TITULO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--pausa"):         # just the pause: the car stops where it is, the sound waits, and both go on afterwards
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		g._enter_car(g.paca_car)
+		var pc = g.in_car
+		Ambience.station = 1
+		await _frames(30)
+		pc.set_speed(Vector2(sin(pc.h), cos(pc.h)) * 6.0)
+		var at0: Vector3 = pc.global_position
+		g._open_pause()
+		await _frames(20)
+		var radio_waits: bool = Ambience._players.any(func(p): return p.stream_paused) and not Ambience._players.any(func(p): return p.playing and not p.stream_paused)
+		_check(pc.global_position.distance_to(at0) < 0.2 and Sfx.held() and radio_waits, "paused: the car stays put (%.2f m), the engine and the radio wait" % pc.global_position.distance_to(at0))
+		g._close_pause()
+		await _frames(10)
+		_check(pc.global_position.distance_to(at0) > 0.2 and not Sfx.held() and Ambience._players.any(func(p): return p.playing and not p.stream_paused), "resumed: the car rolls on (%.1f m) and the radio plays on" % pc.global_position.distance_to(at0))
+		print("PAUSA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--conductores"):   # every make with you at the wheel, and its collision box drawn over it (--solo=kind)
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.apply_moment("noon", true)
+		var street := _long_street()
+		var su: Vector2 = street["u"]
+		var sn := Vector2(-su.y, su.x)
+		var base: Vector2 = street["p"]
+		var only := ""
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--solo="):
+				only = a.substr(7)
+		for kind in CarS.SPECS.keys():
+			if only != "" and kind != only:
+				continue
+			var c = CarS.new()
+			g.add_child(c)
+			c.setup(kind, 0, base, atan2(su.x, su.y))
+			c.park()
+			var lk: Dictionary = Creator.look(g.look_sel)
+			lk["hat"] = "cap"                            # (the tallest you can be: in a cap)
+			c.seat(lk)
+			var ghost := MeshInstance3D.new()           # the collision box, see-through
+			for k in c.get_children():
+				if k is CollisionShape3D and k.shape is BoxShape3D:
+					var bm := BoxMesh.new()
+					bm.size = k.shape.size
+					ghost.mesh = bm
+					ghost.position = k.position
+				elif k is CollisionShape3D:                   # (a shape of its own: its edges)
+					ghost.mesh = k.shape.get_debug_mesh()
+					ghost.position = k.position
+			var gm := StandardMaterial3D.new()
+			gm.albedo_color = Color(1.0, 0.1, 0.6, 0.28)
+			gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			ghost.material_override = gm
+			c.add_child(ghost)
+			await _frames(20)
+			var L: float = c.spec["len"]
+			for v in [["lado", sn * 6.5 + su * 0.0, 1.3, 0.0, 0.9], ["tres_cuartos", sn * 4.2 + su * (L * 0.9), 1.9, 0.0, 0.9], ["arriba", sn * 0.01 + su * 0.0, 9.0, 0.0, 0.0], ["dentro", sn * 2.2 + su * 0.4, 1.6, -0.2, 1.1], ["detras", -su * (L / 2.0 + 4.6), 2.5, 1.0, 1.0]]:
+				ghost.visible = v[0] == "arriba" or v[0] == "tres_cuartos"
+				g.cam.position = MapData.at(base + v[1], v[2])
+				g.cam.look_at(MapData.at(base + su * v[3], v[4]), Vector3.UP if v[0] != "arriba" else Vector3(su.x, 0, su.y))
+				await _frames(4)
+				await _shot("coche_%s_%s" % [kind, v[0]])
+			print("coche %s: collision %s, model %s, rider %s" % [kind, str(ghost.mesh.get_aabb().size), str(c.model.get_meta("size") if c.model != null else "-"), str(c.model.get_meta("rider") if c.model != null else "-")])
+			c.queue_free()
+			await _frames(4)
+		get_tree().quit(0)
+		return
 	if OS.get_cmdline_user_args().has("--garage"):        # just the new models: cars in a row, a trailer, a row of neighbours, the creator
 		shots = true
 		g.menu.close()
@@ -6123,6 +6415,7 @@ func _run() -> void:
 		g.cam.position = MapData.at(from, view[2])
 		g.cam.look_at(MapData.at(at, view[4]))
 		await _shot(view[0])
+	await _titulo_checks()
 	g.phase = "title"
 	# main menu on the whitewashed wall
 	for i in range(3):
@@ -6135,7 +6428,10 @@ func _run() -> void:
 	g.menu.open("settings")
 	var before_res: int = Settings.data["res"]
 	g._menu_page("graphics")["items"][1]["right"].call()
-	_check(Settings.data["res"] == (before_res + 1) % Settings.RESOLUTIONS.size() and g._menu_page("settings")["items"].size() == 7 and g._menu_page("graphics")["items"].size() == 16, "settings: resolution, display, vsync, frame rate, three volumes, language, controls")
+	var set_items: Array = g._menu_page("settings")["items"].map(func(it): return it["text"])
+	_check(Settings.data["res"] == (before_res + 1) % Settings.RESOLUTIONS.size() and set_items == [Loc.t("s_graphics"), Loc.t("s_sound"), Loc.t("s_gameplay"), Loc.t("m_back")]
+		and g._menu_page("graphics")["items"].size() == 19 and g._menu_page("sound")["items"].size() == 4 and g._menu_page("gameplay")["items"].size() == 4,
+		"settings in three: Gráficos (resolution, display... occlusion), Sonido (three volumes), Gameplay (language, field of view, controls)")
 	Settings.data["res"] = before_res
 	await _frames(5)
 	await _shot("0_menu_settings")
@@ -6192,7 +6488,7 @@ func _run() -> void:
 	_check(g.look_sel[9] == 1 and g.look_sel[11] == 2 and g.look_sel[0] == 1 and g.look_sel[2] == 1 and g.look_sel[10] == 2 and g.look_sel[7] == 1, "arrow keys change the character, peña included")
 	_check(Loc.speaker("mi [[mujer|marido]]", false) == "mi mujer" and Loc.speaker("mi [[mujer|marido]]", true) == "mi marido", "men talk about their wives, women about their husbands")
 	_check(Loc.rich("la Loli dice").contains("[color=#c0392b]Loli[/color]") and not Loc.rich("Lolita").contains("color"), "names are picked out in red")
-	_check(Loc.t("title_blurb").contains("Madridejos") and g._menu_page("main")["title"] == "MATRITELLUS", "the game is Matritellus; the town in it is Madridejos")
+	_check(Loc.t("title_blurb").contains("Madridejos") and g._menu_page("main")["title"] == "" and g.hud.title_name.texture != null, "the game is Matritellus (its name in the title's fade, not again on the menu); the town in it is Madridejos")
 	for prof in Sfx.VOICES:
 		Sfx.voice("a", prof)
 	Sfx.voice("é", "priest", 1.2, 1)

@@ -86,6 +86,10 @@ var dlg_ready := false       # the line on screen has been said in full: show th
 var gauge: Control
 var fade: ColorRect
 var flash: ColorRect
+var title_name: TextureRect           # the title screen's name, and its "press any button"
+var title_press: Label
+var _title_tw: Tween
+var _press_tw: Tween
 var phone_slot: MarginContainer
 var phone_name: Label
 var phone_status: Label
@@ -455,6 +459,26 @@ func _ready() -> void:
 	bigmap.visible = false
 	root.add_child(bigmap)
 
+	# the title over the town from the air: the name in a joined-up hand, and "press any button" at the foot
+	title_name = TextureRect.new()
+	title_name.texture = load("res://assets/titulo/matritellus.png")
+	title_name.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_name.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	title_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_name.anchor_left = 0.18; title_name.anchor_right = 0.82
+	title_name.anchor_top = 0.2; title_name.anchor_bottom = 0.42
+	title_name.modulate.a = 0.0
+	root.add_child(title_name)
+	title_press = _label(28, Color("fff6e0"))
+	title_press.add_theme_color_override("font_outline_color", Color(0.12, 0.07, 0.03, 0.9))
+	title_press.add_theme_constant_override("outline_size", 10)
+	title_press.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_press.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	title_press.offset_top = -120; title_press.offset_bottom = -70
+	title_press.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_press.modulate.a = 0.0
+	root.add_child(title_press)
+
 	# fade to black (sleep) and the generic centre overlay (title, pause, fail, end of day)
 	fade = ColorRect.new()
 	fade.color = Color.BLACK
@@ -718,6 +742,45 @@ func rt(l: RichTextLabel, text: String) -> void:
 func as_shown(l: RichTextLabel, text: String) -> String:
 	var h := int(round(float(l.get_meta("font", 18)) * 1.45))
 	return text.replace("[img height=%d]" % Controls.ICON_H, "[img height=%d]" % h)
+
+# ---------------- the title screen (game.gd _after_intro) ----------------
+func title_reset() -> void:
+	for t in [_title_tw, _press_tw]:
+		if t != null:
+			t.kill()
+	title_name.modulate.a = 0.0
+	title_press.modulate.a = 0.0
+
+## the name comes in, slowly, rising a little as it does
+func title_name_in() -> void:
+	if _title_tw != null:
+		_title_tw.kill()
+	title_name.pivot_offset = title_name.size / 2.0
+	title_name.scale = Vector2(0.96, 0.96)
+	_title_tw = create_tween()
+	_title_tw.tween_property(title_name, "modulate:a", 1.0, 1.6).set_ease(Tween.EASE_IN_OUT)
+	_title_tw.parallel().tween_property(title_name, "scale", Vector2.ONE, 2.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+## the line at the foot comes in and breathes, slowly, until a button is pressed
+func title_press_in(touch: bool) -> void:
+	title_press.text = Loc.t("t_press_touch") if touch else Loc.t("t_press_any")
+	if _press_tw != null:
+		_press_tw.kill()
+	_press_tw = create_tween()
+	_press_tw.tween_property(title_press, "modulate:a", 1.0, 0.9)
+	_press_tw.tween_callback(func():
+		_press_tw = create_tween().set_loops()
+		_press_tw.tween_property(title_press, "modulate:a", 0.45, 1.1).set_trans(Tween.TRANS_SINE)
+		_press_tw.tween_property(title_press, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE))
+
+## both go
+func title_out(secs := 0.6) -> void:
+	for t in [_title_tw, _press_tw]:
+		if t != null:
+			t.kill()
+	_title_tw = create_tween()
+	_title_tw.tween_property(title_name, "modulate:a", 0.0, secs)
+	_title_tw.parallel().tween_property(title_press, "modulate:a", 0.0, secs * 0.6)
 
 func _label(font_size: int, color: Color) -> Label:
 	var l := Label.new()

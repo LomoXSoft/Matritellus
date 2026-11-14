@@ -452,6 +452,9 @@ func _alemania_7() -> void:
 #           style 0 are the usual. lado 1: on the house's longest wall to another street instead (at along it,
 #           from its left end as you face it). In the short form: "cartel at y kind [z=..] [c=colour] [t=1] [lado=1]"
 #       "band": a string course at its foot, of this colour or masonry
+#       "panels": [[from, to, what, plinth], ...] -- a stretch of this floor's wall in another render or masonry (where one
+#           wall runs across two buildings); plinth as above, null for none, "same" for the floor's own.
+#           In the short form: "paño <from> <to> wall=<what> [plinth=<height>:<what>, or plinth=0 for none]"
 #   "eaves": "tiles" (the plain edge of the roof), "brackets" (deep, on wooden brackets), "cornice" (a moulded one), "flat"
 #   "tol": how far off the straight line of the front the plot's own outline may wander and still be the front
 # Walls that give on to another street get the same materials and a plain row of the house's own windows.
@@ -484,13 +487,22 @@ static func _word(s: String):
 ## <at> may be several places at once (.2,.5,.8); what is left out takes the usual size; options are key=value as in
 ## the long form (g=bars b=8a6a4a d=0.5 f=... s=... sb=... l=brick bal=iron k=curtain c=... bw=... nb=1).
 ## A floor written "=" is the one below it again. "tol=0.9" and "trim=<colour>" may stand as lines of their own.
+## A line that begins "lado " is a floor of the house's longest wall to another street, ground floor first, written the
+## same way (positions along that wall from its left end as you face it; its notices go on it). Without them that wall
+## gets a plain row of the house's own windows; a floor written "lado wall=..." with nothing else is a blank wall.
 static func _unpack(a: Array) -> Dictionary:
 	var spec := {"eaves": String(a[0]), "floors": []}
 	var usual := {"win": [1.1, 1.0, 1.2], "bal": [1.1, 2.2], "door": [1.1, 2.3], "gar": [2.8, 2.6], "shop": [3.0, 2.6]}
 	for i in range(1, a.size()):
 		var line := String(a[i])
+		var into := "floors"
+		if line.begins_with("lado "):              # a floor of the long side to another street, from the photos (see the docs)
+			into = "flank"
+			line = line.substr(5).strip_edges()
+			if not spec.has("flank"):
+				spec["flank"] = []
 		if line == "=":
-			spec["floors"].append(spec["floors"][-1])
+			spec[into].append(spec[into][-1])
 			continue
 		if line.begins_with("tol=") or line.begins_with("trim="):
 			spec[line.get_slice("=", 0)] = _word(line.get_slice("=", 1))
@@ -527,11 +539,19 @@ static func _unpack(a: Array) -> Dictionary:
 				"cartel":                         # a notice: cartel at y kind (sevende, sealquila, vado, noaparcar, papel) [z=out] [c=colour] [t=1] [lado=1]
 					if not f.has("plates"):
 						f["plates"] = []
-					f["plates"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]), float(o.get("z", 0.04)), int(o.get("c", -1)), int(o.get("t", 0)), int(o.get("lado", 0))])
+					f["plates"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]), float(o.get("z", 0.04)), int(o.get("c", -1)), int(o.get("t", 0)), int(o.get("lado", 1 if into == "flank" else 0))])
 				"awn":
 					if not f.has("awnings"):
 						f["awnings"] = []
 					f["awnings"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]).hex_to_int()])
+				"paño", "pano":                   # a stretch of this floor's wall in another render: paño from to wall=... [plinth=h:what or 0]
+					if not f.has("panels"):
+						f["panels"] = []
+					var pp = "same"
+					if o.has("plinth"):
+						var ps := str(o["plinth"])
+						pp = null if ps.to_float() <= 0.0 else [ps.get_slice(":", 0).to_float(), _word(ps.get_slice(":", 1))]
+					f["panels"].append([String(words[0]).to_float(), String(words[1]).to_float(), o.get("wall", 0xf2efe6), pp])
 				"ter":
 					var tr: Array = [String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]).to_float(), -1 if String(words[3]) == "-1" else String(words[3]).hex_to_int()]
 					if words.size() > 4:
@@ -545,7 +565,7 @@ static func _unpack(a: Array) -> Dictionary:
 						sizes[k] = String(words[k + 1]).to_float()
 					for at in String(words[0]).split(","):
 						f["open"].append([kind, at.to_float()] + sizes + [o])
-		spec["floors"].append(f)
+		spec[into].append(f)
 	return spec
 
 func _dark(hex: int, by := 0.25) -> int:
@@ -791,6 +811,12 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 		var h: float = gh if i == 0 else (top - gh) / float(n - 1)
 		var fly: float = 0.0 if side else float(f.get("fly", prev_fly))
 		var ops: Array = _rhythm(f, L, i == 0) if side else f.get("open", [])
+		var panels: Array = [] if side else f.get("panels", [])
+		if side and _flank and spec.has("flank") and i < (spec["flank"] as Array).size():
+			f = f.duplicate()                    # (the long side as it is in the photos: its own openings, render, foot)
+			f.merge(spec["flank"][i], true)
+			ops = f.get("open", [])
+			panels = (spec["flank"][i] as Dictionary).get("panels", [])
 		var holes: Array = []
 		var items: Array = []
 		for op in ops:
@@ -814,11 +840,30 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 		var thick := fly + 0.3
 		var y0 := -1.4 if i == 0 else y
 		var pl = f.get("plinth", null)
-		if pl != null:
-			wall(0.0, L, y0, y + float(pl[0]), fly + 0.035, thick + 0.035, holes, _mat(pl[1]))
-			wall(0.0, L, y + float(pl[0]), y + h, fly, thick, holes, key)
-		else:
-			wall(0.0, L, y0, y + h, fly, thick, holes, key)
+		var cuts: Array = [[0.0, L, key, pl]]                 # its stretches: its own render, and any paño of another
+		for pn in panels:
+			var a0 := clampf(float(pn[0]) * L, 0.0, L)
+			var a1 := clampf(float(pn[1]) * L, 0.0, L)
+			if a1 - a0 < 0.05:
+				continue
+			var rest: Array = []
+			for c in cuts:
+				if c[1] <= a0 or c[0] >= a1:
+					rest.append(c)
+					continue
+				if c[0] < a0:
+					rest.append([c[0], a0, c[2], c[3]])
+				if c[1] > a1:
+					rest.append([a1, c[1], c[2], c[3]])
+			rest.append([a0, a1, _mat(pn[2]), pl if (pn[3] is String) else pn[3]])
+			cuts = rest
+		for c in cuts:
+			var cpl = c[3]
+			if cpl != null:
+				wall(c[0], c[1], y0, y + float(cpl[0]), fly + 0.035, thick + 0.035, holes, _mat(cpl[1]))
+				wall(c[0], c[1], y + float(cpl[0]), y + h, fly, thick, holes, c[2])
+			else:
+				wall(c[0], c[1], y0, y + h, fly, thick, holes, c[2])
 		if i > 0 and fly > prev_fly + 0.05:                   # this floor comes out over the one below: what you see of it from underneath
 			box(0.0, y - 0.2, prev_fly, L, 0.2, fly - prev_fly, _mat(spec.get("trim", 0xe9dcc0)))
 		if f.has("band"):
@@ -863,7 +908,7 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 	return prev_fly
 
 ## A notice on the front, its middle at (x, y) and `z` out from the wall, in the frame of the front being built.
-## The words are generic: no telephone number, no real licence.
+## The words are generic: no real licence, and where the telephone number goes, a scribble (the user, 14 November 2026).
 func _plate(x: float, y: float, z: float, kind: String, colour := -1, style := 0) -> void:
 	var n := Node3D.new()
 	n.transform = _xf * Transform3D(Basis(), Vector3(x, y, z))
@@ -876,13 +921,14 @@ func _plate(x: float, y: float, z: float, kind: String, colour := -1, style := 0
 				n.add_child(Parts.part("box", 0xf6f5f0, Vector3(0, 0, 0), Vector3(0.7, 0.48, 0.012)))
 				n.add_child(Parts.part("box", ink, Vector3(0, 0.205, 0.008), Vector3(0.7, 0.05, 0.004)))
 				_words(n, words, Vector3(0, 0.05, 0.009), 64, ink, 0.0023 if kind == "sevende" else 0.002, 0.62)
-				_words(n, "6__ ___ ___", Vector3(0, -0.14, 0.009), 48, ink, 0.0024, 0.62)
+				_scribble(x, y - 0.14, z + 0.009, 0.5, 0.08, ink, absi(hash(id)) + int(x * 100.0))
 			else:                            # a printed board: a band with the words in white, white below for the phone
 				var band: int = colour if colour >= 0 else (0xc8202a if kind == "sevende" else 0x1f55c4)
 				n.add_child(Parts.part("box", 0xf4f2ec, Vector3(0, 0, 0), Vector3(0.66, 0.44, 0.012)))
 				n.add_child(Parts.part("box", band, Vector3(0, 0.09, 0.008), Vector3(0.62, 0.2, 0.004)))
 				_words(n, words, Vector3(0, 0.09, 0.012), 64, 0xffffff, 0.0021 if kind == "sevende" else 0.0019, 0.56)
-				_words(n, "TEL. 6__ ___ ___", Vector3(0, -0.11, 0.009), 40, 0x1c1c1e, 0.0018, 0.58)
+				_words(n, "TEL.", Vector3(-0.2, -0.11, 0.009), 40, 0x1c1c1e, 0.0018, 0.2)
+				_scribble(x + 0.07, y - 0.11, z + 0.009, 0.4, 0.065, 0x1c1c1e, absi(hash(id)) + int(x * 100.0))
 			for sx in [-0.28, 0.28]:         # the wire it hangs by
 				n.add_child(Parts.part("box", 0x6a6a6a, Vector3(sx, 0.26, -0.02), Vector3(0.006, 0.08, 0.006)))
 		"vado":                              # the town's plate, as they are here: the council over the disc, the yellow licence band
@@ -913,6 +959,23 @@ VEHÍCULOS", Vector3(0, -0.1, 0.008), 40, 0x1c1c1e, 0.0018, 0.54)
 			_words(n, "SALIDA DE COCHES", Vector3(0, -0.04, 0.004), 32, 0x22305a, 0.00085, 0.27)
 			for c in [Vector2(-0.14, 0.095), Vector2(0.14, 0.095), Vector2(-0.14, -0.095), Vector2(0.14, -0.095)]:
 				n.add_child(Parts.part("box", 0xd9d6c8, Vector3(c.x, c.y, 0.003), Vector3(0.045, 0.02, 0.002)))
+
+## where a telephone number would be, a hurried scribble: a figure, then two groups of three, each a line that goes up
+## and down, `w` wide and `h` high round (x, y) in the frame of the front being built, `z` out
+func _scribble(x: float, y: float, z: float, w: float, h: float, ink: int, seed_: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_
+	var gap := w * 0.06
+	var x0 := x - w / 2.0
+	for g in [0.12, 0.44, 0.44]:
+		var gw: float = (w - gap * 2.0) * g
+		var n := maxi(3, int(round(gw / 0.02)))
+		var prev := Vector2(x0, y + rng.randf_range(-h, h) * 0.5)
+		for i in range(1, n + 1):
+			var q := Vector2(x0 + gw * i / n, y + rng.randf_range(0.2, 1.0) * h * 0.5 * (1.0 if i % 2 == 0 else -1.0))
+			_bar(prev, q, z, 0.008, ink)
+			prev = q
+		x0 += gw + gap
 
 ## words on a notice, their middle at `at`, `size` metres to a pixel of a `px` font; smaller if need be, so that they
 ## are no wider than `fit` (the board they are written on)
@@ -1071,7 +1134,11 @@ func _from_spec(spec: Dictionary) -> void:
 				continue
 			if minf(a.y, b.y) > -0.05 and maxf(a.y, b.y) > 0.3 and maxf(a.x, b.x) < L + 0.6 and minf(a.x, b.x) > -0.6:
 				continue
-			flank = maxf(flank, a.distance_to(b))
+			var ln0 := a.distance_to(b)
+			var off := maxf(absf(a.y), absf(b.y))
+			if absf(b.x - a.x) > 0.9 * ln0 and (off < 1.6 or (off < 2.0 and minf(a.x, b.x) > -1.0 and maxf(a.x, b.x) < L + 1.0)):
+				continue                             # (just in front of or behind the front and along it: the front set out or in, not a side)
+			flank = maxf(flank, ln0)
 	for pc in pieces:
 		var ring: PackedVector2Array = pc["ring"]
 		var zmin := 0.0

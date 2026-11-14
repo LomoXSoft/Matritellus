@@ -41,7 +41,25 @@ func _play(st: AudioStream, vol_db: float, pitch := 1.0) -> void:
 	p.stream = st
 	p.volume_db = vol_db
 	p.pitch_scale = pitch
+	p.stream_paused = false
 	p.play()
+
+## the pause: whatever is sounding waits where it is (the engine, the tyres, a horn), and goes on afterwards
+var _held: Array = []
+func hold(on: bool) -> void:
+	if on:
+		for p in [_engine, _skid, _horn_player, _screech] + _players:
+			if p.playing and not p.stream_paused:
+				p.stream_paused = true
+				_held.append(p)
+	else:
+		for p in _held:
+			if is_instance_valid(p):
+				p.stream_paused = false
+		_held.clear()
+
+func held() -> bool:
+	return not _held.is_empty()
 
 ## The horn of that make of car (one of its own, at random). `vol_db`: louder for yours, quieter for the traffic's.
 ## Returns false if it has no recording (the caller then beeps as before).
@@ -165,6 +183,7 @@ func beep(freq: float, dur := 0.08, wave := 0, vol_db := -14.0, slide := 0.0) ->
 	p.stream = _cache[key]
 	p.volume_db = vol_db
 	p.pitch_scale = 1.0
+	p.stream_paused = false                      # (one of the ones held by the pause, taken for a beep of the menu's)
 	p.play()
 
 func noise(dur := 0.3, vol_db := -8.0) -> void:

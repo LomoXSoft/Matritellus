@@ -69,10 +69,15 @@ static func texture(path: String) -> Texture2D:
 ## particles of rain and smoke are drawn, 0 for none. retune() puts what is already built to whatever they are now.)
 static var draw := 1.0
 static var fx := 1.0
+## (and `detail`, the automatic LOD option: the small pieces -- the ones drawn no further than 110 m -- are drawn
+## this much as far, the bigger ones as before)
+const LOD_NEAR := 0.7
+static var detail := 1.0
 
 static func _range(n: GeometryInstance3D, far: float) -> void:
 	n.set_meta("far0", far)
-	n.visibility_range_end = far * draw if draw > 0.0 else 0.0
+	var k: float = detail if far <= 110.0 else 1.0
+	n.visibility_range_end = far * draw * k if draw > 0.0 else 0.0
 	n.visibility_range_end_margin = 4.0
 
 static func _puffs(p: CPUParticles3D) -> void:

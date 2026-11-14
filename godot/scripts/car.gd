@@ -160,6 +160,42 @@ static func rider(o: Dictionary, driving: bool, size := RIDER) -> Node3D:
 		n.add_child(wheel)
 	return n
 
+## The make's own shape to bump into things with, for one whose box was a lot bigger than the car that is seen (the
+## Z15: the air over its sloping bonnet, and the width of its mirrors all down its length: the user, 14 November
+## 2026). Slices along its length, each as wide and as high as the bodywork is there (the mirrors left out), between
+## the same floor and ceiling the box had. Worked out once for each make.
+static var _hulls := {}
+const HULL_SLICE := 0.15
+func _hull(pts: PackedVector3Array, foot: float, ceiling: float) -> ConvexPolygonShape3D:
+	if _hulls.has(kind):
+		return _hulls[kind]
+	var xs: Array = []
+	for q in pts:
+		xs.append(absf(q.x))
+	xs.sort()
+	var half: float = xs[int(xs.size() * 0.95)] if not xs.is_empty() else float(spec["wid"]) / 2.0      # (the mirrors are the last few)
+	var slices := {}                            # slice -> [widest, highest, front, back]
+	for q in pts:
+		var k := int(floor(q.z / HULL_SLICE))
+		var w := minf(absf(q.x), half)
+		var y := clampf(q.y + GROUND, foot, ceiling)
+		if not slices.has(k):
+			slices[k] = [w, y, q.z, q.z]
+		else:
+			var s: Array = slices[k]
+			s[0] = maxf(s[0], w); s[1] = maxf(s[1], y); s[2] = minf(s[2], q.z); s[3] = maxf(s[3], q.z)
+	var out := PackedVector3Array()
+	for k in slices:
+		var s: Array = slices[k]
+		for z in [s[2], s[3]]:
+			for x in [-s[0], s[0]]:
+				out.append(Vector3(x, foot, z))
+				out.append(Vector3(x, maxf(s[1], foot + 0.3), z))
+	var shape := ConvexPolygonShape3D.new()
+	shape.points = out
+	_hulls[kind] = shape
+	return shape
+
 func setup(kind_: String, hex: int, pos: Vector2, heading: float) -> void:
 	kind = kind_
 	spec = SPECS[kind]
@@ -202,6 +238,9 @@ func setup(kind_: String, hex: int, pos: Vector2, heading: float) -> void:
 		box.size.y = box_top - box_foot
 		cs.position.y = (box_top + box_foot) / 2.0
 		top = GROUND + msize.y
+		if Modelos.SK[kind].get("hull", false):
+			cs.shape = _hull(Modelos.cloud(kind, model), box_foot, box_top)
+			cs.position = Vector3.ZERO
 	add_child(cs)
 	if model == null:
 		top = _box_body(hex, by, top)
@@ -727,6 +766,8 @@ func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> vo
 		hand = true
 	if thr != 0.0 and dozing:
 		doze(false)                     # somebody is driving it after all
+	if thr != 0.0 and sleeping:
+		sleeping = false                # (a body left still for a moment goes to sleep, and an engine's push alone does not wake it)
 	if thr != 0.0 and not running:
 		_start_engine()
 	_thr = thr

@@ -212,6 +212,15 @@ const TX := {
 	"s_ssao": {"es": "Sombra en rincones (SSAO)", "en": "Ambient occlusion (SSAO)"},
 	"s_glow": {"es": "Resplandor", "en": "Glow"},
 	"s_scale": {"es": "Escala de render 3D", "en": "3D render scale"},
+	"t_press_any": {"es": "Pulsa cualquier botón pa empezar", "en": "Press any button to start"},
+	"t_press_touch": {"es": "Toca la pantalla pa empezar", "en": "Touch the screen to start"},
+	"s_sound": {"es": "Sonido", "en": "Sound"},
+	"s_gameplay": {"es": "Gameplay", "en": "Gameplay"},
+	"s_dynres": {"es": "Resolución dinámica", "en": "Dynamic resolution"},
+	"s_upscale": {"es": "Escalado espacial", "en": "Spatial upscaling"},
+	"s_upscale_v": {"es": ["Bilineal", "FSR 1", "FSR 2"], "en": ["Bilinear", "FSR 1", "FSR 2"]},
+	"s_lod": {"es": "LOD automático", "en": "Automatic LOD"},
+	"s_occlusion": {"es": "Occlusion culling", "en": "Occlusion culling"},
 	"s_traffic": {"es": "Tráfico", "en": "Traffic"},
 	"s_traffic_v": {"es": ["Poco", "Normal"], "en": ["Light", "Normal"]},
 	"s_master": {"es": "Volumen general", "en": "Master volume"},
@@ -1374,5 +1383,9 @@ const TX := {
 	"shove": {
 		"es": ["¡Eh! ¡Con tiento!", "Que voy andando. Despacio. Aposta.", "¡Pita como las personas!", "Corre el aire, criatura."],
 		"en": ["¡Eh! Easy!", "I’m walking here. Slowly. On purpose.", "Honk like a person!", "Personal space, criatura."]},
+	"batted": {
+		"es": ["¡Ay, mi madre! ¡Con el bate no!", "¡Animal! ¡Que tengo la cadera de titanio!", "¡Me cago en tus muertos y en el bate!", "¡Esto se lo digo a tu madre!", "¡Bruto, más que bruto!"],
+		"en": ["Ow, mother! Not with the bat!", "You animal! I’ve got a titanium hip!", "Curse your dead, and your bat!", "I’m telling your mother!", "Brute, you utter brute!"]},
+	"t_bat_kept": {"es": "Henry te deja quedarte el bate. Ahora los golpes son de bate (y los Pitufos lo notan).", "en": "Henry lets you keep the bat. Your hits are bat hits now (and Los Pitufos notice)."},
 	"paca_call": {"es": "¡{Chiquillo|Chiquilla}! ¡Ven p’acá!", "en": "¡{Niño|Niña}! Come here!"},
 }

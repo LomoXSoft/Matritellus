@@ -40,16 +40,17 @@ Repositorio privado: https://github.com/LomoXSoft/Matritellus
 | Plataforma | Comando | Sale en |
 |---|---|---|
 | Windows | `python tools/make_installer.py` | `dist/Matritellus-Instalador.exe` |
-| Android | `python tools/make_apk.py` | `dist/Matritellus.apk`, firmado |
+| Android | `python tools/make_apk.py X.Y.Z` | `dist/Matritellus.apk`, firmado y con su versión |
 | Linux / Steam Machine | `python tools/make_linux.py` | `dist/Matritellus-Linux.tar.gz` |
 
+- **Versión de Android:** `make_apk.py X.Y.Z` (desde la 0.0.4) escribe la versión en `godot/project.godot` (`application/config/version`) y en el preset de Android: el nombre que ve el móvil (`0.0.4`) y el número que le dice qué versión es más nueva (X·10000 + Y·100 + Z: la 0.0.4 es el 4). Sin número, usa el que ya hay en `project.godot`. El número solo puede subir: si baja, el móvil no deja instalar encima.
 - **Firma de Android:** la clave está **fuera del repo**, en `C:/Users/luis_/Fable/tools/android`. Su contraseña nunca se escribe en ningún archivo del proyecto.
 - **Linux:** el paquete lleva `instalar.sh`, `desinstalar.sh` y un `LEEME.txt`. Para jugar en la Steam Machine: descomprimir, ejecutar `instalar.sh` y en Steam: Añadir un juego que no es de Steam.
 
 ## Cómo se publica una versión
 
 1. **Prueba completa en verde.** Si hay otras sesiones trabajando en la carpeta, avísalas antes: no se lanzan dos pruebas completas a la vez.
-2. **Los tres instaladores**, construidos desde ese mismo estado.
+2. **Los tres instaladores**, construidos desde ese mismo estado. El de Android, con el número de la versión: `python tools/make_apk.py X.Y.Z`.
 3. **Commit y etiqueta.** La versión se numera `X.Y.Z` y la etiqueta es `vX.Y.Z`.
 
    ```bash
@@ -92,6 +93,7 @@ Versiones:
 | 0.0.1 | 13/11/2026 | Primera con control de versiones. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.1 |
 | 0.0.2 | 13/11/2026 | Grafitis de las seis peñas, dos peñas nuevas, coches que no vuelcan, límite del mapa con persecución, sombreadores precompilados, Galaxy Recress, centralita y marcadores, casas nuevas de la Alameda y Matías Pérez. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.2 |
 | 0.0.3 | 14/11/2026 | Tokken 9 (el minijuego de lucha de las máquinas), sala y fachada de los Recress con máquinas de Sketchfab y horario, misión cumplida solo con el sello, seis canciones y logos nuevos en la radio, habla de los mayores, la grúa ya no sale encima de un coche. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.3 |
+| 0.0.4 | 14/11/2026 | La pausa para el mundo (coches y sonido), límite del mapa a 1950 m (la Cooperativa de la primera misión quedaba fuera), conductor visible en el Julietta, caja de choque del Z15 a su forma, derrapes que ya no suenan conduciendo normal, pedales en Android, joystick que camina poco a poco, el bate de Henry, título con calma, ajustes en Gráficos/Sonido/Gameplay con resolución dinámica, FSR, LOD y occlusion culling, sexta emisora (Koka y Ná FM) y diez canciones más; el APK lleva su número de versión. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.4 |
 
 ## Varias sesiones en la misma carpeta
 
@@ -123,11 +125,22 @@ Versiones:
   - La grúa yendo a un aviso y la policía persiguiendo no frenan por los vecinos: los atropellan, sin culpa para el jugador (`traffic.gd: on_duty`, `game.gd: _duty_hits`).
   - Una futura ambulancia solo necesita `e["duty"] = true`.
 - **Radio:** las emisoras suenan siempre de fondo; cada una guarda cuándo empezó su canción (`ambience.gd: _radio_live`).
+- **Ajustes (desde la 0.0.4):**
+  - Tres páginas: Gráficos, Sonido y Gameplay (idioma, campo de visión, controles).
+  - Opciones nuevas de Gráficos:
+    - **Resolución dinámica** (`game.gd: _dynres`): baja la escala 3D si caen los FPS.
+    - **Escalado espacial:** bilineal, FSR 1 o FSR 2. En Android, que usa el renderizador Mobile, solo hasta FSR 1: `Settings.upscalers()`.
+    - **LOD automático:** el umbral de LOD del motor, y los detalles pequeños se dibujan al 70 % de distancia (`Parts.detail`).
+    - **Occlusion culling:** los muros del pueblo hacen de oclusores (`game.gd: _make_occluders`).
+- **Título:** el nombre en cursiva es una imagen que dibuja `python tools/make_titulo.py`, con Segoe Script Negrita de Windows; se sube la imagen, nunca la fuente. Secuencia en `game.gd: _after_intro` y `_title_go`. Prueba: `--selftest --titulo --shots --window`.
+- **El bate:** con el recado del menú de Josefa hecho (`stats.menu_done`, el del jamón), el golpe a pie es de bate y tira al suelo a quien tienes delante (`game.gd: has_bat`, `_bat_swing`; animación en `chara.gd: swing_bat`). Fotos: `--selftest --bate --window`.
+- **Android al volante:** «Acelerar» es el botón grande. El freno manda «atrás», que frena si vas hacia delante y da marcha atrás si estás parado, y su texto cambia de Freno a Atrás. El joystick solo gira (`touch.gd`).
+- **Fotos de coches:** `--selftest --conductores --window [--solo=edison]` saca cada coche con tu personaje (con gorra) al volante y su caja de choque. `--vidrios=edison` cuenta los colores de la parte alta de la carrocería, para saber de qué color tiene las ventanas.
 - **Misión cumplida:**
   - Se avisa solo con el sello ¡APAÑAO! (`hud.stamp(Loc.t("stamp_done"))`) y el dinero que sube en la pizarra (`_refresh_counts`).
   - No lleva cartel naranja: el usuario lo quitó el 14/11/2026.
   - Si la pantalla está en negro (al salir de una escena), el sello espera a que se aclare.
 - **Pruebas a la vez:** dos pruebas completas al mismo tiempo comparten `user://` (las partidas de prueba) y pueden pisarse. Se lanzan de una en una, avisando a las demás sesiones.
-- **Límite del mapa:** círculo de 1100 m alrededor de (51, −33). Fuera, 30 s de aviso en rojo; luego persecución con Pitufos y Tricornios, y cada 30 s fuera un coche más y +5 % de velocidad (`limite.gd`, `police.boost`, `car.speed_boost`).
+- **Límite del mapa:** círculo de 1950 m alrededor de (51, −33), y nunca más allá de 80 m antes del borde del mapa construido. La prueba `--limite` comprueba que todos los sitios de las misiones, los talleres y los lugares con nombre quedan 150 m dentro. Fuera, 30 s de aviso en rojo; luego persecución con Pitufos y Tricornios, y cada 30 s fuera un coche más y +5 % de velocidad (`limite.gd`, `police.boost`, `car.speed_boost`).
 - **Precalentado de sombreadores:** la primera vez de cada versión en cada gráfica (`calentar.gd`, clave `warm` de los ajustes). Si un día se dibujan cosas nuevas, se sube `VERSION` en `calentar.gd`. Para medirlo: `--selftest --sombreadores --calentar --window` (sin `--headless`).
 - **Diseño de Kebab Luis y misiones:** en `guion/kebab_luis_diseno.md` y `guion/misiones_y_puntos_civicos.md`, cada uno con lo construido al final.

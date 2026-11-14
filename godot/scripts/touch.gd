@@ -3,7 +3,8 @@ extends CanvasLayer
 ##   - a stick that appears wherever a finger lands on the left half of the screen, and follows it;
 ##   - the camera turned by dragging a finger that starts on the right half (not on a button);
 ##   - action buttons with words, not a pad's letters, and only those that do something now: "Hablar" / "Subir" /
-##     whatever the prompt on screen says, "Saltar" and "Golpe" on foot; "Freno", "Claxon", "Turbo" in a car;
+##     whatever the prompt on screen says, "Saltar" and "Golpe" on foot; "Acelerar", "Freno" (which says "Atrás" once
+##     the car has stopped: reverse), "Claxon", "Turbo" in a car, where the stick only steers;
 ##     "Seguir" in a conversation; "Aceptar" / "Volver" in a menu... plus "Mapa" and pause along the top.
 ## Each button is the engine's own TouchScreenButton (the most dependable thing on a phone) pressing the action a pad
 ## would press (controls.gd), so the game itself does not know the difference. It shows on a touch screen (or with
@@ -21,6 +22,7 @@ var _stick_at := Vector2.ZERO
 var _stick := Vector2.ZERO
 var _menu_dir := ""
 var _menu_t := 0.0
+var _stick_fb := false            # the stick is holding forward or back (on foot): let go of when you take the wheel
 var _look_id := -1
 var _look_last := Vector2.ZERO
 var look_drag := Vector2.ZERO     # pixels dragged since the game last took them
@@ -68,7 +70,7 @@ func _wanted() -> Array:
 	if menu != null and menu.visible:
 		return [["Aceptar" if es else "OK", "m_accept", "big"], ["Volver" if es else "Back", "m_back", ""]]
 	match phase:
-		"intro", "title_in", "title":
+		"intro", "title_in", "press", "title_out", "title":
 			# the studio's logo and the title gliding in: no buttons until the main menu (the user, 13 November 2026;
 			# a tap anywhere still skips the logo: intro.gd)
 			return []
@@ -91,9 +93,13 @@ func _wanted() -> Array:
 	var out: Array = []
 	var prompt: String = _prompt_words(g)
 	if g.get("in_car") != null:
+		# At the wheel (the user, 14 November 2026): a pedal to go, the big one; the other a brake that, once the car has
+		# stopped, is reverse (the game's own "back" does just that: it says which it is now); and the stick only steers.
 		var c = g.in_car
-		out.append([prompt if prompt != "" else ("Bajar" if es else "Get out"), "interact", "big"])
-		out.append(["Freno" if es else "Brake", "handbrake", ""])
+		out.append(["Acelerar" if es else "Accelerate", "forward", "big"])
+		var moving_on: bool = c.forward_speed() > 0.8
+		out.append([("Freno" if es else "Brake") if moving_on else ("Atrás" if es else "Reverse"), "back", ""])
+		out.append([prompt if prompt != "" else ("Bajar" if es else "Get out"), "interact", ""])
 		out.append(["Claxon" if es else "Horn", "horn", ""])
 		if c.spec.has("turbo"):
 			out.append(["Turbo", "run", ""])
@@ -121,6 +127,11 @@ func _prompt_words(g) -> String:
 	return t.left(18)
 
 func _context_tick() -> void:
+	var g0 = _game()
+	if _stick_fb and g0 != null and g0.get("in_car") != null:
+		Input.action_release("forward")           # (got in with the stick pushed: it does not drive the car on its own)
+		Input.action_release("back")
+		_stick_fb = false
 	var want := _wanted()
 	var key := str(want) + str(_size())
 	if key == _context:
@@ -286,11 +297,16 @@ func _move_stick(p: Vector2) -> void:
 	_stick = v if _stick_id >= 0 else Vector2.ZERO
 	var x := _stick.x if absf(_stick.x) > DEAD else 0.0
 	var y := _stick.y if absf(_stick.y) > DEAD else 0.0
+	var g = _game()
+	var wheel_only: bool = g != null and g.get("in_car") != null and not (g.get("menu") != null and g.menu.visible)
 	for pair in [["right", maxf(x, 0.0)], ["left", maxf(-x, 0.0)], ["back", maxf(y, 0.0)], ["forward", maxf(-y, 0.0)]]:
+		if wheel_only and (pair[0] == "back" or pair[0] == "forward"):
+			continue                              # (at the wheel the stick only steers: the pedals are buttons, and hold those two)
 		if pair[1] > 0.0:
 			Input.action_press(pair[0], pair[1])
 		else:
 			Input.action_release(pair[0])
+	_stick_fb = not wheel_only and y != 0.0
 	var dir := ""                                 # ...and steps through menus and the creator while it is held
 	if _stick.length() > 0.55:
 		if absf(_stick.x) > absf(_stick.y):

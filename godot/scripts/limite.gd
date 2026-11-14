@@ -6,7 +6,10 @@ extends Node
 ## it would join here, in _more.)
 
 const CENTRE := Vector2(51.0, -33.0)     # the middle of the town (where its buildings average out)
-const RADIUS := 1100.0                   # metres: the whole town and its ring roads, with room to spare
+const RADIUS := 1950.0                   # metres: the whole town, its ring roads and every garage, with room to spare
+                                         # (it was 1100, and left the cooperative of the very first mission out: the
+                                         # bullring, the park and the pool are 1500 m south, a garage 1800 m east)
+const EDGE := 80.0                       # ...and never past the end of the built map: out this far short of its edge
 const WARN := 30.0                       # seconds to turn back
 const EVERY := 30.0                      # seconds out, the chase on, for each new car and the next 5 %
 const FASTER := 0.05
@@ -22,7 +25,8 @@ func setup(game) -> void:
 	G = game
 
 func outside(p: Vector2) -> bool:
-	return p.distance_to(CENTRE) > RADIUS
+	return p.distance_to(CENTRE) > RADIUS or p.x < MapData.xmin + EDGE or p.x > MapData.xmax - EDGE \
+		or p.y < MapData.zmin + EDGE or p.y > MapData.zmax - EDGE
 
 ## call every physics tick while in the world; `frozen`: talking, a menu, a scene (the clock stops)
 func tick(dt: float, pp: Vector2, frozen: bool) -> void:

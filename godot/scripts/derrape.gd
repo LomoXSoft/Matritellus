@@ -22,6 +22,8 @@ var _clean_t := 0.0
 var _squeal_t := 0.0
 var _was := 0.0                 # how hard it was skidding a moment ago (so a screech marks the start of a slide)
 var skidding := 0.0             # how hard the car you drive is skidding now, 0..1 (for the sound, and the tests)
+var _slide_t := 0.0             # how long it has been skidding without a break
+const SURE := 0.1               # seconds of it before the tyres are heard
 var laid := 0                   # how many strips have been laid in all
 
 func setup(game) -> void:
@@ -84,7 +86,11 @@ func slide_of(c) -> float:
 	for w in c.wheels:
 		if w.is_in_contact():
 			grip = minf(grip, w.get_skidinfo())
-	return maxf(maxf(sliding, braking), clampf((SLIP - grip) / SLIP, 0.0, 1.0))
+	# The physics' grip drops with the foot down (the driven wheels spin a little), on a bend (the front ones steering)
+	# and over a bump (a wheel unloaded for a moment): none of that is a skid, and it squealed nearly all the time (the
+	# user, 14 November 2026). A wheel that has lost its grip only counts if the car is going sideways as well.
+	var lost := clampf((SLIP - grip) / SLIP, 0.0, 1.0) * clampf((side - 1.2) / 2.0, 0.0, 1.0)
+	return maxf(maxf(sliding, braking), lost)
 
 ## a car's rear wheels: sliding? -> marks; returns how hard it is skidding (0..1)
 func _car(c) -> float:
@@ -115,9 +121,12 @@ func tick(dt: float, pp: Vector2) -> void:
 	for e in G.police.cops:                       # (Los Pitufos brake hard too)
 		if (e["car"].p as Vector2).distance_to(pp) < 80.0:
 			_car(e["car"])
-	# the squeal: recorded tyres (sfx.gd skid): a screech as the slide begins, and a squeal under it while it lasts
-	Sfx.skid(skidding, skidding > 0.15 and _was <= 0.15, G.in_car.vel.length() if G.in_car != null else 0.0)
-	_was = skidding
+	# the squeal: recorded tyres (sfx.gd skid): a screech as the slide begins, and a squeal under it while it lasts --
+	# once the slide has lasted a tenth of a second (a jolt for a frame or two is not a slide)
+	_slide_t = _slide_t + dt if skidding > 0.15 else 0.0
+	var heard := skidding if _slide_t >= SURE else 0.0
+	Sfx.skid(heard, heard > 0.15 and _was <= 0.15, G.in_car.vel.length() if G.in_car != null else 0.0)
+	_was = heard
 	# marks left far behind go
 	_clean_t -= dt
 	if _clean_t <= 0.0:

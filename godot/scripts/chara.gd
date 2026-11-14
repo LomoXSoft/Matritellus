@@ -51,6 +51,37 @@ var punch := 0.0          # > 0 while throwing a punch (seconds left)
 var look: Dictionary = {}  # what they were last made to look like
 var _hop := 0.0            # > 0 while in the air of a little jump (seconds left)
 const HOP := 0.46
+var bat_t := 0.0           # > 0 while swinging the bat (seconds left): out it comes, round it goes, and away again
+const BAT_SWING := 0.7
+var _bat: Node3D
+
+## Henry's bat, kept after the ham (the user, 14 November 2026): drawn over the right shoulder, swung across from
+## right to left, and put away again
+func swing_bat() -> void:
+	if _bat == null or not is_instance_valid(_bat):
+		_bat = Node3D.new()
+		_bat.scale = Vector3.ONE / 0.12        # (the hand is a ball of 0.12: the bat keeps its own size)
+		_bat.add_child(Parts.part("cyl", 0xc9a26b, Vector3(0, 0.4, 0), Vector3(0.05, 0.9, 0.05)))
+		_bat.add_child(Parts.part("cyl", 0xb58a52, Vector3(0, 0.68, 0), Vector3(0.08, 0.36, 0.08)))
+		_hr.add_child(_bat)
+	_bat.visible = true
+	bat_t = BAT_SWING
+
+## where the hand is, and which way the bat points ([x tilt, turn]), through the swing (k 0..1)
+## (the heads here are a metre across: the hand goes well out to the side and in front, or the bat is inside the head)
+const _BAT_KEYS := [[0.0, Vector3(0.3, 0.7, 0.05), Vector2(0.2, 0.3)], [0.3, Vector3(0.75, 1.05, -0.35), Vector2(-0.5, 0.6)],
+	[0.45, Vector3(0.8, 0.95, 0.4), Vector2(1.45, 2.2)], [0.6, Vector3(0.1, 0.9, 1.0), Vector2(1.5, -0.3)],
+	[0.78, Vector3(-0.65, 0.95, 0.6), Vector2(1.5, -1.6)], [1.0, Vector3(0.2, 0.75, 0.3), Vector2(0.7, -0.9)]]
+func _bat_pose(k: float) -> void:
+	for i in range(_BAT_KEYS.size() - 1):
+		var a: Array = _BAT_KEYS[i]
+		var b: Array = _BAT_KEYS[i + 1]
+		if k <= float(b[0]):
+			var t := smoothstep(float(a[0]), float(b[0]), k)
+			_hr.position = (a[1] as Vector3).lerp(b[1], t)
+			var r: Vector2 = (a[2] as Vector2).lerp(b[2], t)
+			_bat.rotation = Vector3(r.x, r.y, 0.0)
+			return
 
 ## a little jump on the spot (or on the run): it gets you over nothing, but it is a jump
 func hop() -> bool:
@@ -588,6 +619,10 @@ func anim(moving: bool, dt: float, speed: float) -> void:
 		var k := sin((1.0 - punch / 0.28) * PI)
 		_hr.position.z = 0.15 + k * 0.6
 		_hr.position.y = 0.68 + k * 0.3
+	if bat_t > 0.0 and _bat != null:   # the bat: up over the shoulder, round, and down
+		bat_t = maxf(0.0, bat_t - dt)
+		_bat_pose(1.0 - bat_t / BAT_SWING)
+		_bat.visible = bat_t > 0.0
 	inner.position.y = absf(cos(_walk)) * 0.07 if moving else sin(Time.get_ticks_msec() / 420.0 + _off) * 0.015
 	if _hop > 0.0:
 		_hop = maxf(0.0, _hop - dt)

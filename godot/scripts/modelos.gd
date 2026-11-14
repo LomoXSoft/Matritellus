@@ -54,12 +54,12 @@ const CLOSER := {
 const SK := {
 	"panda": {"glb": "sk/panda", "rack": [-0.06, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Window"], "hide_mats": ["Ground"], "seat": [0, -0.03], "rider": 0.56},
 	"pitufo": {"glb": "sk/panda", "rack": [-0.3, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Window"], "hide_mats": ["Ground"], "seat": [0, -0.03, 0.95], "rider": 0.56},
-	"z15": {"glb": "sk/z15", "rack": [-0.2, 1.0], "mats": {"M_0136": OWN, "Charcoal": OWN}, "seat": [0, 0.1, 0.8], "rider": 0.62},
+	"z15": {"glb": "sk/z15", "rack": [-0.2, 1.0], "mats": {"M_0136": OWN, "Charcoal": OWN}, "seat": [0, 0.05, 0.8], "rider": 0.62, "hull": true},      # (a cap's peak stayed in front of the windscreen)
 	"tractor": {"glb": "sk/hebro", "rack": [0.24, 0.6], "hue": [[0xc02020, OWN]], "mid": true, "seat": [0, -0.2, 0.9], "rider": 0.85, "open": true},
 	"yondir": {"glb": "sk/yondir", "rack": [-0.12, 0.93], "mats": {"Part23Mtl": OWN, "Part42Mtl": 0xf2c81e}, "mid": true, "seat": [0, -0.12, 0.88], "rider": 0.72},
 	"tunero": {"glb": "sk/tunero", "rack": [-0.02, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Glass_Amber"], "tint": true, "seat": [0, -0.02, 0.92, 0.14], "rider": 0.52},
-	"edison": {"glb": "sk/edison", "rack": [-0.06, 1.0], "hue": [[0xf0f0f0, OWN]], "pale": true, "seat": [0, 0.0], "rider": 0.56},
-	"julietta": {"glb": "sk/julietta", "rack": [-0.37, 0.62], "mats": {"AluShiny": OWN}, "hide_mats": ["green"], "seat": [0, -0.115, 1.0], "rider": 0.52, "open": true},     # (back against the seat, head at the height of its headrest)
+	"edison": {"glb": "sk/edison", "rack": [-0.06, 1.0], "hue": [[0xf0f0f0, OWN]], "pale": true, "seat": [0, 0.0, 0.86, 0.19], "rider": 0.56},      # (the head well under the roof. Its windows stay the black of the texture: cut out as tinted glass they looked horrible, the user, 14 Nov 2026 -- glass_near 0x000000, glass_tol 0.25, glass_above 0.56, tint 0.5 did it)
+	"julietta": {"glb": "sk/julietta", "rack": [-0.37, 0.62], "mats": {"AluShiny": OWN}, "hide_mats": ["green"], "seat": [0, -0.115, 1.13], "rider": 0.57, "open": true},     # (sitting up: head and shoulders over the seat's back, or from the camera behind you could not see who drove it: the user, 14 Nov 2026)
 	"grua": {"glb": "sk/grua", "rack": [-0.27, 0.48], "hue": [[0xe4b430, OWN]], "glass_near": 0x78849c, "seat": [0, 0.3, 0.76], "rider": 0.8},
 	"tricornio": {"glb": "sk/tricornio", "rack": [-0.14, 0.93], "hide_mats": ["pEGATINAS"], "glass_near": 0x0c4884, "seat": [0, 0.0, 0.88], "rider": 0.56},
 }
@@ -272,6 +272,15 @@ static func _tinted() -> StandardMaterial3D:
 		_dark_glass.albedo_color = Color(0.07, 0.08, 0.1, 0.72)
 	return _dark_glass
 
+## glass tinted only so much (`tint` a number: how dark, 0..1), so that who is inside still shows
+static var _tints := {}
+static func _tinted_by(dark: float) -> StandardMaterial3D:
+	if not _tints.has(dark):
+		var g: StandardMaterial3D = _pane().duplicate()
+		g.albedo_color = Color(0.1, 0.12, 0.15, dark)
+		_tints[dark] = g
+	return _tints[dark]
+
 static func _image(tex: Texture2D) -> Image:
 	if not _images.has(tex):
 		var img: Image = tex.get_image()
@@ -325,10 +334,12 @@ static func _cut(mesh: Mesh, rule: Dictionary) -> Mesh:
 
 ## a mesh whose windows are the greys of its texture (or the parts of about the colour `near`), with those cut out
 ## as surfaces of their own
-static func _glaze_grey(mesh: Mesh, near := -1) -> Array:
+static func _glaze_grey(mesh: Mesh, near := -1, tol := 0.17, above := -1.0) -> Array:
 	if _glazed.has(mesh):
 		return _glazed[mesh]
 	var want := _hex(maxi(near, 0))
+	var box: AABB = mesh.get_aabb()
+	var floor_y: float = box.position.y + box.size.y * above if above >= 0.0 else -INF      # (no window below this)
 	var out := ArrayMesh.new()
 	var panes: Array = []
 	for s in range(mesh.get_surface_count()):
@@ -347,12 +358,13 @@ static func _glaze_grey(mesh: Mesh, near := -1) -> Array:
 		var pane := PackedInt32Array()
 		for t in range(0, idx.size() - 2, 3):
 			var window := false
-			if img != null:
+			var vy: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+			if img != null and (vy[idx[t]].y + vy[idx[t + 1]].y + vy[idx[t + 2]].y) / 3.0 >= floor_y:
 				var uv: PackedVector2Array = a[Mesh.ARRAY_TEX_UV]
 				var c: Vector2 = (uv[idx[t]] + uv[idx[t + 1]] + uv[idx[t + 2]]) / 3.0
 				var px: Color = img.get_pixel(clampi(int(fposmod(c.x, 1.0) * img.get_width()), 0, img.get_width() - 1), clampi(int(fposmod(c.y, 1.0) * img.get_height()), 0, img.get_height() - 1))
 				if near >= 0:
-					window = Vector3(px.r - want.r, px.g - want.g, px.b - want.b).length() < 0.17
+					window = Vector3(px.r - want.r, px.g - want.g, px.b - want.b).length() < tol
 				else:
 					window = px.s < 0.3 and px.v > 0.36 and px.v < 0.68
 			for k in range(3):
@@ -415,11 +427,12 @@ static func make_from(table: Dictionary, kind: String, spec: Dictionary, paint: 
 		var panes: Array = []
 		mi.mesh = from.mesh
 		var bodywork: bool = not String(from.name).to_lower().contains("wheel")
-		var pane_mat: StandardMaterial3D = _tinted() if m.get("tint", false) else _pane()
+		var tint = m.get("tint", false)
+		var pane_mat: StandardMaterial3D = _tinted_by(float(tint)) if (tint is float) else (_tinted() if tint else _pane())
 		if m.has("cut") and bodywork:
 			mi.mesh = _cut(mi.mesh, m["cut"])
 		if (m.get("grey_glass", false) or m.has("glass_near")) and bodywork:
-			var cut: Array = _glaze_grey(mi.mesh, int(m.get("glass_near", -1)))
+			var cut: Array = _glaze_grey(mi.mesh, int(m.get("glass_near", -1)), float(m.get("glass_tol", 0.17)), float(m.get("glass_above", -1.0)))
 			mi.mesh = cut[0]
 			panes = cut[1]
 		if String(from.name).begins_with("wheel_"):      # a wheel stays round, and turns about its own middle

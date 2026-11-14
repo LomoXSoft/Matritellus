@@ -40,6 +40,20 @@ func _ready() -> void:
 		add_child(p)
 		_shots.append(p)
 
+## the pause: the music (the radio too) and the town's sounds wait where they are, and go on afterwards
+var _held: Array = []
+func hold(on: bool) -> void:
+	if on:
+		for p in _players + [_crickets, _murmur] + _shots:
+			if p != null and p.playing and not p.stream_paused:
+				p.stream_paused = true
+				_held.append(p)
+	else:
+		for p in _held:
+			if is_instance_valid(p):
+				p.stream_paused = false
+		_held.clear()
+
 # ---------------- the car radio ----------------
 ## where the station folders are: beside the game's own program if it has been exported, otherwise in the project
 func radio_root() -> String:
@@ -247,6 +261,7 @@ func music(track: String, db := -10.0) -> void:
 	if p.stream == null:
 		return
 	p.volume_db = -50.0
+	p.stream_paused = false
 	p.play(from)
 	_fades[_active] = create_tween()
 	_fades[_active].tween_property(p, "volume_db", db, 0.9)
@@ -299,6 +314,7 @@ func _shot(name: String, db: float, pitch: float) -> void:
 	p.stream = s
 	p.volume_db = db
 	p.pitch_scale = pitch
+	p.stream_paused = false
 	p.play()
 
 ## call every frame while in the world. moment = morning | noon | afternoon | evening | night;
@@ -328,6 +344,7 @@ func town(dt: float, moment: String, terraza: float, on: bool) -> void:
 func _fade(p: AudioStreamPlayer, db: float, dt: float) -> void:
 	p.volume_db = move_toward(p.volume_db, db, 40.0 * dt)
 	if p.volume_db > -58.0 and not p.playing:
+		p.stream_paused = false
 		p.play()
 	elif p.volume_db <= -59.0 and p.playing:
 		p.stop()

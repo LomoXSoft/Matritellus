@@ -9,6 +9,7 @@ var testing := false
 var intro_seen := false                          # so going back to the main menu does not replay the studio logo
 var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8, "music": 7, "sfx": 8, "lang": "es", "keys": {},
 	"window": 0, "shadows": 3, "textures": 2, "draw": 1, "fov": 55, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1,
+	"dynres": false, "upscale": 1, "lod": true, "occlusion": true,
 	"warm": ""}         # (warm: which version of the game has had its shaders made on this graphics card: calentar.gd)
 
 ## The graphics options (game.gd, apply_graphics, does what they say). The defaults are the game as it always was.
@@ -18,17 +19,27 @@ var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8
 ##   fov        degrees                                     fx         0 no particles · 1 few · 2 all (rain, smoke)
 ##   aa         0 none · 1 MSAA 2x · 2 MSAA 4x              ssao, glow  on or off
 ##   scale      the 3D drawn at SCALES[scale] % of the screen and scaled up      traffic    0 light · 1 normal
+## (asked for by the user on 14 November 2026:)
+##   dynres     the 3D drawn smaller of itself while the frames drop, and back up when there is room (game.gd _dynres)
+##   upscale    how the 3D drawn small is brought up to the screen: 0 bilinear · 1 FSR 1 · 2 FSR 2 (not on a phone,
+##              whose renderer has no FSR 2: there it stays at FSR 1)
+##   lod        far things simplified: the engine's levels of detail, and small details drawn less far
+##   occlusion  what is hidden behind the houses is not drawn (the walls of the town stand in front of it)
 const SCALES := [50, 67, 75, 85, 100]
 const DRAW := [0.6, 1.0, 1.6, 0.0]               # (0: no limit)
 const FOV := [45, 90]
 ## Ready-made sets: Low, Medium, High (the game as it always was), Ultra
-const GRAPHICS := ["shadows", "textures", "draw", "fx", "aa", "ssao", "glow", "scale", "traffic"]
+const GRAPHICS := ["shadows", "textures", "draw", "fx", "aa", "ssao", "glow", "scale", "traffic", "dynres", "upscale", "lod", "occlusion"]
 const PRESETS := [
-	{"shadows": 1, "textures": 1, "draw": 0, "fx": 1, "aa": 0, "ssao": false, "glow": false, "scale": 2, "traffic": 0},
-	{"shadows": 2, "textures": 2, "draw": 1, "fx": 2, "aa": 1, "ssao": false, "glow": true, "scale": 4, "traffic": 1},
-	{"shadows": 3, "textures": 2, "draw": 1, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1},
-	{"shadows": 3, "textures": 2, "draw": 2, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1},
+	{"shadows": 1, "textures": 1, "draw": 0, "fx": 1, "aa": 0, "ssao": false, "glow": false, "scale": 2, "traffic": 0, "dynres": true, "upscale": 1, "lod": true, "occlusion": true},
+	{"shadows": 2, "textures": 2, "draw": 1, "fx": 2, "aa": 1, "ssao": false, "glow": true, "scale": 4, "traffic": 1, "dynres": true, "upscale": 1, "lod": true, "occlusion": true},
+	{"shadows": 3, "textures": 2, "draw": 1, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": true, "occlusion": true},
+	{"shadows": 3, "textures": 2, "draw": 2, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": false, "occlusion": true},
 ]
+
+## the ways of scaling the 3D up there are here (a phone's renderer has no FSR 2)
+func upscalers() -> int:
+	return 2 if OS.has_feature("mobile") or RenderingServer.get_current_rendering_method() != "forward_plus" else 3
 
 ## which of the ready-made sets the options now are (-1: none of them, set by hand)
 func preset() -> int:

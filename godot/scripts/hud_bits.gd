@@ -100,6 +100,32 @@ class CarRadio extends Control:
 		_screen.draw.connect(_draw_screen)
 		add_child(_screen)
 
+	## The part of a logo with something drawn on it, squared up: the pictures come with a clear margin round them,
+	## which showed as empty space at the sides of the logo in the cassette's window (the user, 14 November 2026).
+	static var _crops := {}
+	static func _crop(t: Texture2D) -> Rect2:
+		var whole := Rect2(Vector2.ZERO, t.get_size())
+		if _crops.has(t.get_rid()):
+			return _crops[t.get_rid()]
+		var img := t.get_image()
+		var r := whole
+		if img != null:
+			if img.is_compressed():
+				img.decompress()
+			var lo := Vector2i(img.get_width(), img.get_height())
+			var hi := Vector2i(-1, -1)
+			for y in range(0, img.get_height(), 2):
+				for x in range(0, img.get_width(), 2):
+					if img.get_pixel(x, y).a > 0.35:           # (not the faint edge of a shadow)
+						lo = Vector2i(mini(lo.x, x), mini(lo.y, y))
+						hi = Vector2i(maxi(hi.x, x), maxi(hi.y, y))
+			if hi.x > lo.x and hi.y > lo.y:
+				var side := float(maxi(hi.x - lo.x, hi.y - lo.y) + 2)
+				var mid := (Vector2(lo) + Vector2(hi)) / 2.0
+				r = Rect2(mid - Vector2(side, side) / 2.0, Vector2(side, side)).intersection(whole)
+		_crops[t.get_rid()] = r
+		return r
+
 	## what to show (and start the scrolling again from the left)
 	func tune(logo_: Texture2D, who_: String, what_: String, preset_: int, presets_: int) -> void:
 		logo = logo_
@@ -149,7 +175,7 @@ class CarRadio extends Control:
 		var slot := Rect2(66, 9, 74, 74)
 		draw_rect(slot, Color("0c0c0e"))
 		if logo != null:
-			draw_texture_rect(logo, slot.grow(-4.0), false)
+			draw_texture_rect_region(logo, slot.grow(-3.0), _crop(logo))
 		draw_rect(slot, Color("70757e"), false, 2.0)
 		draw_line(slot.position + Vector2(6, 5), slot.position + Vector2(slot.size.x - 20, 5), Color(1, 1, 1, 0.22), 2.0)
 		# the display

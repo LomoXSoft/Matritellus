@@ -389,8 +389,18 @@ func apply_graphics() -> void:
 	if int(d["window"]) != 0 and not Settings.testing:       # full screen: the resolution chosen is what the 3D is drawn at
 		var tall := maxf(1.0, float(DisplayServer.screen_get_size().y))
 		scale *= minf(1.0, float((Settings.RESOLUTIONS[int(d["res"])] as Vector2i).y) / tall)
-	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if scale < 0.99 else Viewport.SCALING_3D_MODE_BILINEAR
-	vp.scaling_3d_scale = scale
+	var ups: int = mini(int(d["upscale"]), Settings.upscalers() - 1)       # (a phone: FSR 1 at most)
+	var dyn: bool = bool(d["dynres"])
+	_base_scale = scale
+	if not dyn:
+		_dyn_k = 1.0
+	vp.scaling_3d_mode = [Viewport.SCALING_3D_MODE_BILINEAR, Viewport.SCALING_3D_MODE_FSR, Viewport.SCALING_3D_MODE_FSR2][ups] \
+		if (scale < 0.99 or dyn or ups == 2) else Viewport.SCALING_3D_MODE_BILINEAR       # (FSR 2 also smooths the edges at full size)
+	vp.scaling_3d_scale = clampf(scale * _dyn_k, 0.5, 1.0)
+	vp.mesh_lod_threshold = 2.5 if bool(d["lod"]) else 0.0      # (0: every mesh at its fullest, however far)
+	vp.use_occlusion_culling = bool(d["occlusion"])
+	if bool(d["occlusion"]):
+		_make_occluders()
 	vp.texture_mipmap_bias = [1.5, 0.5, 0.0][int(d["textures"])]
 	env.ssao_enabled = bool(d["ssao"])
 	env.glow_enabled = bool(d["glow"])
@@ -406,12 +416,77 @@ func apply_graphics() -> void:
 	cam.far = 900.0 if near_only else 1600.0
 	env.fog_density = 0.0009 if near_only else 0.0003          # (the haze hides where the town stops being drawn)
 	var fx: float = [0.0, 0.4, 1.0][int(d["fx"])]
-	if draw != Parts.draw or fx != Parts.fx:
+	var near_k: float = Parts.LOD_NEAR if bool(d["lod"]) else 1.0
+	if draw != Parts.draw or fx != Parts.fx or near_k != Parts.detail:
 		Parts.draw = draw
 		Parts.fx = fx
+		Parts.detail = near_k
 		Parts.retune(self)
 	if traffic != null:
 		traffic.max_cars = TrafficS.MAX_CARS if int(d["traffic"]) == 1 else 8
+
+## Dynamic resolution (the user, 14 November 2026): once a second, if the frames are falling short of what they
+## should be (the cap, or the screen's own rate with vsync, or 60), the 3D is drawn a step smaller; with room to
+## spare it goes back up, never past the scale chosen. FSR (or bilinear, if that is what was chosen) brings it up.
+var _base_scale := 1.0
+var _dyn_k := 1.0                    # how much of the chosen scale is being drawn now
+var _dyn_next := 0
+func _dynres() -> void:
+	if not bool(Settings.data["dynres"]) or Settings.testing:
+		return
+	var now := Time.get_ticks_msec()
+	if now < _dyn_next:
+		return
+	_dyn_next = now + 1000
+	var cap: int = Settings.FPS_CAPS[int(Settings.data["fps"])]
+	var want: float = float(cap) if cap > 0 else (DisplayServer.screen_get_refresh_rate() if bool(Settings.data["vsync"]) else 60.0)
+	want = clampf(want if want > 0.0 else 60.0, 30.0, 144.0)
+	var fps := Engine.get_frames_per_second()
+	var was := _dyn_k
+	if fps < want * 0.9:
+		_dyn_k = maxf(0.6, _dyn_k - 0.08)
+	elif fps >= want * 0.98:
+		_dyn_k = minf(1.0, _dyn_k + 0.04)
+	if _dyn_k != was:
+		get_viewport().scaling_3d_scale = clampf(_base_scale * _dyn_k, 0.5, 1.0)
+
+## Occlusion culling (the user, 14 November 2026): the town's walls, each a little inside itself, stand in for what
+## hides what -- whatever is behind a row of houses (people, cars, trees, the houses' own pieces) is not drawn.
+## Made once, the first time it is switched on.
+var occluders: OccluderInstance3D
+func _make_occluders() -> void:
+	if occluders != null:
+		return
+	var verts := PackedVector3Array()
+	var idx := PackedInt32Array()
+	for style in range(MapData.walls.size()):
+		var w: Array = MapData.walls[style]
+		var wy: Array = MapData.wall_y[style] if style < MapData.wall_y.size() else []
+		for i in range(w.size() / 7):
+			var o := i * 7
+			var a := Vector2(w[o], w[o + 1])
+			var b := Vector2(w[o + 2], w[o + 3])
+			var h: float = w[o + 4]
+			var length := a.distance_to(b)
+			if length < 2.5 or h < 2.8:
+				continue                             # (a stub, or a wall too low to hide much)
+			var along := (b - a) / length
+			var inward := Vector2(along.y, -along.x) * -0.15          # (the wall's outside is (dz, -dx): a hand's breadth in from it)
+			a += along * 0.25 + inward
+			b -= along * 0.25 - inward
+			var base: float = wy[i] if i < wy.size() else 0.0
+			var foot := maxf(base, maxf(MapData.height(a), MapData.height(b))) + 0.3
+			var top := base + h - 0.35
+			if top - foot < 1.5:
+				continue
+			var k := verts.size()
+			verts.append_array([Vector3(a.x, foot, a.y), Vector3(b.x, foot, b.y), Vector3(b.x, top, b.y), Vector3(a.x, top, a.y)])
+			idx.append_array([k, k + 1, k + 2, k, k + 2, k + 3])
+	var shape := ArrayOccluder3D.new()
+	shape.set_arrays(verts, idx)
+	occluders = OccluderInstance3D.new()
+	occluders.occluder = shape
+	add_child(occluders)
 
 func _boot_rest() -> void:
 	police = PoliceS.new()
@@ -462,21 +537,42 @@ func _boot_done() -> void:
 		add_child(intro)
 
 ## the logo has faded to black: fade up on the town with the camera gliding in, then a flash and the menu
+## After the loading screen, calmly (the user, 14 November 2026; the menu used to be in your face in an instant): the
+## town from the air out of the black; the name fading in, in a joined-up hand; a few seconds on, at the foot of the
+## screen, "press any button"; pressed, the name fades out, and only then the main menu fades in.
+const TITLE_NAME_AT := 0.6                   # seconds after the town is there, the name begins to come in
+const TITLE_PRESS_AT := 2.6                  # seconds after that, the line at the foot
 func _after_intro() -> void:
 	Settings.intro_seen = true
 	phase = "title_in"
 	_title_pan = 0.0
 	hud.fade.modulate.a = 1.0
+	hud.title_reset()
 	var tw := create_tween()
 	tw.tween_property(hud.fade, "modulate:a", 0.0, 1.5)
-	tw.tween_interval(0.9)
+	tw.tween_interval(TITLE_NAME_AT)
+	tw.tween_callback(hud.title_name_in)
+	tw.tween_interval(TITLE_PRESS_AT)
 	tw.tween_callback(func():
-		hud.flash.modulate.a = 0.85
-		create_tween().tween_property(hud.flash, "modulate:a", 0.0, 0.7)
-		Sfx.beep(196.0, 0.5, 1, -12.0)
+		if phase != "title_in":
+			return
+		phase = "press"
+		_input_lock = 0.2
+		hud.title_press_in(Touch.on))
+
+## any button pressed over the name: it goes, and the menu comes
+func _title_go() -> void:
+	phase = "title_out"
+	Sfx.beep(196.0, 0.5, 1, -12.0)
+	hud.title_out()
+	var tw := create_tween()
+	tw.tween_interval(0.7)
+	tw.tween_callback(func():
 		phase = "title"
 		_input_lock = 0.35
-		menu.open("main"))
+		menu.open("main")
+		menu.modulate.a = 0.0
+		create_tween().tween_property(menu, "modulate:a", 1.0, 0.6))
 
 # ================= setup =================
 func _setup_sky() -> void:
@@ -1325,6 +1421,13 @@ func _set_lang(to: String) -> void:
 		hud.set_objective(_tag(), Loc.t(steps[si]["obj"]))
 		_refresh_counts()
 
+## the next (or previous) way of scaling the 3D up, of those there are here
+func _step_upscale(by: int) -> void:
+	var n: int = Settings.upscalers()
+	Settings.data["upscale"] = (mini(int(Settings.data["upscale"]), n - 1) + by + n) % n
+	Settings.apply()
+	Settings.save()
+
 func _do_rebind(keycode: int, action: String) -> void:
 	Controls.rebind(action, keycode)
 	Settings.save()
@@ -1351,7 +1454,7 @@ func _menu_page(id: String) -> Dictionary:
 			items.append({"text": Loc.t("m_settings"), "do": _open_settings.bind("main")})
 			items.append({"text": Loc.t("m_howto"), "do": _goto.bind("howto")})
 			items.append({"text": Loc.t("m_credits"), "do": _goto.bind("credits")})
-			return {"title": "MATRITELLUS", "sub": Loc.t("m_place"), "crest": true, "items": items, "foot": Loc.t("m_foot")}
+			return {"title": "", "sub": Loc.t("m_place"), "crest": true, "items": items, "foot": Loc.t("m_foot")}      # (no name on its plaque: it has just faded in and out over the town, the user, 14 Nov 2026)
 		"slots":
 			for i in range(3):
 				if _load_slot(i) == null:
@@ -1385,33 +1488,48 @@ func _menu_page(id: String) -> Dictionary:
 			items.append(row.call("s_shadows", pick.call("shadows", "s_shadow_v"), "shadows", 4))
 			items.append(row.call("s_textures", pick.call("textures", "s_low_high"), "textures", 3))
 			items.append(row.call("s_draw", pick.call("draw", "s_draw_v"), "draw", 4))
-			items.append({"text": Loc.t("s_fov"), "value": "%d°" % int(d["fov"]), "size": 19,
-				"left": Settings.nudge.bind("fov", -5, Settings.FOV[0], Settings.FOV[1]), "right": Settings.nudge.bind("fov", 5, Settings.FOV[0], Settings.FOV[1])})
 			items.append(row.call("s_fx", pick.call("fx", "s_fx_v"), "fx", 3))
 			items.append(row.call("s_aa", pick.call("aa", "s_aa_v"), "aa", 3))
 			items.append(flip.call("s_ssao", "ssao"))
 			items.append(flip.call("s_glow", "glow"))
 			items.append(row.call("s_scale", "%d %%" % Settings.SCALES[int(d["scale"])], "scale", Settings.SCALES.size()))
+			items.append(flip.call("s_dynres", "dynres"))
+			var ups: int = mini(int(d["upscale"]), Settings.upscalers() - 1)
+			items.append({"text": Loc.t("s_upscale"), "value": (Loc.t("s_upscale_v") as Array)[ups], "size": 19,
+				"left": _step_upscale.bind(-1), "right": _step_upscale.bind(1)})
+			items.append(flip.call("s_lod", "lod"))
+			items.append(flip.call("s_occlusion", "occlusion"))
 			items.append(row.call("s_traffic", pick.call("traffic", "s_traffic_v"), "traffic", 2))
 			items.append({"text": Loc.t("m_back"), "do": _goto.bind("settings"), "size": 21})
 			return {"title": Loc.t("s_graphics").to_upper(), "items": items, "back": "settings", "foot": Loc.t("m_foot_set")}
-		"settings":
-			var d: Dictionary = Settings.data
-			var other_lang := "en" if d["lang"] == "es" else "es"
+		"settings":                                  # three pages: the graphics, the sound, and the playing itself (the user, 14 November 2026)
 			items.append({"text": Loc.t("s_graphics"), "do": _goto.bind("graphics")})
-			for vol in [["s_master", "master"], ["s_music", "music"], ["s_sfx", "sfx"]]:
-				items.append({"text": Loc.t(vol[0]), "value": "%d / 10" % int(d[vol[1]]), "left": Settings.step.bind(vol[1], -1, 11), "right": Settings.step.bind(vol[1], 1, 11)})
-			items.append({"text": Loc.t("s_lang"), "value": Loc.t("s_lang_" + String(d["lang"])), "left": _set_lang.bind(other_lang), "right": _set_lang.bind(other_lang)})
-			items.append({"text": Loc.t("s_controls"), "do": _goto.bind("controls")})
+			items.append({"text": Loc.t("s_sound"), "do": _goto.bind("sound")})
+			items.append({"text": Loc.t("s_gameplay"), "do": _goto.bind("gameplay")})
 			items.append({"text": Loc.t("m_back"), "do": _goto.bind(_menu_root)})
 			return {"title": Loc.t("m_settings").to_upper(), "items": items, "back": _menu_root, "foot": Loc.t("m_foot_set")}
+		"sound":
+			var d: Dictionary = Settings.data
+			for vol in [["s_master", "master"], ["s_music", "music"], ["s_sfx", "sfx"]]:
+				items.append({"text": Loc.t(vol[0]), "value": "%d / 10" % int(d[vol[1]]), "left": Settings.step.bind(vol[1], -1, 11), "right": Settings.step.bind(vol[1], 1, 11)})
+			items.append({"text": Loc.t("m_back"), "do": _goto.bind("settings")})
+			return {"title": Loc.t("s_sound").to_upper(), "items": items, "back": "settings", "foot": Loc.t("m_foot_set")}
+		"gameplay":
+			var d: Dictionary = Settings.data
+			var other_lang := "en" if d["lang"] == "es" else "es"
+			items.append({"text": Loc.t("s_lang"), "value": Loc.t("s_lang_" + String(d["lang"])), "left": _set_lang.bind(other_lang), "right": _set_lang.bind(other_lang)})
+			items.append({"text": Loc.t("s_fov"), "value": "%d°" % int(d["fov"]),
+				"left": Settings.nudge.bind("fov", -5, Settings.FOV[0], Settings.FOV[1]), "right": Settings.nudge.bind("fov", 5, Settings.FOV[0], Settings.FOV[1])})
+			items.append({"text": Loc.t("s_controls"), "do": _goto.bind("controls")})
+			items.append({"text": Loc.t("m_back"), "do": _goto.bind("settings")})
+			return {"title": Loc.t("s_gameplay").to_upper(), "items": items, "back": "settings", "foot": Loc.t("m_foot_set")}
 		"controls":
 			for a in Controls.REBINDABLE:
 				items.append({"text": Loc.t("k_" + a), "value": Controls.key_name(a), "do": _start_rebind.bind(a), "size": 22})
 			items.append({"text": Loc.t("k_reset"), "do": _reset_keys, "size": 22})
-			items.append({"text": Loc.t("m_back"), "do": _goto.bind("settings"), "size": 22})
+			items.append({"text": Loc.t("m_back"), "do": _goto.bind("gameplay"), "size": 22})
 			items.append(_plain(Loc.t("k_pad"), 14))
-			return {"title": Loc.t("k_title"), "sub": Loc.t("k_sub"), "items": items, "back": "settings", "foot": ""}
+			return {"title": Loc.t("k_title"), "sub": Loc.t("k_sub"), "items": items, "back": "gameplay", "foot": ""}
 		"howto":
 			for line in Loc.t("howto"):
 				var text: String = line
@@ -1453,13 +1571,22 @@ func _menu_new() -> void:
 
 func _open_pause() -> void:
 	paused = true
+	_hold_world(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	menu.open("pause")
 
 func _close_pause() -> void:
 	paused = false
+	_hold_world(false)
 	menu.close()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+## The pause stops the world, not just the game's own clock: the physics (the cars rolled on with whatever speed they
+## had) and every sound of it, the radio and the engine included (the user, 14 November 2026). The menu's beeps sound.
+func _hold_world(on: bool) -> void:
+	PhysicsServer3D.set_active(not on)
+	Sfx.hold(on)
+	Ambience.hold(on)
 
 func _pause_save() -> void:
 	_save(save_si)
@@ -1467,6 +1594,7 @@ func _pause_save() -> void:
 	Sfx.jingle([523, 784], 0.1)
 
 func _quit_to_menu() -> void:
+	_hold_world(false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().reload_current_scene()
 
@@ -2731,11 +2859,14 @@ func _unlock_bridge() -> void:
 	hud.toast(Loc.t("t_puente_open"), 6.0)
 	_complete_step()
 
-## How fast you go on foot for how far the stick is pushed (0..1): a slow walk at the start of it, a walk half way,
-## a run at the end (the last fifth of its travel is all running, so a pushed stick does not have to be at its very edge).
+## How fast you go on foot for how far the stick is pushed (0..1), on a pad or on a phone's stick: a stroll at the
+## start of it, a brisk walk further out, and a run only with it pushed all the way (it ran at the slightest push:
+## the user, 14 November 2026).
+const RUN_TILT := 0.93
 func stick_speed(tilt: float) -> float:
-	var k := clampf((tilt - 0.2) / 0.6, 0.0, 1.0)
-	return lerpf(1.6, 9.0, k)
+	if tilt >= RUN_TILT:
+		return 9.0
+	return lerpf(1.1, 3.8, clampf((tilt - 0.12) / (RUN_TILT - 0.17), 0.0, 1.0))
 
 ## Are you at the place a mission wants you at? Only once you have been inside its circle for `dwell` seconds on end.
 func _stayed(inside: bool, dt: float) -> bool:
@@ -3211,6 +3342,13 @@ func _duty_hits() -> void:
 func _unhandled_input(e: InputEvent) -> void:
 	if not _booted or menu.visible or _input_lock > 0.0:
 		return
+	if phase == "press":                         # the name over the town: any key, button, click or touch to begin
+		if (e is InputEventKey and e.pressed and not e.echo) or (e is InputEventMouseButton and e.pressed) \
+				or (e is InputEventJoypadButton and e.pressed) or (e is InputEventScreenTouch and e.pressed):
+			_title_go()
+		return
+	if phase == "title_out":
+		return
 	if e is InputEventMouseButton:
 		if e.button_index == MOUSE_BUTTON_LEFT:
 			dragging = e.pressed
@@ -3229,7 +3367,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 	var accept: bool = e.is_action_pressed("m_accept") or e.is_action_pressed("interact")
 	match phase:
-		"intro", "title", "title_in", "ending":
+		"intro", "title", "title_in", "press", "title_out", "ending":
 			return
 		"prologue":
 			if accept:
@@ -3401,6 +3539,9 @@ func _punch() -> void:
 	if motin.busy():                             # (in the riot the swing is the bat's, and it is counted there)
 		motin.swing()
 		return
+	if has_bat():
+		_bat_swing()
+		return
 	if _punch_cool > 0.0:
 		return
 	_punch_cool = 0.38
@@ -3426,6 +3567,57 @@ func _punch() -> void:
 		if c.p.distance_to(at) < c.off + 1.3:
 			c.apply_central_impulse(Vector3(dir.x, 0.15, dir.y) * c.mass * 0.5)
 			Sfx.beep(90.0, 0.15, 2, -8.0, -25.0)
+
+## At first a hit is a little shove; once Josefa's errand is done (the roast ham, won from Henry's riot) you keep the
+## bat he gave you, and the hit is the bat's: out it comes, a swing, and whoever is in front of you goes to the
+## ground (the user, 14 November 2026). They get up again in a moment, as from a car.
+const BAT_REACH := 1.8
+const BAT_LANDS := 0.4                           # seconds into the swing that it gets there (chara.gd BAT_SWING: across the front)
+func has_bat() -> bool:
+	return bool(stats.get("menu_done", false))
+
+func _bat_swing() -> void:
+	if _punch_cool > 0.0:
+		return
+	_punch_cool = 0.8
+	player.swing_bat()
+	Sfx.noise(0.2, -17.0)                        # (the whoosh)
+	get_tree().create_timer(BAT_LANDS).timeout.connect(_bat_lands)
+
+func _bat_lands() -> void:
+	if in_car != null or not (phase == "play" or phase == "free"):
+		return
+	var dir := Vector2(sin(player.h), cos(player.h))
+	var at: Vector2 = player.p + dir * 1.0
+	var hit: Array = props.punch(at, dir)
+	if hit[0] > 0:
+		police.add_heat(hit[1])
+		Sfx.noise(0.15, -10.0)
+	var floored := 0
+	for n in npcs:
+		if n.away or n.state == "fly" or n.state == "down" or not n.visible:
+			continue
+		var to: Vector2 = n.p - player.p
+		if to.length() > BAT_REACH or to.length() < 0.01 or to.normalized().dot(dir) < 0.25:
+			continue
+		n.state = "fly"                          # a short flight, and down (the falling is the npc tick's, as for a car)
+		n.vel = dir * 3.2 + to.normalized() * 1.2
+		n.vy = 3.4
+		n.spin = randf_range(5.0, 8.0) * (1.0 if randf() < 0.5 else -1.0)
+		folk.hurt(n.id, day_n)
+		if not n.still:
+			n.home = n.p
+		n.bark(Loc.t("batted").pick_random(), 2.2)
+		police.add_heat(12.0)
+		floored += 1
+	if floored > 0:
+		Sfx.beep(140.0, 0.12, 2, -6.0, -70.0)    # (the thwack)
+		Sfx.noise(0.12, -9.0)
+		shake = 0.2
+	for c in cars:
+		if c.p.distance_to(at) < c.off + 1.5:
+			c.apply_central_impulse(Vector3(dir.x, 0.15, dir.y) * c.mass * 0.8)
+			Sfx.beep(90.0, 0.18, 2, -6.0, -25.0)
 
 func _find_interaction() -> void:
 	near_npc = null
@@ -3470,7 +3662,7 @@ func _update_audio(dt: float) -> void:
 	match phase:
 		"intro":
 			pass
-		"title_in", "title":
+		"title_in", "press", "title_out", "title":
 			track = "entrada"; db = -9.0             # (one of the radio's tunes, a different one each time: ambience.gd)
 		"prologue", "creator":                  # (the entry tune is the title's: it stops the moment you choose New game or Continue)
 			track = "lofi"; db = -22.0
@@ -3491,7 +3683,8 @@ func _update_audio(dt: float) -> void:
 	if recress != null and recress.music()[0] != "" and (phase == "play" or phase == "free" or phase == "talking"):
 		track = recress.music()[0] if recress.music()[0] != "none" else ""
 		db = recress.music()[1]
-	Ambience.music(track, db)
+	if not paused:                               # (paused, what was playing waits where it was: a new station waits for the end of the pause)
+		Ambience.music(track, db)
 	_terraza_t -= dt
 	if _terraza_t <= 0.0:
 		_terraza_t = 0.5
@@ -3515,11 +3708,12 @@ func _physics_process(delta: float) -> void:
 	if lights != null:
 		lights.tick(dt, Vector2(cam.global_position.x, cam.global_position.z).lerp(player.p, 0.7))
 	_input_lock = maxf(0.0, _input_lock - dt)
+	_dynres()
 	if paused:
 		return
 	time += dt
 	world.mill_blades.rotation.z += dt * 0.6
-	if phase == "title" or phase == "intro" or phase == "title_in":
+	if phase in ["title", "intro", "title_in", "press", "title_out"]:
 		if phase != "intro":
 			_title_pan = minf(1.0, _title_pan + dt / 3.0)
 		var k := smoothstep(0.0, 1.0, _title_pan)       # glide in from high and far to the slow orbit
@@ -4126,7 +4320,9 @@ func _side_over(won: bool) -> void:
 		folk.add(who, 10)
 		add_pc(3, true)
 		_mission_done()
-		say(n.shown_name(), Loc.t("josefa_menu_done"), n.voice, _negocio_new.bind("restaurantes"))
+		say(n.shown_name(), Loc.t("josefa_menu_done"), n.voice, func():
+			_negocio_new("restaurantes")
+			get_tree().create_timer(5.5).timeout.connect(func(): hud.toast(Loc.t("t_bat_kept"), 5.0)))      # (and Henry's bat is yours: has_bat)
 	elif won:
 		stats["ham_done"] = int(stats.get("ham_done", 0)) + 1
 		if in_car != null:
