@@ -437,7 +437,7 @@ func _alemania_7() -> void:
 #           ["win", at, w, sill, h, {...}]   a window          ["bal", at, w, h, {...}]   a window-door with its balcony
 #           ["door", at, w, h, {...}]        a street door     ["gar", at, w, h, {...}]   a garage or store door
 #           ["shop", at, w, h, {...}]        a shop window, glass from knee height ("f" its frame's colour)
-#         and in {...}: "g" a grille ("bars", "lattice"), "b" the blind's colour, "d" how far down it is (0..1), "f" the
+#         and in {...}: "g" a grille ("bars", "lattice", "tijera": folding, on a window or a door), "b" the blind's colour, "d" how far down it is (0..1), "f" the
 #         frame's colour, "s" a surround (colour or masonry) + "sb" its width, "l": "brick" a lintel of bricks on end,
 #         "bal" a low rail on a window's sill ("iron", "white"), "k" the kind of door ("wood", "metal", "curtain";
 #         "planks", "roller", "sect", "metal"), "c" its colour, "bw" a balcony's width, "nb" no balcony of its own
@@ -572,6 +572,31 @@ func lattice(x: float, y: float, w: float, h: float, face: float) -> void:
 	for e in [[x - 0.04, y - 0.04, w + 0.08, 0.04], [x - 0.04, y + h, w + 0.08, 0.04], [x - 0.04, y, 0.04, h], [x + w, y, 0.04, h]]:
 		box(e[0], e[1], face + 0.02, e[2], e[3], 0.05, 0xa89c7a)
 
+## a folding grille (a tijera): uprights, the links between them crossed like scissors, a rail top and bottom
+func tijera(x: float, y: float, w: float, h: float, face: float) -> void:
+	var iron := 0x5c5e5c
+	var z := face + 0.05
+	var n := maxi(3, int(round(w / 0.11)))
+	var step := w / n
+	for i in range(n + 1):
+		box(x + i * step - 0.01, y, z, 0.02, h, 0.025, iron)
+	var rows := maxi(2, int(round(h / 0.24)))
+	var rh := h / rows
+	for i in range(n):
+		for j in range(rows):
+			var a := Vector2(x + i * step, y + j * rh)
+			var b := Vector2(x + (i + 1) * step, y + (j + 1) * rh)
+			_bar(a, b, z + 0.026, 0.012, iron)
+			_bar(Vector2(a.x, b.y), Vector2(b.x, a.y), z + 0.026, 0.012, iron)
+	box(x - 0.02, y + h - 0.05, z - 0.01, w + 0.04, 0.05, 0.04, iron)
+	box(x - 0.02, y, z - 0.01, w + 0.04, 0.04, 0.04, iron)
+
+## a flat strip from a to b (x, y), `t` wide, facing the street `z` out (one side only: it is seen from the street)
+func _bar(a: Vector2, b: Vector2, z: float, t: float, key) -> void:
+	var d := (b - a).normalized()
+	var q := Vector2(-d.y, d.x) * t / 2.0
+	quad(Vector3(a.x - q.x, a.y - q.y, z), Vector3(b.x - q.x, b.y - q.y, z), Vector3(b.x + q.x, b.y + q.y, z), Vector3(a.x + q.x, a.y + q.y, z), key, Vector3(0, 0, 1))
+
 ## a low rail on a window's sill: iron bars, or a white balustrade
 func rail(xc: float, y: float, w: float, face: float, h := 0.5, white := false) -> void:
 	var c := 0xe8e4d8 if white else 0x24221f
@@ -675,6 +700,8 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 					grille(x - 0.06, r.position.y - 0.08, w + 0.12, r.size.y + 0.14, face)
 				"lattice":
 					lattice(x, r.position.y, w, r.size.y, face)
+				"tijera":
+					tijera(x - 0.03, r.position.y - 0.03, w + 0.06, r.size.y + 0.06, face)
 			if o.has("s"):
 				surround(r, face, _mat(o["s"]), float(o.get("sb", 0.13)), kind == "bal")
 			if String(o.get("l", "")) == "brick":
@@ -693,6 +720,8 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 					sheet_door(x, y, w, h, face, int(o.get("c", 0x6a7278)), 0.28)
 				_:
 					panel_door(x, y, w, h, face, int(o.get("c", 0x6b4424)))
+			if String(o.get("g", "")) == "tijera":
+				tijera(x, y, w, h, face)
 			box(x - 0.05, y - 0.6, face - 0.3, w + 0.1, 0.65, 0.42, 0xb9b2a6)                 # the doorstep
 			if o.has("s"):
 				surround(Rect2(x, y, w, h), face, _mat(o["s"]), float(o.get("sb", 0.13)), true)
@@ -708,6 +737,8 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 			box(x - 0.03, r.position.y - 0.06, face - 0.16, w + 0.06, 0.06, 0.22, 0xb9b2a6)
 		"gar":
 			var gh := r.end.y - y
+			if String(o.get("k", "")) == "hueco":            # the hole left as it is: what fills it is built by whoever has the place
+				return
 			if String(o.get("k", "")) == "void":             # a way through under the house: nothing but the dark of it
 				box(x, y, face - 0.3, w, gh, 0.02, 0x15161a)
 				box(x, y - 0.6, face - 0.3, w, 0.62, 0.34, 0x8a8480)

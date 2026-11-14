@@ -65,6 +65,7 @@ var _phone_tween: Tween
 var stamp_box: Control          # the rubber stamp that comes down when an errand is done
 var stamp_text: Label
 var _stamp_tween: Tween
+var _stamp_wait := ""          # a stamp waiting for the screen to come back from black
 var _card_tween: Tween
 var _tilts: Array = []          # [control, degrees]: boxes that hang a little crooked
 var radio_box                   # the car radio's front, with the station just tuned in and what is playing (hud_bits.gd CarRadio)
@@ -834,6 +835,8 @@ func set_hp(frac: float) -> void:
 	hp_fill.bg_color = Color("5aa84f") if frac > 0.5 else (Color("e8a23a") if frac > 0.25 else Color("e23b3b"))
 
 func _process(dt: float) -> void:
+	if _stamp_wait != "" and fade.modulate.a <= 0.05:
+		stamp(_stamp_wait)
 	for entry in tally:                           # the amounts just added or taken away hang under their own number
 		var change: Label = entry[2]
 		if change.visible:
@@ -984,8 +987,16 @@ func show_card(title: String, sub: String) -> void:
 	_card_tween.tween_property(card_box, "modulate:a", 0.0, 0.6)
 	_card_tween.parallel().tween_property(card_box, "scale", Vector2(0.92, 0.92), 0.6)
 
-## thump: the rubber stamp
+## thump: the rubber stamp. It is all the notice an errand done gets, with the money going up on the slate: so if the
+## screen is still black (coming back from a scene) it waits, and comes down once you can see it.
 func stamp(text: String) -> void:
+	if fade.modulate.a > 0.05:
+		_stamp_wait = text
+		if _stamp_tween != null:                  # (one still up from before gives way to it)
+			_stamp_tween.kill()
+		stamp_box.modulate.a = 0.0
+		return
+	_stamp_wait = ""
 	stamp_text.text = text
 	if _stamp_tween != null:
 		_stamp_tween.kill()

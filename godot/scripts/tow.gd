@@ -79,6 +79,8 @@ func _send_truck(job: Dictionary, pp: Vector2) -> void:
 		var nodes := _route_to_car(at, cp)
 		if nodes.size() < 2:
 			continue
+		if force_from == null and not _room_at(MapData.nodes[nodes[0]]):
+			continue                                 # a car parked on that corner: it would come out on top of it, and stay there
 		var e: Dictionary = game.traffic.add("grua", 0, nodes[0], nodes[1])
 		e["route"] = nodes.slice(2)
 		e["job"] = true
@@ -87,6 +89,17 @@ func _send_truck(job: Dictionary, pp: Vector2) -> void:
 		job["route_t"] = 6.0
 		job["close_t"] = 0.0
 		return
+
+## nothing parked or driving where the truck would appear (it is ~7 m long, and comes out on the street corner itself)
+const ROOM := 7.5
+func _room_at(at: Vector2) -> bool:
+	for c in game.cars:
+		if is_instance_valid(c) and c.p.distance_to(at) < ROOM:
+			return false
+	for e in game.traffic.list:
+		if is_instance_valid(e["car"]) and e["car"].p.distance_to(at) < ROOM:
+			return false
+	return true
 
 ## where the garage nearest to here is
 func _garage(from: Vector2) -> Vector2:

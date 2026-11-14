@@ -18,9 +18,9 @@ extends Node
 const Sala = preload("res://scripts/recress_sala.gd")
 const CasasS = preload("res://scripts/casas.gd")
 const TITLE := "rec_title"
-const COST := 50                 # what the mayor wants from you (provisional)
-const PRIZE := 2                 # you get it back this many times over...
-const BET := 2                   # ...and double that again for beating him at double or nothing
+const COST := 100                # what the mayor wants from you (the user's figure, 14 November 2026: 100 € in, 200 € back)
+const PRIZE := 1                 # the tournament's prize gives it back to you...
+const BET := 2                   # ...and beating him at double or nothing doubles it
 const POSTERS := 5
 const CALL_AFTER_H := 12.0       # game hours after the bridge until Alberto rings, if you have not been to see him
 const COPY_SHOP := Vector2(-105.4, 113.5)        # Calle Teniente Infante (Catastro 4190004VJ5649S)
@@ -76,7 +76,7 @@ func load_state() -> void:
 	if st["stage"] in ["llamada", "torneo", "reto", "final"]:
 		st["stage"] = "llamada"                  # (a tournament half seen starts again from Alberto's call)
 		_offered = false
-	sala.set_open(st["stage"] == "hecho")
+	sala.set_state(("abierto" if open_hours(G.clock) else "cerrado") if st["stage"] == "hecho" else "viejo")     # (before the tournament, as it was)
 	sala.show_posters(st["stage"] == "hecho")
 	if st["stage"] == "hecho":
 		_open_hall()
@@ -275,6 +275,11 @@ func talk(n) -> bool:
 			if stage() == "carteles":
 				G.say(n.shown_name(), Loc.t("copista_rec_again"), n.voice)
 				return true
+		"katakumba":                             # at full trust he tells you his real name (the user's joke, 13 November 2026)
+			if G.folk.golden("katakumba") and not G.stats.has("nachin"):
+				G.stats["nachin"] = true
+				G.say(n.shown_name(), Loc.t("katakumba_nachin"), n.voice)
+				return true
 	return false
 
 ## Alberto's idea (the scene), and the question
@@ -304,10 +309,12 @@ func _pitch(n, again: bool) -> void:
 	_beats.append(["cut", 0.4, two[0], two[1], 42.0])
 	_beats.append(["star", 1.6, a])
 	var door: Vector2 = sala.shutter(0.0)
-	var look := Vector3(door.x, sala.base + 2.2, door.y)
-	var side := Vector2(sala.u.x, sala.u.y)
-	var from0 := MapData.at(sala.shutter(16.0) + side * 9.0, 5.0)
-	var from1 := MapData.at(sala.shutter(9.0) - side * 2.0, 2.2)
+	var look := Vector3(door.x, sala.base + 2.6, door.y)
+	var road: Dictionary = MapData.nearest_road(door)            # (down the middle of the street: no tree, no wall in the way)
+	var along: Vector2 = (road["u"] as Vector2) * (1.0 if (road["u"] as Vector2).dot(sala.u) >= 0.0 else -1.0)
+	var mid: Vector2 = road["p"]
+	var from0 := MapData.at(mid + along * 13.0, 4.6)
+	var from1 := MapData.at(mid + along * 5.0 + (door - mid) * 0.2, 2.2)
 	_beats.append(["say", a, Loc.t("alberto_rec_idea"), two[0], two[1], 42.0])
 	_beats.append(["pan", 0.1, from0, look, from1, look, 6.0, 46.0])
 	_beats.append(["say", a, Loc.t("alberto_rec_recress"), null, null, 46.0])
@@ -426,6 +433,7 @@ func tick(dt: float, pp: Vector2) -> void:
 	_tick_walkers(dt)
 	if cine:
 		_tick_beats(dt)
+	_keep_hours()
 	if G.phase != "play" and G.phase != "free":
 		return
 	# twelve hours after the bridge, if you have not been to see him, Alberto rings
@@ -647,6 +655,7 @@ func _tournament() -> void:
 func _at_the_door() -> void:
 	var door: Vector2 = sala.shutter(0.0)
 	sala.show_posters(true)
+	sala.set_state("abierto")                    # (the user: done up by the tournament, open all through it and that night)
 	_gather_crowd()
 	_clear_front(true)
 	var alberto = G.named["alberto"]
@@ -966,20 +975,19 @@ func _accept_bet() -> void:
 func can_play(p: Vector2) -> bool:
 	return stage() == "reto" and G.indoors and G.inside_of == sala and p.distance_to(sala.seat_you) < 1.6
 
-## E at the machine. The Tokken 9 game is still to be made: for now you sit down, and you win.
+## E at the machine: Tokken 9 (tokken.gd), against the mayor. He is DoomAssasin78 and plays the Monster, as in the
+## final; you choose yours.
 func play() -> void:
-	_begin_scene()
-	_to("final")
 	_place(G.player, sala.seat_you, sala.seat_you + Vector2(0.0, 1.0))
-	result(true)
+	G.tokken.start({"foe": "monstruo", "foe_tag": "DoomAssasin78", "ai": "alcalde"}, result)
 
-## how the game against the mayor went (lose, and you are back in front of the machine)
+## how the game against the mayor went (lose, and you are back in front of the machine: "¿Otra?")
 func result(won: bool) -> void:
 	if not won:
-		_end_scene()
-		_to("reto")
 		G.say(_inside_people["alcalde"].shown_name(), Loc.t("alcalde_rec_again"), _inside_people["alcalde"].voice)
 		return
+	_begin_scene()
+	_to("final")
 	_final()
 
 func _final() -> void:
@@ -1098,7 +1106,7 @@ func _finished() -> void:
 	_inside_people.clear()
 	_walkers.clear()
 	_to("hecho")
-	sala.set_open(true)
+	sala.set_state("abierto")
 	_open_hall()
 	G.side = null
 	G.player.p = sala.out_spawn
@@ -1106,15 +1114,31 @@ func _finished() -> void:
 	G.player.sync()
 	G.cam_yaw = G.player.h
 	G.create_tween().tween_property(G.hud.fade, "modulate:a", 0.0, 1.0)
-	var pay := int(st.get("paid", COST)) * PRIZE * BET
+	var pay := maxi(int(st.get("paid", COST)), COST) * PRIZE * BET       # (a game saved when he asked for less: the same 200 €)
 	G.money += pay
 	G._refresh_counts()
 	G.add_pc(3, true)
-	G.hud.toast("%s  +%d €" % [Loc.t("mission_done"), pay], 5.0)
 	G.hud.stamp(Loc.t("stamp_done"))
 	Sfx.jingle([523, 659, 784, 1047], 0.12)
 	G._mission_done()
 	G._show_step()
+
+## Its hours (the user, 14 November 2026): from three in the afternoon to two at night; the rest of the time shut,
+## done up, its shutter down. Time to shut with you inside: it waits for you to come out.
+const OPENS := 15.0
+const SHUTS := 2.0
+func open_hours(h: float) -> bool:
+	return h >= OPENS or h < SHUTS
+
+func _keep_hours() -> void:
+	if not done() or cine:
+		return
+	var want := "abierto" if open_hours(G.clock) else "cerrado"
+	if want == sala.state:
+		return
+	if want == "cerrado" and G.indoors and G.inside_of == sala:
+		return
+	sala.set_state(want)
 
 ## The Recress open: Katakumba69 lives there now, and a few others are always at the machines.
 var _regulars: Array = []
@@ -1156,7 +1180,27 @@ func _open_hall() -> void:
 		n.sync()
 		_regulars.append(n)
 
-## after the mission: the Recress is open, and people play there (the game itself is still to come)
+## The Recress open: a game of Tokken 9 at any machine. At the big one of the final, against Katakumba69 himself (he
+## plays Dracula, and he is good; a game with him is a game with a neighbour: folk.played). At the others, against
+## the machine, which gets harder the more games you win in a row.
+const LADDER := ["facil", "normal", "normal", "dificil", "dificil", "katakumba"]
+
+func free_play(p: Vector2) -> void:
+	if p.distance_to(sala.seat_you) < 1.4 and G.named.has("katakumba"):
+		G.tokken.start({"foe": "dracula", "foe_tag": "Katakumba69", "ai": "katakumba"}, func(won: bool):
+			G.folk.played("katakumba")
+			G.stats["tokken_kata"] = int(G.stats.get("tokken_kata", 0)) + (1 if won else 0)
+			var kata = G.named.get("katakumba")
+			if kata != null:
+				kata.bark(Loc.t("kata_tk_won" if won else "kata_tk_lost").pick_random(), 4.0)
+			G.hud.toast(Loc.t("t_tk_won" if won else "t_tk_lost") % "Katakumba69", 3.5))
+		return
+	var streak: int = int(G.stats.get("tokken_racha", 0))
+	G.tokken.start({"foe": "", "ai": LADDER[mini(streak, LADDER.size() - 1)]}, func(won: bool):
+		G.stats["tokken_racha"] = streak + 1 if won else 0
+		G.stats["tokken_mejor"] = maxi(int(G.stats.get("tokken_mejor", 0)), int(G.stats["tokken_racha"]))
+		G.hud.toast((Loc.t("t_tk_streak") % int(G.stats["tokken_racha"])) if won else Loc.t("t_tk_over"), 3.5))
+
 func at_machine(p: Vector2) -> bool:
 	if not done() or not G.indoors or G.inside_of != sala:
 		return false

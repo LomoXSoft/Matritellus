@@ -1,0 +1,10 @@
+Models from Sketchfab (https://sketchfab.com), downloaded 2026-11-14 with the user's account. Each must be credited in the game (CC Attribution).
+Readied with tools/blender/recreativas.py (turned to face front, made their real height, a backdrop left out, textures 512 px); the originals are in tools/descargas/sketchfab_recreativas/.
+
+neon_negra.glb  "Arcade Machine" by DIWAD (@DIWAD)  --  CC Attribution  --  https://sketchfab.com/3d-models/arcade-machine-ccb3867144af4c40991f23b011736fae  --  used for: the Galaxy Recress's machines (black, edged in neon)
+estrellas.glb  "Arcade Machine" by Jamie Plowman (@9PLOWJ91)  --  CC Attribution  --  https://sketchfab.com/3d-models/arcade-machine-6f8f7fab5af8483ba2cc40e6a603a792  --  used for: the Galaxy Recress's machines (violet, starry sides)
+final.glb  "Neo-Blast Arcade Cabinet" by Ar3Designer (@Ar3Designer)  --  CC Attribution  --  https://sketchfab.com/3d-models/neo-blast-arcade-cabinet-2f3ee5fba763476a9e280925218cad40  --  used for: the Tokken 9 machine of the final
+gancho.glb  "Claw Arcade Animated .glb (v1.0) FREE Low Poly" by Lady Lion Studios (@LadyLionStudios)  --  CC Attribution  --  https://sketchfab.com/3d-models/claw-arcade-animated-glb-v10-free-low-poly-916fe82cd4734ec7b458f9e1c799ab56  --  used for: the claw machine
+canasta.glb  "Basketball Arcade .Blend FREE Low Poly (v1.0)" by Lady Lion Studios (@LadyLionStudios)  --  CC Attribution  --  https://sketchfab.com/3d-models/basketball-arcade-blend-free-low-poly-v10-ed85ea4375724b21b0a696f7f5a8d0dc  --  used for: the basketball machine
+pistolas.glb  "Light Gun Arcade FREE Low Poly" by Lady Lion Studios (@LadyLionStudios)  --  CC Attribution  --  https://sketchfab.com/3d-models/light-gun-arcade-free-low-poly-aa997be8b3b84f1c9110ffbae784485c  --  used for: the two-gun machine
+hockey.glb  "Air Hockey Arcade .glb (v0.9) FREE Low Poly" by Lady Lion Studios (@LadyLionStudios)  --  CC Attribution  --  https://sketchfab.com/3d-models/air-hockey-arcade-glb-v09-free-low-poly-1034b318b6724a34b92bdb88acf41cb7  --  used for: the air hockey table

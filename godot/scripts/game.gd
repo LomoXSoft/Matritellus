@@ -27,6 +27,7 @@ const LimiteS = preload("res://scripts/limite.gd")
 const LlamadasS = preload("res://scripts/llamadas.gd")
 const MarcasS = preload("res://scripts/marcas.gd")
 const RecressS = preload("res://scripts/recress.gd")
+const TokkenS = preload("res://scripts/tokken.gd")
 const CalentarS = preload("res://scripts/calentar.gd")
 const GarageS = preload("res://scripts/garage.gd")
 const PuenteS = preload("res://scripts/puente.gd")
@@ -261,6 +262,7 @@ var limite                      # the edge of the map: limite.gd
 var llamadas                    # the switchboard: who rings you, and when they try again (llamadas.gd)
 var marcas                      # who has a mission for you: photo on the map, green arrow over the head (marcas.gd)
 var recress                     # "Un torneo en los Galaxy Recress", the Civismo line's second mission (recress.gd)
+var tokken                      # Tokken 9, the fighting game on the Recress's machines (tokken.gd): the phase "tokken" is its own
 var inside_of = null            # which set you are inside when `indoors`: V.I.P. (vip) or the Recress (recress.sala)
 var prof = null                 # for hunting hitches (selftest --tirones): {part: the most milliseconds it took in one tick since last asked}
 var _prof_t := 0
@@ -1182,6 +1184,9 @@ func _setup_places_and_actors() -> void:
 	recress = RecressS.new()
 	add_child(recress)
 	recress.setup(self)
+	tokken = TokkenS.new()
+	add_child(tokken)
+	tokken.setup(self)
 	if not OS.get_cmdline_user_args().has("--tirones"):      # the hitch log (tirones.gd); the self-test's own hitch hunt times the parts itself
 		tirones = TironesS.new()
 		add_child(tirones)
@@ -2245,8 +2250,7 @@ func _complete_step() -> void:
 		var pay: int = int(s.get("pay", 0)) + (delivered * 5 if s["type"] == "deliver" else 0)
 		money += pay
 		_refresh_counts()
-		hud.toast("%s  +%d €" % [Loc.t("mission_done"), pay] if pay > 0 else Loc.t("mission_done"))
-		hud.stamp(Loc.t("stamp_done"))
+		hud.stamp(Loc.t("stamp_done"))           # (and no notice as well: the stamp and the money going up on the slate say it all)
 		Sfx.jingle([523, 659, 784, 1047], 0.12)
 	if s.get("done", false):
 		add_pc(int(s.get("pc", 5)))              # (a main mission: five, from Alberto's on)
@@ -2618,7 +2622,7 @@ func talk_to(n, chat_only := false) -> void:
 		else:
 			_vip_spar()
 			return
-	if n.id in ["alberto", "alcalde", "copista"] and not chat_only and (phase == "play" or phase == "free") and recress.talk(n):
+	if n.id in ["alberto", "alcalde", "copista", "katakumba"] and not chat_only and (phase == "play" or phase == "free") and recress.talk(n):
 		return
 	if n.id == "repartidor":
 		sabotaje.spoken(n)
@@ -2647,7 +2651,10 @@ func talk_to(n, chat_only := false) -> void:
 		key = "generic_kid"
 	if n.has_meta("protest"):
 		key = "protest_" + String(n.get_meta("protest"))
-	var data = Loc.speaker(Loc.t(key), n.voice.ends_with("_f"))      # men talk about their wives, women about their husbands
+	var said = Loc.t(key)
+	if key == "generic" and n.voice.begins_with("old"):
+		said = Loc.t("generic_old") + said             # (the old ones have their own sayings too: palabros.md, «Cómo hablan los mayores»)
+	var data = Loc.speaker(said, n.voice.ends_with("_f"))      # men talk about their wives, women about their husbands
 	if data[0] is Array:      # several dialogues: cycle through them
 		data = data[n.line_i % data.size()]
 		n.line_i += 1
@@ -3154,7 +3161,7 @@ func _drive_car(c, dt: float, thr: float, steer: float, hand: bool) -> void:
 					hud.toast(Loc.t("t_maruja_bump").pick_random(), 3.5)
 				Sfx.noise(0.15, -14.0)
 				Sfx.beep(500.0, 0.25, 2, -12.0, 500.0)
-				n.bark(Loc.speaker(Loc.t("ouch").pick_random(), n.voice.ends_with("_f")), 3.5)
+				n.bark(Loc.speaker(Loc.t("ouch_old" if n.voice.begins_with("old") and randf() < 0.6 else "ouch").pick_random(), n.voice.ends_with("_f")), 3.5)
 			else:
 				n.p = q + nv.normalized() * (c.r + 0.55)
 				if v > 1.0 and not n.is_barking():
@@ -3254,6 +3261,9 @@ func _unhandled_input(e: InputEvent) -> void:
 			if e.is_action_pressed("handbrake") or e.is_action_pressed("m_back") or e.is_action_pressed("m_accept"):
 				_free_roam()
 			return
+		"tokken":
+			tokken.input(e)
+			return
 		"boxing":
 			if e.is_action_pressed("punch") or e.is_action_pressed("handbrake") or e.is_action_pressed("interact"):
 				boxing.act("punch")
@@ -3312,7 +3322,7 @@ func interact() -> void:
 	elif recress.can_play(player.p):
 		recress.play()
 	elif recress.at_machine(player.p):
-		hud.toast(Loc.t("t_rec_soon"), 3.0)
+		recress.free_play(player.p)
 	elif _can_unlock():
 		_unlock_bridge()
 	elif near_npc != null:
@@ -3468,6 +3478,8 @@ func _update_audio(dt: float) -> void:
 			track = "lofi"; db = -20.0
 		"boxing":
 			track = "fight"; db = -8.0
+		"tokken":
+			track = "fight"; db = -12.0
 		_:
 			if police.chasing:                      # the chase track drowns out the radio for as long as it lasts
 				track = "chase"; db = -8.0
@@ -3496,6 +3508,9 @@ func _physics_process(delta: float) -> void:
 	var dt := minf(delta, 0.05)
 	_prof_t = Time.get_ticks_usec()
 	_update_audio(dt)
+	if phase == "tokken":           # at a machine in the Recress: the town waits (nothing of it is drawn meanwhile)
+		tokken.tick(dt)
+		return
 	sky_fx.tick(dt, cam.global_position, player.p)
 	if lights != null:
 		lights.tick(dt, Vector2(cam.global_position.x, cam.global_position.z).lerp(player.p, 0.7))
@@ -4106,7 +4121,6 @@ func _side_over(won: bool) -> void:
 		stats["menu_done"] = true
 		money += MENU_PAY
 		_refresh_counts()
-		hud.toast("%s  +%d €" % [Loc.t("mission_done"), MENU_PAY])
 		hud.stamp(Loc.t("stamp_done"))
 		Sfx.jingle([523, 659, 784, 1047], 0.12)
 		folk.add(who, 10)
@@ -4119,7 +4133,7 @@ func _side_over(won: bool) -> void:
 			in_car.set_speed(in_car.vel * 0.2)
 		money += MENU_PAY                        # (twenty euros for a ham delivered)
 		_refresh_counts()
-		hud.toast("%s  +%d €" % [Loc.t("mission_done"), MENU_PAY])
+		hud.stamp(Loc.t("stamp_done"))
 		Sfx.jingle([523, 659, 784, 1047], 0.12)
 		folk.add(who, 10)
 		add_pc(3, true)                          # (a side mission: three)
@@ -4219,7 +4233,7 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 				continue
 			var to: Vector2 = n.p - pp
 			if to.length() < 7.0 and to.length() > 1.5 and to.normalized().dot(facing) < -0.35:
-				n.bark(Loc.t("whisper").pick_random(), 3.0)
+				n.bark(Loc.t("whisper_old" if n.voice.begins_with("old") and randf() < 0.6 else "whisper").pick_random(), 3.0)
 				_whisper_t = randf_range(9.0, 17.0)
 				break
 	# Neighbours a long way off are moved a quarter as often (in bigger steps), without the leg-work and without

@@ -2812,6 +2812,8 @@ func _mirada_checks(pictures := false) -> void:
 	var w = null
 	for n in g.npcs:
 		if n.id == "" and n.walker and not n.away and n.state == "idle" and n.voice != "goat" and n.voice != "kid" and not g.clientes.is_client(n):
+			if OS.get_cmdline_user_args().has("--viejo") and not String(n.voice).begins_with("old"):
+				continue                              # (--viejo: an old one, who talks in old Manchego)
 			w = n
 			break
 	var from: Vector2 = st["p"] + u * 20.0
@@ -2855,7 +2857,8 @@ func _mirada_checks(pictures := false) -> void:
 	g.talk_to(w)
 	var at_talk: Vector2 = w.p
 	await _frames(45)
-	_check(g.dlg != null and w.p.distance_to(at_talk) < 0.2, "talk to them and they stand still to answer")
+	_check(g.dlg != null and w.p.distance_to(at_talk) < 0.2, "talk to them and they stand still to answer%s" % ("" if g.dlg != null and w.p.distance_to(at_talk) < 0.2 else
+		" -- voice %s, state %s, dialogue %s, moved %.2f m" % [w.voice, w.state, "open" if g.dlg != null else "none", w.p.distance_to(at_talk)]))
 	await _skip_dialog()
 	g.dlg = null
 	g.hud.dlg_slot.visible = false
@@ -2983,6 +2986,15 @@ func _civicos_checks(pictures := false) -> void:
 	await _frames(20)
 	_check(g.side == null and g.dlg != null and g.dlg["lines"] == Loc.t("josefa_menu_done") and g.money == purse + g.MENU_PAY and g.stats.has("menu_done"), "back to Josefa with it: done, and %d euros for you" % g.MENU_PAY)
 	_check(g.pc == 0 and int(g.stats.get("pc_owed", 0)) == 3 and not g.hud.tally[2][0].visible, "a side mission is worth 3 Puntos Cívicos: nobody has explained them yet, so they are kept on account")
+	_check(g.hud.stamp_text.text == Loc.t("stamp_done") and g.hud.stamp_box.modulate.a > 0.5 and not g.hud.toast_label.text.contains(Loc.t("mission_done")),
+		"the stamp comes down, and no notice saying so as well: the stamp and the money on the slate are enough")
+	g.hud.fade.modulate.a = 1.0                    # a stamp while the screen is still black (the end of a scene)...
+	g.hud.stamp(Loc.t("stamp_done"))
+	await _frames(10)
+	var stamp_dark: float = g.hud.stamp_box.modulate.a
+	g.hud.fade.modulate.a = 0.0
+	await _frames(20)
+	_check(stamp_dark < 0.05 and g.hud.stamp_box.modulate.a > 0.5, "...waits for the screen to clear, and then comes down")
 	await _skip_dialog()
 	_check(g.negocio("restaurantes") and g.hud.toast_label.text == Loc.t("t_negocio") % Loc.t("neg_restaurantes"), "and now you know the restaurants: %s" % g.hud.toast_label.text)
 	g.talk_to(josefa)
@@ -3382,6 +3394,38 @@ func _radio_live_checks() -> void:
 	g.in_car.set_speed(Vector2.ZERO)
 	g._exit_car()
 
+## Worldbuilding in what people say (guion/palabros.md): the old neighbours have sayings of their own in the Manchego of
+## their day; «apretar» is said without its diphthong; and the man whose web the words come from is in the credits.
+func _palabros_checks() -> void:
+	var pools_ok := true
+	for k in ["generic_old", "whisper_old", "ouch_old"]:
+		var e = Loc.TX.get(k)
+		pools_ok = pools_ok and e != null and e["es"].size() >= 8 and e["es"].size() == e["en"].size()
+	var old_lines: Array = []
+	for d in Loc.speaker(Loc.t("generic_old"), false):
+		old_lines.append(String(d[0]))
+	var old_look: Dictionary = g._neighbour_look("old_m")
+	old_look["voice_i"] = 2                                       # (NEIGHBOUR_VOICES[2]: an old man)
+	var n = g.spawn_neighbour(g.player.p + Vector2(2, 0), true, old_look)
+	var heard := false
+	for i in range(30):
+		g.dlg = null
+		g.talk_to(n, true)
+		if g.dlg != null and String(g.dlg["lines"][0]) in old_lines:
+			heard = true
+			break
+	g.dlg = null
+	g.hud.dlg_slot.visible = false
+	g.npcs.erase(n)
+	n.queue_free()
+	var apriet := 0
+	for k in Loc.TX:
+		var es = Loc.TX[k].get("es")
+		if es != null and str(es).findn("apriet") >= 0:
+			apriet += 1
+	_check(pools_ok and heard and apriet == 0 and str(Loc.TX["credits"]["es"]).contains("José-María Moreno García"),
+		"the old neighbours have sayings of their own in old Manchego (heard: %s), nobody says «aprieta» but «apreta» (%d texts), and Moreno García is in the credits" % [heard, apriet])
+
 ## The hitch log (tirones.gd): a frame that takes too long is written down, with what was going on.
 func _tirones_checks() -> void:
 	var T = g.tirones
@@ -3716,6 +3760,23 @@ func _llamadas_checks() -> void:
 		g.dialog_advance()
 		await _frames(1)
 	L.reset()
+	# a call that comes while you are talking to somebody does not cut in: it rings when you have finished
+	if g.phone_call != null:
+		g._hang_up()
+	g.say("Paca", ["Espera, que te cuento una cosa."], "old_f")
+	await _frames(2)
+	L.ring({"npc": "josefa", "say": ["Ya estoy."], "plain": true})
+	await _frames(3)
+	var held: bool = g.phone_call == null and L.pending("josefa") and g.dlg != null
+	while g.dlg != null:
+		g.dlg["cool"] = 0.0
+		g.dialog_advance()
+		await _frames(1)
+	await _frames(5)
+	_check(held and g.phone_call != null and g.phone_call["npc"] == "josefa",
+		"a call that comes while you are talking to somebody does not cut in: it rings as soon as you have finished")
+	g._hang_up()
+	L.reset()
 
 ## Who has a mission for you (marcas.gd): their photo on the map, and a green arrow over the head that is not there
 ## from thirty metres off and comes in as you get closer.
@@ -3910,7 +3971,17 @@ func _recress_checks() -> void:
 	await _frames(5)
 	var play_prompt: bool = g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_rec_play"))
 	var money0: int = g.money
+	g.interact()                                  # Tokken 9, against the mayor: lose one, and he offers another
+	await _frames(6)
+	var versus_mayor: bool = g.phase == "tokken" and g.tokken.active and String(g.tokken.opts.get("foe_tag", "")) == "DoomAssasin78"
+	g.tokken.test_end(false)
+	await _frames(8)
+	var another: bool = not g.tokken.active and R.stage() == "reto" and g.dlg != null and g.dlg["lines"] == Loc.t("alcalde_rec_again")
+	await _rec_play_out({})
+	_check(versus_mayor and another and R.can_play(g.player.p), "E at the machine is a game of Tokken 9 against DoomAssasin78; lose it and he offers you another")
 	g.interact()
+	await _frames(6)
+	g.tokken.test_end(true)
 	await _rec_play_out({"alcalde_rec_lost": "13_perdio", "alcaldesa_rec_1": "14_noche", "alcaldesa_rec_3": "15_la_luna"}, func(): return R.stage() == "hecho" and not R.cine, 12000)
 	await _frames(10)
 	var night: bool = g.clock >= 21.5 or g.clock < 6.0
@@ -3941,6 +4012,297 @@ func _recress_checks() -> void:
 	g._use_door(false, S)
 	await _frames(5)
 	_check(went_in and not g.indoors and g.player.p.distance_to(S.out_spawn) < 0.5, "the Recress is open: in through its door and out again")
+	# with the Recress open, the big machine is a game against Katakumba69, and a game with him counts with him
+	var kata = g.named.get("katakumba")
+	var folk_was: Dictionary = g.folk.data.duplicate(true)
+	g.indoors = true
+	g.inside_of = S
+	g.player.p = S.seat_you + Vector2(0.0, -0.4)
+	await _frames(4)
+	var trust0: int = g.folk.trust("katakumba")
+	var free_prompt: bool = g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_rec_play"))
+	g.interact()
+	await _frames(6)
+	var versus_kata: bool = g.tokken.active and String(g.tokken.opts.get("foe_tag", "")) == "Katakumba69"
+	g.tokken.test_end(false)
+	await _frames(8)
+	_check(free_prompt and versus_kata and not g.tokken.active and g.folk.trust("katakumba") == trust0 + 5,
+		"the Recress open: the big machine is a game against Katakumba69, and playing him counts with him (+%d)" % (g.folk.trust("katakumba") - trust0))
+	g._use_door(false, S)
+	await _frames(4)
+	# Katakumba69, at full trust, tells you his real name: the once
+	var told := ""
+	var then := ""
+	if kata != null:
+		g.stats.erase("nachin")
+		g.folk.add("katakumba", 100)
+		for k in range(2):
+			g.talk_to(kata)
+			var first: String = String(g.dlg["lines"][0]) if g.dlg != null else ""
+			if k == 0:
+				told = first
+			else:
+				then = first
+			while g.dlg != null:
+				g.dlg["cool"] = 0.0
+				g.dialog_advance()
+				await _frames(1)
+	g.folk.data = folk_was
+	_check(told == Loc.t("katakumba_nachin")[0] and then != "" and then != told,
+		"Katakumba69 at full trust tells you his real name (Ignacio José Gómez-Carreño de la Llave, Nachín to his friends online), and only the once")
+	# its hours: shut in the morning, open from the afternoon; closing time with you inside, it waits for you to come out
+	g.set_time(10.0)
+	await _frames(5)
+	var shut_morning: bool = S.state == "cerrado" and not S.open
+	g.set_time(17.0)
+	await _frames(5)
+	var open_afternoon: bool = S.state == "abierto" and S.open
+	g._use_door(true, S)
+	await _frames(5)
+	g.set_time(10.0)
+	await _frames(5)
+	var waits: bool = g.indoors and S.state == "abierto"
+	g._use_door(false, S)
+	await _frames(5)
+	var shut_after: bool = not g.indoors and S.state == "cerrado"
+	g.set_time(21.0)
+	await _frames(3)
+	_check(shut_morning and open_afternoon and waits and shut_after,
+		"the Recress keeps its hours: shut in the morning (%s), open from the afternoon (%s), and at closing time with you inside it waits for you to come out (%s, then %s)" % [shut_morning, open_afternoon, waits, shut_after])
+
+## Tokken 9 (tokken.gd), the fighting game on the Recress's machines. The test plays for you against a machine's player
+## that stands still, so that what each thing does is known; then the machine plays itself (without a screen, in no
+## time) to see how hard the mayor is for somebody who has never played and for somebody who has found the combo.
+func _tokken_checks(matches := 12) -> void:
+	var T = g.tokken
+	var phase_was: String = g.phase
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	var tick := func(n: int):
+		for i in range(n):
+			await get_tree().physics_frame
+	var snap := func(name: String):
+		T.hold = true
+		await _shot(name)
+		T.hold = false
+	var ended: Array = []
+	T.start({"foe": "monstruo", "foe_tag": "DoomAssasin78", "ai": "alcalde"}, func(w): ended.append(w))
+	await tick.call(20)
+	var opened: bool = g.phase == "tokken" and T.active and T.mode == "select" and T.touch_buttons().size() == 1
+	T.pick = 3
+	await snap.call("tokken_1_elegir")
+	T.pick = 0
+	T._pressed["right"] = true
+	await tick.call(2)
+	var moved: bool = T.pick == 1
+	T._pressed["ok"] = true
+	await tick.call(3)
+	var versus: bool = T.mode == "versus" and T.a != null and T.a.id == "napoleon" and T.b.id == "monstruo" and T.stage_n == 3
+	await tick.call(50)
+	await snap.call("tokken_2_versus")
+	for i in range(700):
+		if T.mode == "fight":
+			break
+		await get_tree().physics_frame
+	var buttons: Array = T.touch_buttons().map(func(b): return b[1])
+	_check(opened and moved and versus and T.mode == "fight" and T.clock == 99 and buttons == ["punch", "interact", "handbrake", "pause"],
+		"Tokken 9 takes the screen: choose a fighter, the two of them face to face, and round one (on a touch screen: %s)" % str(buttons))
+	var A = T.a
+	var B = T.b
+	var still: Dictionary = T.AI["quieto"]
+	var wall: Dictionary = still.duplicate()        # covers up from everything
+	wall["guard"] = 1.0
+	wall["string"] = 1.0
+	wall["react"] = 0
+	var old_school: Dictionary = wall.duplicate()   # covers up from the first blow, and thinks that was it
+	old_school["string"] = 0.0
+	T.test_inp = {"dir": 0, "up": false, "light": false, "heavy": false, "special": false}
+	var place := func(gap: float, how: Dictionary):
+		B.ai["p"] = how
+		B.ai["seen"] = 0
+		B.ai["struck"] = 0
+		A.x = 600.0
+		B.x = 600.0 + A.half + B.half + gap
+		A.face = 1
+		B.face = -1
+		T._to_idle(A)
+		T._to_idle(B)
+		A.hp = 100.0
+		B.hp = 100.0
+		B.hp_shown = 100.0
+		B.guard = 100.0
+		B.inv = 0
+		A.meter = 0.0
+		A.combo_n = 0
+		T.shots.clear()
+		T.clock = 99
+	# the quick blow
+	place.call(30.0, still)
+	await tick.call(2)
+	T.test_inp["light"] = true
+	var hurt := false
+	for i in range(34):
+		await get_tree().physics_frame
+		hurt = hurt or B.st == "hurt"
+	var d1: float = 100.0 - B.hp
+	_check(hurt and d1 > 4.0 and d1 < 8.0, "the quick blow lands (%.1f of their 100)" % d1)
+	# the cancel: quick, and the strong one pressed at once
+	place.call(30.0, still)
+	await tick.call(2)
+	T.test_inp["light"] = true
+	await tick.call(3)
+	T.test_inp["heavy"] = true
+	var most := 0
+	var pic := false
+	for i in range(80):
+		await get_tree().physics_frame
+		most = maxi(most, A.combo_n)
+		if shots and not pic and A.combo_n == 2:
+			pic = true
+			await snap.call("tokken_3_combo")
+	var d2: float = 100.0 - B.hp
+	_check(most == 2 and d2 > d1 + 8.0, "quick and the strong one at once: the second lands before they can do a thing, a combo of %d (%.1f)" % [most, d2])
+	# covering up
+	place.call(30.0, wall)
+	await tick.call(2)
+	T.test_inp["heavy"] = true
+	var blocked := false
+	for i in range(60):
+		await get_tree().physics_frame
+		blocked = blocked or B.st == "block"
+	_check(blocked and B.hp == 100.0 and B.guard < 100.0, "a blow they see coming they cover up from: it does not hurt, but it wears the guard down (%.0f left)" % B.guard)
+	# and what the mayor never learnt
+	place.call(30.0, old_school)
+	await tick.call(2)
+	T.test_inp["light"] = true
+	await tick.call(3)
+	T.test_inp["heavy"] = true
+	var first_covered := false
+	var then_hit := false
+	for i in range(80):
+		await get_tree().physics_frame
+		first_covered = first_covered or B.st == "block"
+		then_hit = then_hit or (first_covered and B.st == "hurt")
+	_check(first_covered and then_hit and B.hp < 100.0, "somebody who plays as in the eighties covers the quick blow and takes the strong one cancelled out of it (%.1f)" % (100.0 - B.hp))
+	# the power
+	place.call(190.0, still)
+	await tick.call(2)
+	var no_power_yet: bool = true
+	T.test_inp["special"] = true
+	await tick.call(20)
+	no_power_yet = A.st == "idle" and T.shots.is_empty()
+	A.meter = 100.0
+	T.test_inp["special"] = true
+	var thrown := false
+	var floored := false
+	pic = false
+	for i in range(160):
+		await get_tree().physics_frame
+		thrown = thrown or not T.shots.is_empty()
+		floored = floored or B.st == "down"
+		if shots and not pic and not T.shots.is_empty() and int(T.shots[0]["t"]) > 6:
+			pic = true
+			await snap.call("tokken_4_poder")
+	_check(no_power_yet and thrown and floored and A.meter < 30.0 and 100.0 - B.hp > 15.0, "the power: not until its bar is full; then it is thrown, floors them (%.1f) and the bar is empty again" % (100.0 - B.hp))
+	# a jump
+	place.call(60.0, still)
+	await tick.call(2)
+	T.test_inp["up"] = true
+	await tick.call(3)
+	T.test_inp["up"] = false
+	var high := 0.0
+	for i in range(70):
+		await get_tree().physics_frame
+		high = maxf(high, A.y)
+	_check(high > 80.0 and A.st == "idle" and A.y == 0.0, "up, and down again (%.0f high)" % high)
+	# knocked out: the round, and then the match
+	place.call(30.0, still)
+	B.hp = 3.0
+	await tick.call(2)
+	T.test_inp["light"] = true
+	pic = false
+	for i in range(700):
+		await get_tree().physics_frame
+		if shots and not pic and T.mode == "ko" and T.mode_t > 26:
+			pic = true
+			await snap.call("tokken_5_ko")
+		if T.mode == "intro" and T.round_n == 2:
+			break
+	var round_two: bool = A.wins == 1 and B.wins == 0 and T.round_n == 2
+	for i in range(300):
+		if T.mode == "fight":
+			break
+		await get_tree().physics_frame
+	place.call(30.0, still)
+	B.hp = 3.0
+	await tick.call(2)
+	T.test_inp["light"] = true
+	for i in range(900):
+		if not T.active:
+			break
+		await get_tree().physics_frame
+	_check(round_two and ended == [true] and not T.active and g.phase == phase_was, "their last of it gone, K.O.: the round is yours, and the second one the match")
+	# against the machine: harder the more you win in a row
+	var racha0 = g.stats.get("tokken_racha")
+	g.stats.erase("tokken_racha")
+	var rungs: Array = []
+	for k in range(2):
+		g.recress.free_play(Vector2(99999.0, 99999.0))
+		await tick.call(4)
+		rungs.append(String(T.opts.get("ai", "")))
+		T.test_end(true)
+		await tick.call(8)
+	g.recress.free_play(Vector2(99999.0, 99999.0))
+	await tick.call(4)
+	T.test_end(false)
+	await tick.call(8)
+	_check(rungs == ["facil", "normal"] and int(g.stats.get("tokken_racha", -1)) == 0 and int(g.stats.get("tokken_mejor", 0)) >= 2 and not T.active,
+		"at the other machines, against the machine itself: harder the more you win in a row (%s), and lose and it starts again" % str(rungs))
+	if racha0 != null:
+		g.stats["tokken_racha"] = racha0
+	# every fighter's power, one after another (and, with --shots, a picture of each)
+	var powers: Array = []
+	for i in range(T.ROSTER.size()):
+		var theirs: String = T.ROSTER[(i + 3) % T.ROSTER.size()]
+		T.start({"foe": theirs, "ai": "quieto"}, func(_w): pass)
+		T.pick = i
+		await tick.call(14)
+		T._pressed["ok"] = true
+		await tick.call(34)
+		T._pressed["ok"] = true
+		for k in range(200):
+			if T.mode == "fight":
+				break
+			await get_tree().physics_frame
+		T.test_inp = {"dir": 0, "up": false, "light": false, "heavy": false, "special": false}
+		T.a.meter = 100.0
+		T.b.x = T.a.x + 190.0
+		T.test_inp["special"] = true
+		var hp0: float = T.b.hp
+		var taken := false
+		for k in range(170):
+			await get_tree().physics_frame
+			var mv: Dictionary = T.a.move
+			var showing: bool = (not T.shots.is_empty() and int(T.shots[0]["t"]) > 4) or (not mv.is_empty() and String(mv.get("type", "")) in ["dash", "leap"] and T.freeze == 0 and (T.a.st == "jump" or T.a.t > int(mv["startup"]) + 3))
+			if shots and not taken and showing:
+				taken = true
+				await snap.call("tokken_poder_%s" % T.ROSTER[i])
+		powers.append(hp0 - T.b.hp > 12.0)
+		T.test_end(false)
+		await tick.call(8)
+	_check(not powers.has(false) and not T.active, "each of the six has a power of their own, and every one of them lands: %s" % str(powers))
+	# how hard is the mayor? the machine plays itself
+	var wins := {"novato": 0, "jugador": 0}
+	for who in wins:
+		for i in range(matches):
+			if T.sim("napoleon", who, "monstruo", "alcalde", 7000 + i)["won"]:
+				wins[who] += 1
+			if i % 3 == 2:
+				await get_tree().process_frame
+	print("  tokken: against the mayor, of %d matches each: somebody who has never played wins %d, somebody who knows the combo %d" % [matches, wins["novato"], wins["jugador"]])
+	_check(wins["jugador"] > wins["novato"] and wins["jugador"] >= matches * 0.4 and wins["novato"] >= 1 and wins["novato"] <= matches * 0.6,
+		"the mayor is hard but can be beaten: of %d matches, somebody who has never played takes %d, and somebody who has found the combo %d" % [matches, wins["novato"], wins["jugador"]])
 
 ## Skids (derrape.gd): brake hard or pull the handbrake at speed and the tyres squeal and leave marks on the road,
 ## which go once you have left them far behind.
@@ -4030,6 +4392,65 @@ func _derrape_checks(pictures := false) -> void:
 
 func _run() -> void:
 	await _frames(10)
+	if OS.get_cmdline_user_args().has("--tokken"):        # Tokken 9, the fighting game on the Recress's machines (add --shots)
+		shots = OS.get_cmdline_user_args().has("--shots")
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		if OS.get_cmdline_user_args().has("--demo"):         # the machine plays itself on screen: a picture every few frames (--window)
+			var T = g.tokken
+			T.start({"foe": "dracula", "foe_tag": "Katakumba69", "ai": "dificil"}, func(_w): pass)
+			T.pick = 2
+			await _frames(8)
+			T._pressed["ok"] = true
+			await _frames(18)
+			T._pressed["ok"] = true
+			while T.mode != "fight":
+				await get_tree().physics_frame
+			T.a.human = false
+			T.a.ai = T._make(T.a.id, "", false, "jugador").ai
+			T.a.meter = 70.0
+			T.b.meter = 70.0
+			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://shots"))
+			for i in range(48):
+				for k in range(7):
+					await get_tree().physics_frame
+				await RenderingServer.frame_post_draw
+				get_viewport().get_texture().get_image().save_png("res://shots/tokken_demo_%02d.png" % i)
+			get_tree().quit(0)
+			return
+		if OS.get_cmdline_user_args().has("--balance"):      # every fighter against every other, the machine playing both: who wins
+			var T = g.tokken
+			var per := 12
+			var total := {}
+			for me in T.ROSTER:
+				var row := "  %-10s" % me
+				total[me] = 0
+				for them in T.ROSTER:
+					var w := 0
+					for i in range(per):
+						if T.sim(me, "normal", them, "normal", 100 + i)["won"]:
+							w += 1
+					total[me] += w
+					row += " %2d" % w
+					await get_tree().process_frame
+				print(row + "   = %d of %d" % [total[me], per * T.ROSTER.size()])
+			for pair in [["novato", "alcalde"], ["jugador", "alcalde"], ["novato", "facil"], ["novato", "normal"], ["jugador", "normal"], ["jugador", "dificil"], ["jugador", "katakumba"]]:
+				var w := 0
+				var frames := 0
+				for i in range(40):
+					var r: Dictionary = T.sim("napoleon", pair[0], "monstruo" if pair[1] == "alcalde" else ("dracula" if pair[1] == "katakumba" else T.ROSTER[i % 6]), pair[1], 500 + i)
+					w += 1 if r["won"] else 0
+					frames += int(r["frames"])
+				print("  %s against %s: %d of 40 (a match lasts %.0f s)" % [pair[0], pair[1], w, frames / 40.0 / 60.0])
+				await get_tree().process_frame
+			get_tree().quit(0)
+			return
+		await _tokken_checks(40)
+		print("TOKKEN %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--recress"):       # "Un torneo en los Galaxy Recress", from start to finish (add --shots)
 		shots = OS.get_cmdline_user_args().has("--shots")
 		g.menu.close()
@@ -4129,6 +4550,14 @@ func _run() -> void:
 		await _frames(20)
 		await _vuelcos_checks()
 		print("VUELCOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--palabros"):      # the old neighbours' sayings, «apreta», the credits
+		g.menu.close()
+		g.phase = "free"
+		await _frames(20)
+		_palabros_checks()
+		print("PALABROS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--emisoras"):      # just the radio stations playing on in the background
@@ -4327,6 +4756,11 @@ func _run() -> void:
 		g.hud.play_ui.visible = false
 		g.apply_moment("noon", true)
 		await _frames(20)
+		if OS.get_cmdline_user_args().has("--antes"):     # (what the full run does just before it)
+			g.hud.play_ui.visible = true
+			await _palabros_checks()
+			await _limite_checks()
+			await _vuelcos_checks(true)
 		await _mirada_checks(shots)
 		print("MIRADA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
@@ -5078,6 +5512,15 @@ func _run() -> void:
 			g.hud.play_ui.visible = false
 			g.set_time(11.0)
 			g.set_rain(false, 1e9)
+			for a2 in OS.get_cmdline_user_args():           # (--hora=21.5: at that time of day instead; --recress-abierto: the Recress open again)
+				if String(a2).begins_with("--hora="):
+					g.set_time(String(a2).trim_prefix("--hora=").to_float())
+			if OS.get_cmdline_user_args().has("--recress-abierto"):
+				g.recress.sala.set_open(true)
+			if OS.get_cmdline_user_args().has("--recress-cerrado"):          # (done up, its glass doors shut)
+				g.recress.sala.set_state("cerrado")
+			if OS.get_cmdline_user_args().has("--recress-carteles"):         # (the tournament's posters up by its doors)
+				g.recress.sala.show_posters(true)
 			await _frames(30)
 			var vcam := Camera3D.new()
 			g.add_child(vcam)
@@ -6197,6 +6640,7 @@ func _run() -> void:
 	await _frames(20)
 	g.indoors = false
 	_check(g.side == null and g.dlg != null and int(g.stats["ham_done"]) == 1 and not g.police.muted and not g.hud.timer_slot.visible, "delivered in time: they say thank you, in their way")
+	_check(g.hud.stamp_text.text == Loc.t("stamp_done") and g.hud.stamp_box.modulate.a > 0.5 and not g.hud.toast_label.text.contains(Loc.t("mission_done")), "with the stamp, as any errand done (and no notice as well)")
 	_check(g.folk.trust(caller) >= mini(100, caller_t + 10) or g.folk.golden(caller), "and trust you 10 more for it")
 	await _skip_dialog()
 	g._weekly_call()
@@ -6213,6 +6657,7 @@ func _run() -> void:
 	await _derrape_checks()
 	await _radio_live_checks()
 	_tirones_checks()
+	_palabros_checks()
 	await _llamadas_checks()
 	await _kebab_checks()
 	await _comida_checks()
@@ -6235,6 +6680,7 @@ func _run() -> void:
 	g.side = null
 	g.si = si_was
 	g.phase = phase_was
+	await _tokken_checks()
 	await _vuelcos_checks(true)
 	await _mirada_checks()
 	await _sabotaje_checks()

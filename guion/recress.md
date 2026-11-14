@@ -62,28 +62,44 @@ Y además, en el mismo mensaje:
   - La copistería: Calle Teniente Infante (Catastro 4190004VJ5649S); te da cinco carteles. Sirven para cualquier comercio:
     los del mapa (supermercados, farmacias, librerías, bares, la peluquería, talleres), los del juego (V.I.P., Henry,
     el kebab, el quiosco) y las tiendas con rótulo de las casas hechas a mano. E delante de la fachada y se pega.
-  - El torneo, la final, el reto (negarse una vez trae la de la madre), la partida (E en la máquina = ganas), el final
+  - El torneo, la final, el reto (negarse una vez trae la de la madre), la partida (E en la máquina: Tokken 9 de verdad, `guion/tokken9.md`), el final
     con Traktor FM bajito, la noche con la mujer del alcalde y la luna, y tú en la puerta: misión cumplida.
   - Dentro no suena música hasta que te declaran campeón: entonces, Traktor FM bajito.
   - Después los recreativos están abiertos: se entra por la persiana como en V.I.P.; Katakumba69 se queda allí, con
-    unos cuantos más jugando en las máquinas; las máquinas dicen «Tokken 9 todavía no se puede jugar: muy pronto».
+    unos cuantos más jugando en las máquinas; en cualquier máquina se juega a Tokken 9 (en la grande, contra él).
 - **La estrella del eureka** (`tools/make_eureka.py` → `assets/recress/eureka.png`): dibujada aquí, con su «ding» de
   tres notas hecho en el juego. No se ha copiado nada de Animal Crossing.
-- **Pantallas**: las dos imágenes que mandaste llegaron como fotos fijas (el chat convierte los GIF). Se mueven con un
-  efecto propio: barrido de tubo, parpadeo, golpes con destello y temblor, y cada máquina alterna entre las dos.
+- **Pantallas**: los seis GIF que dejaste en `referencias/recress/` (Cleopatra contra el velocirraptor, Napoleón contra
+  el samurái, Drácula contra Frankenstein, el del GIF 4, el bebé contra la bomba y «Gorila vs 100 hombres») se ven
+  animados de verdad, cada uno a su velocidad. `tools/make_pantallas.py` los junta en `godot/assets/recress/peleas.png`.
+  Cada máquina empieza en una pelea y cambia cada 12 s; la pantalla grande de la final se queda en Drácula contra
+  Frankenstein.
 - **Cámara de las escenas** (idea del usuario): en cualquier cinemática del juego, si la cámara queda dentro de la cabeza
   de alguien o a un palmo, ese personaje no se dibuja mientras siga tan cerca (`game.gd` `_clear_lens`). Para el juego
   sigue ahí (habla, grita, cuenta). Las cabezas miden casi un metro, así que los primeros planos van a unos 2 m. En la
   calle de los recreativos, los coches aparcados delante no se ven mientras dura la escena (luego vuelven).
 - Prueba de la misión entera: `--selftest --recress` (con `--shots --window`, fotos en `godot/shots/recress_*.png`).
 
+## Respuestas del usuario (13 de noviembre de 2026)
+
+- **El local**: la casa 8 es la buena.
+- **Katakumba69** es su nombre oficial en el juego. Su nombre real es Ignacio José Gómez-Carreño de la Llave («Nachín
+  pa los amigos», que solo tiene en el foro), y solo te lo dice con la confianza al 100 (hecho: una vez, al hablarle).
+- **Tokken 9**: hecho (14 de noviembre) por la sesión bifurcada con Fable 5.2. Todo en `guion/tokken9.md`.
+- **Dinero** (resuelto en la sesión de Tokken 9, 14 de noviembre): el alcalde pide **100 €**; el premio del torneo te los
+  devuelve y ganarle a doble o nada los dobla: **200 €** al final. Los 605 € del V.I.P. son broma: nunca hay que pagarlos.
+
+- **La fachada tiene tres estados** (14 de noviembre): antes de reformar («viejo»), reformado y abierto, y reformado
+  con la persiana bajada. Ya está reformada la tarde del torneo, y solo puede cerrar cuando acaba la escena. Los hace
+  la sesión de Texturas (`set_state` en `recress_sala.gd`); la misión los usa.
+- **Horario**: de 15:00 a 2:00 (`OPENS` y `SHUTS` en `recress.gd`); el resto del día, cerrado con la persiana bajada.
+  Si le toca cerrar contigo dentro, espera a que salgas.
+
 ## Decisiones mías, por confirmar
 
-- **Dinero**: el alcalde pide **50 €** (provisional). Al final te lo devuelve x2 (el premio del torneo), y como le
-  ganas a doble o nada, el doble: **200 €** en total. Más 3 P.C. de misión secundaria.
-- **El local**: uso la tienda de RECREATIVOS que ya estaba hecha (casa 8 según el Catastro) en vez de la 10.
 - **Por teléfono**: la llamada de las 12 horas no repite la escena; Alberto te pide que vayas a verle y allí te la cuenta.
-- **Si pierdes** la partida, el alcalde te dice «¿Otra?» y vuelves a sentarte (de momento no se puede perder).
 - **Nombres provisionales**: «El alcalde», «La de la copistería», «La mujer del alcalde», «Una señora mayor» (su madre:
-  no se dice hasta el «Mamá, por favor»), «El comentarista», «Katakumba69».
-- Los GIF de las pantallas: si los dejas en `referencias/recress/`, saco sus fotogramas y van animados de verdad.
+  no se dice hasta el «Mamá, por favor») y «El comentarista».
+- **El GIF 4** recuerda mucho a Pikachu y a Agumon (Pokémon y Digimon). En las pantallas de fondo está puesto porque lo
+  mandaste; si el juego va a venderse, mejor quitarlo: se borra el GIF, se vuelve a pasar `tools/make_pantallas.py` y se
+  quita su número de `FIGHT_MS` en `recress_sala.gd`.

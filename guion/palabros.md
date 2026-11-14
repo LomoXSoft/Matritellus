@@ -8,6 +8,10 @@ Las definiciones están resumidas con mis palabras; el trabajo original, con sus
   https://historiaycultura.madridejos.es/2018/10/proyecto-de-investigacion-vientos-del.html
 - **«Origen y significado de los apodos de Madridejos»** (José-María Moreno García, 2026), para la parte de motes:
   https://www.calameo.com/read/0014507153a798fe9f755
+- **La web de José-María Moreno García** (https://www.josemariamorenogarcia.es/madridejos/), de Madridejos: el
+  artículo «Mancheguismo» y su glosario de palabras manchegas (la sección «Cómo hablan los mayores», abajo) y dos
+  páginas de recetas (la sección «La cocina»). Casi todo en ella es oro para el pueblo (Luis): **va en los créditos
+  del juego**. Licencia Creative Commons BY-NC-ND: se cita, y no se copia ni se rehace su texto.
 
 Copias descargadas (solo para consulta, no van en el juego): `tools/palabros_src/`.
 
@@ -19,6 +23,14 @@ Y dos más (Luis, 12-11-2026):
 - **«vía»** en vez de «voy a».
 - **«cá»** en vez de «casa de».
 - Ejemplo: «Voy a casa de Julián» → **«vía cá Julián»**.
+
+Y más (Luis, 14-11-2026):
+
+- **«Apretar» sin diptongo:** se conjuga sin la «i» entre la r y la e. «¡Cómo aprieta el sol!» → **«¡Cómo apreta
+  el sol!»**; «Aprieta ese tornillo» → **«Apreta ese tornillo»**; «¡No aprietes más!» → **«¡No apretes más!»**.
+  (Y apreto, apretas, apretan, que apreten…)
+- **El mancheguismo es sobre todo de los mayores:** las palabras y las pronunciaciones de «Cómo hablan los mayores»
+  (abajo) van en boca de abuelos y abuelas; los demás, alguna suelta.
 
 ---
 
@@ -224,3 +236,181 @@ nombra en plural por el nombre del abuelo o la abuela.
 lista de los que recoge el diccionario: sirve para **no** ponérselos a ningún personaje y para comprobar que un
 mote inventado no coincide con uno de verdad. (Ya había uno: la cisterna de la cooperativa se llamaba «Portes El
 Chato», y Chato es mote real; ahora es «Portes Ya Voy».)
+
+---
+
+## Cómo hablan los mayores (el «mancheguismo» de José-María Moreno García)
+
+Sacado de su artículo «Mancheguismo» y de su glosario de palabras manchegas
+(https://www.josemariamorenogarcia.es/madridejos/mancheguismo.htm y las páginas de cada letra). Él es de Madridejos,
+y su web es oro para el pueblo: va citado en los créditos del juego. Su licencia (Creative Commons BY-NC-ND) no deja
+copiar ni rehacer sus textos: aquí está resumido con mis palabras, y en el juego solo usamos las palabras.
+
+**Quién habla así: sobre todo los mayores** (Luis, 14-11-2026). Los abuelos y las abuelas del pueblo sacan este
+vocabulario y estas pronunciaciones; la gente de mediana edad, alguna palabra suelta; los jóvenes, casi nada (y si
+la dicen, es de guasa o porque se la han oído a la abuela). En el juego: los vecinos con voz de viejo tienen sus
+propias frases (`generic_old`, `whisper_old`, `ouch_old` en `loc.gd`).
+
+### Cómo se pronuncia (para escribir las frases de los mayores)
+
+- **Se comen la -d- y la -r-:** pasao, comío; almoha (almohada), temporá, na; lañaor (lañador), herraúra.
+  Con pronombre detrás, el verbo pierde la -r: «convidalo», «remojalo». Y a veces se lleva una -n: «al vesen, se
+  abrazaron». «Le tién envidia» (tiene).
+- **La l y la r se cambian:** arbañil, barcón / alfileles, talleles; trastol.
+- **Cambian sílabas de sitio:** niervos, pedricar, trempano, cudiao, bulra.
+- **cu- y gu- se vuelven bu-:** buchillo (cuchillo), bujero, busano, buardián; y al revés: goína (boina), gufanda.
+- **h entre vocales suena b:** abora, bueso, buérfano. Delante de u, una b: burraca (urraca), busagre.
+- **Palabras torcidas que dicen los mayores:** dispierto, ivierno, premiso, pisebre, sepoltura, antiayer,
+  almenaque, rilera, trompezar, uguas (uvas), alcagüete o arcagüete (cacahuete), cocote (cogote), mujuer, alvellana,
+  salampión (sarampión), entavía, ande (adónde), haiga, juebar (jugar), vantarse, vacear, reite (ríete), golver
+  (oler), gomitar, piejo, tenaja, toballa, estijeras, escuro, cimenterio, cera (acera), jersé, cocreta,
+  almóndiga, bayonesa, cenahoria, mondarina, poblema, polígano, pendaño, prazuelas.
+- **Lo moderno, a su manera:** afoto, amoto, arradio, transitor, lástico, niki (polo), peludo o celpudo (felpudo),
+  pesiglás, ebro (euro), la pendi (el apéndice), la nalis (el análisis), endición (inyección), «cláusulas y
+  depositorios» (cápsulas y supositorios), viringitis, visícula, tericia, anastesia, paralís.
+
+### Frases y giros
+
+| Lo dicen así | Qué quiere decir |
+|---|---|
+| ¿Ande fiste? | ¿Dónde fuiste? |
+| aína, aínas | por poco, enseguida («aína si llego») |
+| si fuas ido | si hubieras ido |
+| ¿vies solo? / veste de aquí / veros | ¿vienes solo? / vete de aquí / marchaos |
+| vis con Dios | despedida: anda con Dios |
+| ven a caquí | ven aquí |
+| en ca, an cá | en casa de (como nuestro «cá») |
+| ¡Adius! / ¡Papo! / ¡Arrea! / ¡Atiza! / ¡Amos que…! | sorpresa, asombro |
+| ¡No te amuela! | ¡no te fastidia! |
+| ¡Ñalo! / ñaque | ¡míralo! / mira que… («¡ñaque eres tonto!») |
+| ¡Ojooo! | ¡ya está bien, qué pesado! |
+| ¡Qué fatiga me da! | qué raro se me hace (lo nuevo no les entra) |
+| ¡Qué cabalito! | qué justo, qué exacto (ver «cabalito» arriba) |
+| ¡Vaya fenómeno! | dicho del que está muy gordo |
+| a cagaíto | despacito, flojito |
+| al remate | al final, por fin |
+| avel | claro, por supuesto |
+| contra más… | cuanto más… |
+| dar ansia | dar rabia, molestar |
+| de mal acate | cuando menos te lo esperes |
+| echusté | una barbaridad («echusté lo que llueve») |
+| poque | puede que |
+| velaí que… | a lo mejor… |
+| hacer rancho | hacer sitio («hazme rancho, que me siento») |
+| hacer corchetes | tiritar de frío |
+| ponerse en cachas | ponerse en cuclillas |
+| meter cazo, meter zanco | colocarse con ventaja (jugando) |
+| meter el cuezo | meterse donde no le llaman |
+| fobar con alguien | tomarla con él |
+| ni a la ventana te asomes | ni se te ocurra |
+| no te pongas en tol chorro | no te quedes en la corriente |
+| la medía del tío Sergio | medido a ojo (el carpintero que medía con las manos) |
+| eres peor que Arrancao | eres malo, o muy trasto |
+| hacer la gandinga | hacer como que se hace algo |
+| tener a uno al retrotero | no dejarle parar |
+| parece que hay de muda | va a cambiar el tiempo |
+| empozarse el sol | ponerse el sol entre nubes |
+| hincar el rejo | caerse de boca |
+| carne huída | el dolor del golpe o del esguince |
+| ir de mano armá | ir arreglado de visita (pésame, trato) |
+| hacer de sábado | la limpieza gorda de la casa |
+| la cata, la poza | meriendas de pan (ver la cocina, abajo) |
+
+### Palabras, por temas
+
+- **La gente:** adán (desaliñado), alabancioso, alelao, alisiao, andorrero (callejero), badanas y baldragas (flojo),
+  bacinillas (cobarde), boceras (bocazas), bodoque, cañamón y comino (renacuajo), cebollón (niño gordo y simple),
+  cenacho (destartalado), ceomo (hecho un Ecce Homo), cernícalo, chinchorrero (chismoso), cocinillas, enterón
+  (quiere enterarse de todo), metijón, escarramal (niño revoltoso), rebaileta, espindalgo (largo y flaco),
+  espirituao (en los huesos), escuchimizao, fanegas (gordo), gumia (tragón), galgo (goloso), mazámpulas, mameluco,
+  pavisoso, pánfilo, resabiao, tarambanas, zaragatas (pendenciero), zamuzo (vergonzoso, callado),
+  zanguango, zopenco, zocato (zurdo), manero (ambidiestro), chache/chacha (el hermano mayor), cosuegro.
+- **El cuerpo y los males:** chiribizo y monago (el estómago), belorta (la cabeza), sentido (la sien: «en to el
+  sentido»), cocote, canilla, espeletre (escalofrío), chabasque (crujido de la pierna), arrichucho (achuchón de
+  salud), cabrillas (manchas de estar al brasero), costalá (caída de espaldas), escalabraura, mataura (rozadura de los muslos), regüeldo,
+  morrina (sueño pesado), murria (tristeza).
+- **El tiempo que hace:** canina (calor: «¡vaya canina!»), bochorno, calima, gris y biruji (frío que corta),
+  recochura (frío de mañana), babaza (suelo resbaloso tras la helada), garrillo (los carámbanos en las olivas),
+  galayo (chubasco corto), torbellina (remolino), torbonera (ventolera con polvo), revolá (el cielo rojo), orilla
+  («hace buena orilla»), escampar, solano, ábrego.
+- **Hacer cosas:** arpear (espabilar), afilotos (prisas: «¿ande vas con tantos afilotos?»), ajuntarse (andar con),
+  arrempujar, atrechalarse (tumbarse a gusto), canear y endiñar y zumbar (arrear un golpe), eslomar, cascar
+  (charlar), chirlar, chuflar (silbar), chisparse (emborracharse), embullir (mullir), enfolliscarse (enfadarse),
+  enguilochar (camelar), espachurrar, gipiar (mirar fijo), panear (comer mucho pan pa que cunda), rebañir,
+  sonsacar, trajinar, arramplar.
+- **Las cosas de casa y del campo:** alcuza, aguaera, alforjas, ataero (cuerda), botijo con su pizpajo, cántara,
+  cantarera, capazo, cuezo, escriño, espuerta, sera, serón, serijo, orza, tenaja, tinajón, lebrillo, barreño,
+  palancana, jofaina, perico (orinal), tumbillo (el armazón del brasero pa la cama), trébedes, candil, vasar,
+  vedreao (los cacharros), poyo y poyete, portá y portailla (las puertas grandes del corral), boquerón (por donde
+  se mete la paja), pairilla (paredilla), reate (jardincillo al pie de la tapia), majano, mojón, era, parva, trilla,
+  horca, bierga, aventar.
+- **El dinero de antes:** perra chica, perra gorda, real, leandra (la peseta), cuartos.
+
+### Costumbres que salen en el glosario
+
+- **Los enramos:** la noche de San Pedro los mozos pintaban ramos de flores en la fachada de la moza que les
+  gustaba. (Las pintadas de las peñas son sus nietas: «antes pintábamos flores».)
+- **La cencerrá:** cuando se casaba un viudo, los mozos le daban la noche con cencerros hasta que pagaba.
+- **Hacer la visita, pedir el paso, leerse los novios:** los pasos de un noviazgo de antes: la familia del novio
+  lleva regalos para el dote, el novio pide entrar en casa de la novia, el cura lee las amonestaciones en misa.
+- **La güera de Santa Lucía:** la hoguera de su noche.
+- **Los martinitos:** ruidos de noche que nadie sabe de dónde vienen (y fantasmas de sábana que rondaban las
+  casas de las mozas).
+- **La tía guisona:** la que guisaba en las bodas. **La murga:** músicos malos que tocaban a la puerta por algo.
+- **El banco de la justicia:** «la justicia» eran todas las autoridades juntas (alcalde, alguacil, cura).
+- **Los juegos:** el guá, los chochos (huesos de albaricoque), las lonchas, la píndola, el duli, la taba;
+  «hincarla» es quedarse; tener «arte pifa», ser un fenómeno; «primera quite», el primero que lo dice, juega.
+- **El sereno**, el **matarife** que iba por las casas a la matanza, el **lañaor** que componía la loza.
+
+---
+
+## La cocina de Madridejos (para hablar de comer)
+
+Platos y costumbres de las páginas de recetas de José-María Moreno García
+(https://www.josemariamorenogarcia.es/madridejos/recetas.htm, con recetas de un curso de 1997 con la Asociación de
+Mujeres «El Pretil», y https://www.josemariamorenogarcia.es/madridejos/tradiciones/recetas.htm, del Aula de Mayores
+de 2001-2002). Resumido; las recetas enteras están en su web.
+
+**Los platos**
+
+- **Migas:** de pastores, para aprovechar el pan duro; harina, agua, mucho ajo con su piel, y lo que haya
+  (salchichas, panceta, chorizo, jamón). Se comen con uvas, granada, brevas, jínjoles, huevos fritos… o con una
+  taza de chocolate. También con ñoras y sardinas saladas.
+- **Gachas:** harina de almortas (titos), ajos, pimentón y torreznos o papada; y unos chicharrones encima. Cuando
+  hierven y echan pompas se dice que **«follan»** (sí, así). **Gachas de matanza:** con hígado de cerdo majado.
+- **Tiznao de Madridejos:** bacalao, patata, cebolla, ajos y pimientos, todo asado y luego cocido con pimentón y
+  tomate. (Con titos también se hace un tiznao.)
+- **Caza y corral:** perdiz estofada, perdices y conejo escabechados (se dejan una semana), arroz con liebre (con
+  setas y pimiento seco), gallina en pepitoria, cabecillas de cordero al horno, caldereta de cordero, callos con
+  chorizo y morcilla, chiflos (tripa de cordero frita con ajos y guindilla), somarro (carne con sal a la brasa).
+- **Sopas y cuchara:** sopa de ajo en cazuela de barro (con huevo si lo pides), sopas cominas (pan, ajo, pimiento y
+  cominos), sopas cabreras, el cocido (antes: garbanzos, tocino y morcilla, y gallina solo si se había muerto
+  alguna), y con lo que sobra la **ropa vieja** (frito con ajo y huevo) y unas **sopas recociditas**. Potaje de
+  Semana Santa con garbanzos, judías, espinacas, bacalao, **pellas** (bolas de huevo y pan) y **rebanás**.
+- **Lo de diario:** patatas fritas con leche, ensalada de judías, setas fritas (gamón o «espárrago loco»,
+  cañaleja, cardo setero), cachuelos (patatas fritas en rodajas gordas), el **mojete** de tomate.
+- **En Madridejos, «chicharrones» son tacos de pan frito** (lo que en otros sitios son picatostes), que se echan al
+  final a las gachas, las sopas o el mojete para que crujan. (Los otros, los de la manteca, también.)
+- **Meriendas:** la **cata** (una orilla de pan sin miga, salada con tomate, cebolla y aceite pal desayuno, o dulce
+  con vino y azúcar pa merendar), la **poza** (el cantero hueco con tomate estrujado, aceite, pimentón y sal, y a
+  mojar la miga), pan y quesito, arrope.
+- **Dulces:** flores (con el molde de hierro), rosquillas, torrijas, pestiños y bartolos (Semana Santa), mantecados
+  (en invierno, con la manteca recién hecha de la matanza), leche frita, carne de membrillo, requesón con miel (ya
+  no se hace: lo hacían los ganaderos), vinillos, empringadillas, **grañones** (trigo cocido con canela, anís,
+  castañas pilongas y miel).
+
+**El calendario de comer**
+
+- **1 de enero:** grañones.
+- **San Antón (enero):** «santonear», la fiesta y la bendición de los animales.
+- **Semana Santa:** potaje con pellas, torrijas, pestiños, bartolos.
+- **Desde San Martín (noviembre):** la matanza; después, mantecados, gachas de matanza, chicharrones.
+- **Verano:** la ensalada con tomate de temporada, el botijo, la zurra (sangría).
+
+**De tapeo** (platos de un concurso de tapas del pueblo; los bares van sin nombre, como todos en el juego):
+caldereta de cordero, revuelto de matanza, asadillo con torreznos, bacalao al ajo arriero, pisto manchego, tosta de
+pulpo, setas con azafrán.
+
+**Un chiste del Aula de Mayores** (contado a mi manera): llegan un padre y un hijo a un chozo donde los pastores
+comen sopas, y dice el chico: «Si tuviéramos aceite, ajos, pimientos y sal, haríamos unas sopas… lo que nos falta
+es el pan».

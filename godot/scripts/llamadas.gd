@@ -17,6 +17,7 @@ const ENGAGED_H := 10.0 / 60.0  # game hours after you hang up until the one you
 
 var G
 var queue: Array = []           # {call, at (game hours since the start; -1 = waiting for you to hang up), engaged}
+var _can := true                # (from tick) nothing in the way of a call just now: no talk, no scene, no menu
 
 func setup(game) -> void:
 	G = game
@@ -33,6 +34,9 @@ func ring(call: Dictionary) -> void:
 		if G.phone_call.get("npc", "") == call.get("npc", "-"):
 			return                                   # (already on the line: no need to ring yourself)
 		queue.append({"call": call, "at": -1.0, "engaged": true})
+		return
+	if not _can:                                     # (you are talking to somebody, or in a scene: it rings the moment
+		queue.append({"call": call, "at": now(), "engaged": false})      # that is over, never in the middle of it)
 		return
 	_start(call)
 
@@ -61,6 +65,7 @@ func missed(call: Dictionary) -> void:
 
 ## every physics tick. `can_ring`: nothing in the way of a call (no talk, no scene, no menu...)
 func tick(can_ring: bool) -> void:
+	_can = can_ring
 	if queue.is_empty():
 		return
 	if G.phone_call != null:
