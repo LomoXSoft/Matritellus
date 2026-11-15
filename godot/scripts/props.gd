@@ -68,7 +68,8 @@ func _place_furniture() -> void:
 	for req in world.extra_props:                 # what the hand-built places have standing by them in their photos
 		_prop(String(req[0]), req[1], float(req[2]), int(req[3]))
 
-func _prop(kind: String, p: Vector2, heading: float, variant: int) -> void:
+## (`on_floor`: it stands on what is walked on there -- the floor of a raised square, say -- and not on the ground under it)
+func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := false) -> void:
 	var b := RigidBody3D.new()
 	var size := Vector3.ONE
 	var rad := 0.55        # how close a car has to get to knock it over
@@ -291,19 +292,38 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int) -> void:
 			b.add_child(Parts.part("cyl", 0x8a8f94, Vector3(0, 1.15, 0), Vector3(0.035, 2.3, 0.035)))
 			b.add_child(Parts.part("cone", canopy, Vector3(0, 2.25, 0), Vector3(1.35, 0.5, 1.35)))
 		"toldo":      # an awning over the whole terraza: four poles and a striped canvas. You can walk under it.
-			size = Vector3(8.0, 0.14, 3.2)
-			b.mass = 40.0
-			heat = 8.0
-			rad = 2.3
-			lift = 2.45
-			var stripe: int = [0x2f8f5b, 0xd23b2e, 0x2f6bb5, 0xe6b422][variant % 4]
-			b.add_child(Parts.part("box", 0xf4f1e8, Vector3(0, 2.45, 0), Vector3(8.0, 0.08, 3.2)))
-			for k in range(-3, 4, 2):
-				b.add_child(Parts.part("box", stripe, Vector3(k * 1.0, 2.46, 0), Vector3(0.9, 0.09, 3.22)))
-			b.add_child(Parts.part("box", stripe, Vector3(0, 2.3, 1.6), Vector3(8.0, 0.3, 0.05)))
-			for px in [-3.8, 3.8]:
-				for pz in [-1.5, 1.5]:
-					b.add_child(Parts.part("cyl", 0x8a8f94, Vector3(px, 1.2, pz), Vector3(0.05, 2.4, 0.05)))
+			if variant >= 100:      # a square one over a table or two: the ten-thousands are the colour of its stripes, the hundreds its side in decimetres, the rest how high its canvas hangs (decimetres)
+				var side: float = (floori(variant / 100.0) % 100) * 0.1
+				var up: float = (variant % 100) * 0.1
+				var band: int = [0x2f8f5b, 0xd23b2e, 0x2f6bb5, 0xe6b422][floori(variant / 10000.0) % 4]
+				size = Vector3(side, 0.12, side)
+				b.mass = 26.0
+				heat = 6.0
+				rad = side / 2.0 + 0.3
+				lift = up
+				b.add_child(Parts.part("box", 0xf4f1e8, Vector3(0, up, 0), Vector3(side, 0.08, side)))
+				var bands: int = roundi(side / 0.55) | 1          # (an odd number of bands: white at both edges)
+				for k in range(1, bands, 2):
+					b.add_child(Parts.part("box", band, Vector3((k + 0.5) * side / bands - side / 2.0, up + 0.01, 0), Vector3(side / bands, 0.09, side + 0.02)))
+				for pz in [-1.0, 1.0]:                            # (the strip that hangs at each end)
+					b.add_child(Parts.part("box", band, Vector3(0, up - 0.15, pz * side / 2.0), Vector3(side, 0.3, 0.05)))
+				for px in [-1.0, 1.0]:
+					for pz in [-1.0, 1.0]:
+						b.add_child(Parts.part("cyl", 0x8a8f94, Vector3(px * (side / 2.0 - 0.1), up / 2.0, pz * (side / 2.0 - 0.1)), Vector3(0.05, up, 0.05)))
+			else:
+				size = Vector3(8.0, 0.14, 3.2)
+				b.mass = 40.0
+				heat = 8.0
+				rad = 2.3
+				lift = 2.45
+				var stripe: int = [0x2f8f5b, 0xd23b2e, 0x2f6bb5, 0xe6b422][variant % 4]
+				b.add_child(Parts.part("box", 0xf4f1e8, Vector3(0, 2.45, 0), Vector3(8.0, 0.08, 3.2)))
+				for k in range(-3, 4, 2):
+					b.add_child(Parts.part("box", stripe, Vector3(k * 1.0, 2.46, 0), Vector3(0.9, 0.09, 3.22)))
+				b.add_child(Parts.part("box", stripe, Vector3(0, 2.3, 1.6), Vector3(8.0, 0.3, 0.05)))
+				for px in [-3.8, 3.8]:
+					for pz in [-1.5, 1.5]:
+						b.add_child(Parts.part("cyl", 0x8a8f94, Vector3(px, 1.2, pz), Vector3(0.05, 2.4, 0.05)))
 	var cs := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	box.size = size
@@ -316,7 +336,7 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int) -> void:
 	b.freeze = true
 	b.collision_layer = 16            # only people on foot bump into standing furniture
 	b.collision_mask = 0
-	b.position = MapData.at(p)
+	b.position = Vector3(p.x, MapData.foot(p), p.y) if on_floor else MapData.at(p)
 	b.rotation.y = heading
 	b.set_meta("p", p)
 	b.set_meta("kind", kind)
@@ -425,6 +445,9 @@ func _place_terrazas() -> void:
 	# terrazas that a hand-built place asks for, exactly where it wants them
 	for req in world.extra_terrazas:
 		var dir: Vector2 = (req[1] as Vector2).normalized()
+		if (req as Array).size() > 2:               # (with every piece given its own spot)
+			_make_terraza_as(req[0], dir, req[2], rng)
+			continue
 		_make_terraza(req[0], dir, Vector2(-dir.y, dir.x), rng)
 	# the real bars and restaurants first
 	for q in MapData.pois:
@@ -705,6 +728,28 @@ func _make_terraza(c: Vector2, u: Vector2, n: Vector2, rng: RandomNumberGenerato
 		if rng.randf() < 0.8:      # somebody standing at the table, mid-argument
 			var ga := a0 + PI / seats
 			game.spawn_neighbour(tp + Vector2(sin(ga), cos(ga)) * 1.15, true)
+	terrazas.append({"p": c, "u": u})
+
+## A terrace a hand-built place has laid out itself: `lay` = {"props": [[kind, where, heading, variant], ...] in the
+## order they are to be put down, "gente": [where somebody may stand, ...]}. Everything stands on that place's floor.
+## The dice are thrown exactly as _make_terraza throws them (so every other terrace in town stays as it was), and
+## they still say how many of the three customers have come.
+func _make_terraza_as(c: Vector2, u: Vector2, lay: Dictionary, rng: RandomNumberGenerator) -> void:
+	rng.randi()
+	rng.randf()
+	var come := 0
+	for i in range(3):
+		rng.randf_range(-0.35, 0.35)
+		rng.randf()
+		rng.randi()
+		rng.randf()
+		if rng.randf() < 0.8:
+			come += 1
+	for q in lay.get("props", []):
+		_prop(String(q[0]), q[1], float(q[2]), int(q[3]), true)
+	var where: Array = lay.get("gente", [])
+	for i in range(mini(come, where.size())):
+		game.spawn_neighbour(where[i], true)
 	terrazas.append({"p": c, "u": u})
 
 # ================= jumps: tipped trailers parked along the streets (still called ramps in the code) =================

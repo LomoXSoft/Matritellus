@@ -1,0 +1,11 @@
+Models from Tiny Treats' "Fun Playground" set, version 1.0 (https://tinytreats.itch.io/fun-playground), downloaded 2026-11-15.
+Creative Commons Zero (CC0 1.0, public domain): free to use, credit not required -- and given gladly.
+
+juegos.glb  --  by Isa Lousberg (www.isalousberg.com)  --  CC0 1.0  --  used for: what is played on in the playground of the Plaza del Ayuntamiento
+    its pieces, and the model of the set each comes from:
+    torre = slide_B, columpios = swing_A_large, balancin = seesaw_large, tiovivo = merry_go_round,
+    muelle_a = spring_horse_A, muelle_b = spring_horse_B, arco = monkeybar_B, tobogan = slide_A (readied, not placed yet)
+
+Readied with tools/blender/parque.py: each model joined into one mesh and made its real size (the set is drawn for dolls
+of 2.4 units: 0.56 m to the unit, 0.46 for the little horses), one material shared by all, the set's colour atlas at
+256 px. The download as it came is in tools/descargas/tinytreats_fun_playground/ (the .zip, with its License.txt).

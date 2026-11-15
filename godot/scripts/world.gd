@@ -68,6 +68,7 @@ var coop                        # the cooperative (its gate opens and shuts)
 var church                      # the parish church (iglesia.gd)
 var salud                       # the health centre (salud.gd)
 var petril                      # the Petril: the old convent, its church and their little square (petril.gd)
+var plaza                       # the Plaza del Ayuntamiento (plaza.gd), for the self-test
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
@@ -104,7 +105,8 @@ func _build_coop() -> void:
 	coop.build(self)
 
 func _build_plaza() -> void:
-	PlazaS.new().build(self)        # the Plaza del Ayuntamiento, hand-built (it also owns the town clock)
+	plaza = PlazaS.new()            # the Plaza del Ayuntamiento and the town hall, hand-built (it also owns the town clock)
+	plaza.build(self)
 
 func _build_church() -> void:
 	church = IglesiaS.new()         # the parish church, hand-built: "Paroecia Divini Salvatoris" over its door

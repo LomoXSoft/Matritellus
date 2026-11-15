@@ -353,6 +353,7 @@ def add_part(g, bid, floors, look=None, hand=None):
     use = use_of.get(bid, '')
     c = g.representative_point()
     if th_zone is not None and th_zone.contains(c): return      # the town hall is modelled by hand
+    if plaza_zone is not None and plaza_zone.contains(c): return      # ...and so is all that stands in its square (Catastro has the fountain as a round building)
     if church_zone is not None and church_zone.contains(c): return      # ...and the parish church
     if coop_keeps_clear(c.x, c.y): return                        # ...and so is the cooperative
     if bid == SALUD_RC: return                                   # ...and the health centre

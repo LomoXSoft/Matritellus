@@ -1048,6 +1048,72 @@ func _petril_checks(walk := false) -> void:
 	_check(left < 0.6, "...and across it under the porch to the door of the church (%.1f m short)" % left)
 	g.player.p = was
 
+## The Plaza del Ayuntamiento and the town hall (plaza.gd). `walk`: also go on foot under the arches to the main door,
+## up the wide steps from the Arroyuelo's pavement, and up on to the bandstand (left out of the full run).
+func _plaza_checks(walk := false) -> void:
+	var pz = g.world.plaza
+	_check(pz != null and not MapData.townhall.is_empty() and pz.pieces > 2500 and g.world._hands.size() >= 1,
+		"the town hall and its square are built by hand: twenty arches, the garden, the fountain (%d pieces), and the town clock is on its gable" % (pz.pieces if pz != null else 0))
+	if pz == null or MapData.townhall.is_empty():
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var lv: float = pz.level
+	# one level floor from the back wall of the covered walk to the Calle de Zaragoza and the Calle de la Plaza, over the Arroyuelo
+	var on_floor: Array = []
+	for q in [Vector2(0.0, 10.0), Vector2(-20.0, -1.6), Vector2(28.0, 40.0), Vector2(-26.0, 60.0), Vector2(-9.0, 40.0), Vector2(25.0, 64.0)]:
+		on_floor.append(absf(MapData.foot(pz.spot(q.x, q.y)) - lv))
+	var street: float = MapData.height(pz.spot(-39.6, 40.0))
+	var pavement: float = MapData.foot(pz.spot(-33.2, 20.0))
+	var east: float = MapData.height(pz.spot(33.0, 30.0))
+	_check(on_floor.max() < 0.02 and absf(east - lv) < 0.08 and lv - street > 1.2 and pavement < lv - 0.5 and pavement > street + 0.5,
+		"the square is one level floor, flush with the Calle de Zaragoza (%.2f m off it) and %.2f m over the Arroyuelo, with the raised pavement between (%.2f under it)" % [east - lv, lv - street, lv - pavement])
+	var stage: float = MapData.foot(pz.spot(pz.STAND.x, pz.STAND.y))
+	var floor_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(MapData.at(pz.spot(-20.0, 20.0), 6.0), MapData.at(pz.spot(-20.0, 20.0), -4.0), 1))
+	_check(absf(stage - lv - 1.0) < 0.02 and not floor_hit.is_empty() and absf((floor_hit["position"] as Vector3).y - lv) < 0.05,
+		"the bandstand's floor is a metre up, and where the ground under the square went down with the street its floor is solid all the same")
+	# what must stop you: the town hall behind its walk, a pier, the fountain's wall, the bar, the bandstand, a planter, the fence of the playground
+	var blocked := 0
+	var ways: Array = [[Vector2(-1.5, -1.6), Vector2(-1.5, -6.0)], [Vector2(0.0, 3.0), Vector2(0.0, -2.0)], [pz.FOUNTAIN + Vector2(8.0, 0.0), pz.FOUNTAIN], [Vector2(-16.0, 54.5), Vector2(-26.0, 54.5)],
+		[pz.STAND + Vector2(9.0, -9.0), pz.STAND], [Vector2(2.0, 18.0), Vector2(2.0, 26.0)], [pz.PLAY + Vector2(-2.0, -12.0), pz.PLAY + Vector2(-2.0, -4.0)], [Vector2(-36.0, 20.0), Vector2(-26.0, 20.0)]]
+	for way in ways:
+		var a: Vector2 = pz.spot(way[0].x, way[0].y)
+		var b: Vector2 = pz.spot(way[1].x, way[1].y)
+		var h: float = minf(MapData.foot(a), MapData.foot(b)) + 0.3          # (at the height of the shins of whoever comes from the lower end)
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, h, a.y), Vector3(b.x, h, b.y), 1)).is_empty():
+			blocked += 1
+		else:
+			print("  plaza: nothing in the way from %s to %s at %.2f" % [str(way[0]), str(way[1]), h - lv])
+	# ...and what must not: the arches of the walk, the open floor, the ways through the garden
+	var open := 0
+	var lanes: Array = [[Vector2(-1.5, 6.0), Vector2(-1.5, -2.6)], [Vector2(-28.0, -1.6), Vector2(28.0, -1.6)], [Vector2(-25.0, 18.6), Vector2(27.0, 18.6)], [Vector2(-6.0, 20.0), Vector2(-6.0, 44.0)],
+		[Vector2(9.5, 20.0), Vector2(9.5, 34.0)], [Vector2(-9.0, 46.0), Vector2(-9.0, 66.0)]]
+	for lane in lanes:
+		var a2: Vector2 = pz.spot(lane[0].x, lane[0].y)
+		var b2: Vector2 = pz.spot(lane[1].x, lane[1].y)
+		if space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a2.x, lv + 0.9, a2.y), Vector3(b2.x, lv + 0.9, b2.y), 1)).is_empty():
+			open += 1
+	_check(blocked == ways.size() and open == lanes.size(), "its walls, piers, planters and fences are solid (%d of %d ways blocked) and its arches and paths are open (%d of %d)" % [blocked, ways.size(), open, lanes.size()])
+	var nearest := 99.0
+	for q in pz.yard:
+		nearest = minf(nearest, MapData.road_edge_dist(q))
+	_check(pz.yard.size() >= 100 and nearest >= 0.2, "nothing of it stands in a street: of %d piers, walls, trees, lamps and benches the nearest to the asphalt is %.1f m off" % [pz.yard.size(), nearest])
+	if not walk:
+		return
+	var was: Vector2 = g.player.p
+	g.player.p = pz.spot(1.5, 12.0)
+	await _frames(3)
+	var left: float = await _walk_at(pz.spot(1.5, -2.2), 8.0)
+	_check(left < 0.6 and absf(g.player.global_position.y - lv) < 0.05, "on foot you go under an arch to the main door (%.1f m short)" % left)
+	g.player.p = pz.spot(-34.2, 38.5)
+	await _frames(3)
+	left = await _walk_at(pz.spot(-27.0, 38.5), 8.0)
+	_check(left < 0.6 and absf(g.player.global_position.y - lv) < 0.05, "...up the wide steps from the raised pavement into the square (%.1f m short, %.2f m off its floor)" % [left, g.player.global_position.y - lv])
+	g.player.p = pz.spot(-33.6, -1.8)
+	await _frames(3)
+	left = await _walk_at(pz.spot(-28.5, -1.8), 8.0)
+	_check(left < 0.6 and absf(g.player.global_position.y - lv) < 0.05, "...up the narrow ones at the end of the town hall into its covered walk (%.1f m short, %.2f m off its floor)" % [left, g.player.global_position.y - lv])
+	g.player.p = was
+
 func _church_checks() -> void:
 	var ch = g.world.church
 	var space := get_tree().root.get_world_3d().direct_space_state
@@ -1641,6 +1707,7 @@ func _mayhem_checks() -> void:
 			break
 	var bp: Vector2 = bench.get_meta("p")
 	c.place(bp - Vector2(0, 6), 0.0)
+	c.global_position.y = MapData.foot(bp - Vector2(0, 6)) + 0.12        # (the first piece of furniture is on the terrace of the Plaza del Ayuntamiento, whose floor is a deck over sunk ground: place() knows only the ground, and would leave the car inside that floor)
 	c.set_speed(Vector2(0, 11))
 	await _frames(20)
 	_check(g.props.broken_count >= 1 and not bench.freeze, "driving into street furniture knocks it loose")
@@ -5086,27 +5153,34 @@ func _run() -> void:
 			print("menu: opened %s, showing %s" % [page, g.menu.page])
 		get_tree().quit(0)
 		return
-	if OS.get_cmdline_user_args().has("--plaza"):         # just the Plaza del Ayuntamiento: from the front, and straight down like the aerial photo
+	if OS.get_cmdline_user_args().has("--plaza"):         # just the Plaza del Ayuntamiento and the town hall: from all round, and straight down like the aerial photo
 		shots = true
 		g.menu.close()
 		g.phase = "selfshot"
 		g.hud.play_ui.visible = false
-		g.set_time(13.0)
-		var ph: Dictionary = MapData.townhall
-		var pm := Vector2(ph["m"][0], ph["m"][1])
-		var pu := Vector2(ph["u"][0], ph["u"][1])
-		var pn := Vector2(-pu.y, pu.x)
-		for v in [["front", pm + pn * 38.0 + pu * 2.0, 12.0, pm + pn * 6.0, 4.0], ["boards", pm + pn * 30.0 + pu * 1.0, 22.0, pm + pn * 9.0 + pu * 1.0, 0.0], ["facade", pm + pn * 19.0 - pu * 6.0, 2.2, pm + pn * 3.0 + pu * 1.0, 8.5], ["crest", pm + pn * 21.0, 7.0, pm + pn * 9.0, 0.0], ["stall", pm + pn * 49.0 + pu * 24.0, 2.2, pm + pn * 55.2 + pu * 31.6, 1.4]]:
-			var from: Vector2 = v[1]
-			var at: Vector2 = v[3]
-			g.cam.position = MapData.at(from, v[2])
-			g.cam.look_at(MapData.at(at, v[4]))
+		g.apply_moment("noon", true)
+		var pz = g.world.plaza
+		for v in [["front", Vector2(-7.0, 44.0), 16.0, Vector2(0.0, 4.0), 4.0], ["facade", Vector2(-6.0, 19.0), 2.2, Vector2(1.0, 0.0), 6.5], ["arcade", Vector2(-27.0, -1.6), 1.7, Vector2(10.0, -1.7), 1.8],
+				["boards", Vector2(1.0, 30.0), 22.0, Vector2(1.0, 9.0), 0.0], ["fountain", Vector2(-6.5, 47.5), 1.7, pz.FOUNTAIN, 0.7], ["garden", Vector2(9.5, 17.0), 1.7, Vector2(11.0, 40.0), 1.2],
+				["column", Vector2(12.0, 38.0), 1.7, pz.COLUMN, 4.5], ["playground", Vector2(-8.5, 44.5), 1.8, pz.PLAY, 1.0], ["bar", Vector2(-7.0, 50.0), 1.7, Vector2(-22.0, 55.0), 1.8],
+				["bandstand", Vector2(-8.0, 62.0), 1.7, pz.STAND, 2.2], ["zaragoza", Vector2(38.5, 14.0), 1.7, Vector2(31.7, -2.0), 3.0], ["arroyuelo", Vector2(-41.0, 6.0), -0.3, Vector2(-31.7, -1.8), 0.6],
+				["steps", Vector2(-43.0, 38.5), -0.3, Vector2(-30.0, 38.5), -0.4], ["plaza_street", Vector2(8.0, 82.0), 1.7, Vector2(2.0, 55.0), 1.5], ["stall", Vector2(31.0, 68.0), 1.7, pz.STALL, 1.4]]:
+			var eye: Vector2 = pz.spot(v[1].x, v[1].y)
+			var at: Vector2 = pz.spot(v[3].x, v[3].y)
+			g.player.p = pz.spot(60.0, 120.0)
+			g.cam.position = Vector3(eye.x, pz.level + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, pz.level + v[4], at.y))
+			await _frames(6)
 			await _shot("plaza_" + v[0])
-		var mid: Vector2 = pm + pn * 36.0
-		g.cam.position = MapData.at(mid, 105.0)
-		g.cam.look_at(MapData.at(mid, 0.0), Vector3(0, 0, -1))        # north up, like the photo
+		var mid: Vector2 = pz.spot(0.0, 40.0)
+		g.cam.position = Vector3(mid.x, pz.level + 112.0, mid.y)
+		g.cam.look_at(Vector3(mid.x, pz.level, mid.y), Vector3(0, 0, -1))        # north up, like the photo
+		await _frames(6)
 		await _shot("plaza_above")
-		get_tree().quit(0)
+		g.phase = "free"
+		await _plaza_checks(true)
+		print("PLAZA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--agenda"):        # just the neighbours page, with one meter of each colour
 		shots = true
@@ -5764,8 +5838,8 @@ func _run() -> void:
 				var to := Vector2(float(v[3]), float(v[4]))
 				vcam.position = Vector3(from.x, MapData.height(from) + float(v[2]), from.y)
 				var look := Vector3(to.x, MapData.height(to) + float(v[5]), to.y)
-				if label.begins_with("pt_") and g.world.petril != null:          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square)
-					var pt = g.world.petril
+				if (label.begins_with("pt_") and g.world.petril != null) or (label.begins_with("pz_") and g.world.plaza != null):          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square; pz_...: in the Plaza del Ayuntamiento's)
+					var pt = g.world.petril if label.begins_with("pt_") else g.world.plaza
 					from = pt.spot(float(v[0]), float(v[1]))
 					to = pt.spot(float(v[3]), float(v[4]))
 					vcam.position = Vector3(from.x, pt.level + float(v[2]), from.y)
@@ -5828,7 +5902,7 @@ func _run() -> void:
 		var tm := Vector2(th["m"][0], th["m"][1])
 		var tu := Vector2(th["u"][0], th["u"][1])
 		var tn := Vector2(-tu.y, tu.x)
-		var level: float = MapData.height(tm)
+		var level: float = g.world.plaza.level if g.world.plaza != null else MapData.height(tm)        # (the square's own floor: the ground at the town hall's door is a hand's breadth lower, in the fade of the Arroyuelo's cut)
 		var spot := func(un: Vector2, y: float) -> Vector3:
 			var w: Vector2 = tm + tu * un.x + tn * un.y
 			return Vector3(w.x, level + y, w.y)
@@ -6495,6 +6569,7 @@ func _run() -> void:
 	await _shot("0_title")
 	# the Plaza del Ayuntamiento
 	_check(not MapData.townhall.is_empty() and g.world._hands.size() == 5, "the town hall is hand-built and carries the town clock (and the four faces of the church tower keep time with it)")
+	await _plaza_checks()
 	var th: Dictionary = MapData.townhall
 	var th_m := Vector2(th["m"][0], th["m"][1])
 	var th_u := Vector2(th["u"][0], th["u"][1])
