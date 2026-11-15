@@ -1057,6 +1057,126 @@ func _petril_checks(walk := false) -> void:
 	_check(left < 0.6, "...and across it under the porch to the door of the church (%.1f m short)" % left)
 	g.player.p = was
 
+## The nursery school of the Calle del Palo (calasanz.gd): the house, its yard a step above the street behind its
+## wall and railings, and nothing of it in a street.
+func _calasanz_checks() -> void:
+	var cz = g.world.calasanz
+	_check(cz != null and cz.pieces > 900, "the nursery school of the Calle del Palo is built by hand (%d pieces)" % (cz.pieces if cz != null else 0))
+	if cz == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var lv: float = cz.level
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = cz.spot(a.x, a.y)
+		var q: Vector2 = cz.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, lv + h, p.y), Vector3(q.x, lv + h, q.y), 1)).is_empty()
+	# its wall and railings stop you all along the street and round both corners; so does its gate; and the house itself
+	var shut: bool = ray.call(Vector2(3.0, 8.0), Vector2(3.0, 1.0), 0.4) and ray.call(Vector2(30.0, 8.0), Vector2(30.0, 1.0), 0.9) and ray.call(Vector2(10.9, 8.0), Vector2(10.9, 1.0), 0.6)
+	shut = shut and ray.call(Vector2(-14.0, -2.0), Vector2(-6.0, -2.0), 0.6) and ray.call(Vector2(40.0, -6.0), Vector2(30.0, -6.0), 0.6) and ray.call(Vector2(5.0, 3.0), Vector2(5.0, -3.0), 1.5)
+	var street: float = MapData.height(cz.spot(12.0, 7.5))
+	var nearest := 99.0
+	for q in cz.yard:
+		nearest = minf(nearest, MapData.road_edge_dist(q))
+	var flat_lot := 0.0
+	for q in [Vector2(-4.0, -2.0), Vector2(12.0, 2.0), Vector2(30.0, -6.0), Vector2(12.0, 6.5), Vector2(-9.0, 6.5), Vector2(36.0, 6.5)]:
+		flat_lot = maxf(flat_lot, absf(MapData.height(cz.spot(q.x, q.y)) - street))
+	_check(shut and nearest >= 0.0 and flat_lot < 0.15 and absf(lv - street - cz.RAISE) < 0.05,
+		"its wall, its railings and its gate keep you out, and the house is solid; its yard is %.2f m above the street, on level ground (%.2f m at worst); nothing of it stands in a street (the nearest to the asphalt is %.1f m off)" % [lv - street, flat_lot, nearest])
+	_check(MapData.room_at(cz.spot(12.0, 2.0)) < 3.0 and cz.door.distance_to(cz.spot(10.9, 5.5)) < 0.1 and MapData.road_edge_dist(cz.door) > -1.5,
+		"the map knows its plot is taken (%.1f m of room in its yard), and its gate is on the pavement of the Calle del Palo" % MapData.room_at(cz.spot(12.0, 2.0)))
+
+## The old bridge of the Arroyuelo Medio as rebuilt by hand (puente.gd): the bed, its raised pavements, the houses of
+## the row level with them, and the demolition works that wait round it until the signatures stop them. `walk`: also
+## go on foot up the steps, across the bridge and down to the Calle de Matías Pérez, and let the works leave by
+## themselves. (What the story does with the bridge -- the demonstration, the signatures, the council's tape -- is
+## _firmas_checks and _puente_checks.)
+func _arroyuelo_checks(walk := false) -> void:
+	var b = g.bridge
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, c: Vector2, h: float) -> bool:
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(MapData.at(b.spot(a.x, a.y), h), MapData.at(b.spot(c.x, c.y), h), 1)).is_empty()
+	var was_works: bool = b.works
+	var was_auto: bool = b.auto
+	var was_closed: bool = b.closed()
+	b.auto = false
+	var floors := ""
+	var level_ok := true
+	for id in ["arroyuelo_34", "arroyuelo_36"]:
+		for h in MapData.houses:
+			if String(h["id"]) == id:
+				floors += "%s %.2f " % [id, float(h["base"]) - b.top]
+				level_ok = level_ok and (MapData.puente.is_empty() or (float(h["base"]) > b.top - 0.03 and float(h["base"]) < b.top + 0.25))      # (on it, or a doorstep above)
+	var east: float = MapData.foot(b.spot(4.0, -8.0)) - b.top
+	var west: float = MapData.foot(b.spot(-4.0, -8.0)) - b.top
+	var up_e: float = MapData.foot(b.spot(4.6, -30.0)) - MapData.height(b.spot(0.0, -30.0))
+	var up_w: float = MapData.foot(b.spot(-4.0, -30.0)) - MapData.height(b.spot(0.0, -30.0))
+	var deck: float = b.top - MapData.height(b.p)
+	_check(b.pieces > 120 and level_ok and absf(east) < 0.02 and absf(west) < 0.02 and up_e > 0.3 and up_e < 0.9 and absf(up_e - up_w) < 0.05 and deck > 0.8 and deck < 1.3
+		and absf(MapData.foot(b.spot(0.0, -8.0)) - MapData.height(b.spot(0.0, -8.0))) < 0.001,
+		"the old bridge is built by hand (%d pieces): its deck %.2f m over the bed, a raised pavement each side level with it (%.2f and %.2f m off) and %.2f m over the bed further up; the houses beside it stand on the pavement (%s)" % [b.pieces, deck, east, west, up_e, floors])
+	_check(ray.call(Vector2(0.0, -8.0), Vector2(4.2, -8.0), 0.4) and ray.call(Vector2(0.0, -8.0), Vector2(-4.2, -8.0), 0.4) and ray.call(Vector2(0.0, -25.0), Vector2(4.4, -25.0), 0.3)
+		and ray.call(Vector2(0.0, -4.0), Vector2(0.0, 4.0), 0.5) and not ray.call(Vector2(-2.6, 0.0), Vector2(2.6, 0.0), deck + 1.0),
+		"the walls of the pavements stop you in the bed, the bridge stops whatever comes along it, and its deck is clear between its parapets")
+	# the works: an excavator below the bridge, the fence and the truck up the bed; and nothing of them when they are gone
+	b.set_works(true)
+	await _frames(4)
+	var there: bool = b._works_node.visible and ray.call(Vector2(-2.9, 6.7), Vector2(3.6, 6.7), 1.0) and ray.call(Vector2(0.9, -14.0), Vector2(0.9, -17.5), 1.0) and ray.call(Vector2(-3.0, -23.0), Vector2(3.0, -23.0), 1.5)
+	b.set_works(false)
+	await _frames(4)
+	var gone: bool = not b._works_node.visible and not ray.call(Vector2(-2.9, 6.7), Vector2(3.6, 6.7), 1.0) and not ray.call(Vector2(0.9, -14.0), Vector2(0.9, -40.0), 1.0) and not ray.call(Vector2(-3.0, -23.0), Vector2(3.0, -23.0), 1.5)
+	var near_road := 99.0
+	var nearest := Vector2.ZERO
+	for q in b.yard:
+		for s in MapData.segs:
+			if MapData.drivable(s) and MapData.seg_point(s, q).distance_to(q) < near_road:
+				near_road = MapData.seg_point(s, q).distance_to(q)
+				nearest = Vector2((q - b.p).dot(b.across), (q - b.p).dot(b.u))
+	_check(there and gone and near_road > 1.6, "with the works: the excavator below the bridge, the site fence and the truck up the bed are there and solid; without: nothing of them is left; nothing of it all stands in the way of the traffic (%.1f m from the middle of the nearest street at the least, at %.1f, %.1f of its frame)" % [near_road, nearest.x, nearest.y])
+	if walk:
+		var back: Vector2 = g.player.p
+		b.close_off(false)
+		g.player.p = b.spot(4.4, 6.5)
+		await _frames(4)
+		var left: float = await _walk_at(b.spot(4.1, 1.0), 6.0)
+		var on_pav: float = g.player.global_position.y - b.top
+		var left2: float = await _walk_at(b.spot(4.1, 0.0), 2.0)
+		left2 = await _walk_at(b.spot(-4.3, 0.0), 8.0)
+		var on_far: float = g.player.global_position.y - b.top
+		var left3: float = await _walk_at(b.spot(-5.4, 0.1), 3.0)
+		left3 = await _walk_at(b.spot(-7.9, 0.1), 5.0)
+		var down: float = g.player.global_position.y - MapData.height(g.player.p)
+		_check(left < 0.6 and absf(on_pav) < 0.12 and left2 < 0.6 and absf(on_far) < 0.12 and left3 < 0.7 and absf(down) < 0.2,
+			"on foot: up the steps to the pavement (%.1f m short, %.2f m off its level), across the bridge to the corner (%.1f short, %.2f off) and down its steps to the Calle de Matías Pérez (%.1f short, %.2f over the ground)" % [left, on_pav, left2, on_far, left3, down])
+		# the works leave by themselves: the first morning after the signatures are in, with the player far away and not looking
+		var si_was: int = g.si
+		var stats_was: Dictionary = g.stats.duplicate()
+		b.set_works(true)
+		b.auto = true
+		g.si = g._idx("alberto_back") + 1
+		g.stats.erase("obra_fuera")
+		g.stats["obra_h"] = g._now_h() - 0.2
+		g.player.p = b.spot(0.0, -400.0)
+		await _frames(6)
+		var waits: bool = b.works                     # (far away, but it is not yet the morning after)
+		g.stats["obra_h"] = g._now_h() - 30.0
+		b._done_h = -1.0
+		g.player.p = b.spot(2.0, 20.0)
+		await _frames(6)
+		var seen: bool = b.works                      # (the morning after, but the player is standing there)
+		g.player.p = b.spot(0.0, -400.0)
+		await _frames(6)
+		var left_alone: bool = not b.works and g.stats.has("obra_fuera")
+		g.si = g._idx("alberto")
+		await _frames(6)
+		var again: bool = b.works and not g.stats.has("obra_fuera")
+		_check(waits and seen and left_alone and again, "the works wait until the first morning after the signatures are handed in, do not go while the player is there, are gone once the player is far away and not looking, and are back in a game begun again")
+		g.si = si_was
+		g.stats = stats_was
+		g.player.p = back
+	b.auto = was_auto
+	b.set_works(was_works)
+	b.close_off(was_closed)
+
 ## The old bullring (toros.gd), in its two states. `walk`: also go on foot into the restored ring by its door.
 func _toros_checks(walk := false) -> void:
 	var tr = g.world.toros
@@ -1427,7 +1547,7 @@ func _relief_checks() -> void:
 		["the cooperative", func(a: float, b: float) -> Vector2: return MapData.coop_point(lerpf(-40.0, 156.0, a), lerpf(-8.0, 152.0, b))],
 		["V.I.P.", func(a: float, b: float) -> Vector2: return (g.vip.WALL_A + g.vip.WALL_B) / 2.0 + Vector2(lerpf(-7.0, 7.0, a), lerpf(-7.0, 7.0, b))],
 		["V.I.P. inside", func(a: float, b: float) -> Vector2: return g.vip.INSIDE + Vector2(lerpf(-20.0, 20.0, a), lerpf(-12.0, 30.0, b))],
-		["Henry's", func(a: float, b: float) -> Vector2: return Vector2(-99.8, -82.9) + Vector2(lerpf(-5.0, 5.0, a), lerpf(-5.0, 5.0, b))]]
+		["Henry's", func(a: float, b: float) -> Vector2: return Vector2(-88.5, -71.4) + Vector2(lerpf(-5.0, 5.0, a), lerpf(-5.0, 5.0, b))]]
 	var ch = W.church
 	places.append(["the church", func(a: float, b: float) -> Vector2: return ch.spot(lerpf(-12.0, ch.L + 6.0, a), lerpf(-ch.D - 12.0, 12.0, b))])
 	for gar in g.garages:
@@ -5365,6 +5485,66 @@ func _run() -> void:
 			print("menu: opened %s, showing %s" % [page, g.menu.page])
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--calasanz"):      # just the nursery school of the Calle del Palo: its front, its gate, the yard with what is played on, the cabin, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(11.0)
+		var cz = g.world.calasanz
+		if cz == null:
+			print("CALASANZ FAILED (the map was baked without the school)")
+			get_tree().quit(1)
+			return
+		for v in [["frente", Vector2(11.7, 13.5), 2.3, Vector2(11.7, 0.0), 3.6, 75.0], ["puerta", Vector2(9.6, 8.6), 1.7, Vector2(11.4, 0.0), 2.6, 70.0], ["izquierda", Vector2(-2.0, 12.0), 1.9, Vector2(6.0, 0.0), 3.4, 75.0],
+				["derecha", Vector2(27.0, 12.5), 1.9, Vector2(17.0, 0.0), 3.4, 75.0], ["juegos", Vector2(-9.5, 8.5), 2.0, Vector2(-4.2, -3.0), 1.6, 70.0], ["juegos_cerca", Vector2(-6.4, 6.4), 2.4, Vector2(-4.4, -2.6), 1.2, 60.0],
+				["esquina", Vector2(-14.0, 6.0), 1.9, Vector2(-2.0, -3.0), 2.6, 75.0], ["caseta", Vector2(31.0, 10.0), 1.9, Vector2(26.5, -3.0), 2.2, 70.0], ["mural", Vector2(40.0, -2.0), 2.4, Vector2(23.4, -3.4), 2.4, 60.0],
+				["arco", Vector2(11.7, 5.6), 2.2, Vector2(11.7, -2.0), 2.0, 65.0], ["aire", Vector2(13.0, 26.0), 20.0, Vector2(12.0, -3.0), 1.0, 60.0], ["aire_juegos", Vector2(-10.0, 12.0), 11.0, Vector2(-3.5, -3.0), 0.5, 60.0]]:
+			var eye: Vector2 = cz.spot(v[1].x, v[1].y)
+			var at: Vector2 = cz.spot(v[3].x, v[3].y)
+			g.player.p = cz.spot(12.0, 60.0)
+			g.cam.position = Vector3(eye.x, cz.level - cz.RAISE + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, cz.level + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("calasanz_%s" % v[0])
+		g.phase = "free"
+		await _calasanz_checks()
+		print("CALASANZ %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--puente"):        # just the old bridge of the Arroyuelo Medio: with the works round it and the demonstration, then clean, from both ends of the bed, the corner, the deck, the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(11.0)
+		var br = g.bridge
+		br.auto = false
+		for clean in [false, true]:
+			br.set_works(not clean)
+			br.close_off(not clean)
+			br.dress(not clean)
+			for n in g.npcs:
+				if n.p.distance_to(br.p) < 70.0:
+					n.visible = (not clean) or not g.protesters.has(n)
+					n.sync()
+			await _frames(4)
+			for v in [["santo", Vector2(-0.7, -46.0), 1.7, Vector2(0.0, -10.0), 1.0, 55.0], ["cauce", Vector2(-2.3, -5.2), 1.6, Vector2(0.6, 0.0), 0.9, 70.0], ["acera", Vector2(4.1, -9.5), 2.75, Vector2(-0.5, 0.5), 1.3, 65.0],
+					["sur", Vector2(1.6, 14.5), 1.7, Vector2(0.0, 0.0), 1.2, 60.0], ["palo", Vector2(1.2, 26.0), 1.7, Vector2(0.0, 0.0), 1.2, 38.0], ["placeta", Vector2(-9.0, 5.0), 1.7, Vector2(-1.0, 0.8), 1.3, 65.0],
+					["encima", Vector2(2.8, 0.4), 2.8, Vector2(-3.0, -0.2), 2.0, 75.0], ["cochera", Vector2(-0.5, 9.0), 1.7, Vector2(5.0, 5.5), 1.6, 60.0], ["aire", Vector2(-1.0, 22.0), 17.0, Vector2(0.0, -2.0), 0.5, 60.0],
+					["aire_norte", Vector2(0.5, -50.0), 17.0, Vector2(0.0, -20.0), 0.5, 60.0]]:
+				g.player.p = br.spot(0.0, -70.0)
+				g.cam.position = MapData.at(br.spot(v[1].x, v[1].y), v[2])
+				g.cam.look_at(MapData.at(br.spot(v[3].x, v[3].y), v[4]))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("puente_%s_%s" % ["limpio" if clean else "obra", v[0]])
+		g.phase = "free"
+		await _arroyuelo_checks(true)
+		print("PUENTE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--toros"):         # just the old bullring: the ruin and then restored, from the three streets, from inside, from the air
 		shots = true
 		g.menu.close()
@@ -6121,8 +6301,8 @@ func _run() -> void:
 				var to := Vector2(float(v[3]), float(v[4]))
 				vcam.position = Vector3(from.x, MapData.height(from) + float(v[2]), from.y)
 				var look := Vector3(to.x, MapData.height(to) + float(v[5]), to.y)
-				if (label.begins_with("pt_") and g.world.petril != null) or (label.begins_with("pz_") and g.world.plaza != null) or (label.begins_with("ml_") and g.world.molino != null) or (label.begins_with("tr_") and g.world.toros != null):          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square; pz_...: in the Plaza del Ayuntamiento's)
-					var pt = g.world.petril if label.begins_with("pt_") else (g.world.plaza if label.begins_with("pz_") else (g.world.molino if label.begins_with("ml_") else g.world.toros))        # (ml_...: in the windmill's; tr_...: in the old bullring's)
+				if (label.begins_with("pt_") and g.world.petril != null) or (label.begins_with("pz_") and g.world.plaza != null) or (label.begins_with("ml_") and g.world.molino != null) or (label.begins_with("tr_") and g.world.toros != null) or (label.begins_with("cz_") and g.world.calasanz != null):          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square; pz_...: in the Plaza del Ayuntamiento's)
+					var pt = g.world.petril if label.begins_with("pt_") else (g.world.plaza if label.begins_with("pz_") else (g.world.molino if label.begins_with("ml_") else (g.world.toros if label.begins_with("tr_") else g.world.calasanz)))        # (ml_...: in the windmill's; tr_...: in the old bullring's; cz_...: in the nursery school's)
 					from = pt.spot(float(v[0]), float(v[1]))
 					to = pt.spot(float(v[3]), float(v[4]))
 					vcam.position = Vector3(from.x, pt.level + float(v[2]), from.y)
@@ -6910,6 +7090,8 @@ func _run() -> void:
 	await _plaza_checks()
 	await _molino_checks()
 	await _toros_checks()
+	await _arroyuelo_checks()
+	await _calasanz_checks()
 	var th: Dictionary = MapData.townhall
 	var th_m := Vector2(th["m"][0], th["m"][1])
 	var th_u := Vector2(th["u"][0], th["u"][1])

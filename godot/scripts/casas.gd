@@ -1093,6 +1093,8 @@ func _acera(L: float) -> void:
 		var x := L * i / n
 		var at := _on_map(x, 0.3)
 		var d: float = MapData.road_edge_dist(at) + 0.3
+		if _in_old_bed(at):                 # (the bed the old bridge crosses, and its raised pavements, are puente.gd's to pave)
+			d = 0.0
 		xs.append(x)
 		deep.append(d if d > 0.5 and d < 11.0 else 0.0)
 	for i in range(n):
@@ -1105,6 +1107,15 @@ func _acera(L: float) -> void:
 		quad(a, b, c, d2, "acera", Vector3.UP)
 		quad(_ground(xs[i], deep[i] - 0.2, 0.05), _ground(xs[i + 1], deep[i + 1] - 0.2, 0.05), _ground(xs[i + 1], deep[i + 1] + 0.02, 0.05), _ground(xs[i], deep[i] + 0.02, 0.05), 0xb9b4a8, Vector3.UP)       # the kerb
 		pavement += 1
+
+## whether a spot is in the stretch of the Arroyuelo Medio that is still the bed of the stream, wall to wall (puente.gd)
+func _in_old_bed(at: Vector2) -> bool:
+	var pu: Dictionary = MapData.puente
+	if pu.is_empty():
+		return false
+	var along := Vector2(pu["u"][0], pu["u"][1])
+	var rel: Vector2 = at - Vector2(pu["o"][0], pu["o"][1])
+	return absf(rel.dot(Vector2(along.y, -along.x))) < 8.0 and rel.dot(along) > -45.0 and rel.dot(along) < 8.0
 
 ## where a point of the frame that is set is on the map
 func _on_map(x: float, z: float) -> Vector2:

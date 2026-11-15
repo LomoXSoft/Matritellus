@@ -267,6 +267,17 @@ _toros_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'toros.gd')
 if not (os.path.exists(_toros_gd) and 'const READY := true' in open(_toros_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
     TOROS_RC, toros, toros_zone = None, {}, Polygon()
 
+# The nursery school of the Calle del Palo (godot/scripts/calasanz.gd; the user, 15 November 2026;
+# referencias/escuela_calasanz/): Catastro's part is not raised -- calasanz.gd builds the house, its yard and its
+# railings, on a level terrace. Its frame: the north-west corner of its front, x along the front, z out of it.
+CALASANZ_RC = '4194305VJ5649S'
+CALASANZ = {'o': (-109.41, -217.17), 'u': (0.6862, 0.7273)}
+calasanz_zone = Polygon([(CALASANZ['o'][0] + CALASANZ['u'][0] * x - CALASANZ['u'][1] * z, CALASANZ['o'][1] + CALASANZ['u'][1] * x + CALASANZ['u'][0] * z) for x, z in ((-8.5, 4.3), (38.3, 4.3), (28.8, -17.6), (-11.3, -8.4))])
+calasanz = {'o': list(CALASANZ['o']), 'u': list(CALASANZ['u'])}
+_calasanz_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'calasanz.gd')
+if not (os.path.exists(_calasanz_gd) and 'const READY := true' in open(_calasanz_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    CALASANZ_RC, calasanz, calasanz_zone = None, {}, Polygon()
+
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
 # the avenue and the compound lies to the east of it. Catastro parts and generic trees are kept out of that rectangle.
@@ -427,6 +438,7 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid == SALUD_RC: return                                   # ...and the health centre
     if bid == MOLINO_RC: return                                  # ...and the windmill with its yard
     if bid == TOROS_RC: return                                   # ...and the old bullring
+    if bid == CALASANZ_RC: return                                # ...and the nursery school of the Calle del Palo
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
     elif church_u.contains(c): style, h = 5, max(12.0, floors_c * 4.0)
@@ -585,9 +597,16 @@ if church:          # the church with its atrium, its little square and the park
 terrace(salud_poly.buffer(4.0))      # the health centre (salud.gd)
 if molino: terrace(molino_zone.buffer(3.0))      # the windmill and its yard (molino.gd)
 if toros: terrace(toros_zone.buffer(3.0))        # the old bullring and its lot (toros.gd)
+if calasanz:        # the nursery school and its yard (calasanz.gd). The street falls 3 m along its plot towards the Arroyuelo: it is
+    # levelled at the height of the street in front of its gate plus a hand, not at the middle of the plot -- that
+    # raised the crossroads of the Arroyuelo, a few metres from its corner, by 2.6 m, and the old stream's bed ran uphill to it.
+    _cu = CALASANZ['u']; _cg = (CALASANZ['o'][0] + _cu[0] * 12.0 - _cu[1] * 7.0, CALASANZ['o'][1] + _cu[1] * 12.0 + _cu[0] * 7.0)
+    terrace(calasanz_zone.buffer(1.0), float(hfun(*_cg)) + 0.25)
 for gdef, mouth in zip(garages, garage_mouths):       # the garages: the bay and its forecourt
     n = gdef['n']; terrace(frame_rect(gdef['m'], (n[1], -n[0]), n, -gdef['left'] - 3, gdef['right'] + 3, -gdef['d'] - 2, 13))
 for cx_, cz_, rad in ((195.6, 84.4, 10.0), (-99.8, -82.9, 9.0), (1800.0, -1350.0, 45.0)):      # V.I.P.'s front, Henry's, and the set of V.I.P.'s inside
+    # (Henry's terrace stays where the shop first stood, two doors on: it levels the shop's real place too, 16 m off,
+    # and moving it there pulled the slope round the crossroads with the Calle Real down by up to 2 m)
     terrace(Point(cx_, cz_).buffer(rad))
 SUNK = 2.0          # how far below the town hall's square the Arroyuelo runs past it
 if townhall:        # The square is level, but the old stream bed along its west side is not up there with it: the street
@@ -667,6 +686,43 @@ for st in RAISED:
         parts[i]['base'] += st['h0'] + (st['h1'] - st['h0']) * s_ / sl.length
         _raised_n += 1
 print('raised pavements of the Arroyuelo: %d houses lifted to meet them' % _raised_n)
+# The old bridge of the Arroyuelo Medio and the stretch of bed it crosses (godot/scripts/puente.gd; the user, 15 November
+# 2026; referencias/puente_arroyuelo/, tools/puente/): from the Calle del Santo down to the corner of Matías Pérez the
+# street is the bed of the old stream, between two raised pavements; puente.gd builds them and the bridge. Its frame: the
+# middle of the bridge, x across the bed towards the row of the even numbers, z down the bed. Here: how high the
+# pavements stand (level with the deck from PUENTE_FLAT[0] down; further up, following the bed), and the houses of the
+# east row that stood lower raised to the pavement at the upper end of their fronts, so that their doors open on to it.
+PUENTE = {'o': (-149.61, -261.23), 'u': (0.443, 0.896)}
+PUENTE_RISE = 1.05                                  # the deck over the bed
+PUENTE_FLAT = (-14.6, 3.6)
+PUENTE_NORTH = ((-40.0, 0.55), (-27.0, 0.55))       # further up the bed: z, how far over it
+puente = {}
+_puente_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'puente.gd')
+if os.path.exists(_puente_gd) and 'const READY := true' in open(_puente_gd, encoding='utf-8').read():
+    _po, _pu = PUENTE['o'], PUENTE['u']
+    _pa = (_pu[1], -_pu[0])
+    def _pw(x, z): return _po[0] + _pa[0] * x + _pu[0] * z, _po[1] + _pa[1] * x + _pu[1] * z
+    def _pl(wx, wz): return (wx - _po[0]) * _pa[0] + (wz - _po[1]) * _pa[1], (wx - _po[0]) * _pu[0] + (wz - _po[1]) * _pu[1]
+    _ptop = float(hfun(*_pw(0.0, 0.0))) + PUENTE_RISE
+    _ppav = [(z, float(hfun(*_pw(0.0, z))) + r) for z, r in PUENTE_NORTH] + [(PUENTE_FLAT[0], _ptop), (PUENTE_FLAT[1], _ptop)]
+    _set = {}
+    for i, ks in _by_part.items():
+        if parts[i].get('hand') and not parts[i]['hand'].startswith('arroyuelo_'): continue      # (a house of another street that only backs on to the bed keeps its own level)
+        zs = []
+        for k in ks:
+            a_, b_ = _pl(ex1[k], ez1[k]), _pl(ex2[k], ez2[k])
+            if 3.4 < (a_[0] + b_[0]) / 2 < 8.6 and -38.0 < (a_[1] + b_[1]) / 2 < 10.5 and abs(a_[1] - b_[1]) > abs(a_[0] - b_[0]): zs += [a_[1], b_[1]]
+        if zs: _set[i] = float(np.interp(min(zs), [q[0] for q in _ppav], [q[1] for q in _ppav]))
+        if i in _set and _set[i] <= parts[i]['base']: del _set[i]       # (a house is only ever raised to the pavement: one that stands higher has its other street to meet)
+    for i, lv in list(_set.items()):                # (a house built by hand is one house: all its parts go with its front)
+        if parts[i].get('hand'):
+            for j, p in enumerate(parts):
+                if p.get('hand') == parts[i]['hand']: _set[j] = max(lv, _set.get(j, lv))
+    for i, lv in sorted(_set.items()):
+        print('the old bridge: %s from %.2f to %.2f' % (parts[i].get('hand') or 'a house of the east row', parts[i]['base'], lv))
+        parts[i]['base'] = lv
+    puente = {'o': list(_po), 'u': list(_pu), 'top': r2(_ptop), 'pav': [[z, r2(h)] for z, h in _ppav]}
+    print('the old bridge: deck at %.2f, pavements %s; %d parts of houses set level with them' % (_ptop, [(z, round(h, 2)) for z, h in _ppav], len(_set)))
 _fr = np.array([p.get('front_range', 0.0) for p in parts])
 print('houses that face a street: %d (%d took a new level from it); the street falls >0.6 m along the front of %d, >1 m of %d, >1.5 m of %d' % (len(_by_part), _moved, (_fr > 0.6).sum(), (_fr > 1).sum(), (_fr > 1.5).sum()))
 heights = np.array([p['base'] + p['h'] for p in parts])
@@ -780,6 +836,7 @@ _n_trees = len(trees)
 trees = [t for t in trees if not petril_zone.contains(Point(t[0], t[1]))]      # the Petril plants its own (a tree and its cypresses)
 trees = [t for t in trees if not molino_zone.contains(Point(t[0], t[1]))]      # ...and so does the mill's yard
 trees = [t for t in trees if not toros_zone.contains(Point(t[0], t[1]))]       # ...and the bullring's lot
+trees = [t for t in trees if not calasanz_zone.buffer(1.5).contains(Point(t[0], t[1]))]      # ...and the school's yard
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
@@ -792,7 +849,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

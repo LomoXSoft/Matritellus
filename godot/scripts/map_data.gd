@@ -38,6 +38,8 @@ var church: Dictionary = {}      # the parish church's frame: {o: south-west cor
 var petril: Dictionary = {}      # the Petril's frame (petril.gd): {o: south-west corner of its church, u: east along the church's front}
 var molino: Dictionary = {}      # the windmill's (molino.gd): {o: the middle of the mill, u: east along the north wall of its corral}; empty on a map baked without it
 var toros: Dictionary = {}       # the old bullring's (toros.gd): {o: the middle of its ring}; empty on a map baked without it
+var calasanz: Dictionary = {}    # the nursery school of the Calle del Palo's (calasanz.gd): {o: the north-west corner of its front, u: along the front}; empty on a map baked without it
+var puente: Dictionary = {}      # the old bridge of the Arroyuelo Medio's (puente.gd): {o: its middle, u: down the bed, top: its deck, pav: [[z, level], ...] the pavements}; empty on a map baked without it
 var decks: Array = []            # things people walk over: {o, ax: along it, half, wide (half-width), top: its height, ramp} (the old bridge)
 var _blocked := {}               # stretches of street no car can use (Seg -> true)
 var garages: Array = []          # the garages you drive into: {id, m: doorway [x, z], n: out into the street, w, d, left, right}
@@ -88,6 +90,8 @@ func _ready() -> void:
 	petril = data.get("petril", {})
 	molino = data.get("molino", {})
 	toros = data.get("toros", {})
+	puente = data.get("puente", {})
+	calasanz = data.get("calasanz", {})
 	wall_y = data.get("wall_y", [])
 	looks = data.get("looks", [])
 	houses = data.get("houses", [])
@@ -257,14 +261,15 @@ func block(s: Seg) -> void:
 ## A deck is {o, ax, half, wide, top, ramp}: a strip `half` long each way along ax and `wide` to each side, that rises
 ## from the ground to `top` over `ramp` at both ends. With "low" it is a flight of steps instead: from that level at
 ## its -ax end up to `top` over `ramp`, and level from there on. With "poly" (and o, r2: a circle round it) it is a
-## level floor of that outline (the raised pavement and the square above the Arroyuelo, plaza.gd).
+## level floor of that outline (the raised pavement and the square above the Arroyuelo, plaza.gd) -- or, with "grad"
+## (how much it rises to the metre, as a vector on the map), one that slopes: `top` is its height at o (puente.gd).
 func foot(p: Vector2) -> float:
 	var h := height(p)
 	for d in decks:
 		var rel: Vector2 = p - (d["o"] as Vector2)
 		if d.has("poly"):
 			if rel.length_squared() < float(d["r2"]) and Geometry2D.is_point_in_polygon(p, d["poly"]):
-				return float(d["top"])
+				return float(d["top"]) + (rel.dot(d["grad"]) if d.has("grad") else 0.0)
 			continue
 		var ax: Vector2 = d["ax"]
 		var s := rel.dot(ax)

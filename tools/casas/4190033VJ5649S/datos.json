@@ -1,0 +1,130 @@
+{
+ "rc": "4190033VJ5649S",
+ "record": {
+  "address": "CL RAMON CAJAL 19 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "36",
+  "year": "2010",
+  "units": [
+   {
+    "use": "COMERCIO",
+    "floor": "00",
+    "door": "01",
+    "m2": "18"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "18"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4190033VJ5649S_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 18.1,
+   "ring": [
+    [
+     -150.04,
+     131.73
+    ],
+    [
+     -154.29,
+     131.83
+    ],
+    [
+     -154.5,
+     127.63
+    ],
+    [
+     -150.11,
+     127.55
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      -150.04,
+      131.73
+     ],
+     "b": [
+      -154.29,
+      131.83
+     ],
+     "len": 4.25,
+     "out": [
+      0.024,
+      1.0
+     ],
+     "street": "Calle de Ramón y Cajal",
+     "to_centre": 4.33
+    },
+    {
+     "a": [
+      -154.29,
+      131.83
+     ],
+     "b": [
+      -154.5,
+      127.63
+     ],
+     "len": 4.21,
+     "out": [
+      -0.999,
+      0.05
+     ],
+     "street": "Calle de Ramón y Cajal",
+     "to_centre": 2.19
+    },
+    {
+     "a": [
+      -154.5,
+      127.63
+     ],
+     "b": [
+      -150.11,
+      127.55
+     ],
+     "len": 4.39,
+     "out": [
+      -0.018,
+      -1.0
+     ],
+     "street": "Calle de Ramón y Cajal",
+     "to_centre": 4.36
+    },
+    {
+     "a": [
+      -150.11,
+      127.55
+     ],
+     "b": [
+      -150.04,
+      131.73
+     ],
+     "len": 4.18,
+     "out": [
+      1.0,
+      -0.017
+     ],
+     "street": "",
+     "to_centre": 6.51
+    }
+   ],
+   "ground": [
+    0.59,
+    0.91
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": -163.49701973556205,
+  "z0": 118.54818173867822,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

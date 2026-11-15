@@ -1,0 +1,26 @@
+Models of the demolition works that wait by the old bridge of the Arroyuelo Medio (godot/scripts/puente.gd), all from
+OpenGameArt.org, downloaded 2026-11-15. All three sets are Creative Commons Zero (CC0 1.0, public domain): free to use,
+credit not required -- and given gladly.
+
+obra.glb  --  readied with tools/blender/obra.py; its pieces, and where each comes from:
+
+    excavadora_a, excavadora_b  --  "Excavator" by Iacox  --  CC0 1.0
+        https://opengameart.org/content/excavator
+        a wheeled excavator, taken at two moments of its animation (arm folded for the road; arm raised and turned)
+
+    camion, contenedor, contenedor_b, bidon, tablones  --  "3D House Construction Site (LowPoly, CC0)" by Majadroid (Maik Hoffmann, www.majadroid.com)  --  CC0 1.0
+        https://opengameart.org/content/3d-house-construction-site-lowpoly-cc0
+        a tipper truck (its red cab made white: in this game only one car is red), two skips, a barrel, a stack of planks;
+        their colours are the set's palette, by Imphenzia (www.imphenzia.com)
+
+    cono  --  "Construction Site Kit" by Silverknot  --  CC0 1.0
+        https://opengameart.org/content/construction-site-kit
+        a traffic cone
+
+What was done to them: the excavator's parts joined into one mesh at each of the two poses, set on the ground under its
+wheels, made its real size (x 1.65: the cab's roof at 3 m), lightened from 23,500 to about 9,000 triangles, its
+materials reduced to plain colours (the photograph packed in its file is not used); every piece set standing at the
+origin with its front towards +z. The downloads as they came are in tools/descargas/oga_excavadora/,
+tools/descargas/oga_obra_majadroid/ and tools/descargas/oga_obra_silverknot/.
+
+The yellow barriers, the site fences and the boards of danger are built by puente.gd itself.
