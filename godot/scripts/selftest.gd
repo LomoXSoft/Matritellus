@@ -1048,6 +1048,59 @@ func _petril_checks(walk := false) -> void:
 	_check(left < 0.6, "...and across it under the porch to the door of the church (%.1f m short)" % left)
 	g.player.p = was
 
+## The windmill and its yard (molino.gd). `walk`: also go in on foot by the red door and round to the door of the mill
+## (left out of the full run).
+func _molino_checks(walk := false) -> void:
+	var ml = g.world.molino
+	_check(ml != null and ml.pieces > 500 and g.world.mill_blades == ml.sails and ml.sails.get_child_count() >= 1,
+		"the windmill and its yard are built by hand: the tower, its cap and sails, the wall, the corral (%d pieces)" % (ml.pieces if ml != null else 0))
+	if ml == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var lv: float = ml.level
+	var was_turn: float = ml.sails.rotation.z
+	await _frames(20)
+	_check(absf(angle_difference(ml.sails.rotation.z, was_turn)) > 0.02, "its sails turn")
+	# what must stop you: the wall from the street, the tower, the corral from the street and from the yard, a shed, the wall on the fields, the old gateway (shut)
+	var blocked := 0
+	var ways: Array = [[Vector2(-15.0, 1.0), Vector2(-9.0, 1.0)], [Vector2(-7.0, 0.6), Vector2(0.0, 0.0)], [Vector2(-15.0, 23.0), Vector2(-7.0, 23.0)], [Vector2(1.5, 12.5), Vector2(1.5, 20.0)],
+		[Vector2(-8.0, -11.5), Vector2(-8.0, -17.0)], [Vector2(9.0, 1.0), Vector2(17.0, 1.0)], [Vector2(-16.0, -24.0), Vector2(-9.0, -24.0)]]
+	for way in ways:
+		var a: Vector2 = ml.spot(way[0].x, way[0].y)
+		var b: Vector2 = ml.spot(way[1].x, way[1].y)
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, lv + 0.4, a.y), Vector3(b.x, lv + 0.4, b.y), 1)).is_empty():
+			blocked += 1
+		else:
+			print("  molino: nothing in the way from %s to %s" % [str(way[0]), str(way[1])])
+	# ...and what must not: the red door (it stands open), the path from it, the threshing floor
+	var open := 0
+	var lanes: Array = [[Vector2(-15.0, ml.RED_DOOR), Vector2(-10.2, ml.RED_DOOR)], [Vector2(-4.0, -11.9), Vector2(-2.0, -4.7)], [Vector2(-8.5, 6.0), Vector2(9.0, 6.0)]]
+	for lane in lanes:
+		var a2: Vector2 = ml.spot(lane[0].x, lane[0].y)
+		var b2: Vector2 = ml.spot(lane[1].x, lane[1].y)
+		if space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a2.x, lv + 0.9, a2.y), Vector3(b2.x, lv + 0.9, b2.y), 1)).is_empty():
+			open += 1
+		else:
+			print("  molino: something in the way from %s to %s" % [str(lane[0]), str(lane[1])])
+	_check(blocked == ways.size() and open == lanes.size(), "its walls, its tower and its corral are solid (%d of %d ways blocked); the red door, the path and the threshing floor are open (%d of %d)" % [blocked, ways.size(), open, lanes.size()])
+	var nearest := 99.0
+	for q in ml.yard:
+		nearest = minf(nearest, MapData.road_edge_dist(q))
+	var flat_yard: float = 0.0
+	for q in [Vector2(0.0, 5.0), Vector2(-9.0, -8.0), Vector2(8.0, -6.0), Vector2(0.0, 14.0), Vector2(-13.5, 0.0)]:
+		flat_yard = maxf(flat_yard, absf(MapData.height(ml.spot(q.x, q.y)) - lv))
+	_check(ml.yard.size() >= 30 and nearest >= 0.0 and flat_yard < 0.12, "nothing of it stands in the street (of %d walls, posts and trees the nearest to the asphalt is %.1f m off) and its yard is level (%.2f m at worst)" % [ml.yard.size(), nearest, flat_yard])
+	if not walk:
+		return
+	var was: Vector2 = g.player.p
+	g.player.p = ml.spot(-15.0, ml.RED_DOOR)
+	await _frames(3)
+	var left: float = await _walk_at(ml.spot(-9.9, ml.RED_DOOR - 0.3), 6.0)
+	_check(left < 0.6 and absf(g.player.global_position.y - lv) < 0.1, "on foot you go in from the street by the red door (%.1f m short)" % left)
+	left = await _walk_at(ml.door, 8.0)
+	_check(left < 0.8, "...and across the threshing floor to the door of the mill (%.1f m short)" % left)
+	g.player.p = was
+
 ## The Plaza del Ayuntamiento and the town hall (plaza.gd). `walk`: also go on foot under the arches to the main door,
 ## up the wide steps from the Arroyuelo's pavement, and up on to the bandstand (left out of the full run).
 func _plaza_checks(walk := false) -> void:
@@ -5153,6 +5206,40 @@ func _run() -> void:
 			print("menu: opened %s, showing %s" % [page, g.menu.page])
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--molino"):        # just the windmill and its yard: from the streets round it, from inside, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(11.0)
+		var ml = g.world.molino
+		if ml == null:
+			print("MOLINO FAILED (the map was baked without the mill's yard)")
+			get_tree().quit(1)
+			return
+		for v in [["calle_norte", Vector2(-16.8, -31.0), 1.7, Vector2(-6.0, -4.0), 6.0, 70.0], ["calle_frente", Vector2(-17.2, 6.0), 1.7, Vector2(0.0, 0.0), 7.5, 75.0], ["calle_sur", Vector2(-16.2, 37.0), 1.7, Vector2(-6.0, 12.0), 5.0, 70.0],
+				["porton", Vector2(-17.5, 17.2), 1.7, Vector2(-11.0, 17.4), 2.6, 75.0], ["portada", Vector2(-18.8, -23.6), 1.7, Vector2(-12.7, -24.0), 2.4, 70.0], ["puerta_roja", Vector2(-15.8, -4.8), 1.7, Vector2(-11.0, -7.4), 1.6, 65.0],
+				["era", Vector2(-9.4, -8.6), 1.7, Vector2(0.0, 0.0), 6.6, 75.0], ["puerta", Vector2(-5.2, -10.0), 1.7, Vector2(-1.4, -3.3), 2.6, 65.0], ["corral", Vector2(2.5, 3.6), 1.7, Vector2(-1.0, 17.0), 3.6, 80.0],
+				["este", Vector2(60.0, 1.0), 2.5, Vector2(0.0, 0.0), 6.4, 40.0], ["aire", Vector2(-27.0, -32.0), 24.0, Vector2(0.0, 6.0), 2.0, 60.0]]:
+			var eye: Vector2 = ml.spot(v[1].x, v[1].y)
+			var at: Vector2 = ml.spot(v[3].x, v[3].y)
+			g.player.p = ml.spot(-16.5, 70.0)
+			g.cam.position = Vector3(eye.x, ml.level + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, ml.level + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("molino_" + v[0])
+		var over: Vector2 = ml.spot(0.0, 2.0)
+		g.cam.fov = 55.0
+		g.cam.position = Vector3(over.x, ml.level + 70.0, over.y)
+		g.cam.look_at(Vector3(over.x, ml.level, over.y), Vector3(0, 0, -1))        # north up, like the aerial photograph
+		await _frames(6)
+		await _shot("molino_above")
+		g.phase = "free"
+		await _molino_checks(true)
+		print("MOLINO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--plaza"):         # just the Plaza del Ayuntamiento and the town hall: from all round, and straight down like the aerial photo
 		shots = true
 		g.menu.close()
@@ -5838,8 +5925,8 @@ func _run() -> void:
 				var to := Vector2(float(v[3]), float(v[4]))
 				vcam.position = Vector3(from.x, MapData.height(from) + float(v[2]), from.y)
 				var look := Vector3(to.x, MapData.height(to) + float(v[5]), to.y)
-				if (label.begins_with("pt_") and g.world.petril != null) or (label.begins_with("pz_") and g.world.plaza != null):          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square; pz_...: in the Plaza del Ayuntamiento's)
-					var pt = g.world.petril if label.begins_with("pt_") else g.world.plaza
+				if (label.begins_with("pt_") and g.world.petril != null) or (label.begins_with("pz_") and g.world.plaza != null) or (label.begins_with("ml_") and g.world.molino != null):          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square; pz_...: in the Plaza del Ayuntamiento's)
+					var pt = g.world.petril if label.begins_with("pt_") else (g.world.plaza if label.begins_with("pz_") else g.world.molino)        # (ml_...: in the windmill's)
 					from = pt.spot(float(v[0]), float(v[1]))
 					to = pt.spot(float(v[3]), float(v[4]))
 					vcam.position = Vector3(from.x, pt.level + float(v[2]), from.y)
@@ -6570,6 +6657,7 @@ func _run() -> void:
 	# the Plaza del Ayuntamiento
 	_check(not MapData.townhall.is_empty() and g.world._hands.size() == 5, "the town hall is hand-built and carries the town clock (and the four faces of the church tower keep time with it)")
 	await _plaza_checks()
+	await _molino_checks()
 	var th: Dictionary = MapData.townhall
 	var th_m := Vector2(th["m"][0], th["m"][1])
 	var th_u := Vector2(th["u"][0], th["u"][1])

@@ -10,6 +10,7 @@ const CoopS = preload("res://scripts/coop.gd")
 const IglesiaS = preload("res://scripts/iglesia.gd")
 const SaludS = preload("res://scripts/salud.gd")
 const PetrilS = preload("res://scripts/petril.gd")
+const MolinoS = preload("res://scripts/molino.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Fachadas = preload("res://scripts/fachadas.gd")
@@ -69,6 +70,7 @@ var church                      # the parish church (iglesia.gd)
 var salud                       # the health centre (salud.gd)
 var petril                      # the Petril: the old convent, its church and their little square (petril.gd)
 var plaza                       # the Plaza del Ayuntamiento (plaza.gd), for the self-test
+var molino                      # the windmill and its yard, when built by hand (molino.gd)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
@@ -1187,8 +1189,15 @@ func fell_tree(i: int) -> Dictionary:
 	t["shape"].set_deferred("disabled", true)
 	return t
 
-# ---------------- Molino del Tío Genaro ----------------
+# ---------------- the windmill ----------------
+## The "Molino del Tío Gerardo", with its yard and its corral: built by hand (molino.gd) when the map was baked with
+## that plot left clear; on an older map, a plain white tower with four sails where the map says the mill is.
 func _windmill() -> void:
+	if not MapData.molino.is_empty():
+		molino = MolinoS.new()
+		molino.build(self)
+		mill_blades = molino.sails          # (game.gd turns them)
+		return
 	var m := MapData.poi("Molino")
 	var g := Node3D.new()
 	g.position = MapData.at(m, -0.5)

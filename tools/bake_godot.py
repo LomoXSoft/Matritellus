@@ -202,6 +202,19 @@ _petril_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'petril.gd')
 if not (os.path.exists(_petril_gd) and 'const READY := true' in open(_petril_gd, encoding='utf-8').read()):      # (not built yet: the convent stays an ordinary building)
     PETRIL_PARTS, petril, petril_zone = {}, {}, Polygon()
 
+# The windmill and its yard on the Calle de Dulcinea del Toboso (godot/scripts/molino.gd; the user, 15 November 2026;
+# referencias/molino_tio_gerardo/). Catastro's parts of its parcel are not raised at all -- one of them, a circle, is
+# the mill drawn eleven metres from where it stands -- and molino.gd builds the lot on a level terrace. Its frame: the
+# middle of the mill, u east along the north wall of its corral. Nothing of the town's own grows inside its walls.
+MOLINO_RC = '3998402VJ5639N'
+MOLINO = {'o': (-278.0, -729.1), 'u': (0.96823, 0.25006)}
+def molino_at(s, t, o=MOLINO['o'], u=MOLINO['u']): return (o[0] + u[0] * s - u[1] * t, o[1] + u[1] * s + u[0] * t)      # t: metres south of the mill
+molino_zone = Polygon([molino_at(*q) for q in ((-13.2, -26.2), (2.5, -30.5), (9.5, -18.0), (13.9, -8.0), (14.0, 30.0), (-10.9, 30.0))])
+molino = {'o': list(MOLINO['o']), 'u': list(MOLINO['u'])}
+_molino_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'molino.gd')
+if not (os.path.exists(_molino_gd) and 'const READY := true' in open(_molino_gd, encoding='utf-8').read()):      # (not built yet: the plot stays ordinary buildings)
+    MOLINO_RC, molino, molino_zone = None, {}, Polygon()
+
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
 # the avenue and the compound lies to the east of it. Catastro parts and generic trees are kept out of that rectangle.
@@ -357,6 +370,7 @@ def add_part(g, bid, floors, look=None, hand=None):
     if church_zone is not None and church_zone.contains(c): return      # ...and the parish church
     if coop_keeps_clear(c.x, c.y): return                        # ...and so is the cooperative
     if bid == SALUD_RC: return                                   # ...and the health centre
+    if bid == MOLINO_RC: return                                  # ...and the windmill with its yard
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
     elif church_u.contains(c): style, h = 5, max(12.0, floors_c * 4.0)
@@ -505,6 +519,7 @@ if coop:            # the cooperative and its stretch of avenue (coop.gd)
 if church:          # the church with its atrium, its little square and the parking along its north wall (iglesia.gd)
     u = church['u']; terrace(frame_rect(church['o'], u, (-u[1], u[0]), -16, church['len'] + 10, -church['wid'] - 16, 16))
 terrace(salud_poly.buffer(4.0))      # the health centre (salud.gd)
+if molino: terrace(molino_zone.buffer(3.0))      # the windmill and its yard (molino.gd)
 for gdef, mouth in zip(garages, garage_mouths):       # the garages: the bay and its forecourt
     n = gdef['n']; terrace(frame_rect(gdef['m'], (n[1], -n[0]), n, -gdef['left'] - 3, gdef['right'] + 3, -gdef['d'] - 2, 13))
 for cx_, cz_, rad in ((195.6, 84.4, 10.0), (-99.8, -82.9, 9.0), (1800.0, -1350.0, 45.0)):      # V.I.P.'s front, Henry's, and the set of V.I.P.'s inside
@@ -698,6 +713,7 @@ if church:          # the church plants its own
     trees = [t for t in trees if not _yard.contains(Point(t[0], t[1]))]
 _n_trees = len(trees)
 trees = [t for t in trees if not petril_zone.contains(Point(t[0], t[1]))]      # the Petril plants its own (a tree and its cypresses)
+trees = [t for t in trees if not molino_zone.contains(Point(t[0], t[1]))]      # ...and so does the mill's yard
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
@@ -710,7 +726,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)
