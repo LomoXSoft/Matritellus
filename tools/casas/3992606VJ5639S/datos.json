@@ -1,0 +1,199 @@
+{
+ "rc": "3992606VJ5639S",
+ "record": {
+  "address": "CL SAN JOSE 1 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "310",
+  "year": "1980",
+  "units": [
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "01",
+    "m2": "10"
+   },
+   {
+    "use": "COMERCIO",
+    "floor": "00",
+    "door": "02",
+    "m2": "145"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "155"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "3992606VJ5639S_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 133.7,
+   "ring": [
+    [
+     -302.17,
+     14.32
+    ],
+    [
+     -302.06,
+     9.69
+    ],
+    [
+     -302.41,
+     8.24
+    ],
+    [
+     -301.65,
+     3.82
+    ],
+    [
+     -282.37,
+     8.19
+    ],
+    [
+     -282.4,
+     11.47
+    ],
+    [
+     -293.51,
+     12.77
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      -302.17,
+      14.32
+     ],
+     "b": [
+      -302.06,
+      9.69
+     ],
+     "len": 4.63,
+     "out": [
+      -1.0,
+      -0.024
+     ],
+     "street": "Calle de Santo Domingo",
+     "to_centre": 5.18
+    },
+    {
+     "a": [
+      -302.06,
+      9.69
+     ],
+     "b": [
+      -302.41,
+      8.24
+     ],
+     "len": 1.49,
+     "out": [
+      -0.972,
+      0.235
+     ],
+     "street": "Calle de Santo Domingo",
+     "to_centre": 8.2
+    },
+    {
+     "a": [
+      -302.41,
+      8.24
+     ],
+     "b": [
+      -301.65,
+      3.82
+     ],
+     "len": 4.48,
+     "out": [
+      -0.986,
+      -0.169
+     ],
+     "street": "Calle de San José",
+     "to_centre": 4.7
+    },
+    {
+     "a": [
+      -301.65,
+      3.82
+     ],
+     "b": [
+      -282.37,
+      8.19
+     ],
+     "len": 19.77,
+     "out": [
+      0.221,
+      -0.975
+     ],
+     "street": "Calle de San José",
+     "to_centre": 2.38
+    },
+    {
+     "a": [
+      -282.37,
+      8.19
+     ],
+     "b": [
+      -282.4,
+      11.47
+     ],
+     "len": 3.28,
+     "out": [
+      1.0,
+      0.009
+     ],
+     "street": "Calle de Santo Domingo",
+     "to_centre": 3.85
+    },
+    {
+     "a": [
+      -282.4,
+      11.47
+     ],
+     "b": [
+      -293.51,
+      12.77
+     ],
+     "len": 11.19,
+     "out": [
+      0.116,
+      0.993
+     ],
+     "street": "Calle de Santo Domingo",
+     "to_centre": 2.57
+    },
+    {
+     "a": [
+      -293.51,
+      12.77
+     ],
+     "b": [
+      -302.17,
+      14.32
+     ],
+     "len": 8.8,
+     "out": [
+      0.176,
+      0.984
+     ],
+     "street": "Calle de Santo Domingo",
+     "to_centre": 2.91
+    }
+   ],
+   "ground": [
+    -3.69,
+    -2.31
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": -311.41015722575156,
+  "z0": -5.176174909805567,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

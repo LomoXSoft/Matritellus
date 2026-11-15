@@ -3,6 +3,7 @@ extends Node3D
 ## Street furniture stands frozen until a car touches it, then becomes a loose rigid body (layer 32) that tumbles away.
 
 const Parts = preload("res://scripts/parts.gd")
+const AcerasAltas = preload("res://scripts/aceras_altas.gd")
 const CELL := 8.0
 
 var game
@@ -349,7 +350,7 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := f
 	b.freeze = true
 	b.collision_layer = 16            # only people on foot bump into standing furniture
 	b.collision_mask = 0
-	b.position = Vector3(p.x, MapData.foot(p), p.y) if on_floor else MapData.at(p)
+	b.position = Vector3(p.x, MapData.foot(p), p.y) if (on_floor or AcerasAltas.on(p)) else MapData.at(p)      # (on a high pavement: on its floor, aceras_altas.gd)
 	b.rotation.y = heading
 	b.set_meta("p", p)
 	b.set_meta("kind", kind)

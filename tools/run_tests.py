@@ -2,9 +2,12 @@
 
     python tools/run_tests.py                     the full run (headless, ~12 min)
     python tools/run_tests.py sabotaje traza      one mode, with its extra flags (--selftest --sabotaje --traza)
-    python tools/run_tests.py radio shots --window   a picture mode, in a window (1280x720)
+    python tools/run_tests.py radio shots         a picture mode, in a window (1280x720)
     python tools/run_tests.py grua --repeat 3     the same mode three times (for intermittent failures)
-    options: --timeout SECONDS (default 1500 for the full run, 600 for a mode), --window
+    options: --timeout SECONDS (default 1500 for the full run, 600 for a mode), --window, --headless
+
+A picture mode (its block in selftest.gd starts with `shots = true`, or --shots, or vistas=) gets the window by
+itself: headless it would print nothing until the timeout. --headless forces it headless all the same.
 
 The log goes to logs/selftest_<mode>_<time>.log. What is printed: the result line, how many checks passed, every
 failing check, the script errors (each once), how long it took and where the log is. A parse error stops the run at
@@ -99,19 +102,32 @@ def run_once(modes: list, window: bool, timeout: float) -> int:
     return 0 if (not fails and not errors and " OK (" in result) else 1
 
 
+def needs_window(src: str, main_mode: str, modes: list) -> bool:
+    """A mode that takes pictures: its block in selftest.gd sets `shots = true` at once, or --shots / vistas= is asked for.
+    Headless, those print nothing and sit there until the timeout."""
+    if "shots" in modes or main_mode == "vistas":
+        return True
+    at = src.find('has("--%s")' % main_mode)
+    if at < 0:
+        return False
+    following = src[at:].split("\n")[1:3]
+    return any(l.strip().startswith("shots = true") for l in following)
+
+
 def main() -> int:
     argv = sys.argv[1:]
     if "-h" in argv or "--help" in argv:
         print(__doc__)
         return 0
     window = "--window" in argv
+    forced_headless = "--headless" in argv
     repeat = 1
     timeout = None
     modes = []
     i = 0
     while i < len(argv):
         a = argv[i]
-        if a == "--window":
+        if a in ("--window", "--headless"):
             pass
         elif a == "--repeat":
             repeat = int(argv[i + 1]); i += 1
@@ -127,6 +143,9 @@ def main() -> int:
         if '"--%s"' % main_mode not in src and '"--%s=' % main_mode not in src:
             print('unknown mode "%s": selftest.gd has no "--%s" (see the has("--...") lines in _run)' % (main_mode, main_mode))
             return 2
+        if not window and not forced_headless and needs_window(src, main_mode, modes):
+            window = True
+            print("(a picture mode: it runs in a window; headless it would print nothing until the timeout. --headless to force it)")
     if timeout is None:
         timeout = 600.0 if modes else 1500.0
     worst = 0

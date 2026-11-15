@@ -39,7 +39,11 @@ var petril: Dictionary = {}      # the Petril's frame (petril.gd): {o: south-wes
 var molino: Dictionary = {}      # the windmill's (molino.gd): {o: the middle of the mill, u: east along the north wall of its corral}; empty on a map baked without it
 var toros: Dictionary = {}       # the old bullring's (toros.gd): {o: the middle of its ring}; empty on a map baked without it
 var calasanz: Dictionary = {}    # the nursery school of the Calle del Palo's (calasanz.gd): {o: the north-west corner of its front, u: along the front}; empty on a map baked without it
+var caridad: Dictionary = {}     # the hermitage of the Caridad's island (caridad.gd): {o: the hermitage's south-west corner, u: along its south side}; empty on a map baked without it
+var mercamona: Dictionary = {}   # the supermarket's (mercamona.gd): {o: the shop's north-west corner, u: along its west side, low: its car park's level}; empty on a map baked without it
+var santaana: Dictionary = {}    # the convent of Santa Ana's (santaana.gd): {o: the south end of its front, u: along the front}; empty on a map baked without it
 var puente: Dictionary = {}      # the old bridge of the Arroyuelo Medio's (puente.gd): {o: its middle, u: down the bed, top: its deck, pav: [[z, level], ...] the pavements}; empty on a map baked without it
+var aceras: Array = []          # high pavements on walls of rubble (aceras_altas.gd): [{street, side, h, w, pts: [[x, z, nx, nz, top, node a, node b, f], ...]}]; empty on a map baked without them
 var decks: Array = []            # things people walk over: {o, ax: along it, half, wide (half-width), top: its height, ramp} (the old bridge)
 var _blocked := {}               # stretches of street no car can use (Seg -> true)
 var garages: Array = []          # the garages you drive into: {id, m: doorway [x, z], n: out into the street, w, d, left, right}
@@ -76,7 +80,7 @@ func _ready() -> void:
 		var p := PackedInt32Array()
 		for v in r["p"]:
 			p.append(int(v))
-		roads.append({"w": float(r["w"]), "k": int(r["k"]), "h": String(r["h"]), "n": fictional(String(r["n"])), "p": p})
+		roads.append({"w": float(r["w"]), "k": int(r["k"]), "h": String(r["h"]), "n": fictional(String(r["n"])), "p": p, "paved": int(r.get("paved", 0))})   # (paved 1: a pedestrian street in setts and brick; 2: a lane in grey pavers, closed to traffic -- empedrado.gd)
 	clr = data["clr"]
 	walls = data["walls"]
 	roofs_gable = data["roofs_gable"]
@@ -91,7 +95,11 @@ func _ready() -> void:
 	molino = data.get("molino", {})
 	toros = data.get("toros", {})
 	puente = data.get("puente", {})
+	aceras = data.get("aceras", [])
 	calasanz = data.get("calasanz", {})
+	caridad = data.get("caridad", {})
+	santaana = data.get("santaana", {})
+	mercamona = data.get("mercamona", {})
 	wall_y = data.get("wall_y", [])
 	looks = data.get("looks", [])
 	houses = data.get("houses", [])

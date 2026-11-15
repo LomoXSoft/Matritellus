@@ -1057,6 +1057,154 @@ func _petril_checks(walk := false) -> void:
 	_check(left < 0.6, "...and across it under the porch to the door of the church (%.1f m short)" % left)
 	g.player.p = was
 
+## The pharmacy of the Calle Real, the chemist's on the corner of the Calle de Colón and the brick house to the north
+## (farmacia.gd): built, solid from end to end, out of the roadways; and the houses' own script draws nothing there.
+func _farmacia_checks() -> void:
+	var fa = g.world.farmacia
+	_check(fa != null and fa.pieces > 300, "the pharmacy of the Calle Real and its two neighbours are built by hand (%d pieces)" % (fa.pieces if fa != null else 0))
+	if fa == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = fa.spot(a.x, a.y)
+		var q: Vector2 = fa.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, fa.level + h, p.y), Vector3(q.x, fa.level + h, q.y), 1)).is_empty()
+	# every front stops you: the pharmacy's new northern half too (the map had a yard open to the street there)
+	var shut: bool = ray.call(Vector2(2.5, 3.0), Vector2(2.5, -2.0), 1.2) and ray.call(Vector2(7.5, 3.0), Vector2(7.5, -2.0), 1.2) and ray.call(Vector2(12.0, 3.0), Vector2(12.0, -2.0), 1.2)
+	shut = shut and ray.call(Vector2(19.0, 3.0), Vector2(19.0, -2.0), 1.2) and ray.call(Vector2(26.0, 3.0), Vector2(26.0, -2.0), 1.4)
+	var nearest := 99.0
+	for q in fa.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:                # (to the roadway as it is drawn, not to the street's nominal width)
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(shut and nearest > 0.2, "its fronts stop you from end to end, and nothing of it stands in a roadway (its nearest corner is %.1f m from one)" % nearest)
+	var drawn := 0
+	for casa in g.world.casas:
+		if casa.id in ["real_22", "real_24", "real_26", "real_30"]:
+			drawn += casa.get_child_count()
+	_check(drawn == 0 and MapData.road_edge_dist(fa.door) > -1.5 and MapData.room_at(fa.spot(9.0, -2.0)) < 3.0,
+		"the houses' own script draws nothing where these stand; the pharmacy's door is on the pavement, and the map knows its northern half is built on (%.1f m of room there)" % MapData.room_at(fa.spot(9.0, -2.0)))
+
+## The hermitage of the Caridad with its square, the park of the fountain and the nursery (caridad.gd): built, its walls
+## solid, its square a floor over the ground, nothing of it in a roadway.
+func _caridad_checks() -> void:
+	var ca = g.world.caridad
+	_check(ca != null and ca.pieces > 250, "the hermitage of the Caridad, its square, its park and the nursery are built by hand (%d pieces)" % (ca.pieces if ca != null else 0))
+	if ca == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = ca.spot(a.x, a.y)
+		var q: Vector2 = ca.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, ca.level + h, p.y), Vector3(q.x, ca.level + h, q.y), 1)).is_empty()
+	# the hermitage, the body at its corner, the nursery, the wall over the avenue and the railings of the yard all stop you
+	var wz: float = ca.wall_z(20.0)
+	var shut: bool = ray.call(Vector2(5.0, 3.0), Vector2(5.0, -3.0), 2.0) and ray.call(Vector2(26.0, 3.0), Vector2(26.0, -3.0), 2.0) and ray.call(Vector2(38.0, -3.0), Vector2(38.0, -12.0), ca.fn + 1.0)
+	shut = shut and ray.call(Vector2(20.0, wz + 2.0), Vector2(20.0, wz - 2.0), ca.sq(20.0) - 0.5) and ray.call(Vector2(40.0, 4.0), Vector2(40.0, -1.0), ca.fn + 0.6)
+	var on_floor: float = MapData.foot(ca.spot(10.0, 8.0)) - ca.level - ca.sq(10.0)
+	var raised: float = ca.level + ca.sq(10.0) - MapData.height(ca.spot(10.0, wz + 2.5))
+	var nearest := 99.0
+	for q in ca.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null and MapData.road_hit.road["k"] == 0:          # (to the roadway as it is drawn; its own footpaths do not count)
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+			nearest = minf(nearest, d)
+	_check(shut and absf(on_floor) < 0.06 and raised > 0.8 and raised < 3.2 and nearest > 0.0,
+		("" if shut else "(NOT SOLID) ") + "its walls stop you; its square is a floor you walk on (%.2f m off), %.1f m over the avenue's pavement; nothing of it stands in a roadway (the nearest is %.1f m from one)" % [on_floor, raised, nearest])
+	var trees := 0
+	for t in MapData.trees:
+		var q: Vector3 = ca.to_local(Vector3(t[0], ca.level, t[1]))
+		if q.x > -30.0 and q.x < 50.0 and q.z > -8.0 and q.z < 12.0 and absf(q.x - 10.0) < 45.0:
+			trees += 1
+	_check(trees == 0 and MapData.room_at(ca.spot(11.0, 1.5)) < 3.0 and absf(MapData.foot(ca.door) - ca.level - ca.sq(11.5)) < 0.06,
+		"the map's own trees are gone from the island (%d left), the map knows the hermitage stands there (%.1f m of room at its wall), and its door gives on to the square's floor" % [trees, MapData.room_at(ca.spot(11.0, 1.5))])
+
+## The convent of Santa Ana (santaana.gd): built, solid, out of the roadways; and the Calle de las Monjas before it paved
+## in setts and brick but still a street cars drive.
+func _santaana_checks() -> void:
+	var sa = g.world.santaana
+	_check(sa != null and sa.pieces > 150 and sa.friar != null, "the convent of Santa Ana is built by hand (%d pieces), the bronze friar on his pedestal before the church" % (sa.pieces if sa != null else 0))
+	if sa == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = sa.spot(a.x, a.y)
+		var q: Vector2 = sa.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, sa.level + h, p.y), Vector3(q.x, sa.level + h, q.y), 1)).is_empty()
+	# its front, its church's doorway and end, its north range and its garden wall all stop you
+	var shut: bool = ray.call(Vector2(8.0, 3.0), Vector2(8.0, -3.0), 1.5) and ray.call(Vector2(22.0, 3.0), Vector2(22.0, -3.0), 1.5) and ray.call(Vector2(32.0, 0.5), Vector2(32.0, -7.0), 2.0)
+	shut = shut and ray.call(Vector2(41.0, 2.0), Vector2(41.0, -5.0), 2.0) and ray.call(Vector2(46.0, -26.0), Vector2(36.0, -26.0), 2.0) and ray.call(Vector2(42.0, -45.0), Vector2(33.0, -45.0), 2.0)
+	var nearest := 99.0
+	for q in sa.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:                # (to the roadway as it is drawn, not to the street's nominal width)
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(shut and nearest > 0.0 and MapData.room_at(sa.spot(15.0, -2.0)) < 3.0,
+		("" if shut else "(NOT SOLID) ") + "its walls stop you all round, nothing of it stands in a roadway (the nearest is %.1f m from one), and the map knows it stands there" % nearest)
+	var near: Dictionary = MapData.nearest_road(sa.door)
+	var seg = near["seg"]
+	var north: Dictionary = MapData.nearest_road(sa.spot(75.0, 2.0))
+	_check(int(seg.road.get("paved", 0)) == 3 and int(seg.road["k"]) == 0 and MapData.drivable(seg) and int(north["seg"].road.get("paved", 0)) == 0,
+		"the Calle de las Monjas is paved in setts and brick before the convent and cars still drive it (%s); past the crossroads it is asphalt again" % String(seg.road["n"]))
+
+## The supermarket by the old road ("Mercamona", mercamona.gd): built, solid, its car park a floor below the shop and
+## running in under its east half, level where the cars stand.
+func _mercamona_checks() -> void:
+	var mm = g.world.mercamona
+	_check(mm != null and mm.pieces > 150, "the supermarket and its car park are built by hand (%d pieces)" % (mm.pieces if mm != null else 0))
+	if mm == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = mm.spot(a.x, a.y)
+		var q: Vector2 = mm.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, mm.level + h, p.y), Vector3(q.x, mm.level + h, q.y), 1)).is_empty()
+	# the shop stops you from the road and from the car park's upper side; under it you drive in as far as its back wall
+	var shut: bool = ray.call(Vector2(35.0, 6.0), Vector2(35.0, -3.0), 1.5) and ray.call(Vector2(80.0, 4.0), Vector2(80.0, -3.0), 1.5) and ray.call(Vector2(-12.0, 8.0), Vector2(-12.0, -4.0), 1.5)
+	var under: bool = not ray.call(Vector2(60.0, -50.0), Vector2(60.0, mm.BACK - 1.5), mm.yl + 1.0) and ray.call(Vector2(60.0, mm.BACK - 1.5), Vector2(60.0, mm.BACK + 3.0), mm.yl + 1.0)
+	var worst := 0.0                          # the ground where the cars stand: at the car park's level
+	for q in [Vector2(mm.un + 4.0, -31.0), Vector2(55.0, -32.0), Vector2(62.0, -34.0), Vector2(56.0, -52.0), Vector2(60.0, -70.0), Vector2(62.0, -88.0), Vector2(60.0, -100.0)]:
+		worst = maxf(worst, absf(MapData.height(mm.spot(q.x, q.y)) - mm.level - mm.yl))
+	_check(shut and under and worst < 0.06 and mm.yl < -2.9,
+		("" if shut else "(NOT SOLID) ") + ("" if under else "(NO WAY IN UNDER IT) ") + "the shop is solid; its car park lies %.1f m below its floor and runs in under it to its back wall, level where the cars stand (%.2f m off at worst)" % [-mm.yl, worst])
+	var road: float = MapData.road_edge_dist(mm.door)
+	var nearest := 99.0
+	for q in mm.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(nearest > 0.0 and road > 4.0 and MapData.room_at(mm.spot(40.0, -2.0)) < 3.0 and mm.level - MapData.height(mm.gate) < 2.4 and mm.un < 45.0,
+		"nothing of it stands in a roadway (the nearest is %.1f m from one); the map knows the shop is there; its gate is %.1f m below the shop's floor, at the head of the ramp" % [nearest, mm.level - MapData.height(mm.gate)])
+
+## The pizza house beside the supermarket ("Todopizza", todopizza.gd): built, solid, out of the roadways, its forecourt open
+## before its doors, its sign up.
+func _todopizza_checks() -> void:
+	var tp = g.world.todopizza
+	_check(tp != null and tp.pieces > 60 and tp.get_child_count() > 8, "the pizza house is built by hand (%d pieces)" % (tp.pieces if tp != null else 0))
+	if tp == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = tp.spot(a.x, a.y)
+		var q: Vector2 = tp.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, tp.level + h, p.y), Vector3(q.x, tp.level + h, q.y), 1)).is_empty()
+	# the house stops you from every side; the way from the pavement to its doors is open, through the gap in the fence
+	var shut: bool = ray.call(Vector2(5.4, 4.0), Vector2(5.4, -4.0), 1.2) and ray.call(Vector2(-3.0, -5.4), Vector2(3.0, -5.4), 1.2) and ray.call(Vector2(5.4, -14.0), Vector2(5.4, -8.0), 1.2)
+	var way: bool = not ray.call(Vector2(tp.L * 0.3, 12.5), Vector2(tp.L * 0.3, 0.6), 0.6) and ray.call(Vector2(tp.L * 0.75, 12.5), Vector2(tp.L * 0.75, 8.0), 0.6)
+	var nearest := 99.0
+	for q in tp.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(shut and way and nearest > 0.3,
+		("" if shut else "(NOT SOLID) ") + ("" if way else "(ITS FORECOURT IS NOT AS IT SHOULD BE) ") + "the house is solid, its fence lets you in only before its doors, and nothing of it stands in a roadway (the nearest is %.1f m from one)" % nearest)
+	_check(MapData.room_at(tp.spot(5.4, -1.0)) < 3.0 and MapData.road_edge_dist(tp.door) > 4.0 and tp.NAME == "TODOPIZZA" and MapData.road_edge_dist(tp.sign_at) > 0.5,
+		"the map knows it stands there, its doors give on to its forecourt, and its sign reads %s by the corner of the roads (%.1f m from the roadway)" % [tp.NAME, MapData.road_edge_dist(tp.sign_at)])
+
 ## The nursery school of the Calle del Palo (calasanz.gd): the house, its yard a step above the street behind its
 ## wall and railings, and nothing of it in a street.
 func _calasanz_checks() -> void:
@@ -5485,6 +5633,145 @@ func _run() -> void:
 			print("menu: opened %s, showing %s" % [page, g.menu.page])
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--farmacia"):      # just the pharmacy of the Calle Real and its neighbours: the corner, each front, the side on Colón, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(17.0)
+		var fa = g.world.farmacia
+		if fa == null:
+			print("FARMACIA FAILED (the map has no real_26)")
+			get_tree().quit(1)
+			return
+		for v in [["esquina", Vector2(40.0, 2.5), 1.7, Vector2(27.0, -1.0), 3.5, 70.0], ["drogueria", Vector2(27.0, 5.0), 1.7, Vector2(26.4, 0.0), 3.0, 85.0], ["farmacia_sur", Vector2(20.3, 5.2), 1.7, Vector2(19.4, 0.0), 3.8, 95.0],
+				["farmacia_norte", Vector2(10.8, 5.2), 1.7, Vector2(10.6, 0.0), 3.8, 95.0], ["puerta", Vector2(19.6, 4.2), 1.7, Vector2(18.2, 0.0), 1.9, 60.0], ["ladrillo", Vector2(3.4, 5.0), 1.7, Vector2(2.9, 0.0), 3.2, 85.0],
+				["colon", Vector2(35.6, -6.2), 1.7, Vector2(31.2, -4.7), 3.0, 95.0], ["desde_norte", Vector2(-5.0, 3.6), 1.7, Vector2(12.0, 0.0), 4.0, 70.0], ["desde_sur", Vector2(33.0, 4.6), 1.7, Vector2(16.0, 0.0), 4.2, 75.0],
+				["aire", Vector2(15.0, 24.0), 26.0, Vector2(15.0, -4.0), 3.0, 60.0]]:
+			var eye: Vector2 = fa.spot(v[1].x, v[1].y)
+			var at: Vector2 = fa.spot(v[3].x, v[3].y)
+			g.player.p = fa.spot(15.0, 60.0)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, fa.level + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("farmacia_%s" % v[0])
+		g.phase = "free"
+		await _farmacia_checks()
+		print("FARMACIA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--caridad"):       # just the island of the hermitage of the Caridad: from the avenue, the hermitage, the cross, the nursery, the fountain, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(12.5)
+		var ca = g.world.caridad
+		if ca == null:
+			print("CARIDAD FAILED (the map was baked without it)")
+			get_tree().quit(1)
+			return
+		for v in [["avenida", Vector2(12.0, 25.5), 1.7, Vector2(12.0, 0.0), 5.0, 75.0], ["poniente", Vector2(-15.0, -7.5), 1.7, Vector2(0.0, -6.5), 3.6, 75.0], ["columnas", Vector2(-9.5, -16.5), 1.7, Vector2(-1.0, -9.0), 3.0, 75.0],
+				["fuente", Vector2(-18.5, 9.5), 1.7, Vector2(-10.2, 3.2), 0.9, 70.0], ["rollo_columnas", Vector2(-7.0, -25.5), 1.8, Vector2(-3.4, -9.0), 2.4, 75.0], ["rollo_casa", Vector2(13.0, -31.5), 1.7, Vector2(12.5, -22.0), 2.4, 85.0], ["ermita", Vector2(11.5, 11.5), 3.2, Vector2(11.5, 0.0), 4.0, 75.0],
+				["paseo", Vector2(36.0, 4.5), 3.0, Vector2(8.0, 8.5), 2.6, 80.0], ["cruz", Vector2(21.5, 5.5), 3.2, Vector2(12.7, 11.4), 3.0, 70.0], ["guarderia", Vector2(36.0, 5.0), 3.0, Vector2(37.0, -6.0), 3.8, 85.0], ["patio", Vector2(52.5, 3.5), 4.2, Vector2(40.0, -3.0), 2.6, 70.0],
+				["peso", Vector2(61.5, 5.0), 1.7, Vector2(40.0, 0.0), 4.0, 70.0], ["rollo", Vector2(33.0, -35.4), 1.7, Vector2(32.6, -28.4), 2.4, 90.0], ["aire", Vector2(10.0, 46.0), 40.0, Vector2(10.0, -6.0), 0.0, 60.0]]:
+			var eye: Vector2 = ca.spot(v[1].x, v[1].y)
+			var at: Vector2 = ca.spot(v[3].x, v[3].y)
+			g.player.p = ca.spot(10.0, 90.0)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("caridad_%s" % v[0])
+		g.phase = "free"
+		await _caridad_checks()
+		print("CARIDAD %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--santaana"):      # just the convent of Santa Ana: its front, its doors, the tower, the church's doorway and end, both streets, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(10.5)
+		var sa = g.world.santaana
+		if sa == null:
+			print("SANTAANA FAILED (the map was baked without it)")
+			get_tree().quit(1)
+			return
+		for v in [["calle", Vector2(-9.0, 5.2), 1.7, Vector2(14.0, 0.0), 4.6, 75.0], ["frente_sur", Vector2(5.0, 7.4), 1.7, Vector2(5.5, 0.0), 4.2, 90.0], ["puerta", Vector2(15.75, 7.6), 1.7, Vector2(15.75, 0.0), 3.6, 85.0],
+				["frente_norte", Vector2(22.0, 7.4), 1.7, Vector2(21.5, 0.0), 4.2, 90.0], ["torre", Vector2(-4.0, 6.0), 1.7, Vector2(8.5, -4.5), 9.5, 70.0], ["compas", Vector2(33.5, 7.2), 1.7, Vector2(31.6, -3.5), 4.0, 85.0],
+				["portada", Vector2(31.8, 3.6), 1.7, Vector2(31.4, -3.6), 3.9, 80.0], ["fraile", Vector2(36.6, 3.4), 1.7, Vector2(34.3, -0.7), 2.3, 55.0], ["iglesia", Vector2(47.0, 7.8), 1.7, Vector2(38.0, -2.0), 5.6, 85.0], ["desde_norte", Vector2(58.0, 3.0), 1.7, Vector2(30.0, -1.0), 5.0, 75.0],
+				["santiago", Vector2(48.5, -30.0), 1.7, Vector2(41.5, -24.0), 3.4, 95.0], ["suelo", Vector2(12.0, 4.2), 2.6, Vector2(34.0, 3.0), 0.0, 75.0], ["aire", Vector2(20.0, 42.0), 34.0, Vector2(22.0, -14.0), 3.0, 60.0]]:
+			var eye: Vector2 = sa.spot(v[1].x, v[1].y)
+			var at: Vector2 = sa.spot(v[3].x, v[3].y)
+			g.player.p = sa.spot(15.0, 90.0)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, sa.level + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("santaana_%s" % v[0])
+		g.phase = "free"
+		await _santaana_checks()
+		print("SANTAANA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--mercamona"):     # just the supermarket: from the road, its way in, the dock, the gate and the ramp, the car park, under the shop, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(12.0)
+		var mm = g.world.mercamona
+		if mm == null:
+			print("MERCAMONA FAILED (the map was baked without it)")
+			get_tree().quit(1)
+			return
+		for v in [["carretera", Vector2(14.0, 26.0), 1.7, Vector2(14.0, 0.0), 4.5, 75.0], ["entrada", Vector2(11.5, 12.5), 1.7, Vector2(11.5, 0.0), 3.6, 80.0], ["oeste", Vector2(40.0, 26.0), 1.7, Vector2(38.0, 0.0), 3.5, 85.0],
+				["muelle", Vector2(70.0, 22.0), 1.7, Vector2(74.0, 0.0), 3.6, 80.0], ["norte", Vector2(-30.0, -20.0), 1.7, Vector2(-4.0, -22.0), 4.5, 75.0], ["puerta_coches", Vector2(-9.0, -47.0), 1.7, Vector2(10.0, -45.0), 0.5, 80.0],
+				["rampa", Vector2(1.0, -42.0), 1.7, Vector2(40.0, -46.0), -2.5, 80.0], ["aparcamiento", Vector2(66.0, -100.0), 1.7, Vector2(30.0, -40.0), 1.5, 80.0], ["bajo_tienda", Vector2(45.0, -58.0), 1.6, Vector2(36.0, -30.0), -1.0, 80.0],
+				["dentro", Vector2(60.0, -34.0), 1.5, Vector2(20.0, -31.0), -1.6, 85.0], ["este", Vector2(26.0, -112.0), 1.7, Vector2(40.0, -39.0), 2.0, 75.0], ["aire", Vector2(40.0, -150.0), 70.0, Vector2(40.0, -40.0), 0.0, 55.0]]:
+			var eye: Vector2 = mm.spot(v[1].x, v[1].y)
+			var at: Vector2 = mm.spot(v[3].x, v[3].y)
+			g.player.p = mm.spot(40.0, 150.0)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, mm.level + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("mercamona_%s" % v[0])
+		g.phase = "free"
+		await _mercamona_checks()
+		print("MERCAMONA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--todopizza"):     # just the pizza house: its front, its doors, through the glass, its sign, its sides and back, with the supermarket, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(13.0)
+		var tp = g.world.todopizza
+		if tp == null:
+			print("TODOPIZZA FAILED (the map was baked without the supermarket's parcels)")
+			get_tree().quit(1)
+			return
+		for v in [["frente", Vector2(5.4, 18.0), 1.7, Vector2(5.4, 0.0), 2.6, 70.0], ["puerta", Vector2(3.3, 8.5), 1.7, Vector2(3.3, 0.0), 1.6, 65.0], ["dentro", Vector2(3.6, 2.2), 1.6, Vector2(7.0, -5.5), 1.2, 75.0],
+				["cartel", Vector2(-21.0, 13.7), 1.7, Vector2(-10.7, 11.7), 3.6, 55.0], ["esquina", Vector2(-11.0, 16.0), 1.7, Vector2(4.0, -4.0), 2.6, 75.0], ["norte", Vector2(-16.0, -5.4), 1.7, Vector2(0.0, -5.4), 2.4, 75.0],
+				["trasera", Vector2(5.4, -23.0), 1.7, Vector2(5.4, -10.75), 2.2, 80.0], ["con_mercamona", Vector2(-14.0, 24.0), 1.7, Vector2(11.0, 0.0), 3.5, 75.0], ["aire", Vector2(5.4, 29.0), 20.0, Vector2(5.4, -5.0), 0.0, 60.0]]:
+			var eye: Vector2 = tp.spot(v[1].x, v[1].y)
+			var at: Vector2 = tp.spot(v[3].x, v[3].y)
+			g.player.p = tp.spot(6.6, 120.0)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, tp.level + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("todopizza_%s" % v[0])
+		g.phase = "free"
+		await _todopizza_checks()
+		print("TODOPIZZA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--calasanz"):      # just the nursery school of the Calle del Palo: its front, its gate, the yard with what is played on, the cabin, from the air
 		shots = true
 		g.menu.close()
@@ -7092,6 +7379,11 @@ func _run() -> void:
 	await _toros_checks()
 	await _arroyuelo_checks()
 	await _calasanz_checks()
+	await _farmacia_checks()
+	await _caridad_checks()
+	await _santaana_checks()
+	await _mercamona_checks()
+	await _todopizza_checks()
 	var th: Dictionary = MapData.townhall
 	var th_m := Vector2(th["m"][0], th["m"][1])
 	var th_u := Vector2(th["u"][0], th["u"][1])

@@ -120,6 +120,48 @@ for name, at0, at1 in PAVED_SPANS:
         for piece in keep[1:]:
             roads.append(dict(r, p=piece))
 roads[:] = [r for r in roads if len(r['p']) > 1]
+# ...and lanes paved in grey concrete pavers from wall to wall: the narrow west end of the Calle de Santo Domingo, past
+# its crossroads by no. 14 (Street View, November 2024). Cars do use it, but it is too narrow for the game's traffic
+# (the user, 15 November 2026: "Ponle adoquín" and then "Aunque en la realidad circulen coches puede ser un problema
+# para el juego. Mejor cortar el tráfico ahí"), so it becomes a footpath as wide as a street (k 2: no traffic, no parked
+# cars) with the corridor of a car street (no house moves); "paved": 2 has empedrado.gd lay the grey pavers.
+PAVED_LANES = [('Calle de Santo Domingo', (-374.9, 38.3))]    # the street, and the node from which (westwards) it is paved
+for name, at in PAVED_LANES:
+    for r in [r for r in roads if r['n'] == name and r['k'] == 0 and not r.get('paved')]:
+        ps = [npts[i] for i in r['p']]
+        j = min(range(len(ps)), key=lambda q: math.dist(ps[q], at))
+        if math.dist(ps[j], at) > 3.0: continue
+        a, b = r['p'][:j + 1], r['p'][j:]
+        xa = sum(npts[i][0] for i in a) / len(a); xb = sum(npts[i][0] for i in b) / len(b)
+        paved, rest = (a, b) if xa < xb else (b, a)              # (the paved part is the western one)
+        if len(paved) < 2: continue
+        if len(rest) > 1:
+            r['p'] = rest
+            roads.append(dict(r, p=paved, k=2, h='pedestrian', paved=2))
+        else:
+            r.update(k=2, h='pedestrian', paved=2)
+        print('paved in grey pavers and closed to traffic: %s, %d nodes' % (name, len(paved)))
+# ...and streets paved like the Calle Real -- setts down the middle, brick along the houses, all at one level -- that cars
+# still drive: the Calle de las Monjas from its south end to its crossroads with Santiago Apóstol, by the convent of
+# Santa Ana (Street View, November 2024; the user, 15 November 2026: "La calle está empedrada pero no es peatonal").
+# The stretch stays a car street (k 0: traffic, parked cars, the same corridor, no house moves); "paved": 3 has
+# empedrado.gd lay the brick and the setts over its pavements and its asphalt.
+PAVED_STREETS = [('Calle de las Monjas', (-488.4, -81.3), (-523.5, 36.4))]    # the street, the node where its paving ends, and the end it is paved to
+for name, at, end in PAVED_STREETS:
+    for r in [r for r in roads if r['n'] == name and r['k'] == 0 and not r.get('paved')]:
+        ps = [npts[i] for i in r['p']]
+        j = min(range(len(ps)), key=lambda q: math.dist(ps[q], at))
+        if math.dist(ps[j], at) > 3.0: continue
+        a, b = r['p'][:j + 1], r['p'][j:]
+        da = min(math.dist(npts[i], end) for i in a); db = min(math.dist(npts[i], end) for i in b)
+        paved, rest = (a, b) if da < db else (b, a)
+        if len(paved) < 2 or min(da, db) > 3.0: continue
+        if len(rest) > 1:
+            r['p'] = rest
+            roads.append(dict(r, p=paved, paved=3))
+        else:
+            r['paved'] = 3
+        print('paved, open to traffic: %s, %d nodes' % (name, len(paved)))
 def poly_of(w): return [proj(onodes[i]['lat'], onodes[i]['lon']) for i in w['nodes']]
 
 # the corridor every street is guaranteed to keep free of buildings (centre lines drift a little from reality)
@@ -277,6 +319,51 @@ calasanz = {'o': list(CALASANZ['o']), 'u': list(CALASANZ['u'])}
 _calasanz_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'calasanz.gd')
 if not (os.path.exists(_calasanz_gd) and 'const READY := true' in open(_calasanz_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
     CALASANZ_RC, calasanz, calasanz_zone = None, {}, Polygon()
+# The hermitage of the Caridad, its square, the park of the fountain and the nursery (godot/scripts/caridad.gd; the user,
+# 15 November 2026; referencias/ermita_caridad/): Catastro's parts of the island are not raised -- caridad.gd builds the
+# hermitage, the body at its corner and the nursery -- and neither is the two-storey house Catastro still has where the
+# park's fountain is; the map's trees there go too. The ground is NOT levelled: it falls 7 m across the island and a
+# terrace would move four streets by metres; caridad.gd lays the square as a floor over the ground instead.
+CARIDAD_RCS = {'3890801VJ5639S', '3890802VJ5639S', '3890803VJ5639S', '3790101VJ5639S'}
+CARIDAD = {'o': (-489.5, 141.2), 'u': (0.9984, -0.0564)}
+caridad_zone = Polygon([(CARIDAD['o'][0] + CARIDAD['u'][0] * x - CARIDAD['u'][1] * z, CARIDAD['o'][1] + CARIDAD['u'][1] * x + CARIDAD['u'][0] * z)
+                        for x, z in ((-40.0, -9.0), (-2.0, -21.0), (19.0, -25.0), (43.0, -32.0), (51.5, -10.0), (57.0, 9.0), (0.0, 17.5), (-26.0, 20.5), (-38.0, 12.0))])
+caridad = {'o': list(CARIDAD['o']), 'u': list(CARIDAD['u'])}
+_caridad_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'caridad.gd')
+if not (os.path.exists(_caridad_gd) and 'const READY := true' in open(_caridad_gd, encoding='utf-8').read()):      # (not built yet: Catastro's blocks stay)
+    CARIDAD_RCS, caridad, caridad_zone = set(), {}, Polygon()
+# The convent of Santa Ana, on the corner of the Calle de las Monjas and the Calle de Santiago Apóstol
+# (godot/scripts/santaana.gd; the user, 15 November 2026; referencias/convento_santa_ana/): Catastro's parts of it are
+# not raised -- santaana.gd builds the convent, its tower and its church, cut back to the game's Calle de Santiago
+# Apóstol, which runs three metres south of the real one -- and the map plants no trees in it. The ground is not levelled.
+SANTAANA_RC = '3792701VJ5639S'
+SANTAANA = {'o': (-501.6, -33.6), 'u': (0.2425, -0.9701)}
+santaana_zone = Polygon([(SANTAANA['o'][0] + SANTAANA['u'][0] * x - SANTAANA['u'][1] * z, SANTAANA['o'][1] + SANTAANA['u'][1] * x + SANTAANA['u'][0] * z)
+                         for x, z in ((-0.5, 1.0), (46.5, 0.5), (43.5, -13.0), (38.8, -41.0), (37.4, -50.2), (8.4, -50.2), (2.8, -37.0), (-0.5, -9.5))])
+# what santaana.gd builds on it, as one outline (its front, the church cut back to the street, the north range, the garden's
+# wall): it draws its own walls and tells the map its own outlines, but the streets beside it are only as wide as it leaves them
+santaana_built = Polygon([(SANTAANA['o'][0] + SANTAANA['u'][0] * x - SANTAANA['u'][1] * z, SANTAANA['o'][1] + SANTAANA['u'][1] * x + SANTAANA['u'][0] * z)
+                          for x, z in ((0, 0), (28.48, 0), (28.5, -3.0), (36.44, -4.23), (36.92, -1.15), (45.59, -2.5), (43.38, -13.0), (38.65, -40.1), (37.25, -49.5),
+                                       (9.0, -49.5), (7.5, -36.9), (4.1, -36.7), (3.4, -18.9), (7.4, -18.9), (7.4, -9.0), (0, -9.0))])
+santaana = {'o': list(SANTAANA['o']), 'u': list(SANTAANA['u'])}
+_santaana_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'santaana.gd')
+if not (os.path.exists(_santaana_gd) and 'const READY := true' in open(_santaana_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    SANTAANA_RC, santaana, santaana_zone = None, {}, Polygon()
+# The supermarket by the old Madrid-Cádiz road, "Mercamona" in the game (godot/scripts/mercamona.gd; the user, 15 November
+# 2026; referencias/mercamona/): Catastro's parts of it and of the little old house north of it are not raised --
+# mercamona.gd builds them -- and the map plants no trees there. Its car park lies a whole floor below the shop and runs in
+# under its east half: the ground is dug for it (`pit`, with the terraces below).
+MERCAMONA_RCS = {'5187002VJ5658N', '5187001VJ5658N'}
+MERCAMONA = {'o': (905.0, 306.1), 'u': (-0.1838, 0.983)}
+def _mm(pts): return Polygon([(MERCAMONA['o'][0] + MERCAMONA['u'][0] * x - MERCAMONA['u'][1] * z, MERCAMONA['o'][1] + MERCAMONA['u'][1] * x + MERCAMONA['u'][0] * z) for x, z in pts])
+mercamona_zone = _mm(((-22, 16), (88, 16), (88, -112), (36, -112), (27, -98), (0, -46), (-22, -46)))
+mercamona_pit = _mm(((4.5, -13.5), (4.5, -41.5), (2.0, -44.0), (28.0, -98.0), (38.0, -112.0), (76.0, -112.0), (76.0, -13.5)))      # the car park and the east half of the shop
+mercamona_built = _mm(((0, 0), (51.7, 0), (51.7, -4.7), (74, -4.7), (74, 0), (84.4, 0), (85, -13.1), (79, -13.1), (79, -39), (2.9, -39), (0.9, -34.5), (-1.6, -28.9),
+                       (-4.3, -23.0), (-5.4, -21.0), (-5.4, -14.3), (0, -14.2), (0, -11.5))).union(_mm(((-19.3, -10.9), (-5.9, -10.9), (-5.9, 2.5), (-19.3, 2.5))))      # the shop with its taller block (cut back to the game's street), and the old house
+mercamona = {'o': list(MERCAMONA['o']), 'u': list(MERCAMONA['u'])}
+_mercamona_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'mercamona.gd')
+if not (os.path.exists(_mercamona_gd) and 'const READY := true' in open(_mercamona_gd, encoding='utf-8').read()):      # (not built yet: Catastro's blocks stay)
+    MERCAMONA_RCS, mercamona, mercamona_zone = set(), {}, Polygon()
 
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
@@ -439,6 +526,9 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid == MOLINO_RC: return                                  # ...and the windmill with its yard
     if bid == TOROS_RC: return                                   # ...and the old bullring
     if bid == CALASANZ_RC: return                                # ...and the nursery school of the Calle del Palo
+    if bid in CARIDAD_RCS: return                                # ...and the hermitage of the Caridad, its nursery, and the house that is not there
+    if bid == SANTAANA_RC: return                                # ...and the convent of Santa Ana
+    if bid in MERCAMONA_RCS: return                              # ...and the supermarket by the old road, and the old house beside it
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
     elif church_u.contains(c): style, h = 5, max(12.0, floors_c * 4.0)
@@ -622,6 +712,23 @@ if townhall:        # The square is level, but the old stream bed along its west
     print('the Arroyuelo past the square: %.0f m of street sunk %.1f m; %d heights lowered, by up to %.2f m' % (bed.length, SUNK, int((_was - RH > 0.01).sum()), float((_was - RH).max())))
     for q, qh in pad_list[1:]:
         if q.distance(bed) < 44: print('  WARNING: that also lowers the terrace round (%.0f, %.0f)' % (q.centroid.x, q.centroid.y))
+def pit(poly, h, clear=19.0):
+    """digs (or fills) the ground to one level inside a polygon, height by height, with no margin and no blend round it (a
+    terrace levels 18 m more and eases out over 40: too much beside a street). The triangles of the grid that straddle its
+    edge slope from that level to the ground outside, up to 12 m either way: whatever is built there must hide or use that
+    slope (mercamona.gd: under the shop, the ramp down from the gate, the fall of the tarmac from the street). No height
+    within `clear` of a street for cars is touched (a triangle reaches 17 m from its corner, a roadway 1.8 m from its
+    line): no street changes height or tilts."""
+    _cars = unary_union([LineString([npts[i] for i in r['p']]) for r in roads if r['k'] == 0])
+    inside = shapely.contains(poly, rpts) & (shapely.distance(rpts, _cars) >= clear)
+    was = RH[inside].copy()
+    RH[inside] = h
+    return int(inside.sum()), (float(np.abs(RH[inside] - was).max()) if inside.any() else 0.0)
+if mercamona:       # the supermarket's car park, a floor (3.2 m) below the shop's, which is level with the old road at its doors
+    _mu = MERCAMONA['u']; _me = (MERCAMONA['o'][0] + _mu[0] * 10.0 - _mu[1] * 1.5, MERCAMONA['o'][1] + _mu[1] * 10.0 + _mu[0] * 1.5)
+    mercamona['low'] = round(float(hfun(*_me)) + 0.05 - 3.2, 2)
+    _n, _d = pit(mercamona_pit, mercamona['low'])
+    print('Mercamona: its car park dug to %.2f; %d heights changed, by up to %.2f m' % (mercamona['low'], _n, _d))
 for p in parts:     # every building stands level: its floor a little above the middle of the ground it covers
     c = np.asarray(p['poly'].exterior.coords)
     hs = hfun(c[:, 0], c[:, 1])
@@ -723,6 +830,77 @@ if os.path.exists(_puente_gd) and 'const READY := true' in open(_puente_gd, enco
         parts[i]['base'] = lv
     puente = {'o': list(_po), 'u': list(_pu), 'top': r2(_ptop), 'pav': [[z, r2(h)] for z, h in _ppav]}
     print('the old bridge: deck at %.2f, pavements %s; %d parts of houses set level with them' % (_ptop, [(z, round(h, 2)) for z, h in _ppav], len(_set)))
+# High pavements: where a street's pavements stand well over the road on walls of rubble, as along the Calle del Arroyuelo
+# Bajo (Street View, November 2024; the user, 15 November 2026: "Se podría trabajar en las aceras altas y ver cómo
+# quedan"). godot/scripts/aceras_altas.gd builds them from what this hands over ('aceras' in map.json): for each stretch,
+# points along the middle of the street every metre and a half, the way out to its side, how high its floor is there,
+# and the two nodes of the street each point lies between (the game takes the edge of the asphalt from them). Here the
+# houses along a stretch go up to its floor, so that their doors open on to it. Each stretch: the street, the side (E,
+# W, N or S: where it lies from the middle of the street), where it begins and ends (spots by the street: the stretch
+# between where they fall on it), and how high its floor stands over the middle of the road.
+ACERAS_ALTAS = [
+    ('Calle del Arroyuelo Bajo', 'E', (-252.0, 14.0), (-268.0, 50.0), 0.35),       # nos. 1, 5, 7
+    ('Calle del Arroyuelo Bajo', 'E', (-271.0, 56.0), (-276.0, 114.0), 0.7),       # the walled plot (11), 13, 15, 17
+    ('Calle del Arroyuelo Bajo', 'E', (-266.0, 140.0), (-268.0, 208.0), 0.45),     # 23 to 37
+    ('Calle del Arroyuelo Bajo', 'W', (-262.0, 18.0), (-276.0, 58.0), 0.4),        # 2, the plot of 4, 6, 8
+    ('Calle del Arroyuelo Bajo', 'W', (-278.0, 64.0), (-277.0, 120.0), 0.5),       # the offices (10), 14, 16
+    ('Calle del Arroyuelo Bajo', 'W', (-266.0, 136.0), (-270.0, 210.0), 0.45),     # 20 to 32
+]
+aceras = []
+_aceras_n = 0
+for _name, _side, _a, _b, _h in ACERAS_ALTAS:
+    _segs = []                                  # (a, b, node of a, node of b) for every stretch of that street
+    for r in roads:
+        if r['n'] == _name and r['k'] == 0:
+            for j in range(len(r['p']) - 1):
+                _segs.append((r['p'][j], r['p'][j + 1]))
+    if not _segs: continue
+    def _near(q):                               # where a spot falls on the street: (segment, fraction, point)
+        best = None
+        for ia, ib in _segs:
+            (ax, az), (bx, bz) = npts[ia], npts[ib]
+            L2 = (bx - ax) ** 2 + (bz - az) ** 2
+            f = 0.0 if L2 < 1e-6 else max(0.0, min(1.0, ((q[0] - ax) * (bx - ax) + (q[1] - az) * (bz - az)) / L2))
+            p_ = (ax + (bx - ax) * f, az + (bz - az) * f)
+            d = math.dist(p_, q)
+            if best is None or d < best[0]: best = (d, (ia, ib), f, p_)
+        return best
+    _ka, _kb = _near(_a), _near(_b)
+    from shapely.ops import linemerge as _linemerge
+    _line = _linemerge([LineString([npts[ia], npts[ib]]) for ia, ib in _segs])     # (the street as one line)
+    if _line.geom_type != 'LineString': _line = min(_line.geoms, key=lambda g: g.distance(Point(_a)))
+    _s0, _s1 = sorted((_line.project(Point(_ka[3])), _line.project(Point(_kb[3]))))
+    _pts = []
+    _n = max(2, int(round((_s1 - _s0) / 1.5)) + 1)
+    for k in range(_n):
+        s_ = _s0 + (_s1 - _s0) * k / (_n - 1)
+        c_ = _line.interpolate(s_)
+        _, (ia, ib), f, _p = _near((c_.x, c_.y))
+        (ax, az), (bx, bz) = npts[ia], npts[ib]
+        t_ = np.array([bx - ax, bz - az]); t_ = t_ / max(1e-6, np.linalg.norm(t_))
+        n_ = np.array([-t_[1], t_[0]])
+        want = {'E': (1, 0), 'W': (-1, 0), 'N': (0, -1), 'S': (0, 1)}[_side]
+        if n_[0] * want[0] + n_[1] * want[1] < 0: n_ = -n_
+        top = float(hfun(np.array([_p[0]]), np.array([_p[1]]))[0]) + _h
+        _pts.append([r2(_p[0]), r2(_p[1]), r2(float(n_[0])), r2(float(n_[1])), r2(top), int(ia), int(ib), r2(f)])
+    aceras.append({'street': _name, 'side': _side, 'h': _h, 'w': float(next(r['w'] for r in roads if r['n'] == _name and r['k'] == 0)), 'pts': _pts})
+    # the houses along it: their fronts on this side, between its ends, go up to its floor
+    _sl = LineString([(q[0], q[1]) for q in _pts])
+    for i, ks in _by_part.items():
+        tops = []
+        for k in ks:
+            m_ = Point((ex1[k] + ex2[k]) / 2, (ez1[k] + ez2[k]) / 2)
+            s_ = _sl.project(m_)
+            if s_ < 0.3 or s_ > _sl.length - 0.3: continue
+            c_ = _sl.interpolate(s_)
+            j_ = min(len(_pts) - 2, int(s_ / _sl.length * (len(_pts) - 1)))
+            off = (m_.x - c_.x) * _pts[j_][2] + (m_.y - c_.y) * _pts[j_][3]
+            if not (1.0 < off < 12.0): continue
+            tops.append(np.interp(s_, [_sl.project(Point(q[0], q[1])) for q in _pts], [q[4] for q in _pts]))
+        if tops and max(tops) > parts[i]['base']:
+            parts[i]['base'] = float(max(tops))
+            _aceras_n += 1
+print('high pavements: %d stretches, %d parts of houses set level with them' % (len(aceras), _aceras_n))
 _fr = np.array([p.get('front_range', 0.0) for p in parts])
 print('houses that face a street: %d (%d took a new level from it); the street falls >0.6 m along the front of %d, >1 m of %d, >1.5 m of %d' % (len(_by_part), _moved, (_fr > 0.6).sum(), (_fr > 1).sum(), (_fr > 1.5).sum()))
 heights = np.array([p['base'] + p['h'] for p in parts])
@@ -778,8 +956,10 @@ outlines = []
 for g in blocks:
     ring = Polygon(g.exterior).simplify(0.3)
     if ring.geom_type == 'Polygon' and ring.area > 3: outlines.append([r2(v) for xy in list(ring.exterior.coords)[:-1] for v in xy])
-block_tree = STRtree([Polygon(g.exterior) for g in blocks])
 block_list = [Polygon(g.exterior) for g in blocks]
+if santaana: block_list.append(santaana_built)      # (the convent of Santa Ana: not a block of the map's, but it does narrow its streets)
+if mercamona: block_list.append(mercamona_built)    # (the supermarket, likewise)
+block_tree = STRtree(block_list)
 def building_dist(x, z):
     i = block_tree.nearest(Point(x, z)); return block_list[i].distance(Point(x, z))
 clr = [r1(min(30.0, building_dist(x, z))) for x, z in npts]      # free half-width of the street at each node
@@ -837,6 +1017,9 @@ trees = [t for t in trees if not petril_zone.contains(Point(t[0], t[1]))]      #
 trees = [t for t in trees if not molino_zone.contains(Point(t[0], t[1]))]      # ...and so does the mill's yard
 trees = [t for t in trees if not toros_zone.contains(Point(t[0], t[1]))]       # ...and the bullring's lot
 trees = [t for t in trees if not calasanz_zone.buffer(1.5).contains(Point(t[0], t[1]))]      # ...and the school's yard
+trees = [t for t in trees if not caridad_zone.contains(Point(t[0], t[1]))]      # ...and the island of the hermitage of the Caridad (caridad.gd plants its own)
+trees = [t for t in trees if not santaana_zone.contains(Point(t[0], t[1]))]     # ...and the convent of Santa Ana
+trees = [t for t in trees if not mercamona_zone.contains(Point(t[0], t[1]))]    # ...and the supermarket, its lawns and its car park
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
@@ -849,7 +1032,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

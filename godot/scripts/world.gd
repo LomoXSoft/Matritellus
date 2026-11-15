@@ -13,6 +13,11 @@ const PetrilS = preload("res://scripts/petril.gd")
 const MolinoS = preload("res://scripts/molino.gd")
 const TorosS = preload("res://scripts/toros.gd")
 const CalasanzS = preload("res://scripts/calasanz.gd")
+const FarmaciaS = preload("res://scripts/farmacia.gd")
+const CaridadS = preload("res://scripts/caridad.gd")
+const SantaAnaS = preload("res://scripts/santaana.gd")
+const MercamonaS = preload("res://scripts/mercamona.gd")
+const TodopizzaS = preload("res://scripts/todopizza.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
@@ -76,6 +81,11 @@ var plaza                       # the Plaza del Ayuntamiento (plaza.gd), for the
 var molino                      # the windmill and its yard, when built by hand (molino.gd)
 var toros                       # the old bullring, when built by hand (toros.gd): the ruin, or restored (toros.set_restored)
 var calasanz                    # the nursery school of the Calle del Palo, when built by hand (calasanz.gd)
+var farmacia                    # the pharmacy of the Calle Real and its neighbours, built by hand (farmacia.gd)
+var caridad                     # the hermitage of the Caridad with its square, park and nursery, built by hand (caridad.gd)
+var santaana                    # the convent of Santa Ana, built by hand (santaana.gd)
+var mercamona                   # the supermarket and its car park, built by hand (mercamona.gd)
+var todopizza                   # the pizza house beside it, built by hand (todopizza.gd)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
@@ -88,7 +98,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["details", _build_details], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["details", _build_details], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -132,6 +142,37 @@ func _build_toros() -> void:
 		return
 	toros = TorosS.new()            # the old bullring between Prensa, San Agustín and Vista Alegre, in its two states
 	toros.build(self)
+
+func _build_todopizza() -> void:
+	if MapData.mercamona.is_empty():  # (its parcel is left unraised with the supermarket's: on a map baked before it, Catastro's block stands there)
+		return
+	todopizza = TodopizzaS.new()    # the pizza house beside the supermarket
+	todopizza.build(self)
+
+func _build_mercamona() -> void:
+	if MapData.mercamona.is_empty():  # (a map baked before it: Catastro's block stands there)
+		return
+	mercamona = MercamonaS.new()    # the supermarket by the old road, and its car park a floor below
+	mercamona.build(self)
+
+func _build_santaana() -> void:
+	if MapData.santaana.is_empty():   # (a map baked before it: Catastro's block stands there)
+		return
+	santaana = SantaAnaS.new()      # the convent of Santa Ana: its front, its tower, its church
+	santaana.build(self)
+
+func _build_caridad() -> void:
+	if MapData.caridad.is_empty():    # (a map baked before it: Catastro's blocks stand there)
+		return
+	caridad = CaridadS.new()        # the hermitage of the Caridad, its square, the park of the fountain and the nursery
+	caridad.build(self)
+
+func _build_farmacia() -> void:
+	for hd in MapData.houses:        # (the pharmacy of the Calle Real, the chemist's on the corner and the brick house: farmacia.gd)
+		if String(hd["id"]) == "real_26":
+			farmacia = FarmaciaS.new()
+			farmacia.build(self)
+			return
 
 func _build_calasanz() -> void:
 	if MapData.calasanz.is_empty():   # (a map baked before it: Catastro's block stands there)

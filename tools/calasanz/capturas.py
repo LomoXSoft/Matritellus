@@ -25,6 +25,8 @@ PANO = {
     'D13': ('Y1RprrTOkcptAEiLfWngsw', -93.61, -186.85),
     'B24': ('mxTiJa0obKp3464g_JOw2A', -109.49, -201.28),     # November 2024
     'C24': ('Gw3wVxan3CXUKN-8Q5d_aQ', -102.01, -194.57),
+    'D19': ('yXY6820rO1EBTA3kOCnI-A', -93.84, -188.38),      # October 2019: the cabin gone, the end wall's mural whole
+    'D24': ('rz3QoN2xyshlk5J1QCwRXQ', -94.66, -188.21),      # November 2024: the same, its paint faded
 }
 SHOTS = [
     ('A09_ne', 'A09', 45, 6, 90), ('A09_e', 'A09', 80, 4, 90), ('A09_n', 'A09', 5, 6, 90),
@@ -37,6 +39,7 @@ SHOTS = [
     ('C13_ne', 'C13', 45, 10, 90), ('C13_n', 'C13', 0, 10, 90), ('C13_nw', 'C13', 315, 8, 90),
     ('D13_n', 'D13', 0, 8, 90), ('D13_nw', 'D13', 315, 8, 90), ('D13_ne', 'D13', 45, 8, 90),
     ('B24_ne', 'B24', 45, 8, 90), ('C24_n', 'C24', 0, 8, 90),
+    ('D19_mural', 'D19', 14, 2, 24), ('D24_mural', 'D24', 16, 2, 22),      # the mural of the doves (tools/calasanz/mural.py was drawn over these)
 ]
 
 if __name__ == '__main__':

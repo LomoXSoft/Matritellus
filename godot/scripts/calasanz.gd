@@ -11,8 +11,11 @@ extends "res://scripts/obra.gd"
 ## the street, held by a wall of rubble with railings on it painted by stretches in yellow, blue, red and green; a
 ## green gate between two pillars capped in brick; big trees along the railings. To the left of the house, towards
 ## the Arroyuelo, what the children play on: a wooden tower painted in every colour with its slide, tyres half sunk
-## in the ground, a little house; to the right, a white cabin put there for one more classroom, and a landscape
-## painted on the end wall.
+## in the ground, a little house; to the right, a hopscotch on the floor, and on the end wall the mural: two doves
+## of peace over a rainbow of broad bands, big round flowers at their feet. (The white prefab cabin that stood in
+## front of it until about 2015 is left out -- the user, 15 November 2026: "Yo quitaría ese bloque blanco. Es cierto
+## que está ahí en la vida real pero desentona con el resto del colegio y quita visión del mural. Y el mural de esta
+## zona lo reharía como lo que es. Una paloma de la paz con un arcoíris de fondo.")
 ##
 ## Frame: origin at the left end of the front seen from the street (its north-west corner), on the yard's floor;
 ## +x along the front, +z out of it towards the Calle del Palo.
@@ -32,6 +35,7 @@ const GATE := Vector2(9.6, 12.2)                # the gate, along the front
 const COLS: Array = [3.25, 4.55, 5.85, 7.15, 8.45, 9.75]       # the windows: how far each side of the middle of the front
 const PAINT: Array = [0xe8c020, 0x2a62c8, 0xc8323a, 0x2f9a4a]  # the railings: yellow, blue, red, green
 const PLAY_SET := "res://assets/parque/juegos.glb"
+const MURAL := "res://assets/calasanz/mural_palomas.png"       # painted by tools/calasanz/mural.py
 
 var door: Vector2               # in front of its gate, on the map
 
@@ -54,6 +58,11 @@ func _material(key) -> Material:
 			m = W._tmat(0x5a9a48, "leaf", 1.3)
 		"soil":
 			m = W._tmat(0x6f5d4a, "earth", 1.6)
+		"mural":            # the doves of the end wall: paint, bright in the shade too
+			var paint := StandardMaterial3D.new()
+			paint.albedo_texture = Parts.texture(MURAL)
+			paint.roughness = 1.0
+			m = _glow(paint, 0.3)
 		_:
 			return super(key)
 	_mats[key] = m
@@ -73,7 +82,6 @@ func build(world) -> void:
 	_fences()
 	_trees()
 	_play()
-	_cabin()
 	home()
 	_commit()
 	_tell_map()
@@ -97,7 +105,7 @@ func _yard() -> void:
 		pts.append(q)
 	flat(pts, 0.0, "patio")
 	_prism([PLOT[0], PLOT[1], PLOT[2], PLOT[3]], -RAISE - 0.6, 0.0)
-	# what the children have painted on its floor: a hopscotch by the cabin
+	# what the children have painted on its floor: a hopscotch to the right of the house
 	var at := Vector2(27.0, 2.3)
 	var tints := [0xe8c020, 0x2a62c8, 0xc8323a, 0x2f9a4a, 0xe07a2a]
 	var cells: Array = [Vector2(0, 0), Vector2(1, 0), Vector2(2, -0.5), Vector2(2, 0.5), Vector2(3, 0), Vector2(4, -0.5), Vector2(4, 0.5), Vector2(5, 0)]
@@ -162,12 +170,11 @@ func _house() -> void:
 		var eh: Array = []
 		var eb: Array = [Rect2(0, 0, 0.45, EAVES), Rect2(D - 0.45, 0, 0.45, EAVES), Rect2(0, BAND, D, 0.16), Rect2(0, EAVES - 0.3, D, 0.3)]
 		var ew: Array = []
-		for x in [D * 0.3 - 0.45, D * 0.7 - 0.45]:
-			ew.append([Rect2(x, win_u.x, 0.9, win_u.y - win_u.x), true])
-			if end == 0:
+		if end == 0:                                # (the other end has no windows: a blank white wall over its mural)
+			for x in [D * 0.3 - 0.45, D * 0.7 - 0.45]:
+				ew.append([Rect2(x, win_u.x, 0.9, win_u.y - win_u.x), true])
 				ew.append([Rect2(x, win_g.x, 0.9, win_g.y - win_g.x), false])
-		eb.append(Rect2(D * 0.3 - 0.67, win_u.x - 0.1, D * 0.4 + 1.34, win_u.y - win_u.x + 0.32))
-		if end == 0:
+			eb.append(Rect2(D * 0.3 - 0.67, win_u.x - 0.1, D * 0.4 + 1.34, win_u.y - win_u.x + 0.32))
 			eb.append(Rect2(D * 0.3 - 0.67, win_g.x - 0.1, D * 0.4 + 1.34, win_g.y - win_g.x + 0.32))
 		for w in ew:
 			eh.append(w[0])
@@ -176,7 +183,8 @@ func _house() -> void:
 			_window(w[0], w[1])
 		cornice(0.0, D, EAVES + 0.42, true, "brick")
 		if end == 1:
-			_landscape(0.5, D - 0.5, 0.25, 3.3)
+			box(0.0, 0.0, 0.0, D, 0.3, 0.04, "rubble")                              # the stone foot the mural stands on
+			_doves(0.45, D - 0.45, 0.3, BAND)
 		home()
 	# --- its back, and the wing behind it ---
 	_plain(Vector2(L, -D), Vector2(0, -D), 0.0, EAVES, "white")
@@ -262,6 +270,17 @@ func _porch(cx: float, r: float, spring: float) -> void:
 		for q in [[1.3, 2.75, 0.3, 0.14], [0.45, 1.6, 0.16, 0.3]]:
 			slab(oval(q[0], q[1], q[2], q[3], 10), 0.012, 0.0, 0x3f9a4a)
 		_xf = keep
+
+## The mural of the end wall, on the wall being built from x0 to x1 and y0 to y1: two white doves -- one at rest, one
+## in flight with its wing up -- over a rainbow of broad bands of red, green, blue and yellow, and big round flowers on
+## their stems along the bottom. Redrawn after the real one (tools/calasanz/mural.py).
+func _doves(x0: float, x1: float, y0: float, y1: float) -> void:
+	if Parts.texture(MURAL) == null:
+		_landscape(x0, x1, y0, y1)
+		return
+	pieces += 1
+	quad(Vector3(x0, y0, 0.012), Vector3(x1, y0, 0.012), Vector3(x1, y1, 0.012), Vector3(x0, y1, 0.012), "mural", Vector3(0, 0, 1),
+		[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 
 ## A landscape painted on the wall being built, from x0 to x1 and y0 to y1: sky, hills, a sun, a rainbow, flowers.
 func _landscape(x0: float, x1: float, y0: float, y1: float) -> void:
@@ -468,21 +487,3 @@ func _little_house(at: Vector2) -> void:
 		quad(Vector3(at.x - w / 2.0 - e, h, at.y + s * (d / 2.0 + e)), Vector3(at.x + w / 2.0 + e, h, at.y + s * (d / 2.0 + e)), Vector3(at.x + w / 2.0 + e, top.y, at.y), Vector3(at.x - w / 2.0 - e, top.y, at.y), 0x3f9a4a, Vector3(0, 0.7, s * 0.7))
 	for sx in [-1.0, 1.0]:
 		tri(Vector3(at.x + sx * w / 2.0, h, at.y - d / 2.0), Vector3(at.x + sx * w / 2.0, h, at.y + d / 2.0), Vector3(at.x + sx * w / 2.0, top.y, at.y), 0x3a7fd0, Vector3(sx, 0, 0))
-
-# ---------------- the cabin ----------------
-## The white cabin to the right of the house, put in the yard for one more classroom.
-func _cabin() -> void:
-	var x0 := 25.4
-	var z0 := -1.7
-	var w := 6.0
-	var d := 2.5
-	var h := 2.6
-	box(x0, 0.12, z0, w, h, d, 0xdcdedb)
-	box(x0 - 0.04, h + 0.12, z0 - 0.04, w + 0.08, 0.1, d + 0.08, 0xb9bcba)
-	for i in range(1, 6):
-		box(x0 + w * i / 6.0 - 0.015, 0.12, z0 + d, 0.03, h, 0.012, 0xc6c8c5)
-	box(x0 + w - 1.25, 0.12, z0 + d, 0.9, 2.05, 0.02, 0xc2c4c1)                  # its door, a little window in it
-	box(x0 + w - 1.05, 1.5, z0 + d + 0.01, 0.5, 0.36, 0.014, 0x39566a)
-	box(x0 + 0.5, 1.5, z0 + d, 1.1, 0.7, 0.02, 0x39566a)
-	for q in [x0 + 0.2, x0 + w - 0.5]:
-		box(q, 0.0, z0 + 0.2, 0.3, 0.12, d - 0.4, 0x8f8a80)

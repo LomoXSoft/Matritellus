@@ -74,6 +74,9 @@ func build(world, d: Dictionary) -> Node3D:
 		for e in pc.get("edges", []):
 			edges.append([_local(Vector2(e[0], e[1])), _local(Vector2(e[2], e[3])), int(e[4]) == 1, int(e[5]) == 1])
 		pieces.append({"ring": ring, "edges": edges})
+	if Short.HOUSES.has(id) and (Short.HOUSES[id] as Array).size() == 1 and String(Short.HOUSES[id][0]) == "obra":
+		boxes = 99                                    # built by hand elsewhere, walls and roof and all (farmacia.gd): nothing of it is drawn here
+		return self
 	if has_method("_" + id):
 		call("_" + id)
 	elif Short.ADOSADOS.has(id):
