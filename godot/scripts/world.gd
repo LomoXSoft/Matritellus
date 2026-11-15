@@ -11,6 +11,7 @@ const IglesiaS = preload("res://scripts/iglesia.gd")
 const SaludS = preload("res://scripts/salud.gd")
 const PetrilS = preload("res://scripts/petril.gd")
 const MolinoS = preload("res://scripts/molino.gd")
+const TorosS = preload("res://scripts/toros.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
@@ -72,6 +73,7 @@ var salud                       # the health centre (salud.gd)
 var petril                      # the Petril: the old convent, its church and their little square (petril.gd)
 var plaza                       # the Plaza del Ayuntamiento (plaza.gd), for the self-test
 var molino                      # the windmill and its yard, when built by hand (molino.gd)
+var toros                       # the old bullring, when built by hand (toros.gd): the ruin, or restored (toros.set_restored)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
@@ -84,7 +86,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["details", _build_details], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["details", _build_details], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -122,6 +124,12 @@ func _build_salud() -> void:
 func _build_petril() -> void:
 	petril = PetrilS.new()          # the old convent of San Francisco, its church and the raised square: the "Iglesia del Petril"
 	petril.build(self)
+
+func _build_toros() -> void:
+	if MapData.toros.is_empty():    # (a map baked before it: Catastro's round block stands there)
+		return
+	toros = TorosS.new()            # the old bullring between Prensa, San Agustín and Vista Alegre, in its two states
+	toros.build(self)
 
 func _build_details() -> void:
 	Detalles.add(self)              # the small things of each street, from the street photos

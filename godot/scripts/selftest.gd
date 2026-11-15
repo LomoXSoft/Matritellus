@@ -1057,6 +1057,51 @@ func _petril_checks(walk := false) -> void:
 	_check(left < 0.6, "...and across it under the porch to the door of the church (%.1f m short)" % left)
 	g.player.p = was
 
+## The old bullring (toros.gd), in its two states. `walk`: also go on foot into the restored ring by its door.
+func _toros_checks(walk := false) -> void:
+	var tr = g.world.toros
+	_check(tr != null and tr.pieces > 800 and tr._state.size() == 2, "the old bullring is built by hand, as a ruin and restored (%d pieces)" % (tr.pieces if tr != null else 0))
+	if tr == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var lv: float = tr.level
+	var was: bool = tr.restored
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = tr.spot(a.x, a.y)
+		var q: Vector2 = tr.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, lv + h, p.y), Vector3(q.x, lv + h, q.y), 1)).is_empty()
+	var door_out: Vector2 = tr._p(tr.DOOR + 2.57, tr.R + 3.0)
+	var door_in: Vector2 = tr._p(tr.DOOR + 2.57, tr.R_STAND - 0.6)
+	# the ruin: its wall stops you all round, its door is boarded up, and the lot is fenced but for the open gate
+	tr.set_restored(false)
+	await _frames(4)
+	var shut: bool = ray.call(door_out, door_in, 0.9) and ray.call(Vector2(0.0, 40.0), Vector2(0.0, 10.0), 0.9) and ray.call(Vector2(40.0, 0.0), Vector2(10.0, 0.0), 0.9)
+	var fenced: bool = ray.call(Vector2(40.0, 30.0), Vector2(24.0, 30.0), 0.9) and not ray.call(tr.WEST_B.lerp(tr.SOUTH_B, 0.46) + Vector2(1.6, -2.6) * -1.0, tr.WEST_B.lerp(tr.SOUTH_B, 0.46) + Vector2(1.6, -2.6), 0.9)
+	_check(shut and fenced and not tr._state["nuevo"]["node"].visible, "as a ruin its wall is whole enough to keep you out and its door is boarded up; the lot is fenced, the gate on Vista Alegre open")
+	# restored: the door open and a way through the stands to the sand; the barrier round it; no fence
+	tr.set_restored(true)
+	await _frames(4)
+	var way_in: bool = not ray.call(door_out, door_in, 0.9)
+	var walled: bool = ray.call(Vector2(0.0, 40.0), Vector2(0.0, 10.0), 0.9) and ray.call(Vector2(-10.0, 0.0), Vector2(-20.3, 0.0), 0.5)
+	var open_lot: bool = not ray.call(Vector2(40.0, 30.0), Vector2(24.0, 30.0), 0.9)
+	_check(way_in and walled and open_lot and tr._state["nuevo"]["node"].visible and not tr._state["viejo"]["node"].visible,
+		"restored, its door stands open and leads through the stands to the ring; the wall and the barrier are solid; the fence is gone")
+	var nearest := 99.0
+	for q in tr.yard:
+		nearest = minf(nearest, MapData.road_edge_dist(q))
+	var flat_lot := 0.0
+	for q in [Vector2(0.0, 0.0), Vector2(0.0, 45.0), Vector2(30.0, 20.0), Vector2(-30.0, 25.0)]:
+		flat_lot = maxf(flat_lot, absf(MapData.height(tr.spot(q.x, q.y)) - lv))
+	_check(nearest >= 0.0 and flat_lot < 0.15, "nothing of it stands in a street (the nearest to the asphalt is %.1f m off) and its lot is level (%.2f m at worst)" % [nearest, flat_lot])
+	if walk:
+		var back: Vector2 = g.player.p
+		g.player.p = tr.spot(door_out.x, door_out.y)
+		await _frames(3)
+		var left: float = await _walk_at(tr.spot(door_in.x, door_in.y), 6.0)
+		_check(left < 0.6 and absf(g.player.global_position.y - lv) < 0.1, "on foot you go in by the door and through to the alley round the ring (%.1f m short)" % left)
+		g.player.p = back
+	tr.set_restored(was)
+
 ## The windmill and its yard (molino.gd). `walk`: also go in on foot by the red door and round to the door of the mill
 ## (left out of the full run).
 func _molino_checks(walk := false) -> void:
@@ -5320,6 +5365,42 @@ func _run() -> void:
 			print("menu: opened %s, showing %s" % [page, g.menu.page])
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--toros"):         # just the old bullring: the ruin and then restored, from the three streets, from inside, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(11.0)
+		var tr = g.world.toros
+		if tr == null:
+			print("TOROS FAILED (the map was baked without the bullring)")
+			get_tree().quit(1)
+			return
+		for fine in [false, true]:
+			tr.set_restored(fine)
+			await _frames(4)
+			for v in [["sur", Vector2(4.0, 66.0), 1.7, Vector2(0.0, 26.0), 3.0, 60.0], ["sureste", Vector2(30.0, 44.0), 1.7, Vector2(14.0, 20.0), 2.6, 60.0], ["este", Vector2(45.0, 8.0), 1.7, Vector2(26.0, 2.0), 3.0, 70.0],
+					["oeste", Vector2(-40.5, 8.0), 1.7, Vector2(-26.0, 4.0), 3.0, 75.0], ["cerca", Vector2(26.0, 38.0), 1.7, Vector2(17.5, 23.0), 2.6, 60.0], ["ruedo", Vector2(8.0, 12.0), 1.7, Vector2(-9.0, -13.0), 2.2, 75.0],
+					["grada", Vector2(-13.0, 18.0), 5.2, Vector2(8.0, -10.0), 1.0, 75.0], ["aire", Vector2(34.0, 70.0), 26.0, Vector2(0.0, 6.0), 1.0, 60.0]]:
+				var eye: Vector2 = tr.spot(v[1].x, v[1].y)
+				var at: Vector2 = tr.spot(v[3].x, v[3].y)
+				g.player.p = tr.spot(70.0, 110.0)
+				g.cam.position = Vector3(eye.x, tr.level + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, tr.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("toros_%s_%s" % ["restaurada" if fine else "ruina", v[0]])
+			var over: Vector2 = tr.spot(2.0, 16.0)
+			g.cam.fov = 55.0
+			g.cam.position = Vector3(over.x, tr.level + 120.0, over.y)
+			g.cam.look_at(Vector3(over.x, tr.level, over.y), Vector3(0, 0, -1))
+			await _frames(6)
+			await _shot("toros_%s_above" % ["restaurada" if fine else "ruina"])
+		g.phase = "free"
+		await _toros_checks(true)
+		print("TOROS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--molino"):        # just the windmill and its yard: from the streets round it, from inside, from the air
 		shots = true
 		g.menu.close()
@@ -6040,8 +6121,8 @@ func _run() -> void:
 				var to := Vector2(float(v[3]), float(v[4]))
 				vcam.position = Vector3(from.x, MapData.height(from) + float(v[2]), from.y)
 				var look := Vector3(to.x, MapData.height(to) + float(v[5]), to.y)
-				if (label.begins_with("pt_") and g.world.petril != null) or (label.begins_with("pz_") and g.world.plaza != null) or (label.begins_with("ml_") and g.world.molino != null):          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square; pz_...: in the Plaza del Ayuntamiento's)
-					var pt = g.world.petril if label.begins_with("pt_") else (g.world.plaza if label.begins_with("pz_") else g.world.molino)        # (ml_...: in the windmill's)
+				if (label.begins_with("pt_") and g.world.petril != null) or (label.begins_with("pz_") and g.world.plaza != null) or (label.begins_with("ml_") and g.world.molino != null) or (label.begins_with("tr_") and g.world.toros != null):          # (a view named pt_...: in the Petril's own frame, heights from the floor of its square; pz_...: in the Plaza del Ayuntamiento's)
+					var pt = g.world.petril if label.begins_with("pt_") else (g.world.plaza if label.begins_with("pz_") else (g.world.molino if label.begins_with("ml_") else g.world.toros))        # (ml_...: in the windmill's; tr_...: in the old bullring's)
 					from = pt.spot(float(v[0]), float(v[1]))
 					to = pt.spot(float(v[3]), float(v[4]))
 					vcam.position = Vector3(from.x, pt.level + float(v[2]), from.y)
@@ -6828,6 +6909,7 @@ func _run() -> void:
 	_check(not MapData.townhall.is_empty() and g.world._hands.size() == 5, "the town hall is hand-built and carries the town clock (and the four faces of the church tower keep time with it)")
 	await _plaza_checks()
 	await _molino_checks()
+	await _toros_checks()
 	var th: Dictionary = MapData.townhall
 	var th_m := Vector2(th["m"][0], th["m"][1])
 	var th_u := Vector2(th["u"][0], th["u"][1])

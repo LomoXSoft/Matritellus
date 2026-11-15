@@ -95,6 +95,31 @@ for name, at in PAVED:
         r['p'] = rest
         roads.append({'w': r['w'], 'k': 2, 'h': 'pedestrian', 'n': name, 'p': paved, 'paved': 1})
         print('paved and closed to traffic: %s, %d nodes' % (name, len(paved)))
+# ...and stretches paved between two nodes (the parts of the street whose middle lies between them, east to west): the
+# Calle del Salvador from where it leaves the street at its west end to past no. 19, setts down the middle and brick at
+# the sides like the Calle Real (Street View 2013, 2020 and November 2024; the user, 15 November 2026: "Si es peatonal
+# empedrada, se hace así"); the asphalt starts by no. 23
+PAVED_SPANS = [('Calle del Salvador', (-140.1, 2.1), (10.8, 22.2))]
+for name, at0, at1 in PAVED_SPANS:
+    x0, x1 = min(at0[0], at1[0]), max(at0[0], at1[0])
+    for r in [r for r in roads if r['n'] == name and r['k'] == 0]:
+        cuts = sorted({j for j, i in enumerate(r['p']) if 0 < j < len(r['p']) - 1 and min(math.dist(npts[i], at0), math.dist(npts[i], at1)) < 3.0})
+        pieces, s = [], 0
+        for j in cuts + [len(r['p']) - 1]:
+            pieces.append(r['p'][s:j + 1]); s = j
+        keep = []
+        for piece in pieces:
+            cx = sum(npts[i][0] for i in piece) / len(piece)
+            if x0 <= cx <= x1:
+                roads.append({'w': r['w'], 'k': 2, 'h': 'pedestrian', 'n': name, 'p': piece, 'paved': 1})
+                print('paved and closed to traffic: %s, %d nodes' % (name, len(piece)))
+            else:
+                keep.append(piece)
+        if len(keep) == len(pieces): continue
+        r['p'] = keep[0] if keep else []
+        for piece in keep[1:]:
+            roads.append(dict(r, p=piece))
+roads[:] = [r for r in roads if len(r['p']) > 1]
 def poly_of(w): return [proj(onodes[i]['lat'], onodes[i]['lon']) for i in w['nodes']]
 
 # the corridor every street is guaranteed to keep free of buildings (centre lines drift a little from reality)
@@ -230,6 +255,17 @@ molino = {'o': list(MOLINO['o']), 'u': list(MOLINO['u'])}
 _molino_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'molino.gd')
 if not (os.path.exists(_molino_gd) and 'const READY := true' in open(_molino_gd, encoding='utf-8').read()):      # (not built yet: the plot stays ordinary buildings)
     MOLINO_RC, molino, molino_zone = None, {}, Polygon()
+
+# The old bullring between the Calle de la Prensa, San Agustín and Vista Alegre (godot/scripts/toros.gd; the user, 15
+# November 2026; referencias/plaza_toros/): Catastro's round part is not raised -- toros.gd builds the ring, in its two
+# states, and the lot in front of it, on a level terrace. Its frame: the middle of the ring, the map's own axes.
+TOROS_RC = '4786002VJ5648N'
+TOROS = {'o': (476.3, 548.5)}
+toros_zone = Polygon([(TOROS['o'][0] + x, TOROS['o'][1] + z) for x, z in ((-19.6, -28.0), (-42.5, 27.4), (18.5, 65.8), (47.1, -14.5), (23.9, -13.8), (0.0, -28.6), (-21.1, -17.7))])
+toros = {'o': list(TOROS['o'])}
+_toros_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'toros.gd')
+if not (os.path.exists(_toros_gd) and 'const READY := true' in open(_toros_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    TOROS_RC, toros, toros_zone = None, {}, Polygon()
 
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
@@ -390,6 +426,7 @@ def add_part(g, bid, floors, look=None, hand=None):
     if coop_keeps_clear(c.x, c.y): return                        # ...and so is the cooperative
     if bid == SALUD_RC: return                                   # ...and the health centre
     if bid == MOLINO_RC: return                                  # ...and the windmill with its yard
+    if bid == TOROS_RC: return                                   # ...and the old bullring
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
     elif church_u.contains(c): style, h = 5, max(12.0, floors_c * 4.0)
@@ -547,6 +584,7 @@ if church:          # the church with its atrium, its little square and the park
     u = church['u']; terrace(frame_rect(church['o'], u, (-u[1], u[0]), -16, church['len'] + 10, -church['wid'] - 16, 16))
 terrace(salud_poly.buffer(4.0))      # the health centre (salud.gd)
 if molino: terrace(molino_zone.buffer(3.0))      # the windmill and its yard (molino.gd)
+if toros: terrace(toros_zone.buffer(3.0))        # the old bullring and its lot (toros.gd)
 for gdef, mouth in zip(garages, garage_mouths):       # the garages: the bay and its forecourt
     n = gdef['n']; terrace(frame_rect(gdef['m'], (n[1], -n[0]), n, -gdef['left'] - 3, gdef['right'] + 3, -gdef['d'] - 2, 13))
 for cx_, cz_, rad in ((195.6, 84.4, 10.0), (-99.8, -82.9, 9.0), (1800.0, -1350.0, 45.0)):      # V.I.P.'s front, Henry's, and the set of V.I.P.'s inside
@@ -741,6 +779,7 @@ if church:          # the church plants its own
 _n_trees = len(trees)
 trees = [t for t in trees if not petril_zone.contains(Point(t[0], t[1]))]      # the Petril plants its own (a tree and its cypresses)
 trees = [t for t in trees if not molino_zone.contains(Point(t[0], t[1]))]      # ...and so does the mill's yard
+trees = [t for t in trees if not toros_zone.contains(Point(t[0], t[1]))]       # ...and the bullring's lot
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
@@ -753,7 +792,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

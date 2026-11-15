@@ -37,6 +37,7 @@ var salud: Dictionary = {}       # the health centre's frame: {o: south-west cor
 var church: Dictionary = {}      # the parish church's frame: {o: south-west corner, u: east along the south wall, len, wid, tower}
 var petril: Dictionary = {}      # the Petril's frame (petril.gd): {o: south-west corner of its church, u: east along the church's front}
 var molino: Dictionary = {}      # the windmill's (molino.gd): {o: the middle of the mill, u: east along the north wall of its corral}; empty on a map baked without it
+var toros: Dictionary = {}       # the old bullring's (toros.gd): {o: the middle of its ring}; empty on a map baked without it
 var decks: Array = []            # things people walk over: {o, ax: along it, half, wide (half-width), top: its height, ramp} (the old bridge)
 var _blocked := {}               # stretches of street no car can use (Seg -> true)
 var garages: Array = []          # the garages you drive into: {id, m: doorway [x, z], n: out into the street, w, d, left, right}
@@ -86,6 +87,7 @@ func _ready() -> void:
 	salud = data.get("salud", {})
 	petril = data.get("petril", {})
 	molino = data.get("molino", {})
+	toros = data.get("toros", {})
 	wall_y = data.get("wall_y", [])
 	looks = data.get("looks", [])
 	houses = data.get("houses", [])

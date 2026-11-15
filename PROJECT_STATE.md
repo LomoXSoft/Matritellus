@@ -4,51 +4,11 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 ## Versión
 
-- **Publicada:** 0.0.5 (14/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.5
-- **Con commit, sin publicar:** `3b0a931` (15/11, en `main`, sin subir), la Plaza del Ayuntamiento:
-  - Plaza del Ayuntamiento rehecha a mano (Pretil: `plaza.gd` sobre `obra.gd`). El usuario la vio el 15/11: «un trabajo muy bueno… es un gran avance», con commit pedido por él. Lleva solo lo de la plaza: de `props.gd`, `selftest.gd`, `world.gd`, `bake_godot.py` y `map.json`, únicamente sus partes (la valla con `_reach`, el empedrado de la calle Real, las pruebas de sabotaje y menús siguen en la carpeta sin commit). También van dos retoques: los juegos del parque infantil son modelos libres (`godot/assets/parque/`, CC0) y la terraza del bar tiene seis toldos altos que coloca la plaza (`props.gd`: `_make_terraza_as`, `_prop(..., on_floor)`, toldo cuadrado con `variant >= 100`). Por orden suya, esos dos retoques NO han pasado ni `--plaza` ni la prueba completa: solo compilación y fotos. Después, pedido por el usuario a través de Sistemas: el reloj del ayuntamiento se ve de lejos (sus agujas ya marcaban la hora, pero dejaban de dibujarse a 32 m) y seis niños juegan en el parque (fin de semana de día; de lunes a viernes desde la tarde hasta que anochece; con lluvia no). Los niños están siempre en `npcs` (en casa = `away`), para que el número de vecinos no cambie a mitad de una prueba. `run_tests.py plaza`: OK (8 de 8).
-- **Con commit, sin publicar** (15/11, en `main`, sin subir), el commit «Mejoras del 15/11», pedido por el usuario si la prueba completa salía bien. Lleva todo lo que había en la carpeta, menos la plaza de toros de Pretil (`toros.gd`, `tools/toros/`, a medias). La completa de las 03:50 dio 606 ok; su único fallo era la comprobación de la plaza de toros, enganchada y desenganchada a mitad de la prueba. Las casas de la calle del Salvador (Texturas, cambiadas a las 03:58) entran sin haber pasado la completa:
-  - Molino del Tío Gerardo (Pretil, 15/11, pedido por el usuario; el nombre real no se usa): el molino y su recinto hechos a mano en `molino.gd` sobre `obra.gd`. Toca `world.gd` (`_windmill`, `var molino`), `map_data.gd` (`var molino`), `tools/bake_godot.py` (`MOLINO_RC`, terraza, zona) con `map.json` horneado de nuevo, y `selftest.gd` (modo `--molino`, `_molino_checks()` en la completa, vistas `ml_`). `run_tests.py molino --window`: OK (6 de 6). Enseñado al usuario el 15/11: «Está increíble». **Con commit `83249f0` (15/11, en `main`, sin subir)**, pedido por él: lleva solo lo del molino (de `world.gd`, `selftest.gd`, `bake_godot.py` y `map.json`, únicamente sus partes; el mapa del commit se horneó en una copia limpia, sin el PAVED de la calle Real). Fuera del commit, en la carpeta: el molinero dentro del recinto y su comprobación, y el nombre «Tío Gerardo» (Sistemas). El molinero ya se llama «Tío Gerardo» en los textos (Sistemas).
-  - Sabotaje: la ruta de la furgoneta queda cerrada al tráfico mientras dura la misión (`traffic.closed`, `sabotaje._close_route`), con 4 s de gracia tras recular.
-  - Grúa y tráfico: protegidos ante coches borrados por otro lado; los vehículos de servicio quitan el aparcado que no les deja pasar, si nadie mira (`traffic._clear_parked`).
-  - Calle Real peatonal y empedrada (Texturas, 15/11), desde el cruce con Colón y La Palma hasta el final, la zona de los comercios. En `bake_godot.py` (PAVED) es un paseo (k 2, w 7.5): sin tráfico ni aparcados y sin mover casas. `empedrado.gd` pone el adoquín gris en el centro y el ladrillo a los lados; los dibujos los hace `tools/empedrado_tex.py`. Pasa la completa (15/11, 03:50).
-  - Calle de Colón (Texturas, 15/11, pedida por el usuario): 16 casas descritas una a una (`casas_calles.gd`, `tools/casas/calles.json`, `map.json` horneado de nuevo; solo cambian casas `colon_*`). Un ladrillo nuevo, `brick_buff` (`casas.gd` y `texturas.gd`). `run_tests.py casas "solo=colon_" --window`: OK. Hojas en `guion/fotos/tanda6/`, enseñadas al usuario; falta su veredicto.
-  - Calle del Salvador (Texturas, 15/11, pedida por el usuario): 21 casas descritas con Street View (las fotos del Catastro son viejas). Toca `casas_calles.gd`, `calles.json`, `map.json` y una opción nueva en `bake_godot.py` (`"strip"`: quita las tiras bajas que el Catastro pinta pegadas a una fachada). `run_tests.py casas "solo=salvador_" --window`: OK. Hojas en `guion/fotos/tanda7/`; falta su veredicto. El tramo al oeste de la calle Real también es peatonal en Street View: sin cambiar, pendiente de que lo diga el usuario.
-  - Lista grande del usuario del 15/11 (Sistemas), con prueba de cada modo:
-    - **La Chiki y las pintadas** (`pintadas.gd`; prueba `pintadas`):
-      - tu peña empieza sin paredes;
-      - no se pinta hasta hablar con ella tras la protesta, en una charla con escena por las paredes;
-      - una pista al día, que se marca en el minimapa;
-      - ±1 de confianza con ella al pintar o tapar a los Nietos;
-      - al acabar te llama y te da +50;
-      - con 100 de confianza, su confesión: se llama María y es hermana de Don Luis.
-    - **Mapa grande:** pausa el juego y se mueve y acerca con los joysticks (`_set_map`, `_map_nav`).
-    - **Ajustes:**
-      - modo desarrollador en Gameplay, cuya página sale en la pausa (`_dev_*`);
-      - Modo Silent Hill en Gráficos.
-    - **Hoja del calendario:** dice «madrugada» de 00:00 al amanecer (`moment_name`; la lógica sigue con `night`).
-    - **Flecha y luces de misión:**
-      - la flecha apunta recta y a ras de suelo;
-      - luz amarilla solo para lo que se hace con coche (`_by_car`), flecha verde para la gente (`marcas.givers`).
-    - **Coches:**
-      - el Julietta con motor de ralentí (`ENGINE_PITCH`);
-      - rueda trasera del Yondir rehecha (`wheel_copy`).
-    - **Choques:** la valla se golpea solo cerca de su propia línea (`props._reach`); «Subir» gana a «Hablar» a menos de 3 m.
-    - **En Android:** el nitro se queda puesto con un toque; el salto sube según cuánto lo mantengas.
-    - **Calles estrechas:** sentido único para el tráfico (`one_way_ok`).
-    - **Pantallas:**
-      - «Cargando…» sobre la barra y la versión en una esquina;
-      - en la Steam Machine (gamescope), siempre pantalla completa.
-    - **Aspecto:**
-      - bandas negras a la mitad;
-      - contorno negro;
-      - el título y el creador a las 9:00 (el precalentado dejaba el pueblo a las 5 de la madrugada);
-      - sillas del Kebab Luis giradas.
-    - **Nombres:**
-      - el molinero se llama Tío Gerardo, y con el molino hecho a mano espera dentro de la era, junto a la puerta (`MILLER_AT`); el tractor sigue en la calle;
-      - Nietos de Marzo, con su logo nuevo;
-      - el cabo Ramírez pasa a ser el teniente Torrezón, con su historia;
-      - «riñones» en el vocabulario.
+- **Publicada:** 0.0.6 (15/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.6 — completa de las 04:15: 610 ok, 0 fallos. Lleva:
+  - Hechos a mano sobre `obra.gd` (Pretil): la Plaza del Ayuntamiento (`plaza.gd`; el reloj marca la hora del juego; seis niños en el parque, siempre en `npcs`, en casa = `away`), el Molino del Tío Gerardo (`molino.gd`; el molinero espera en la era, `MILLER_AT` en `game.gd`) y la Antigua Plaza de Toros (`toros.gd`). La plaza de toros empieza en ruina: `world.toros.set_restored(true)` la deja restaurada, para la futura actividad cívica, y `--toros-restaurada` la arranca así.
+  - Calles peatonales y empedradas (Texturas): la calle Real (`PAVED` en `bake_godot.py`) y la del Salvador hasta pasado el 19 (`PAVED_SPANS`); el dibujo lo hace `empedrado.gd`. Casas nuevas de Colón (16) y del Salvador (21), con el ladrillo `brick_buff` y la opción `"strip"` del horneado. Las hojas están en `guion/fotos/tanda6/` y `tanda7/`; el usuario no ha dado su veredicto sobre las casas (el paseo del Salvador sí lo aprobó).
+  - La lista grande del usuario del 15/11 (Sistemas): La Chiki y las pintadas (`pintadas.gd`), el mapa grande con joysticks, los ajustes en tres páginas con las opciones gráficas nuevas, el modo desarrollador, el título, el bate, el salto, la madrugada, la flecha y las luces de misión, el sentido único en calles estrechas, la ruta del sabotaje cerrada al tráfico, los nombres nuevos (Nietos de Marzo, Torrezón, Tío Gerardo) y los arreglos de coches, vallas, sillas y pantallas.
+- **Sin publicar:** nada.
 
 ## Cómo trabajar (normas del usuario, 15/11/2026)
 
