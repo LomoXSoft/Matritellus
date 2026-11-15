@@ -50,7 +50,7 @@ var _phone: Node3D
 var punch := 0.0          # > 0 while throwing a punch (seconds left)
 var look: Dictionary = {}  # what they were last made to look like
 var _hop := 0.0            # > 0 while in the air of a little jump (seconds left)
-const HOP := 0.46
+const HOP := 0.6
 var bat_t := 0.0           # > 0 while swinging the bat (seconds left): out it comes, round it goes, and away again
 const BAT_SWING := 0.7
 var _bat: Node3D
@@ -88,7 +88,17 @@ func hop() -> bool:
 	if _hop > 0.0:
 		return false
 	_hop = HOP
+	hop_k = HOP_TAP
 	return true
+
+## The jump goes higher the longer the key is held, while still on the way up (the user, 15 November 2026: a little
+## higher than it was, and how high up to you). game.gd calls this every tick the key is down.
+var hop_k := 0.5
+const HOP_TAP := 0.55                # how much of the full height a tap gets
+const HOP_TOP := 1.45                # metres, held all the way (it was 0.8 for any jump)
+func hop_more(dt: float) -> void:
+	if _hop > HOP * 0.5:                     # (only on the way up)
+		hop_k = minf(1.0, hop_k + dt * 2.2)
 var _hx := 0.46            # how far out the hands hang (further on a wider body)
 var _girth := 1.0
 
@@ -627,7 +637,7 @@ func anim(moving: bool, dt: float, speed: float) -> void:
 	if _hop > 0.0:
 		_hop = maxf(0.0, _hop - dt)
 		var up := sin((1.0 - _hop / HOP) * PI)
-		inner.position.y += up * 0.8
+		inner.position.y += up * HOP_TOP * hop_k
 		_fl.position.y += up * 0.12              # knees up, arms out
 		_fr.position.y += up * 0.12
 		_hl.position.y += up * 0.25

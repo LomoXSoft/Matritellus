@@ -9,7 +9,7 @@ var testing := false
 var intro_seen := false                          # so going back to the main menu does not replay the studio logo
 var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8, "music": 7, "sfx": 8, "lang": "es", "keys": {},
 	"window": 0, "shadows": 3, "textures": 2, "draw": 1, "fov": 55, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1,
-	"dynres": false, "upscale": 1, "lod": true, "occlusion": true,
+	"dynres": false, "upscale": 1, "lod": true, "occlusion": true, "silent": false, "dev": false,
 	"warm": ""}         # (warm: which version of the game has had its shaders made on this graphics card: calentar.gd)
 
 ## The graphics options (game.gd, apply_graphics, does what they say). The defaults are the game as it always was.
@@ -25,16 +25,17 @@ var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8
 ##              whose renderer has no FSR 2: there it stays at FSR 1)
 ##   lod        far things simplified: the engine's levels of detail, and small details drawn less far
 ##   occlusion  what is hidden behind the houses is not drawn (the walls of the town stand in front of it)
+##   silent     "Modo Silent Hill": a street or two drawn, in a thick fog -- for the humblest machines
 const SCALES := [50, 67, 75, 85, 100]
 const DRAW := [0.6, 1.0, 1.6, 0.0]               # (0: no limit)
 const FOV := [45, 90]
 ## Ready-made sets: Low, Medium, High (the game as it always was), Ultra
-const GRAPHICS := ["shadows", "textures", "draw", "fx", "aa", "ssao", "glow", "scale", "traffic", "dynres", "upscale", "lod", "occlusion"]
+const GRAPHICS := ["shadows", "textures", "draw", "fx", "aa", "ssao", "glow", "scale", "traffic", "dynres", "upscale", "lod", "occlusion", "silent"]
 const PRESETS := [
-	{"shadows": 1, "textures": 1, "draw": 0, "fx": 1, "aa": 0, "ssao": false, "glow": false, "scale": 2, "traffic": 0, "dynres": true, "upscale": 1, "lod": true, "occlusion": true},
-	{"shadows": 2, "textures": 2, "draw": 1, "fx": 2, "aa": 1, "ssao": false, "glow": true, "scale": 4, "traffic": 1, "dynres": true, "upscale": 1, "lod": true, "occlusion": true},
-	{"shadows": 3, "textures": 2, "draw": 1, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": true, "occlusion": true},
-	{"shadows": 3, "textures": 2, "draw": 2, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": false, "occlusion": true},
+	{"shadows": 1, "textures": 1, "draw": 0, "fx": 1, "aa": 0, "ssao": false, "glow": false, "scale": 2, "traffic": 0, "dynres": true, "upscale": 1, "lod": true, "occlusion": true, "silent": false},
+	{"shadows": 2, "textures": 2, "draw": 1, "fx": 2, "aa": 1, "ssao": false, "glow": true, "scale": 4, "traffic": 1, "dynres": true, "upscale": 1, "lod": true, "occlusion": true, "silent": false},
+	{"shadows": 3, "textures": 2, "draw": 1, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": true, "occlusion": true, "silent": false},
+	{"shadows": 3, "textures": 2, "draw": 2, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": false, "occlusion": true, "silent": false},
 ]
 
 ## the ways of scaling the 3D up there are here (a phone's renderer has no FSR 2)
@@ -91,6 +92,10 @@ func _ready() -> void:
 	Controls.load_keys(data["keys"])
 	apply()
 
+## Running in gamescope, the compositor of the Steam Machine's (and the Steam Deck's) game mode
+static func gamescope() -> bool:
+	return OS.get_environment("GAMESCOPE_WAYLAND_DISPLAY") != "" or OS.get_environment("XDG_CURRENT_DESKTOP").to_lower() == "gamescope" 		or OS.get_environment("SteamGamepadUI") == "1"
+
 func save() -> void:
 	data["keys"] = Controls.keys
 	if testing:
@@ -126,7 +131,9 @@ func apply() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if bool(data["vsync"]) else DisplayServer.VSYNC_DISABLED)
 	if int(data["window"]) == 2:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
-	elif int(data["window"]) == 1:
+	elif int(data["window"]) == 1 or gamescope():
+		# (under gamescope -- the Steam Machine's game mode -- a window is left as it is, in a corner on black, and
+		# never scaled: there it is always the full screen, and the resolution is what the 3D is drawn at)
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)

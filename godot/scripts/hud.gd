@@ -63,6 +63,7 @@ var phone_face: Control         # the caller's photo, on the screen of the phone
 var _phone_who := ""
 var _phone_tween: Tween
 var stamp_box: Control          # the rubber stamp that comes down when an errand is done
+var fps_label: Label            # developer mode: the frames per second, in a corner
 var stamp_text: Label
 var _stamp_tween: Tween
 var _stamp_wait := ""          # a stamp waiting for the screen to come back from black
@@ -479,6 +480,13 @@ func _ready() -> void:
 	title_press.modulate.a = 0.0
 	root.add_child(title_press)
 
+	fps_label = _label(18, Color(0.6, 1.0, 0.6))
+	fps_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	fps_label.add_theme_constant_override("outline_size", 6)
+	fps_label.position = Vector2(12, 8)
+	fps_label.visible = false
+	root.add_child(fps_label)
+
 	# fade to black (sleep) and the generic centre overlay (title, pause, fail, end of day)
 	fade = ColorRect.new()
 	fade.color = Color.BLACK
@@ -845,10 +853,12 @@ func phone_point() -> Vector2:
 ## (green for more, red for less), stays a few seconds and goes back up.
 ## (`pc` below zero: nobody has told you about Puntos Cívicos yet, and their place on the slate stays empty)
 func set_counts(money: int, saffron: int, pc: int, mine: int, walls: int) -> void:
-	var vals := [money, saffron, maxi(pc, 0), mine]
-	var now := ["%d €" % money, str(saffron), str(maxi(pc, 0)), "%d/%d" % [mine, walls]]
+	var vals := [money, saffron, maxi(pc, 0), maxi(mine, 0)]
+	var now := ["%d €" % money, str(saffron), str(maxi(pc, 0)), "%d/%d" % [maxi(mine, 0), walls]]
 	tally[2][0].visible = pc >= 0
 	tally[2][1].visible = pc >= 0
+	tally[3][0].visible = mine >= 0             # (the walls: not until La Chiki has given you a spray, pintadas.gd)
+	tally[3][1].visible = mine >= 0
 	var first: bool = _tally_vals.is_empty()
 	var moved := false
 	for i in range(4):
@@ -898,6 +908,8 @@ func set_hp(frac: float) -> void:
 	hp_fill.bg_color = Color("5aa84f") if frac > 0.5 else (Color("e8a23a") if frac > 0.25 else Color("e23b3b"))
 
 func _process(dt: float) -> void:
+	if fps_label.visible:
+		fps_label.text = "%d FPS" % Engine.get_frames_per_second()
 	if _stamp_wait != "" and fade.modulate.a <= 0.05:
 		stamp(_stamp_wait)
 	for entry in tally:                           # the amounts just added or taken away hang under their own number
@@ -1089,7 +1101,7 @@ func show_overlay(title: String, sub: String, body: String, foot: String, title_
 func hide_overlay() -> void:
 	overlay.visible = false
 
-const CINE_BAR := 92.0
+const CINE_BAR := 46.0                 # (half what it was: the heads are big enough to frame as it is, the user, 15 Nov 2026)
 const DLG_MARGIN := 56
 
 func cine(on: bool) -> void:

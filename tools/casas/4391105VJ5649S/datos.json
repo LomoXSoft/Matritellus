@@ -1,0 +1,124 @@
+{
+ "rc": "4391105VJ5649S",
+ "record": {
+  "address": "CL COLON 18 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "31",
+  "year": "2007",
+  "units": [
+   {
+    "use": "COMERCIO",
+    "floor": "00",
+    "door": "02",
+    "m2": "31"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4391105VJ5649S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 31.2,
+   "ring": [
+    [
+     20.87,
+     7.95
+    ],
+    [
+     18.14,
+     7.04
+    ],
+    [
+     21.47,
+     -3.05
+    ],
+    [
+     24.28,
+     -1.7
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      20.87,
+      7.95
+     ],
+     "b": [
+      18.14,
+      7.04
+     ],
+     "len": 2.88,
+     "out": [
+      -0.316,
+      0.949
+     ],
+     "street": "",
+     "to_centre": 16.95
+    },
+    {
+     "a": [
+      18.14,
+      7.04
+     ],
+     "b": [
+      21.47,
+      -3.05
+     ],
+     "len": 10.63,
+     "out": [
+      -0.95,
+      -0.313
+     ],
+     "street": "Calle de Colón",
+     "to_centre": 7.78
+    },
+    {
+     "a": [
+      21.47,
+      -3.05
+     ],
+     "b": [
+      24.28,
+      -1.7
+     ],
+     "len": 3.12,
+     "out": [
+      0.433,
+      -0.901
+     ],
+     "street": "Calle de Colón",
+     "to_centre": 2.52
+    },
+    {
+     "a": [
+      24.28,
+      -1.7
+     ],
+     "b": [
+      20.87,
+      7.95
+     ],
+     "len": 10.23,
+     "out": [
+      0.943,
+      0.333
+     ],
+     "street": "Calle de Colón",
+     "to_centre": 7.62
+    }
+   ],
+   "ground": [
+    0.67,
+    1.44
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": 9.140093636836426,
+  "z0": -12.05009233164786,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

@@ -140,6 +140,40 @@ func add(kind: String, hex: int, a: int, b: int) -> Dictionary:
 	list.append(e)
 	return e
 
+## A car with somewhere to be (the tow truck on its way to a breakdown, a patrol car, the delivery lorry) held up by
+## a parked car it cannot get round, in a narrow street or on a corner: if nobody is looking, the parked car goes.
+## They are put about the town at random, and now and then one is left where nothing bigger fits past -- the truck
+## and the lorry sat behind one for minutes (found by the Pretil session, 15 November 2026).
+func _clear_parked(car) -> void:
+	if car == null or not is_instance_valid(car) or not game.cars.has(car) or car == game.in_car or car == game.paca_car or car.running:
+		return
+	if game.sees(car.p):
+		return
+	game.cars.erase(car)
+	car.queue_free()
+
+## Streets closed to the town's traffic for a while: the delivery lorry's way across town, while Don Luis's errand
+## is on (the user's idea, 15 November 2026: it got stuck behind neighbours and parked cars in the narrow streets).
+## Keys are the two ends of a stretch, either way round (closed_key). No new car comes out on them, and those on them
+## are taken away when nobody is looking.
+var closed := {}
+static func closed_key(a: int, b: int) -> int:
+	return mini(a, b) * 100000 + maxi(a, b)
+
+func is_closed(a: int, b: int) -> bool:
+	return not closed.is_empty() and closed.has(closed_key(a, b))
+
+## A street too narrow for two cars to pass is one way for the town's traffic (the user, 15 November 2026: they met
+## nose to nose in it and stuck). Which way is fixed for each stretch (from its lower-numbered end). Only the
+## neighbours keep to it: you, the police after you and the cars on a job go where they must. And at a corner with
+## no way on that is allowed, a car turns round as it always did.
+const ONE_WAY_HW := 2.4                      # half-widths under this: a street under 4.8 m
+func one_way_ok(a: int, b: int) -> bool:
+	var s = MapData.seg_between(a, b)
+	if s == null or MapData.fitted_hw(s) >= ONE_WAY_HW:
+		return true
+	return a < b
+
 ## The story starts on foot in the Calle de Alemania, Tía Paca's car at the door: until that first talk with her is
 ## over nobody drives down that street (no car comes out of nowhere through the scene, or through hers).
 const QUIET_STREET := "Calle de Alemania"
@@ -151,12 +185,12 @@ func _spawn(pp: Vector2) -> void:
 	if spot == null:
 		return
 	var a := MapData.nearest_node(spot)
-	var opts := MapData.neighbours(a)
+	var opts := MapData.neighbours(a).filter(func(o): return one_way_ok(a, o))
 	if opts.is_empty():
 		return
 	var b: int = opts.pick_random()
 	var s = MapData.seg_between(a, b)
-	if s == null or not MapData.drivable(s) or quiet(s):
+	if s == null or not MapData.drivable(s) or quiet(s) or is_closed(a, b):
 		return
 	var roll := randf()
 	var kind := "panda"
@@ -200,8 +234,11 @@ func _gather() -> void:
 	for e in game.police.cops:
 		_add_vehicle(e["car"])
 	for job in game.tow.jobs:                # broken down, or on the hook (then it belongs to the truck pulling it)
-		var pulling: bool = job["state"] == "tow" and job["truck"] != null
-		_add_vehicle(job["car"], job["truck"]["car"] if pulling else null, job["truck"]["car"].vel if pulling else null)
+		if not is_instance_valid(job["car"]):
+			continue                             # (taken away by something else: tow.gd lets the job go on its next tick)
+		var truck = job["truck"]["car"] if job["truck"] != null else null
+		var pulling: bool = job["state"] == "tow" and truck != null and is_instance_valid(truck)
+		_add_vehicle(job["car"], truck if pulling else null, truck.vel if pulling else null)
 	if game.in_car == null:
 		_obs.append([game.player.p, 0.7, Vector2.ZERO, PERSON, game.player])      # (you: the one person a car on a job still brakes for)
 	for n in game.npcs:
@@ -270,7 +307,7 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 		var far := cp.distance_to(pp)
 		var working: bool = e.has("job")              # a tow truck on a call: tow.gd decides when it goes
 		var auto: bool = e.get("auto", false)          # the player's car on autopilot: never scrapped, never towed
-		if not auto and (far > 330.0 or (not working and ((e["wait"] > 16.0 and far > 40.0) or (c.flipped() and far > 60.0) or (e["tries"] >= 4 and far > 55.0)))):
+		if not auto and (far > 330.0 or (not working and ((e["wait"] > 16.0 and far > 40.0) or (c.flipped() and far > 60.0) or (e["tries"] >= 4 and far > 55.0) or (is_closed(e["a"], e["b"]) and not game.sees(cp))))):
 			list.erase(e)
 			if _pool.size() < POOL and not c.flipped() and c.kind != "pitufo" and c.kind != "grua" and c.kind != "tricornio" and not e.has("job"):
 				_put_away(c)
@@ -314,7 +351,7 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 				if o == e["a"] and opts.size() > 1:
 					continue
 				var s2 = MapData.seg_between(e["b"], o)
-				if s2 == null or not MapData.drivable(s2) or quiet(s2):
+				if s2 == null or not MapData.drivable(s2) or quiet(s2) or not one_way_ok(e["b"], o):
 					continue
 				var score: float = (MapData.nodes[o] - to).normalized().dot(u) + randf() * 1.2
 				if score > best_score:
@@ -460,6 +497,8 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 		if stop:
 			e["dbg"] = [near[3], near_d, near[0]]        # (what it is waiting for: the self-test reports it if the wait goes wrong)
 			e["wait"] += dt
+			if near[3] == VEHICLE and e["wait"] > 3.0 and (on_duty(e) or not (e.get("route", []) as Array).is_empty()):
+				_clear_parked(near[4])
 			e["honk"] -= dt
 			e["stuck"] = 0.0
 			c.drive(0.0, steer, true, true, dt)

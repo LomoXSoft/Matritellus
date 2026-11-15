@@ -411,10 +411,10 @@ func show() -> void:
 	match stage():
 		"alcalde":
 			G.hud.set_objective(G._tag(), Loc.t("obj_rec_mayor"))
-			G.set_target(G.named["alcalde"].p, true)
+			G.set_target(G.named["alcalde"].p, false)
 		"copisteria":
 			G.hud.set_objective(G._tag(), Loc.t("obj_rec_copy"))
-			G.set_target(G.named["copista"].p, true)
+			G.set_target(G.named["copista"].p, false)
 		"carteles":
 			G.hud.set_objective(G._tag(), Loc.t("obj_rec_posters") % [st["posters"].size(), POSTERS])
 			var s = _nearest_free_shop(G.player.p)

@@ -13,7 +13,7 @@ const DIR := "res://assets/texturas/"
 const PICKS := {         # the user's choices, 12 November 2026 (sheets in guion/fotos/texturas/)
 	"render": "painted_plaster_wall",
 	"brick": "brick_wall_003", "brick_orange": "brick_wall_003", "brick_brown": "brick_wall_003", "brick_dark": "brick_wall_003",
-	"brick_pale": "brick_wall_003", "brick_salmon": "brick_wall_003", "brick_rose": "brick_wall_003",          # (one brick, in each one's own colour)
+	"brick_pale": "brick_wall_003", "brick_salmon": "brick_wall_003", "brick_rose": "brick_wall_003", "brick_buff": "brick_wall_003",          # (one brick, in each one's own colour)
 	"brick_red": "brick_wall_006",
 	"slab": "granite_tile_04",
 	"stone": "stone_wall",

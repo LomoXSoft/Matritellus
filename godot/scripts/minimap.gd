@@ -2,6 +2,8 @@ extends Control
 ## Draws the street map: a small north-up minimap around the player, or the whole town when full = true.
 
 var full := false
+var zoom := 1.0              # (the whole town: how much closer, and how far from its middle; game.gd _map_nav)
+var pan := Vector2.ZERO
 var center := Vector2.ZERO
 var heading := 0.0
 var round := false           # on its plate: no frame of its own, and it turns so that the way you look is up
@@ -13,6 +15,7 @@ var cars: Array = []
 var cops: Array = []
 var repairs: Array = []
 var ramps: Array = []
+var spray: Array = []        # walls La Chiki told you of, not yours yet (pintadas.gd hinted)
 var blink := false
 var _passes := [[], [], []]  # segments by road kind: asphalt, dirt, footpath
 const CELL := 90.0
@@ -42,8 +45,8 @@ func _draw() -> void:
 	var k: float
 	var c: Vector2
 	if full:
-		k = minf(sz.x / (MapData.xmax - MapData.xmin), sz.y / (MapData.zmax - MapData.zmin))
-		c = Vector2((MapData.xmin + MapData.xmax) / 2.0, (MapData.zmin + MapData.zmax) / 2.0)
+		k = minf(sz.x / (MapData.xmax - MapData.xmin), sz.y / (MapData.zmax - MapData.zmin)) * zoom
+		c = Vector2((MapData.xmin + MapData.xmax) / 2.0, (MapData.zmin + MapData.zmax) / 2.0) + pan
 	else:
 		k = sz.x / (2.0 * radius)
 		c = center
@@ -102,6 +105,13 @@ func _draw() -> void:
 	for q in ramps:
 		var rp: Vector2 = (q - c) * k + half
 		draw_colored_polygon(PackedVector2Array([rp + Vector2(0, -5), rp + Vector2(5, 4), rp + Vector2(-5, 4)]), Color("f28c1e"))
+	for q in spray:             # a wall La Chiki thinks she saw: a spray-paint blot
+		var rel: Vector2 = (q - c) * k
+		if not full and rel.length() > sz.x / 2.0 - 10.0:
+			continue                             # (off the corner map: it is on the big one)
+		var sp: Vector2 = rel + half
+		draw_circle(sp, 6.0, Color("1a1612"))
+		draw_circle(sp, 4.5, Color("e0399b"))
 	for q in cops:              # Los Pitufos
 		draw_circle((q - c) * k + half, 5.0, Color("2f6bff") if blink else Color("ffffff"))
 	if target != null:

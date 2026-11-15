@@ -46,7 +46,7 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
   con el mercado; el domingo es el pollo de no cocinar. Quien llega tarde se queda sin pollo.
 
 - **Las peñas** (en el juego, los grafitis de cada una salen por las paredes del pueblo; Luis hizo sus logos):
-  - **Nietos de Mayo**: azul y naranja, un sol sobre un tejado en triángulo. (Hasta el 13/11/2026 se llamaban «Nietos de
+  - **Nietos de Marzo**: azul y naranja, un sol sobre un tejado en triángulo. (Hasta el 13/11/2026 se llamaban «Nietos de
     Marzo» en el juego; Luis lo dejó como en su logo.)
   - **La Croquetilla** («Peña Manchega»): una croqueta con zapatillas y un botellín en la mano.
   - **El Bordillo**: la silla de plástico blanca y las latas a la puerta de casa. Como «cerquillo» y «bordillo» son lo
@@ -135,6 +135,9 @@ el escalón de la puerta de la calle y el de la acera; «cerquillo» y «bordill
 nidos (rincones donde se amontona todo) · paereja (tapia de linde) · ruillo (apero para amontonar la parva) ·
 salicón (la bola de pinchos seca que rueda por el campo; en Consuegra, calamino) · senapismo (trasto inútil, cosa
 o persona).
+
+**Los riñones** (el usuario, 15/11/2026): así se llama a la espalda cuando duele, la parte baja sobre todo.
+«Me duelen los riñones de estar agachao todo el día.» · «Menudo golpe me di en los riñones la semana pasada.»
 
 ## El campo: aceituna, vendimia y comer fuera (contado por el autor)
 

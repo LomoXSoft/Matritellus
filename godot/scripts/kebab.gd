@@ -531,7 +531,7 @@ func serve(ti: int, si: int, what: String) -> Array:
 func takeaway(what: String, on: Node3D) -> Node3D:
 	return _prop(what, Vector3(0.22, 0.72, 0.4), 0.0, 0.0, 0.3, on)
 
-const CHAIR_TURN := 0.0         # how the kit's chair must be turned to face a table that is at its -z
+const CHAIR_TURN := PI          # how the kit's chair must be turned to face a table that is at its -z (0 left them all back to front: the user, 15 Nov 2026)
 const SEAT := 0.42               # how high above the floor somebody sitting is put
 const TABLE_TOP := 0.68          # how high the kit's table comes out when it is 1.25 m long
 

@@ -11,3 +11,5 @@ __pycache__/
 *.pyc
 # this machine's own settings
 .claude/settings.local.json
+# self-test logs (tools/run_tests.py)
+logs/

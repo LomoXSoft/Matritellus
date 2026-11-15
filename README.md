@@ -17,6 +17,7 @@ Repositorio privado: https://github.com/LomoXSoft/Matritellus
 ## Jugar y probar
 
 - Jugar desde el proyecto: `play.bat`. Usa Godot en `C:\Users\luis_\Fable\tools\godot\`.
+- **Forma de lanzar las pruebas:** `python tools/run_tests.py [modo …] [--window] [--repeat N] [--timeout S]`. Es una sola llamada que espera al final, guarda el registro completo en `logs/` y saca un resumen corto. Si hay un error de sintaxis, corta enseguida. Estado y normas de trabajo en `PROJECT_STATE.md`.
 - Prueba completa: tarda unos 10 minutos; lánzala en segundo plano.
 
   ```bash

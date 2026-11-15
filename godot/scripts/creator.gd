@@ -42,7 +42,7 @@ static func where(option: int) -> Array:
 
 ## The peñas. Their logos (Luis's, 13 November 2026) are what they spray on the walls: assets/penas/<PENA_IDS>.png
 ## (tools/make_penas.py). Each one's colour is its logo's, for the neckerchief its members wear.
-const PENAS := ["Nietos de Mayo", "La Croquetilla", "El Bordillo", "Peña Centradito", "Costrola Peña", "Peña Al Prao'"]      # (as their logos say)
+const PENAS := ["Nietos de Marzo", "La Croquetilla", "El Bordillo", "Peña Centradito", "Costrola Peña", "Peña Al Prao'"]      # (as their logos say)
 const PENA_IDS := ["nietos", "croquetilla", "bordillo", "centradito", "costrola", "al_prao"]
 const PENA_COLORS := [Color("2f63d6"), Color("f28a00"), Color("f2c200"), Color("8cc63f"), Color("d42a1e"), Color("1e8c3a")]
 const KERCHIEFS := [0x2f63d6, 0xf28a00, 0xf2c200, 0x8cc63f, 0xd42a1e, 0x1e8c3a]      # the same colours, for the neckerchief

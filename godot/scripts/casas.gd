@@ -50,6 +50,7 @@ const MASONRY := {
 	"brick_pale": [Color(1.42, 1.4, 1.3), 1.15],        # the pale yellow facing brick of the communications tower
 	"brick_salmon": [Color(1.22, 1.06, 0.96), 1.15],    # ...and the pinker one of its foot
 	"brick_rose": [Color(1.2, 1.3, 1.5), 1.15],        # the pale pink facing brick of houses built since 2005
+	"brick_buff": [Color(1.14, 1.26, 1.34), 1.15],      # buff, nearly grey: the facing brick of the 2000s on the Calle de Colón
 }
 
 func build(world, d: Dictionary) -> Node3D:
@@ -893,8 +894,9 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 			for nt in f.get("plates", []):           # the notices people put up: for sale, a garage way, no parking
 				if (nt.size() > 6 and int(nt[6]) == 1) == side:     # (lado=1: on the long side to another street, not on the front)
 					_plate(float(nt[0]) * L, y + float(nt[1]), fly + float(nt[3]), String(nt[2]), int(nt[4]) if nt.size() > 4 else -1, int(nt[5]) if nt.size() > 5 else 0)
-		if f.has("terrace") and not side:
-			var tr: Array = f["terrace"]
+		var own: Dictionary = f if not side else ((spec["flank"][i] as Dictionary) if _flank and spec.has("flank") and i < (spec["flank"] as Array).size() else {})
+		if own.has("terrace"):                   # (a long balcony: the front's, or the long side's own as the photos show it)
+			var tr: Array = own["terrace"]
 			var tx: float = float(tr[0]) * L
 			var tw: float = (float(tr[1]) - float(tr[0])) * L
 			var td: float = tr[2]
@@ -1513,11 +1515,17 @@ const SPECS := {
 	"alemania_tapia": {"eaves": "tiles", "floors": [       # 1950 (Street View, Nov 2024): an old house of rough grey-brown render under its tiles, three barred windows (one in a red frame), the gable of a taller part behind
 		{"wall": 0xb3a894, "plinth": [0.5, 0x9a9080], "open": [["win", 0.22, 1.0, 1.0, 1.2, {"g": "bars", "f": 0x3a3d40, "d": 0.0}], ["win", 0.36, 1.0, 1.0, 1.2, {"g": "bars", "f": 0x3a3d40, "d": 0.0}],
 			["win", 0.68, 0.9, 1.0, 1.3, {"g": "bars", "f": 0x8a3a2a, "d": 0.0}]]},
-		{"wall": 0xb3a894}]},
+		{"wall": 0xb3a894}],
+		"flank": [                                       # its long side on the Travesía de Alemania (Street View, Nov 2024): a whitewashed house, barred window, curtained door, barred window, small iron balconies above (its spacing beyond the door is a guess: the panoramas there are a few metres off)
+			{"wall": 0xe8e4d8, "plinth": [0.5, 0xa8a49a], "open": [["win", 0.12, 1.2, 1.0, 1.2, {"g": "bars", "s": 0xb8a890, "sb": 0.15}], ["door", 0.40, 1.2, 2.3, {"k": "curtain", "c": 0xb87a6a, "s": 0xb8a890, "sb": 0.15}], ["win", 0.70, 1.2, 1.0, 1.2, {"g": "bars", "s": 0xb8a890, "sb": 0.15}]]},
+			{"wall": 0xe8e4d8, "open": [["win", 0.12, 0.9, 0.9, 1.1, {"bal": "iron", "s": 0xb8a890, "sb": 0.12, "b": 0xf0ece4, "d": 0.6}], ["win", 0.40, 0.9, 0.9, 1.1, {"bal": "iron", "s": 0xb8a890, "sb": 0.12, "b": 0xf0ece4, "d": 0.6}], ["win", 0.70, 0.9, 0.9, 1.1, {"bal": "iron", "s": 0xb8a890, "sb": 0.12}]]}]},
 	"alemania_9": {"eaves": "cornice", "tol": 1.1, "floors": [       # 2009: cream render framed in oxide red on a skirting of tiles; mottled brown brick upstairs
 		{"wall": 0xe6cf9f, "plinth": [0.8, "tile_tan"], "open": [["win", 0.1, 1.1, 0.9, 1.45, {"g": "bars", "s": 0x8a5a48}], ["door", 0.3, 1.15, 2.3, {"k": "curtain", "c": 0xc9b89a, "s": 0x8a5a48}],
 			["win", 0.54, 1.1, 0.9, 1.45, {"g": "bars", "s": 0x8a5a48}], ["win", 0.8, 1.1, 0.9, 1.45, {"g": "bars", "s": 0x8a5a48}]]},
-		{"wall": "brick_brown", "band": 0x8a5a48, "open": [["win", 0.2, 1.1, 1.0, 1.2, {}], ["win", 0.44, 1.1, 1.0, 1.2, {}], ["bal", 0.74, 1.1, 2.1, {}]]}]},
+		{"wall": "brick_brown", "band": 0x8a5a48, "open": [["win", 0.2, 1.1, 1.0, 1.2, {}], ["win", 0.44, 1.1, 1.0, 1.2, {}], ["bal", 0.74, 1.1, 2.1, {}]]}],
+		"flank": [                                       # its long side on the Travesía (Street View, Nov 2024): the same cream framed in brown below, one barred window; brown brick above with an iron balcony (the far half was not in view: left plain)
+			{"wall": 0xe6cf9f, "plinth": [0.8, "tile_tan"], "open": [["win", 0.38, 1.2, 0.9, 1.45, {"g": "bars", "s": 0x8a5a48}]]},
+			{"wall": "brick_brown", "band": 0x8a5a48, "open": [["bal", 0.42, 1.1, 2.1, {"bw": 1.6}]]}]},
 	"alemania_3": {"eaves": "brackets", "floors": [        # 1994 (Street View, Nov 2024): chocolate brick in a chequer of white panels round every opening; four arched balconies, a maroon gate, a pink curtain
 		{"wall": "brick_dark", "plinth": [0.8, "stone"], "open": [["gar", 0.16, 3.4, 2.9, {"k": "planks", "c": 0x6a2a3a, "s": W1, "sb": 0.4}], ["win", 0.45, 1.2, 1.0, 1.3, {"g": "bars", "s": W1, "sb": 0.5, "b": 0x4a3428}],
 			["door", 0.65, 1.1, 2.3, {"k": "curtain", "c": 0xc9a090, "s": W1, "sb": 0.45}], ["win", 0.85, 1.2, 1.0, 1.3, {"g": "bars", "s": W1, "sb": 0.5, "b": 0x4a3428}]]},
@@ -1527,7 +1535,10 @@ const SPECS := {
 		{"wall": "brick", "plinth": [0.7, 0xe6e0d2], "open": [["win", 0.07, 0.8, 1.15, 1.0, {"g": "bars", "f": 0x3a3028, "d": 0.0}], ["win", 0.15, 0.8, 1.15, 1.0, {"g": "bars", "f": 0x3a3028, "d": 0.0}],
 			["win", 0.23, 0.8, 1.15, 1.0, {"g": "bars", "f": 0x3a3028, "d": 0.0}], ["door", 0.41, 1.3, 2.4, {"c": 0x3a2a20, "s": 0xd9cdb0, "sb": 0.25}], ["gar", 0.78, 5.0, 2.7, {"k": "sect", "c": 0x4a2e24}]]},
 		{"wall": "brick", "fly": 0.3, "open": [["bal", 0.08, 1.0, 2.1, {"b": 0x3a2a24, "bw": 1.6}], ["bal", 0.2, 1.0, 2.1, {"b": 0x3a2a24, "bw": 1.6}], ["bal", 0.37, 1.1, 2.1, {"b": 0x3a2a24, "bw": 1.8}],
-			["bal", 0.6, 1.1, 2.1, {"b": 0x3a2a24, "bw": 1.8}], ["bal", 0.82, 1.3, 2.1, {"b": 0x3a2a24, "bw": 2.6}]]}]},
+			["bal", 0.6, 1.1, 2.1, {"b": 0x3a2a24, "bw": 1.8}], ["bal", 0.82, 1.3, 2.1, {"b": 0x3a2a24, "bw": 2.6}]]}],
+		"flank": [                                       # its long side on Calle de Madrid (Street View, Nov 2024): the same tan brick on white stone, three barred windows below, two balconies and a window above
+			{"wall": "brick", "plinth": [0.7, 0xe6e0d2], "open": [["win", 0.155, 1.3, 1.1, 1.1, {"g": "bars", "f": 0x3a3028, "d": 0.5, "b": 0x3a2a24}], ["win", 0.385, 1.3, 1.1, 1.1, {"g": "bars", "f": 0x3a3028, "d": 0.5, "b": 0x3a2a24}], ["win", 0.72, 1.3, 1.1, 1.1, {"g": "bars", "f": 0x3a3028, "d": 0.5, "b": 0x3a2a24}]]},
+			{"wall": "brick", "open": [["bal", 0.13, 1.1, 2.1, {"b": 0x3a2a24, "bw": 1.9}], ["bal", 0.37, 1.1, 2.1, {"b": 0x3a2a24, "bw": 1.9}], ["win", 0.75, 1.3, 1.0, 1.2, {"b": 0x3a2a24, "d": 0.6}]]}]},
 	"alemania_5": {"eaves": "tiles", "floors": [           # the house you inherit: old lime on a worn foot, a door, a window, the corral gate
 		{"wall": 0xe4dccb, "plinth": [0.55, 0xb8ab98], "open": [["door", 0.2, 1.0, 2.1, {"c": 0x5a3a22, "s": 0xf4f0e6, "sb": 0.16}], ["win", 0.36, 0.9, 1.15, 1.0, {"f": 0x5a3a22, "d": 1.0, "b": 0x6a5a48}],
 			["gar", 0.74, 2.8, 2.5, {"k": "planks", "c": 0x6a5238}]]}]},
@@ -1579,17 +1590,32 @@ const SPECS := {
 			["gar", 0.52, 3.2, 3.0, {"k": "planks", "c": 0x8a3a2a}], ["win", 0.76, 0.7, 1.4, 1.1, {"g": "bars", "f": 0x7a4a34, "d": 0.0}], ["win", 0.92, 0.7, 1.4, 1.1, {"g": "bars", "f": 0x7a4a34, "d": 0.0}]]},
 		{"wall": "brick_red", "band": 0xd9cdb8, "open": [["bal", 0.1, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.25, 1.1, 1.0, 1.2, {}], ["bal", 0.42, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.58, 1.1, 1.0, 1.2, {}], ["bal", 0.74, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.9, 1.1, 1.0, 1.2, {}]]},
 		{"wall": "brick_red", "band": 0xd9cdb8, "open": [["bal", 0.1, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.25, 1.1, 1.0, 1.2, {"d": 0.4}], ["bal", 0.42, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.58, 1.1, 1.0, 1.2, {}], ["bal", 0.74, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.9, 1.1, 1.0, 1.2, {"d": 0.3}]]},
-		{"wall": "brick_red", "band": 0xd9cdb8, "open": [["bal", 0.1, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.25, 1.1, 1.0, 1.2, {}], ["bal", 0.42, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.58, 1.1, 1.0, 1.2, {"d": 0.5}], ["bal", 0.74, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.9, 1.1, 1.0, 1.2, {}]]}]},
+		{"wall": "brick_red", "band": 0xd9cdb8, "open": [["bal", 0.1, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.25, 1.1, 1.0, 1.2, {}], ["bal", 0.42, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.58, 1.1, 1.0, 1.2, {"d": 0.5}], ["bal", 0.74, 1.3, 2.2, {"k": "white", "bw": 2.6}], ["win", 0.9, 1.1, 1.0, 1.2, {}]]}],
+		"flank": [                                       # its long side on the Avenida (Street View, Nov 2024): the yellow ground floor with red gates, a red door, a blue curtain, a side door by the corner; red brick above with white-framed windows (approximate past the middle: the panoramas there are a few metres off)
+			{"wall": 0xe0a830, "plinth": [1.0, "stone"], "h": 3.4, "open": [["gar", 0.14, 2.6, 2.8, {"k": "planks", "c": 0x9a3a2a}], ["door", 0.32, 0.9, 2.3, {"c": 0x9a3a2a}], ["door", 0.415, 1.4, 2.3, {"k": "curtain", "c": 0x4a6ab8}], ["gar", 0.55, 2.8, 2.8, {"k": "planks", "c": 0x9a3a2a}], ["door", 0.85, 0.9, 2.2, {"c": 0x6a4a34}]]},
+			{"wall": "brick_red", "band": 0xd9cdb8, "open": [["win", 0.2, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.42, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.56, 1.4, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.72, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["bal", 0.86, 1.2, 2.1, {"k": "white", "bw": 1.8}]]},
+			{"wall": "brick_red", "band": 0xd9cdb8, "open": [["win", 0.2, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.42, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.56, 1.4, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.72, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["bal", 0.86, 1.2, 2.1, {"k": "white", "bw": 1.8}]]},
+			{"wall": "brick_red", "band": 0xd9cdb8, "open": [["win", 0.2, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.42, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.56, 1.4, 1.0, 1.2, {"f": 0xf0ece4}], ["win", 0.72, 1.2, 1.0, 1.2, {"f": 0xf0ece4}], ["bal", 0.86, 1.2, 2.1, {"k": "white", "bw": 1.8}]]}]},
 	"alemania_c65": {"eaves": "tiles", "floors": [         # 1992 (Catastro has no photo of it): plain cream, its back to this street
 		{"wall": 0xe3d2a8, "plinth": [0.5, 0xa8a096], "open": [["door", 0.15, 1.0, 2.2, {"c": 0x6b4424}], ["win", 0.45, 1.1, 1.0, 1.25, {"g": "bars"}], ["gar", 0.78, 2.2, 2.3, {"k": "roller", "c": 0x7a5a40}]]},
-		{"wall": 0xe3d2a8, "open": [["win", 0.25, 1.1, 1.0, 1.25, {}], ["win", 0.7, 1.1, 1.0, 1.25, {}]]}]},
+		{"wall": 0xe3d2a8, "open": [["win", 0.25, 1.1, 1.0, 1.25, {}], ["win", 0.7, 1.1, 1.0, 1.25, {}]]}],
+		"flank": [                                       # its long side on the Avenida de la Constitución (Street View, Nov 2024): cream on a foot of rubble stone, a barred window, a wooden door in a stone frame, three windows above
+			{"wall": 0xdccaa4, "plinth": [1.0, "stone"], "open": [["win", 0.165, 0.9, 1.1, 1.0, {"g": "bars"}], ["door", 0.72, 0.9, 2.2, {"c": 0x6a3a26, "s": 0xa8a29a, "sb": 0.2}]]},
+			{"wall": 0xdccaa4, "open": [["win", 0.15, 1.1, 0.9, 1.1, {"b": 0xf0ece4, "d": 0.8}], ["win", 0.58, 1.1, 0.9, 1.1, {"b": 0xf0ece4, "d": 0.8}], ["win", 0.86, 1.1, 0.9, 1.1, {"b": 0xf0ece4, "d": 0.8}]]}]},
 	"alemania_c63": {"eaves": "tiles", "tol": 0.8, "trim": 0xb9b0a0, "floors": [         # 2007: white tiles below, and above them a box of red brick that stands out, one wide dark window in it
 		{"wall": 0xf1efe8, "plinth": [0.5, 0xb9b6ae], "open": [["win", 0.4, 1.4, 0.9, 1.5, {"g": "bars", "f": 0x3a3028, "d": 0.0}]]},
 		{"wall": "brick_red", "fly": 0.6, "open": [["win", 0.5, 2.0, 0.9, 1.5, {"f": 0x3a3028, "d": 0.0}]]},
-		{"wall": "brick_red", "fly": 0.6}]},
+		{"wall": "brick_red", "fly": 0.6}],
+		"flank": [                                       # its long side on the Avenida (Street View, Nov 2024): the white tiles with a wide barred window and a curtained door, the red brick above
+			{"wall": 0xf1efe8, "plinth": [0.5, 0xb9b6ae], "open": [["win", 0.45, 1.4, 0.9, 1.5, {"g": "bars", "f": 0x3a3028, "d": 0.0}], ["door", 0.87, 1.0, 2.3, {"k": "curtain", "c": 0xb89878}]]},
+			{"wall": "brick_red", "open": [["win", 0.45, 1.4, 0.9, 1.3, {"f": 0x3a3028, "d": 0.3}]]},
+			{"wall": "brick_red"}]},
 	"alemania_t10": {"eaves": "brackets", "floors": [      # 1980: sand render, the windows framed in brown, a skirting of brown tiles (its front is on the Travesía)
-		{"wall": 0xd9b98a, "plinth": [0.9, "tile_brown"], "open": [["win", 0.5, 1.1, 1.0, 1.3, {"g": "bars", "s": 0x8a4a38}]], "plates": [[0.5, 2.05, "sevende", 0.12]]},
-		{"wall": 0xd9b98a, "open": [["win", 0.5, 1.1, 1.0, 1.2, {"s": 0x8a4a38, "bal": "iron"}]]}]},
+		{"wall": 0xd9b98a, "plinth": [0.9, "tile_brown"], "open": [["win", 0.5, 1.1, 1.0, 1.3, {"g": "bars", "s": 0x8a4a38}]]},
+		{"wall": 0xd9b98a, "open": [["win", 0.5, 1.1, 1.0, 1.2, {"s": 0x8a4a38, "bal": "iron"}]]}],
+		"flank": [                                       # its long side on the Travesía (Street View, Nov 2024): the long face of the house: a door and a wide barred window with the for-sale board on its grille, framed in brown; two windows with iron rails above
+			{"wall": 0xd9b98a, "plinth": [0.9, "tile_brown"], "open": [["door", 0.34, 1.1, 2.3, {"c": 0x6a4a34, "s": 0x8a4a38}], ["win", 0.755, 1.6, 1.0, 1.3, {"g": "bars", "s": 0x8a4a38}]], "plates": [[0.755, 2.05, "sevende", 0.12, -1, 0, 1]]},
+			{"wall": 0xd9b98a, "open": [["win", 0.48, 1.2, 1.0, 1.2, {"s": 0x8a4a38, "bal": "iron"}], ["win", 0.81, 1.2, 1.0, 1.2, {"s": 0x8a4a38, "bal": "iron"}]]}]},
 	"alemania_16": {"eaves": "brackets", "floors": [       # 1998: red brick on a foot of stone; a curtain at the door, an iron grille, the brown doors of the store
 		{"wall": "brick_red", "plinth": [1.0, "stone"], "open": [["door", 0.1, 1.0, 2.2, {"k": "curtain"}], ["win", 0.38, 1.3, 1.0, 1.3, {"g": "bars", "b": 0x8a6a4a}], ["gar", 0.74, 3.2, 2.8, {"k": "planks", "c": 0x6a3a30}]]},
 		{"wall": "brick_red", "fly": 0.3, "open": [["bal", 0.14, 1.0, 2.1, {"b": 0x8a6a4a, "bw": 1.5}], ["win", 0.42, 1.2, 1.0, 1.2, {"b": 0x8a6a4a, "bal": "iron"}], ["bal", 0.74, 1.6, 2.1, {"bw": 2.4}]]}]},
@@ -1613,5 +1639,8 @@ const SPECS := {
 	"alemania_m11": {"eaves": "tiles", "floors": [         # 1970: cream over a skirting of orange (its front, with the long balcony, is on Calle de Madrid)
 		{"wall": 0xe9d9a8, "plinth": [0.9, 0xc9702a], "open": [["gar", 0.1, 2.4, 2.4, {"k": "metal", "c": 0x4a3a34}], ["win", 0.27, 1.0, 1.0, 1.2, {"g": "bars"}], ["win", 0.5, 1.2, 0.9, 1.5, {"g": "bars"}],
 			["door", 0.68, 1.1, 2.3, {"k": "curtain"}], ["win", 0.86, 1.2, 0.9, 1.5, {"g": "bars"}]]},
-		{"wall": 0xe9d9a8, "open": [["win", 0.12, 1.4, 1.0, 1.2, {}], ["bal", 0.5, 1.0, 2.1, {}], ["bal", 0.8, 1.0, 2.1, {}]]}]},
+		{"wall": 0xe9d9a8, "open": [["win", 0.12, 1.4, 1.0, 1.2, {}], ["bal", 0.5, 1.0, 2.1, {}], ["bal", 0.8, 1.0, 2.1, {}]]}],
+		"flank": [                                       # its long side on Calle de Madrid (Street View, Nov 2024): a wide barred window, a wooden door, a small one; one long balcony the length of it above
+			{"wall": 0xe9d9a8, "plinth": [0.9, 0xc9702a], "open": [["win", 0.25, 1.4, 0.9, 1.4, {"g": "bars", "d": 0.0}], ["door", 0.51, 0.9, 2.2, {"c": 0x8a4a28}], ["win", 0.75, 0.6, 1.1, 1.0, {"g": "bars"}]]},
+			{"wall": 0xe9d9a8, "terrace": [0.08, 0.98, 0.8, -1, 0xe8e2d0], "open": [["bal", 0.24, 1.1, 2.1, {"nb": true, "b": 0xe8e4dc, "d": 0.6}], ["win", 0.72, 1.0, 1.0, 1.1, {}]]}]},
 }

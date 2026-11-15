@@ -54,6 +54,8 @@ var lost := 0.0
 var blind := 0.0
 var caught := 0.0
 var armed := false              # you have been far enough from the lorry for "too close" to mean anything
+var _backed := 0.0              # seconds of grace left since it last backed towards you
+const BACKED_GRACE := 4.0
 var _warned := ""
 var _sight_t := 0.0
 var _in_sight := true
@@ -154,10 +156,10 @@ func show() -> void:
 			G.hud.set_objective(G._tag(), Loc.t("obj_luis_sab"))
 		"back":
 			G.hud.set_objective(G._tag(), Loc.t("obj_luis_back"))
-			G.set_target(K.door, true)
+			G.set_target(K.door, false)
 		"failed", "retry":
 			G.hud.set_objective(G._tag(), Loc.t("obj_luis_retry"))
-			G.set_target(K.door, true)
+			G.set_target(K.door, false)
 
 func _stage(to: String) -> void:
 	stage = to
@@ -418,6 +420,7 @@ func _cine_go() -> void:
 
 # ---------------- when it goes wrong ----------------
 func _release_lorry() -> void:
+	G.traffic.closed = {}                        # (its streets open again)
 	if lorry == null:
 		return
 	if G.traffic.list.has(lorry):
@@ -480,6 +483,7 @@ func abort(dropped: bool) -> void:
 		G._show_step()
 
 func _clear() -> void:
+	G.traffic.closed = {}
 	if man != null and is_instance_valid(man):
 		G.npcs.erase(man)
 		G.named.erase("repartidor")
@@ -497,6 +501,7 @@ func _clear() -> void:
 	blind = 0.0
 	caught = 0.0
 	armed = false
+	_backed = 0.0
 	_warned = ""
 
 func _reward() -> void:
@@ -605,6 +610,26 @@ func _make_way() -> void:
 			lorry["wait"] = 0.0
 			return
 
+## The lorry's way, from where it is to where it is going, closed to the town's traffic for as long as the errand
+## lasts (traffic.gd closed), and the cars parked along it that nobody is looking at moved off: it got stuck behind
+## neighbours and parked cars in the narrow streets (the user's idea, 15 November 2026). The rest of the town as ever.
+func _close_route() -> void:
+	var nodes: Array = [int(lorry["a"]), int(lorry["b"])] + (lorry.get("route", []) as Array)
+	var keys := {}
+	for i in range(nodes.size() - 1):
+		keys[G.traffic.closed_key(int(nodes[i]), int(nodes[i + 1]))] = true
+	G.traffic.closed = keys
+	for car in G.cars.duplicate():
+		if not is_instance_valid(car) or car == G.in_car or car == G.paca_car or car.running or G.sees(car.p):
+			continue
+		for i in range(nodes.size() - 1):
+			var a: Vector2 = MapData.nodes[int(nodes[i])]
+			var b: Vector2 = MapData.nodes[int(nodes[i + 1])]
+			if Geometry2D.get_closest_point_to_segment(car.p, a, b).distance_to(car.p) < 4.5:
+				G.cars.erase(car)
+				car.queue_free()
+				break
+
 func _follow(dt: float, pp: Vector2) -> void:
 	var c = lorry["car"]
 	var d: float = pp.distance_to(c.p)
@@ -618,6 +643,7 @@ func _follow(dt: float, pp: Vector2) -> void:
 		_route_t = 2.0
 		if (lorry.get("route", []) as Array).size() < 2:
 			lorry["route"] = G.traffic.route_nodes(MapData.nodes[lorry["b"]], goal).slice(1)
+		_close_route()
 		if float(lorry.get("idle", 0.0)) > 24.0:             # wedged somewhere: on to the next corner
 			c.place(MapData.nodes[lorry["b"]], c.h)
 			lorry["idle"] = 0.0
@@ -630,14 +656,16 @@ func _follow(dt: float, pp: Vector2) -> void:
 		return
 	_make_way()
 	if c.forward_speed() < -0.5:                 # backing out of somewhere, towards you: if it brings you within its mirror,
-		armed = false                            # that is not you following too close -- not until you have dropped back again
+		_backed = BACKED_GRACE                   # that is not you following too close -- you have a few seconds to drop back
 		seen = 0.0
+	else:
+		_backed = maxf(0.0, _backed - dt)
 	if not armed and d > CLOSE + 5.0:
 		armed = true
 	# "he sees you in the mirror": close behind it while it is going along. (Not while it stands in a jam or backs out of
 	# one, and not if it has had to turn round and comes past you: none of that is your doing.)
 	var behind: bool = (pp - c.p).dot(Vector2(sin(c.h), cos(c.h))) < 0.0
-	if armed and d < CLOSE and behind and c.forward_speed() > 1.5:
+	if armed and d < CLOSE and behind and c.forward_speed() > 1.5 and _backed <= 0.0:
 		seen += dt
 		_warn("close")
 		if seen >= SEEN_FOR:

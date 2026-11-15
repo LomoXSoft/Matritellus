@@ -728,7 +728,8 @@ func _firmas_checks() -> void:
 		said.append(g.dlg["lines"][0] if g.dlg != null else "")
 		await _skip_dialog()
 	_check(said[0] == Loc.t("firma_alberto")[0] and said[1] == Loc.t("firma_chiki")[0] and said[2] != "" and said[3] != "" and said[2] != said[3] and g.firmas["asked"].is_empty() and were and not g.folk.knows("chiki"),
-		"Alberto, La Chiki and the demonstrators have signed already and say so (%s / %s); they do not count, and the two of them are not in the Agenda yet" % [said[1], said[3]])
+		"Alberto, La Chiki and the demonstrators have signed already and say so (%s / %s); they do not count, and the two of them are not in the Agenda yet (Alberto's line his: %s; asked: %d; in the Agenda before: %s, after: %s)"
+		% [said[1], said[3], str(said[0] == Loc.t("firma_alberto")[0]), g.firmas["asked"].size(), str(not were), str(g.folk.knows("chiki") or g.folk.knows("alberto"))])
 	# everybody with a name has something of their own to say, yes or no
 	var mute: Array = []
 	for id in g.named:
@@ -787,9 +788,17 @@ func _firmas_checks() -> void:
 	await _frames(50)
 	_check(stood and g.protesters.is_empty() and b.dressing == null and is_instance_valid(g.named["alberto"]) and is_instance_valid(chiki) and g.npcs.has(chiki) and g.npcs.has(g.named["alberto"]),
 		"once you are well away the demonstration packs up; the bridge, Alberto and La Chiki stay (there before: %s; left now: %d; over: %s; you are %.0f m away; in sight: %s)" % [str(stood), g.protesters.size(), str(g._protest_over), g.player.p.distance_to(b.p), str(g.sees(b.p, 400.0))])
+	var had_tags: bool = g.stats.has("chiki_tags")
+	g.stats["chiki_tags"] = g.day_n                  # (the first talk after the protest is the peñas' walls: pintadas.gd, its own test)
 	g.talk_to(chiki)
+	await _frames(3)
+	if g.menu.visible:
+		g._choose(1)                                 # (a chat, not a wall)
+		await _frames(3)
 	var after: bool = g.dlg != null and g.dlg["lines"][0] == Loc.t("chiki_after")[0][0]
 	await _skip_dialog()
+	if not had_tags:
+		g.stats.erase("chiki_tags")
 	_check(after, "and La Chiki has new things not to care about (%s)" % Loc.t("chiki_after")[0][0])
 	g.player.p = was_at
 
@@ -916,7 +925,7 @@ func _tester_checks() -> void:
 	var y0: float = g.player.inner.position.y
 	var went: bool = g.player.hop()
 	var peak := y0
-	for k in range(14):
+	for k in range(int(ceil(g.player.HOP * 30.0)) + 1):
 		g.player.anim(false, 1.0 / 30.0, 0.0)
 		peak = maxf(peak, g.player.inner.position.y)
 	_check(went and peak > y0 + 0.5 and absf(g.player.inner.position.y - y0) < 0.1, "the jump key lifts you off the ground and puts you down again (%.2f m up)" % (peak - y0))
@@ -1090,6 +1099,9 @@ func _molino_checks(walk := false) -> void:
 	for q in [Vector2(0.0, 5.0), Vector2(-9.0, -8.0), Vector2(8.0, -6.0), Vector2(0.0, 14.0), Vector2(-13.5, 0.0)]:
 		flat_yard = maxf(flat_yard, absf(MapData.height(ml.spot(q.x, q.y)) - lv))
 	_check(ml.yard.size() >= 30 and nearest >= 0.0 and flat_yard < 0.12, "nothing of it stands in the street (of %d walls, posts and trees the nearest to the asphalt is %.1f m off) and its yard is level (%.2f m at worst)" % [ml.yard.size(), nearest, flat_yard])
+	var miller = g.named.get("genaro")
+	_check(miller != null and miller.still and miller.p.distance_to(ml.door) < 4.0 and absf(MapData.height(miller.p) - lv) < 0.12,
+		"Tío Gerardo stands in the yard a few steps from the mill's door (%.1f m from it)" % (miller.p.distance_to(ml.door) if miller != null else -1.0))
 	if not walk:
 		return
 	var was: Vector2 = g.player.p
@@ -1445,7 +1457,7 @@ func _relief_checks() -> void:
 	for cell in g.props._grid.values():
 		for b in cell:
 			props_n += 1
-			if is_instance_valid(b) and b.freeze and absf(b.position.y - MapData.height(b.get_meta("p"))) > 0.01:
+			if is_instance_valid(b) and b.freeze and absf(b.position.y - MapData.height(b.get_meta("p"))) > 0.01 and absf(b.position.y - MapData.foot(b.get_meta("p"))) > 0.01:      # (or on the floor walked on there: the plaza's terraza, props.gd on_floor)
 				props_off += 1
 	_check(lamps_off == 0 and trees_off == 0 and props_off == 0, "%d lanterns hang at lantern height, %d trees and %d benches, bins and signs stand on the ground (out of place: %d, %d, %d)" % [g.lights.spots.size(), W.tree_info.size(), props_n, lamps_off, trees_off, props_off])
 	# --- and it works: walk and drive the steepest street, up and down
@@ -1867,9 +1879,10 @@ func _mayhem_checks() -> void:
 	var furthest := 0.0
 	for t in g.props.tags:
 		furthest = maxf(furthest, (t["p"] as Vector2).distance_to(g.props.TOWN))
-	_check(Creator.PENAS.size() == 6 and g.props.tags.size() == 60 and each.all(func(c): return c == 10) and furthest < g.props.TAG_REACH + 5.0
-		and g.props.tags.all(func(t): return t["node"].material_override.get_shader_parameter("logo") != null),
-		"each of the six peñas has its logo on ten walls about the town, none further out than %.0f m (%s)" % [furthest, str(each)])
+	var firsts: Array = range(Creator.PENAS.size()).map(func(k): return g.props.tags.filter(func(t): return t["first"] == k).size())
+	_check(Creator.PENAS.size() == 6 and g.props.tags.size() == 60 and firsts.all(func(n): return n == 10) and each[mine] == 0 and each.reduce(func(a, b): return a + b, 0) == 60
+		and furthest < g.props.TAG_REACH + 5.0 and g.props.tags.all(func(t): return t["node"].material_override.get_shader_parameter("logo") != null),
+		"each of the six peñas painted ten walls about the town, none further out than %.0f m; yours have gone to the others (nobody of yours has painted anything yet): %s" % [furthest, str(each)])
 	var gap := 1e9
 	for t1 in g.props.tags:
 		for t2 in g.props.tags:
@@ -1888,15 +1901,27 @@ func _mayhem_checks() -> void:
 		if is_instance_valid(beside) and beside.p.distance_to(tag["p"]) < 6.0:
 			var off: Vector2 = (beside.p - tag["p"]).normalized() if beside.p.distance_to(tag["p"]) > 0.1 else Vector2(1, 0)
 			beside.place(beside.p + off * 9.0, beside.h)
+	var had_spray: bool = g.stats.has("chiki_tags")
+	g.stats.erase("chiki_tags")
 	await _frames(4)
-	_check(g.near_tag == tag and g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_paint")), "standing at a rival tag offers to paint over it: %s" % g.hud.prompt.text)
+	_check(g.near_tag == null, "before La Chiki has given you a spray, a wall is there to be seen, not painted")
+	g.stats["chiki_tags"] = g.day_n
+	await _frames(4)
+	_check(g.near_tag == tag and g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_paint")), "with her spray, standing at a rival tag offers to paint over it: %s" % g.hud.prompt.text)
 	g.cam_yaw = tag["node"].rotation.y + PI
 	g.cam_pitch = 0.25
 	await _frames(40)
 	await _shot("3d_tag_before")
+	var agenda_was: Dictionary = g.folk.data.duplicate(true)     # (painting moves La Chiki's trust, and that puts her in the Agenda: not for the story's checks)
 	g.interact()
-	_check(tag["owner"] == mine and tag["node"].material_override.get_shader_parameter("logo") == g.props._tag_tex[mine] and float(tag["wear"]) == 0.0 and g.props.tags_owned(mine) == 11,
-		"E paints our peña's logo over it, in fresh paint")
+	_check(tag["owner"] == mine and tag["node"].material_override.get_shader_parameter("logo") == g.props._tag_tex[mine] and float(tag["wear"]) == 0.0 and g.props.tags_owned(mine) == 1
+		and (g.stats.get("painted", []) as Array).has(g.props.tags.find(tag)),
+		"E paints our peña's logo over it, in fresh paint (and it is kept with the game)")
+	g.stats.erase("painted")
+	g.folk.data = agenda_was
+	if not had_spray:
+		g.stats.erase("chiki_tags")
+	g.pintadas.assign(mine)
 	await _frames(10)
 	await _shot("3e_tag_after")
 	g.cam_pitch = 0.62
@@ -2565,7 +2590,7 @@ func _reglas_checks(pictures := false) -> void:
 	# the graphics options: each row does something, and the defaults are the game as it always was
 	_check(Settings.preset() == 2 and g.get_viewport().msaa_3d == Viewport.MSAA_4X and g.env.ssao_enabled and g.sun.shadow_enabled and is_equal_approx(g.cam.fov, 55.0) and PartsS.draw == 1.0,
 		"the graphics options start at High: the game as it always was")
-	_check(g._menu_page("graphics")["items"].size() == 19, "(nineteen rows on the graphics page)")
+	_check(g._menu_page("graphics")["items"].size() == 20, "(twenty rows on the graphics page)")
 	_check(g.get_viewport().use_occlusion_culling and g.occluders != null and (g.occluders.occluder as ArrayOccluder3D).vertices.size() > 20000 and is_equal_approx(g.get_viewport().mesh_lod_threshold, 2.5) and is_equal_approx(PartsS.detail, PartsS.LOD_NEAR),
 		"High has occlusion culling (the town's walls hide what is behind them: %d corners) and automatic LOD on" % ((g.occluders.occluder as ArrayOccluder3D).vertices.size() if g.occluders != null else 0))
 	Settings.data["lod"] = false
@@ -2582,6 +2607,11 @@ func _reglas_checks(pictures := false) -> void:
 	Settings.data["lod"] = true
 	Settings.data["dynres"] = false
 	Settings.data["upscale"] = 1
+	Settings.apply()
+	Settings.data["silent"] = true
+	Settings.apply()
+	_check(g.cam.far < 200.0 and g.env.fog_density > 0.01 and PartsS.draw < 0.5, "Modo Silent Hill: a street or two drawn (%.0f m), in a thick fog" % g.cam.far)
+	Settings.data["silent"] = false
 	Settings.apply()
 	Settings.step_preset(-1)
 	Settings.step_preset(-1)
@@ -2606,7 +2636,7 @@ func _reglas_checks(pictures := false) -> void:
 		await _frames(10)
 		await _shot("graficos_1_menu")
 		g._close_pause()
-	for key in ["window", "shadows", "textures", "draw", "fov", "fx", "aa", "ssao", "glow", "scale", "traffic", "dynres", "upscale", "lod", "occlusion"]:
+	for key in ["window", "shadows", "textures", "draw", "fov", "fx", "aa", "ssao", "glow", "scale", "traffic", "dynres", "upscale", "lod", "occlusion", "silent"]:
 		Settings.data[key] = {"window": 0, "fov": 55}.get(key, Settings.PRESETS[2].get(key))
 	Settings.apply()
 	_check(Settings.preset() == 2 and g.sun.shadow_enabled and is_equal_approx(g.cam.fov, 55.0) and PartsS.draw == 1.0 and PartsS.fx == 1.0 and g.get_viewport().scaling_3d_scale == 1.0, "and back to High, as it was")
@@ -2791,6 +2821,8 @@ func _sab_again(answer: bool) -> void:
 ## at a kebab, with the boxes down and his back turned: to the boxes, and do it. Returns what the prompt said.
 func _sab_do() -> String:
 	var S = g.sabotaje
+	if S.boxes == null:
+		return ""                                  # (not there yet: the check that follows says so, rather than the script stopping)
 	var bp := Vector2(S.boxes.global_position.x, S.boxes.global_position.z)
 	var d: Dictionary = S.stop(S.stop_i)
 	g.player.p = bp + Vector2(-d["out"].y, d["out"].x) * 1.3 - d["out"] * 0.3
@@ -2919,6 +2951,8 @@ func _sabotaje_checks(pictures := false) -> void:
 	c = S.lorry["car"] if S.lorry != null else null
 	var d0: Dictionary = S.stop(0)
 	_check(S.stage == "unload" and c != null and c.p.distance_to(d0["road"]) < 16.0, "followed at thirty metres, it drives across town to Kebab Deluxe and stops in front (%.0f s%s)" % [took, "" if S.stage == "unload" else ", " + g.hud.toast_label.text])
+	var on_its_way: int = g.traffic.list.filter(func(e): return not e.get("auto", false) and not e.has("job") and g.traffic.is_closed(e["a"], e["b"]) and not g.sees(e["car"].p)).size()
+	_check(not g.traffic.closed.is_empty() and on_its_way == 0, "its way is closed to the town's traffic while the errand lasts (%d stretches; nobody's car left on them out of sight)" % g.traffic.closed.size())
 	if S.stage != "unload":
 		await _sab_again(true)
 		_sab_near()
@@ -2941,9 +2975,9 @@ func _sabotaje_checks(pictures := false) -> void:
 	await _sab_again(true)
 	_sab_near()
 	g.player.p = S.lorry["car"].p - Vector2(sin(S.lorry["car"].h), cos(S.lorry["car"].h)) * 30.0
-	await _sab_until(["unload"], 30.0, 30.0)
+	await _sab_until(["unload"], 90.0, 30.0)          # (traffic in the way can hold it up: once a trip took half again as long)
 	# behind the lorry, out of his way: he sets them down, turns round, and the thirty seconds start
-	await _sab_until(["window", "failed"], 30.0)
+	await _sab_until(["window", "failed"], 60.0)
 	var bp := Vector2(S.boxes.global_position.x, S.boxes.global_position.z) if S.boxes != null else Vector2.ZERO
 	_check(S.stage == "window" and S.boxes != null and S.boxes.get_parent() == g and bp.distance_to(d0["door"]) < 2.0 and S.t > 29.0 and g.hud.timer_slot.visible and not S.can_act(),
 		"keep out of his sight and he leaves the two boxes at the door: thirty seconds on the clock (%.0f)" % S.t)
@@ -2973,7 +3007,7 @@ func _sabotaje_checks(pictures := false) -> void:
 	_check(S.stage == "follow" and S.stop_i == 1 and g.hud.toast_label.text == Loc.t("t_sab_car") and not S.cine, "it sets off for the next one, and you are told to get into a car, quick")
 	# the second: too slow
 	_sab_near()
-	await _sab_until(["window", "failed"], 60.0, 30.0)
+	await _sab_until(["window", "failed"], 120.0, 30.0)
 	_check(S.stage == "window" and S.stop(1)["name"] == "Tele Durum", "at Tele Durum the same again")
 	S.t = 0.4
 	await _frames(30)
@@ -2983,7 +3017,7 @@ func _sabotaje_checks(pictures := false) -> void:
 	var prompts: Array = []
 	for k in range(3):
 		_sab_near()
-		await _sab_until(["window", "failed"], 60.0, 30.0)
+		await _sab_until(["window", "failed"], 120.0, 30.0)
 		if S.stage != "window":
 			break
 		prompts.append(await _sab_do())
@@ -3000,6 +3034,7 @@ func _sabotaje_checks(pictures := false) -> void:
 	await _skip_dialog(false)
 	_check(g.money == money0 + S.PAY and g.comida.today() == meals0 + 1 and g.side == null and not S.active() and S.done(), "the reward: %d euros and a kebab (eaten there and then)" % S.PAY)
 	_check(g.folk.knows("luis") and g.folk.trust("luis") >= 10, "Don Luis is in the Agenda now")
+	_check(g.traffic.closed.is_empty(), "and the lorry's streets are open to everybody again")
 	_check(g.pc + int(g.stats.get("pc_owed", 0)) == pc_was + 3, "and it is worth 3 Puntos Cívicos, as a side mission is")
 	g.menu.open("log_side")
 	_check(g._menu_page("log_side")["items"].any(func(it): return String(it["text"]).contains(Loc.t("luis_title")) and String(it["text"]).contains(Loc.t("log_done"))), "and the mission is in it as done")
@@ -3724,7 +3759,7 @@ func _shader_tour() -> void:
 	g._enter_car(g.paca_car)
 	var spots: Array = []
 	for name in ["Molino", "Plaza del Ayuntamiento"]:
-		spots.append(MapData.poi(name))
+		spots.append(MapData.nearest_road(MapData.poi(name))["p"])      # (in the street by it: the mill has a wall round it now, the square a raised floor)
 	for k in range(6):
 		var q = MapData.random_node_near(Vector2(cos(k * 1.1), sin(k * 1.1)) * 420.0, 0.0, 120.0)
 		if q != null:
@@ -3825,7 +3860,7 @@ func _limite_checks() -> void:
 	for e in g.police.cops:
 		kinds[e["car"].kind] = true
 	_check(L.hunting and g.police.chasing and g.police.heat >= 99.0 and kinds.has("pitufo") and kinds.has("tricornio") and g.police.cops.size() >= 5,
-		"stay out and everybody comes after you: the heat full, Pitufos and Tricornios at once (%d cars)" % g.police.cops.size())
+		"stay out and everybody comes after you: the heat full, Pitufos and Tricornios at once (%d cars: %s; heat %.0f, hunting %s, chasing %s)" % [g.police.cops.size(), str(kinds.keys()), g.police.heat, str(L.hunting), str(g.police.chasing)])
 	var n0: int = g.police.cops.size()
 	L._more_t = 0.2
 	await _frames(30)
@@ -4562,6 +4597,85 @@ func _tokken_checks(matches := 12) -> void:
 
 ## Skids (derrape.gd): brake hard or pull the handbrake at speed and the tyres squeal and leave marks on the road,
 ## which go once you have left them far behind.
+## La Chiki and the walls of the peñas (pintadas.gd), from her first talk to the call at the end and her name
+func _pintadas_checks() -> void:
+	var P = g.pintadas
+	var chiki = g.named["chiki"]
+	var mine: int = g.look_sel[11]
+	var saved := {}
+	for key in ["chiki_tags", "painted", "tag_hints", "tag_hint_day", "tags_done", "chiki_maria"]:
+		if g.stats.has(key):
+			saved[key] = g.stats[key]
+			g.stats.erase(key)
+	var was_over: bool = g._protest_over
+	var folk_was: Dictionary = g.folk.data.duplicate(true)
+	g._protest_over = true
+	g.side = null
+	g.phase = "free"
+	g.menu.close()
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	P.assign(mine)
+	var trust0: int = g.folk.trust("chiki")
+	g.player.p = chiki.p + Vector2(1.2, 0.6)
+	await _frames(5)
+	g.talk_to(chiki)
+	var scene := false
+	for k in range(40):                              # her lines, the scene over the walls among them
+		scene = scene or (g.cine_lock and g.cam_fixed != null)
+		if g.dlg == null:
+			break
+		await _skip_dialog(false)
+	_check(P.unlocked() and scene and not g.cine_lock and g.cam_fixed == null and g.folk.knows("chiki") and g.hud.toast_label.text == Loc.t("t_tags_unlocked"),
+		"the first talk with La Chiki: her peña, the philosophy, a scene over the walls of the peñas, the spray -- and now they can be painted")
+	g.talk_to(chiki)
+	await _frames(3)
+	var offered: bool = g.menu.visible and g._choice["options"].size() == 2
+	g._choose(0)
+	await _frames(3)
+	var hint_said: String = String(g.dlg["lines"][0]) if g.dlg != null else ""
+	await _skip_dialog(false)
+	_check(offered and P.hinted().size() == 1 and hint_said != "" and not hint_said.contains("{calle}"), "once a day she thinks she saw one somewhere, and it goes on the minimap: %s" % hint_said)
+	g.talk_to(chiki)
+	await _frames(3)
+	g._choose(0)
+	await _frames(3)
+	_check(g.dlg != null and g.dlg["lines"] == P._lines("chiki_hint_again"), "and only once a day")
+	await _skip_dialog(false)
+	# every wall: hers glad or cross, the call, and the mission over
+	var trust1: int = g.folk.trust("chiki")
+	var nietos_covered := 0
+	for t in g.props.tags:
+		if t["owner"] != mine:
+			nietos_covered += 1 if t["owner"] == P.NIETOS else 0
+			g._paint(t)
+	var moved: int = g.folk.trust("chiki") - trust1
+	var expect: int = (g.props.tags.size()) if mine == P.NIETOS else -nietos_covered
+	var n := 0
+	while g.phone_call == null and n < 60 * 10:
+		await get_tree().physics_frame
+		n += 1
+	var rang: bool = g.phone_call != null and g.phone_call.get("npc", "") == "chiki"
+	g.interact()
+	await _skip_dialog(false)
+	await _frames(10)
+	_check(rang and P.done() and g.props.tags_owned(mine) == g.props.tags.size() and (moved == expect or g.folk.trust("chiki") >= 100 or moved < 0),
+		"every wall yours: La Chiki rings, and on hanging up the mission is over (trust moved %d with the painting, %s)" % [moved, "+1 each, as a Marzista" if mine == P.NIETOS else "-1 for each Nietos covered"])
+	g.folk.add("chiki", 100)
+	g.talk_to(chiki)
+	await _frames(3)
+	_check(g.dlg != null and g.dlg["lines"] == P._lines("chiki_maria") and g.stats.has("chiki_maria"), "at 100 of trust: her name is María, and Don Luis is her brother")
+	await _skip_dialog(false)
+	for key in ["chiki_tags", "painted", "tag_hints", "tag_hint_day", "tags_done", "chiki_maria"]:
+		g.stats.erase(key)
+	for key in saved:
+		g.stats[key] = saved[key]
+	g._protest_over = was_over
+	g.folk.data = folk_was
+	P.assign(mine)
+	g._refresh_counts()
+
 ## The title, calmly: the town from the air, the name fading in, "press any button", and the menu only after that
 func _titulo_checks(pictures := false) -> void:
 	g.menu.close()
@@ -5404,6 +5518,7 @@ func _run() -> void:
 		g.hud.play_ui.visible = true
 		g.set_time(10.0)
 		g.begin_step(g._idx("alberto"))
+		g.bridge.close_off(not g.stats.has("puente"))       # (as start_game does, which this mode skips: _puente_checks wants it fenced)
 		await _frames(10)
 		var br = g.bridge
 		for v in [["bridge", Vector2(1.0, -21.0), 2.6, Vector2(0.0, -2.0), 1.6], ["protest", Vector2(br.open * 4.6, -15.5), 1.9, Vector2(0.0, -7.0), 1.6],
@@ -6394,6 +6509,18 @@ func _run() -> void:
 		print("TOW %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	for a in OS.get_cmdline_user_args():                  # --ruedas=kind: each wheel of the model, its points and its size (to find a broken one)
+		if a.begins_with("--ruedas="):
+			var rc = CarS.new()
+			g.add_child(rc)
+			rc.setup(a.substr(9), 0, g.player.p, 0.0)
+			for w in rc.model.get_meta("wheels"):
+				var verts := 0
+				for s in range(w.mesh.get_surface_count()):
+					verts += (w.mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+				print("rueda %s: %d points, size %s, at %s" % [w.name, verts, str(w.mesh.get_aabb().size), str(w.position)])
+			get_tree().quit(0)
+			return
 	for a in OS.get_cmdline_user_args():                  # --vidrios=kind: the colours of the texture over the top half of its bodywork (to find its windows)
 		if a.begins_with("--vidrios="):
 			var vk := a.substr(10)
@@ -6461,6 +6588,15 @@ func _run() -> void:
 		print("BATE %s" % victim.state)
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--pintadas"):      # La Chiki and the walls of the peñas
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		await _pintadas_checks()
+		print("PINTADAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--titulo"):        # the title screen, as after the loading screen (add --shots, with --window)
 		shots = OS.get_cmdline_user_args().has("--shots")
 		await _titulo_checks(shots)
@@ -6485,6 +6621,40 @@ func _run() -> void:
 		g._close_pause()
 		await _frames(10)
 		_check(pc.global_position.distance_to(at0) > 0.2 and not Sfx.held() and Ambience._players.any(func(p): return p.playing and not p.stream_paused), "resumed: the car rolls on (%.1f m) and the radio plays on" % pc.global_position.distance_to(at0))
+		# the big map stops the world as the pause does, and is zoomed and moved about
+		pc.set_speed(Vector2(sin(pc.h), cos(pc.h)) * 6.0)
+		var at1: Vector3 = pc.global_position
+		g._set_map(true)
+		g._map_zoom(3.0)
+		Input.action_press("right")
+		await _frames(20)
+		Input.action_release("right")
+		var mm = g.hud.bigmap
+		_check(g.map_open and pc.global_position.distance_to(at1) < 0.2 and Sfx.held() and is_equal_approx(mm.zoom, 3.0) and mm.pan.x > 10.0,
+			"the big map stops the world (%.2f m), zooms in (x%.1f) and moves with the stick (%.0f m east)" % [pc.global_position.distance_to(at1), mm.zoom, mm.pan.x])
+		g._set_map(false)
+		await _frames(10)
+		_check(not g.map_open and not Sfx.held() and pc.global_position.distance_to(at1) > 0.2, "closed, the world goes on")
+		# developer mode: off unless switched on; then its page in the pause menu, and what it does
+		var plain_pause: bool = not g._menu_page("pause")["items"].any(func(it): return it["text"] == Loc.t("m_dev"))
+		Settings.data["dev"] = true
+		var dev_in_pause: bool = g._menu_page("pause")["items"].any(func(it): return it["text"] == Loc.t("m_dev"))
+		var cash: int = g.money
+		g._dev_money()
+		g._dev_heat()
+		g.police.add_heat(50.0)
+		var calm: bool = g.police.heat == 0.0
+		g._dev_heat()
+		g._dev_minigames()
+		var all_games: bool = g.Missions.MINIGAMES.keys().all(func(id): return g.unlocked.has(id))
+		var jumps: int = g._menu_page("dev_missions")["items"].size()
+		g._dev_fps()
+		await _frames(3)
+		var fps_shown: bool = g.hud.fps_label.visible and g.hud.fps_label.text.ends_with("FPS")
+		g._dev_fps()
+		Settings.data["dev"] = false
+		_check(plain_pause and dev_in_pause and g.money == cash + 1000 and calm and all_games and jumps >= 5 and fps_shown,
+			"developer mode: not in the pause menu unless switched on; then money, no police, every minigame, the FPS and a jump to any of the %d missions" % (jumps - 1))
 		print("PAUSA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
@@ -6687,7 +6857,7 @@ func _run() -> void:
 	g._menu_page("graphics")["items"][1]["right"].call()
 	var set_items: Array = g._menu_page("settings")["items"].map(func(it): return it["text"])
 	_check(Settings.data["res"] == (before_res + 1) % Settings.RESOLUTIONS.size() and set_items == [Loc.t("s_graphics"), Loc.t("s_sound"), Loc.t("s_gameplay"), Loc.t("m_back")]
-		and g._menu_page("graphics")["items"].size() == 19 and g._menu_page("sound")["items"].size() == 4 and g._menu_page("gameplay")["items"].size() == 4,
+		and g._menu_page("graphics")["items"].size() == 20 and g._menu_page("sound")["items"].size() == 4 and g._menu_page("gameplay")["items"].size() == 5,
 		"settings in three: Gráficos (resolution, display... occlusion), Sonido (three volumes), Gameplay (language, field of view, controls)")
 	Settings.data["res"] = before_res
 	await _frames(5)
@@ -7145,6 +7315,7 @@ func _run() -> void:
 	g.set_time(23.9)
 	g._advance_clock(120.0 * 0.3)
 	_check(g.weekday == (day_before + 1) % 7 and g.clock < 1.0 and g.moment == "night", "at midnight the day of the week moves on (two minutes an hour)")
+	_check(g._tag().ends_with(Loc.t("late")) and g._tag().begins_with(Loc.t("wd_%d" % g.weekday).to_upper()), "and from midnight to dawn the calendar says so: %s (the night before midnight, the madrugada after)" % g._tag())
 	g.set_time(12.0)
 	var before_h: float = g.clock
 	await _frames(60)
@@ -7246,6 +7417,7 @@ func _run() -> void:
 	g.phase = "play"
 	g.begin_step(0)
 	await _civicos_checks()
+	await _pintadas_checks()
 	g.phase = "play"
 	g.stats.erase("menu_done")
 	g.begin_step(g._idx("alberto"))

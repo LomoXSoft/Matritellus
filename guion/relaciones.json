@@ -267,19 +267,19 @@
   },
   {
    "id": "ramirez",
-   "name": "Cabo Ramírez",
+   "name": "Teniente Torrezón",
    "foto": true,
    "pos": [
     3,
     5
    ],
-   "role": "Municipal (de Los Pitufos). Tiene una lista, por orden alfabético.",
+   "role": "Guardia civil (de los Tricornios) jubilado hace dos años, que sigue ejerciendo por amor al arte. Ni siquiera es del pueblo, pero le gusta ejercer en Madridejos; nadie le dice nada, entre el miedo y la ternura. Tiene una lista, por orden alfabético.",
    "where": "De ronda.",
    "notes": "Sin parentescos todavía."
   },
   {
    "id": "genaro",
-   "name": "Tío Genaro",
+   "name": "Tío Gerardo",
    "foto": true,
    "pos": [
     5,
@@ -676,7 +676,7 @@
   "El Eusebio: «tu primo» según la Paca, pero no se dice por qué rama.",
   "La hija / el hijo del Fonsi, la prima segunda de la Josefa, el abuelo de Kevin-José, la panadera y la madre del Henry no tienen nombre.",
   "De la familia del Alberto en la plataforma (nueve) no se conoce a nadie todavía.",
-  "Don Anselmo, el cabo Ramírez, el tío Genaro y la cabra no tienen parentescos ni tratos dichos en los diálogos (aunque todos tienen su manera de firmar, o de no firmar, por el puente).",
+  "Don Anselmo, el teniente Torrezón, el tío Gerardo y la cabra no tienen parentescos ni tratos dichos en los diálogos (aunque todos tienen su manera de firmar, o de no firmar, por el puente).",
   "La Chiki: no se sabe de quién es hija ni dónde vive (es hermana de Don Luis; los dos descienden de Nazario, no se dice cómo). La madre del Alberto (dueña de la hucha) no tiene nombre."
  ]
 }

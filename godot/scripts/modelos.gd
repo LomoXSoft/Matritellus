@@ -56,7 +56,7 @@ const SK := {
 	"pitufo": {"glb": "sk/panda", "rack": [-0.3, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Window"], "hide_mats": ["Ground"], "seat": [0, -0.03, 0.95], "rider": 0.56},
 	"z15": {"glb": "sk/z15", "rack": [-0.2, 1.0], "mats": {"M_0136": OWN, "Charcoal": OWN}, "seat": [0, 0.05, 0.8], "rider": 0.62, "hull": true},      # (a cap's peak stayed in front of the windscreen)
 	"tractor": {"glb": "sk/hebro", "rack": [0.24, 0.6], "hue": [[0xc02020, OWN]], "mid": true, "seat": [0, -0.2, 0.9], "rider": 0.85, "open": true},
-	"yondir": {"glb": "sk/yondir", "rack": [-0.12, 0.93], "mats": {"Part23Mtl": OWN, "Part42Mtl": 0xf2c81e}, "mid": true, "seat": [0, -0.12, 0.88], "rider": 0.72},
+	"yondir": {"glb": "sk/yondir", "rack": [-0.12, 0.93], "mats": {"Part23Mtl": OWN, "Part42Mtl": 0xf2c81e}, "mid": true, "seat": [0, -0.12, 0.88], "rider": 0.72, "wheel_copy": {"wheel_bl": "wheel_br"}},
 	"tunero": {"glb": "sk/tunero", "rack": [-0.02, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Glass_Amber"], "tint": true, "seat": [0, -0.02, 0.92, 0.14], "rider": 0.52},
 	"edison": {"glb": "sk/edison", "rack": [-0.06, 1.0], "hue": [[0xf0f0f0, OWN]], "pale": true, "seat": [0, 0.0, 0.86, 0.19], "rider": 0.56},      # (the head well under the roof. Its windows stay the black of the texture: cut out as tinted glass they looked horrible, the user, 14 Nov 2026 -- glass_near 0x000000, glass_tol 0.25, glass_above 0.56, tint 0.5 did it)
 	"julietta": {"glb": "sk/julietta", "rack": [-0.37, 0.62], "mats": {"AluShiny": OWN}, "hide_mats": ["green"], "seat": [0, -0.115, 1.13], "rider": 0.57, "open": true},     # (sitting up: head and shoulders over the seat's back, or from the camera behind you could not see who drove it: the user, 14 Nov 2026)
@@ -397,6 +397,37 @@ static func _left_out(mi: MeshInstance3D, names: Array) -> bool:
 	return false
 
 ## ...or from any set of that kind (CLOSER, SK)
+## A wheel that came out of the model broken ("wheel_copy": {broken: good}): the good one on the other side of the same
+## axle, turned half round on the spot to face outwards the other way (a turn, not a mirror: a mirrored mesh shows
+## its inside), put where the broken one goes. The Yondir's back left had nothing but its hub (the user, 15 Nov 2026).
+static func _mend_wheels(found: Array, copy: Dictionary) -> void:
+	if copy.is_empty():
+		return
+	var lo := INF
+	var hi := -INF
+	for f in found:
+		var b: AABB = (f[1] as Transform3D) * (f[0] as MeshInstance3D).mesh.get_aabb()
+		lo = minf(lo, b.position.x)
+		hi = maxf(hi, b.end.x)
+	var mid := (lo + hi) / 2.0
+	for broken in copy:
+		var bad := -1
+		var good := -1
+		for i in range(found.size()):
+			var nm := String((found[i][0] as Node).name)
+			if nm == broken:
+				bad = i
+			elif nm == String(copy[broken]):
+				good = i
+		if bad < 0 or good < 0:
+			continue
+		var gm: MeshInstance3D = found[good][0]
+		var gx: Transform3D = found[good][1]
+		var c: Vector3 = (gx * gm.mesh.get_aabb()).get_center()
+		var to := Vector3(2.0 * mid - c.x, c.y, c.z)
+		(found[bad][0] as MeshInstance3D).mesh = gm.mesh
+		found[bad][1] = Transform3D(Basis(), to) * Transform3D(Basis(Vector3.UP, PI), Vector3.ZERO) * Transform3D(Basis(), -c) * gx
+
 static func make_from(table: Dictionary, kind: String, spec: Dictionary, paint: int) -> Node3D:
 	var m: Dictionary = table[kind]
 	var src: Node = (load(DIR + m["glb"] + ".glb") as PackedScene).instantiate()
@@ -406,6 +437,7 @@ static func make_from(table: Dictionary, kind: String, spec: Dictionary, paint: 
 	for f in all:
 		if not _left_out(f[0], m.get("hide_mats", [])):
 			found.append(f)
+	_mend_wheels(found, m.get("wheel_copy", {}))
 	var box := AABB()
 	var first := true
 	for f in found:

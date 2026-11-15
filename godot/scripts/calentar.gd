@@ -32,7 +32,7 @@ static func needed() -> bool:
 func run(game, say: Callable) -> void:
 	G = game
 	say.call(Loc.t("loading_warm"))
-	var hour: float = G.time
+	var hour: float = G.clock                      # (the clock: G.time is the seconds since the start, and put back as an hour it left the title and the creator at five in the morning)
 	var start: Vector2 = G._start["p"]
 	var along: Vector2 = G._start.get("u", Vector2(0, 1))
 	await _museum(start, along)

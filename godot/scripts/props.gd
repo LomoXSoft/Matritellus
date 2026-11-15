@@ -68,11 +68,21 @@ func _place_furniture() -> void:
 	for req in world.extra_props:                 # what the hand-built places have standing by them in their photos
 		_prop(String(req[0]), req[1], float(req[2]), int(req[3]))
 
+## how far a point is from a thing: from its middle, or for a long one (a fence) from the line of it
+func _reach(b: Node, q: Vector2) -> float:
+	var at: Vector2 = b.get_meta("p")
+	var half: float = float(b.get_meta("half", 0.0))
+	if half <= 0.0:
+		return at.distance_to(q)
+	var u: Vector2 = b.get_meta("along")
+	return q.distance_to(at + u * clampf((q - at).dot(u), -half, half))
+
 ## (`on_floor`: it stands on what is walked on there -- the floor of a raised square, say -- and not on the ground under it)
 func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := false) -> void:
 	var b := RigidBody3D.new()
 	var size := Vector3.ONE
 	var rad := 0.55        # how close a car has to get to knock it over
+	var half := 0.0        # a long thing (a fence): this far either way along its heading, and rad is then from that line
 	var heat := 5.0        # how much the police mind
 	var lift := 0.0        # collider height, when it is not sitting on the ground
 	match kind:
@@ -188,7 +198,8 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := f
 			size = Vector3(2.5, 1.05, 0.35)
 			b.mass = 14.0
 			heat = 3.0
-			rad = 1.2
+			rad = 0.25
+			half = 1.25                          # (along its length: a car brushing past a metre off went through it)
 			for y in [0.25, 1.0]:
 				b.add_child(Parts.part("box", 0xe9b21c, Vector3(0, y, 0), Vector3(2.5, 0.05, 0.05)))
 			for k in range(11):
@@ -331,6 +342,8 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := f
 	cs.position.y = lift if lift > 0.0 else size.y / 2.0
 	b.add_child(cs)
 	b.set_meta("rad", rad)
+	b.set_meta("half", half)
+	b.set_meta("along", Vector2(cos(heading), -sin(heading)))
 	b.set_meta("heat", heat)
 	b.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	b.freeze = true
@@ -404,7 +417,7 @@ func sweep(c) -> Array:
 				var list = _grid.get(cell)
 				if list != null:
 					for b in list.duplicate():
-						if (b.get_meta("p") as Vector2).distance_to(q) < c.r + float(b.get_meta("rad")):
+						if _reach(b, q) < c.r + float(b.get_meta("rad")):
 							heat += float(b.get_meta("heat"))
 							terraza = terraza or b.get_meta("kind") in ["table", "chair", "parasol", "toldo"]
 							_knock(b, c.linear_velocity)
@@ -431,7 +444,7 @@ func punch(at: Vector2, dir: Vector2) -> Array:
 			if list == null:
 				continue
 			for b in list.duplicate():
-				if (b.get_meta("p") as Vector2).distance_to(at) < 0.75 + float(b.get_meta("rad")) and b.get_meta("kind") != "toldo":
+				if _reach(b, at) < 0.75 + float(b.get_meta("rad")) and b.get_meta("kind") != "toldo":
 					heat += float(b.get_meta("heat"))
 					_knock(b, Vector3(dir.x, 0, dir.y) * 5.0)
 					count += 1

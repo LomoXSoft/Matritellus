@@ -13,6 +13,7 @@ const PetrilS = preload("res://scripts/petril.gd")
 const MolinoS = preload("res://scripts/molino.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
+const Empedrado = preload("res://scripts/empedrado.gd")
 const Fachadas = preload("res://scripts/fachadas.gd")
 const CasasS = preload("res://scripts/casas.gd")
 
@@ -125,6 +126,7 @@ func _build_petril() -> void:
 func _build_details() -> void:
 	Detalles.add(self)              # the small things of each street, from the street photos
 	Toro.add(self)                  # the Osborne bull on the A-4, past the south edge (toro.gd)
+	Empedrado.add(self)             # the setts and brick of the pedestrian Calle Real (empedrado.gd)
 
 func _shape(shape: Shape3D, pos: Vector3, on: StaticBody3D = null) -> void:
 	var cs := CollisionShape3D.new()

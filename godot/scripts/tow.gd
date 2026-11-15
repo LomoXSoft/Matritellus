@@ -203,7 +203,8 @@ func _scrap(job: Dictionary) -> void:
 	var e = job["truck"]
 	if e != null and game.traffic.list.has(e):
 		game.traffic.list.erase(e)
-		e["car"].queue_free()
+		if is_instance_valid(e["car"]):
+			e["car"].queue_free()
 	jobs.erase(job)
 
 ## the truck has gone (stolen, most likely): whatever it was pulling is left where it is
@@ -222,13 +223,19 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 	_blink += dt
 	for job in jobs.duplicate():
 		var c = job["car"]
+		if not is_instance_valid(c):                 # (the car itself taken away by something else: there is no job left)
+			_dismiss(job)
+			if job["truck"] != null and is_instance_valid(job["truck"]["car"]):
+				job["truck"].erase("job")
+			jobs.erase(job)
+			continue
 		var cp := Vector2(c.global_position.x, c.global_position.z)
 		var far := cp.distance_to(pp)
 		if far > 230.0 and not game.sees(cp):        # nobody is watching: no need to act it all out
 			_scrap(job)
 			continue
 		var e = job["truck"]
-		if e != null and not game.traffic.list.has(e):   # the truck is no longer ours
+		if e != null and (not game.traffic.list.has(e) or not is_instance_valid(e["car"])):   # the truck is no longer ours (or no longer there)
 			_let_go(job)
 			if job["state"] == "tow" or job["state"] == "hook":
 				_dismiss(job)

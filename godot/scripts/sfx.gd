@@ -14,7 +14,10 @@ var _rev := 0.7
 ## Each make of car has its own engine and its own horns; the synthetic sounds above stay as the fallback.
 const VEH := "res://assets/audio/vehiculos/"
 const ENGINES := {"panda": "motor_mini", "pitufo": "motor_peugeot107", "z15": "motor_vw_t4", "tractor": "motor_tractor", "yondir": "motor_maquinaria",
-	"tunero": "motor_escape_roto", "julietta": "motor_aston", "grua": "motor_iveco", "tricornio": "motor_peugeot308"}
+	"tunero": "motor_escape_roto", "julietta": "motor_peugeot308", "grua": "motor_iveco", "tricornio": "motor_peugeot308"}
+## (the Julietta had the Aston Martin's, but that recording is one car going past, revving up: looped, it sounded like
+## an engine starting over and over, even flat out -- the user, 15 Nov 2026. A steady idle, pitched up, instead)
+const ENGINE_PITCH := {"julietta": 1.22}
 const HORNS := {"panda": ["claxon_coche_1", "claxon_coche_3", "claxon_coche_4"], "pitufo": ["claxon_coche_2"], "z15": ["claxon_furgoneta_1", "claxon_autobus"],
 	"tractor": ["claxon_tractor", "claxon_tractor_protesta_1"], "yondir": ["claxon_aire"], "tunero": ["claxon_coche_5", "claxon_coche_2"],
 	"edison": ["claxon_coche_5"], "julietta": ["claxon_coche_4"], "grua": ["claxon_pickup_1", "claxon_pickup_2", "claxon_pickup_3"], "tricornio": ["claxon_coche_3"]}
@@ -290,7 +293,7 @@ func engine(on: bool, speed: float, throttle := 0.0, sound := "car", kind := "")
 	var target := 0.7 + in_gear * 0.8 + gear * 0.07 + throttle * 0.12
 	_rev = lerpf(_rev, target, 0.12)
 	if recorded != null:                         # a recording at its idle: from there up, and never as squeaky as the synthetic one gets
-		_engine.pitch_scale = 0.88 + (_rev - 0.7) * 0.62
+		_engine.pitch_scale = (0.88 + (_rev - 0.7) * 0.62) * float(ENGINE_PITCH.get(kind, 1.0))
 		_engine.volume_db = -12.0 + throttle * 4.0 + minf(3.0, speed * 0.1)
 		return
 	_engine.pitch_scale = _rev

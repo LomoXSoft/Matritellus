@@ -41,6 +41,14 @@ func givers() -> Array:
 	if G.named.has("luis") and G.negocio("restaurantes") and not G.sabotaje.done():
 		if G.sabotaje.stage in ["retry", "back"] or (G.sabotaje.stage == "" and free_hands):
 			out.append(G.named["luis"])
+	# whoever the errand under way has you go and see: to talk to, to be given something, to hand something over. The
+	# green arrow is for that, on foot; the yellow light is for what is done with the car (the user, 15 November 2026)
+	if not s.is_empty() and s.get("type", "") == "talk" and G.named.has(s["npc"]) and not (G.named[s["npc"]] in out):
+		out.append(G.named[s["npc"]])
+	if G.side != null and G.side.get("id", "") in ["menu", "ham"]:
+		var who = G.named.get("henry") if G.side.get("stage", "") == "fetch" else G.named.get(String(G.side.get("who", "")))
+		if who != null and not (who in out):
+			out.append(who)
 	# the Civismo line (recress.gd)
 	if G.get("recress") != null:
 		for n in G.recress.givers(free_hands):

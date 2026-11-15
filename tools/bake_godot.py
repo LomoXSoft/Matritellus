@@ -79,10 +79,26 @@ for (ax, az), (bx, bz), name in RENAME:
     hit = [r for r in roads if min(math.dist(npts[r['p'][0]], (ax, az)) + math.dist(npts[r['p'][-1]], (bx, bz)), math.dist(npts[r['p'][0]], (bx, bz)) + math.dist(npts[r['p'][-1]], (ax, az))) < 8.0]
     for r in hit: r['n'] = name
     print('street renamed: %s (%d stretch%s)' % (name, len(hit), '' if len(hit) == 1 else 'es'))
+# Streets that are pedestrian and paved in setts from a given node on, though the map's source has them for cars: the
+# Calle Real from its crossroads with Colón and La Palma down to the end, among the shops (Street View, November 2024;
+# the user, 15 November 2026: "es zona peatonal y el suelo está empedrado"). That stretch becomes a footpath (k 2: no
+# traffic, no asphalt, no kerbs; empedrado.gd lays the setts) but keeps a car street's corridor, so no house moves.
+PAVED = [('Calle Real', (-70.1, -59.6))]          # the street, and the node from which (away from its north end) it is paved
+for name, at in PAVED:
+    for r in [r for r in roads if r['n'] == name and r['k'] == 0]:
+        ps = [npts[i] for i in r['p']]
+        j = min(range(len(ps)), key=lambda q: math.dist(ps[q], at))
+        if math.dist(ps[j], at) > 3.0 or j in (0, len(ps) - 1): continue
+        a, b = r['p'][:j + 1], r['p'][j:]
+        za = sum(npts[i][1] for i in a) / len(a); zb = sum(npts[i][1] for i in b) / len(b)
+        paved, rest = (b, a) if zb > za else (a, b)              # (the paved part is the southern one)
+        r['p'] = rest
+        roads.append({'w': r['w'], 'k': 2, 'h': 'pedestrian', 'n': name, 'p': paved, 'paved': 1})
+        print('paved and closed to traffic: %s, %d nodes' % (name, len(paved)))
 def poly_of(w): return [proj(onodes[i]['lat'], onodes[i]['lon']) for i in w['nodes']]
 
 # the corridor every street is guaranteed to keep free of buildings (centre lines drift a little from reality)
-def corridor_half(r): return 1.0 if r['k'] == 2 else 1.5 if r['k'] == 1 else 1.9 if r['h'] == 'service' else 2.4
+def corridor_half(r): return 2.4 if r.get('paved') else 1.0 if r['k'] == 2 else 1.5 if r['k'] == 1 else 1.9 if r['h'] == 'service' else 2.4
 corridor = unary_union([LineString([npts[i] for i in r['p']]).buffer(corridor_half(r), quad_segs=3) for r in roads])
 road_lines = [LineString([npts[i] for i in r['p']]) for r in roads]
 road_tree = STRtree(road_lines)
@@ -339,6 +355,9 @@ if os.path.exists(_calles):
         if name not in HOUSES:
             hd['front'] = (tuple(hd['front'][0]), tuple(hd['front'][1]))
             HOUSES[name] = hd
+# "strip": <m> on a house: the lower parts of its plot that lie within that many metres of its front line (thin strips
+# Catastro draws along a front: an overhang, a step) are dropped instead of standing as little houses against the front
+STRIP_RC = {hd['rc']: name for name, hd in HOUSES.items() if hd.get('strip') and hd.get('rc')}
 def house_of(bid, floors):
     for name, hd in HOUSES.items():
         if hd['rc'] == bid and (floors == hd['only'] if 'only' in hd else floors >= hd['floors']): return name
@@ -398,6 +417,14 @@ for pid, floors, v in raw:
         if ph is not None: petril_parts.append((bid, floors, p, ph))
         continue
     hand = house_of(bid, floors)
+    if hand is None and bid in STRIP_RC:    # (a strip stuck on the front of a hand-built house: see "strip")
+        sd_ = HOUSES[STRIP_RC[bid]]
+        o_, u_, n_, ln_ = house_frame(sd_)
+        q_ = p.representative_point()
+        s_ = (q_.x - o_[0]) * u_[0] + (q_.y - o_[1]) * u_[1]
+        d_ = (q_.x - o_[0]) * n_[0] + (q_.y - o_[1]) * n_[1]
+        if -0.5 < s_ < ln_ + 0.5 and abs(d_) < sd_['strip']:
+            continue
     if hand:                                # (it stays a part: it is still a block to bump into, a roof on the map, a neighbour that hides walls; only its own walls and roof are not drawn)
         hd = HOUSES[hand]
         if 'porch' in hd:
