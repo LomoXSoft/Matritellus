@@ -4,67 +4,27 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 ## Versión
 
-- **Publicada:** 0.0.7 (15/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.7 — completa de las 06:41: 616 ok, 0 fallos. Lleva:
-  - El puente del Arroyuelo Medio rehecho a mano (Pretil; `puente.gd` sobre `obra.gd`), con el visto bueno del usuario y sin obreros: no quiere personajes nuevos por ahora. Mantiene lo que usa el resto del juego (`p`, `u`, `across`, `hw`, `half` = 2,6, `open` = +1, `seg`, `top`, `spot()`, `kerb()` = hw + 0,75, `dress()`, `close_off()`, `placard()`). La obra de demolición (`bridge.set_works`, máquinas CC0 en `godot/assets/obra/`) está hasta entregar las firmas y se va sola la primera mañana después, con el jugador a más de 140 m y sin mirar (`stats["obra_h"]`, `stats["obra_fuera"]`); `--puente-limpio` arranca sin ella. El cauce hasta la calle del Santo no tiene tráfico.
-  - La escuela infantil José de Calasanz, en la calle del Palo (Pretil; `calasanz.gd`, `world.calasanz`). Sin personajes y sin interior. Veredicto del usuario (15-11): «Se ha quedado increíble», con un retoque ya hecho, aprobado por él («Está perfecto») y SIN COMMIT: fuera la caseta blanca prefabricada y el mural del testero rehecho como el real, dos palomas de la paz sobre un arcoíris (`godot/assets/calasanz/mural_palomas.png`, pintado por `tools/calasanz/mural.py`); solo toca `calasanz.gd`, ese recurso nuevo, `tools/calasanz/` y las hojas de `guion/fotos/calasanz/`; `calasanz` 3/3. Su patio allana el cruce del Arroyuelo con el Palo.
-  - La farmacia de la calle Real, la droguería de la esquina de Colón y la casa de ladrillo (Pretil; `farmacia.gd`, `world.farmacia`), aprobada por el usuario («Está todo perfecto», 15-11) y SIN COMMIT. La calle de Colón se queda con su ancho: el usuario preguntó por ensancharla y decidió dejarla como está. La casita estrecha del nº 24 se quitó a petición suya; su hueco es de la droguería. `real_22/24/26/30` van marcadas `["obra"]` en `casas_calles.gd` y `casas.gd` no las dibuja (3 líneas en `build()`); `world.gd` tiene el paso nuevo y `selftest.gd` el modo `--farmacia` (3/3) y `_farmacia_checks` en la completa. No toca `map.json` ni el horneado. `civicos` 39/39 y `casas solo=real_` sin fallos después.
-  - La ermita de la Caridad con su plaza, el parque de la fuente y la guardería (Pretil; `caridad.gd`, `world.caridad`), SIN COMMIT. Segunda versión, rehecha tras la corrección del usuario con las tres fotos 360 de dentro de la isleta (fachada principal a poniente, fuente de mampostería, parque de tierra, paseo de baldosa) y después con capturas desde la calle del Rollo (cinco columnas en fila con su paso empedrado, puerta grande con recerco, casa baja con zócalo salmón, arco acristalado de la escuela infantil); tercera versión aprobada por el usuario («Está incrible»), con el retoque que pidió ya hecho: más juegos, una portería pequeña y balones en el patio de la guardería («Impecable. Buen trabajo»). Tras el rehorneado: `caridad` 3/3, `relief` 19/19, `casas solo=juancarlos_` sin fallos. MAPA REHORNEADO el 15-11 a las 18:28 con el bloque `CARIDAD` de `bake_godot.py` (cuatro parcelas de la isleta sin levantar, sus árboles fuera, sin terraza: el relieve y las calles no cambian); fuera de la isleta solo cambian contornos de manzana por la simplificación y dos árboles de calle. Toca también `map_data.gd` (`caridad`), `world.gd` (paso nuevo) y `selftest.gd` (modo `--caridad`, 3/3, y `_caridad_checks` en la completa).
-  - El convento de Santa Ana, las Clarisas (Pretil; `santaana.gd`, `world.santaana`), en la esquina de la calle de las Monjas con Santiago Apóstol, y la calle de las Monjas empedrada pero abierta al tráfico. SIN COMMIT; primera versión enseñada, con el fraile de bronce que pidió el usuario en el pedestal del compás (una figura de `chara.gd` toda en bronce); aprobado por el usuario («Esta increíble. Muy buen trabajo»). MAPA REHORNEADO el 15-11 a las 19:52 sobre el de Texturas de las 19:45: bloque `SANTAANA` (parcela 3792701 sin levantar, sin terraza; su huella cuenta para el ancho libre de las calles, `santaana_built`) y `PAVED_STREETS` (la calle de las Monjas, de su extremo sur al cruce con Santiago Apóstol, partida como calle propia que sigue siendo k 0, con `"paved": 3`: `roads` 656 -> 657). `empedrado.gd` tiene un tercer bucle para `paved` 3. Toca también `map_data.gd`, `world.gd`, `selftest.gd` (modo `santaana`, 3/3, y `_santaana_checks` en la completa) y `tools/molino/panos.py` (orden `cerca`). `relief` 19/19 después.
-  - El supermercado de la carretera antigua, «Mercamona» (Pretil; `mercamona.gd`, `world.mercamona`), con su aparcamiento una planta por debajo que entra bajo la tienda. SIN COMMIT; aprobado por el usuario («Estupendo. Se queda así»). MAPA REHORNEADO el 15-11 a las 20:54 sobre el de Texturas de las 20:36, con CAMBIO DE RELIEVE local: bloque `MERCAMONA` y función `pit` en `bake_godot.py` (32 nudos dentro del aparcamiento, hasta 2,59 m abajo y 0,92 arriba; ninguno a menos de 19 m de una calle de coches, ninguna calzada cambia de altura). Parcelas 5187002 y 5187001 sin levantar; `clr` de cuatro nudos. Toca también `map_data.gd`, `world.gd` y `selftest.gd` (modo `mercamona`, 3/3, y `_mercamona_checks` en la completa). `relief` 19/19 y `grua` 29/29 después.
-  - La pizzería junto al Mercamona, «Todopizza» (Pretil; `todopizza.gd`, `world.todopizza`): el pabellón de teja con postes de madera, frente de cristal con interior visible, patio trasero, cartel propio. SIN COMMIT; aprobado por el usuario («Perfecto. Lo damos por finalizado», 15-11). SIN rehorneado: usa la parcela 5187001 que el bloque `MERCAMONA` ya deja sin levantar, y se construye cuando el mapa trae `mercamona`. `mercamona.gd` ya no dibuja esa casita. Toca `world.gd` (paso "the pizza house") y `selftest.gd` (modo `todopizza`, 3/3, y `_todopizza_checks` en la completa). `mercamona` 3/3 después.
-  - Casas nuevas (Texturas): la calle de la Palma y el primer tramo de Cervantes (21, con el visto bueno del usuario) y Ramón y Cajal (25, hojas en `guion/fotos/tanda9/`, sin veredicto). La Cocina de Henry pasa a su casa real, la Palma 3 B (`henry.gd`).
-  - Entran también los datos del Catastro de la tanda siguiente de Texturas (Oliva y Juan Carlos I: `tools/casas/oj_pendiente.json` y sus carpetas). El juego aún no los usa.
-- **Publicada antes:** 0.0.6 (15/11/2026): Plaza del Ayuntamiento, Molino del Tío Gerardo (el molinero espera en la era, `MILLER_AT`), Antigua Plaza de Toros (en ruina; `world.toros.set_restored(true)`, `--toros-restaurada`), las calles Real y del Salvador peatonales (`PAVED`, `PAVED_SPANS`, `empedrado.gd`), casas de Colón y del Salvador, La Chiki y las pintadas, y la lista grande del usuario del 15/11.
-- **Sin publicar (sin commit):** el retoque de la escuela (Pretil, aprobado: «Está perfecto»; ver arriba), la fila de la farmacia de la calle Real (Pretil, modo `farmacia`, aprobada: «Está todo perfecto»), la ermita de la Caridad con su parque y la guardería (Pretil, rehorneado con el visto bueno de Texturas, modo `caridad`, aprobada: «Está incrible»), el convento de Santa Ana y la calle de las Monjas empedrada y abierta al tráfico (Pretil, `paved` 3, modo `santaana`, con el fraile de bronce; aprobado: «Esta increíble. Muy buen trabajo»), el supermercado Mercamona con su aparcamiento una planta más bajo (Pretil; `pit` en el bake: 32 nudos de relieve bajo el aparcamiento, ninguno a menos de 19 m de una calle, calzadas sin cambio; modo `mercamona`, aprobado: «Estupendo. Se queda así»), la pizzería Todopizza a su lado (Pretil, `todopizza.gd`, sin rehorneado; aprobada: «Perfecto. Lo damos por finalizado»), las casas de la Oliva, Juan Carlos I y Santa Ana (dos tramos; el segundo, horneado sobre el mapa de la Caridad), el adoquín de Santo Domingo y las aceras altas del Arroyuelo Bajo (Texturas, abajo; `aceras_altas.gd`, toca `props.gd` y `empedrado.gd`; aprobadas: «Quedan increíbles así. Me encantan»). Antes de la próxima versión, prueba completa.
-
-- **Sin publicar (Texturas, 15/11, después de la 0.0.7):** calle de la Oliva y tramo este de la calle Juan Carlos I, 25 casas (`oliva_*`, `juancarlos_*`). Toca `casas_calles.gd`, `calles.json` y `map.json`; aparte de las nuevas, solo cambia `cajal_8` por una pared compartida. Se borra `tools/casas/oj_pendiente.json`, ya integrado. `run_tests.py casas "solo=oliva_"` y `"solo=juancarlos_"`: OK. Hojas en `guion/fotos/tanda10/`. Veredicto del usuario: «a primera vista parece que todo correcto». Ramón y Cajal ya lo tiene: «Tiene muy buena pinta».
-- **Sin publicar (Texturas, 15/11):** Calle de la Plaza, San José y Santo Domingo, 28 casas (`laplaza_*`, `sanjose_*`, `domingo_*`), con Street View de noviembre de 2024. Santo Domingo 4 y 6 van de calle a calle (el costado de San José se describe con líneas `lado`). Plaza 3 es un solar y Santo Domingo 15 no da a la calle, así que no se incluyen. Toca `casas_calles.gd`, `calles.json` y `map.json`; en el horneado solo cambian las 28 casas nuevas. `run_tests.py casas "solo=laplaza_,sanjose_,domingo_"`: OK. Hojas en `guion/fotos/tanda11/`. Veredicto del usuario: «todo correcto».
-- **Sin publicar (Texturas, 15/11): adoquín gris en el final de Santo Domingo, cerrado al tráfico.** El tramo va del cruce del 14 al final. El usuario pidió primero «Ponle adoquín pero déjalo viable para circulación» y después «Mejor cortar el tráfico ahí», porque es muy estrecho para el juego.
-  - `tools/bake_godot.py`: bloque nuevo `PAVED_LANES`. El tramo queda como calle peatonal (k 2) con el pasillo de una calle normal, así que ninguna casa se mueve, y lleva `"paved": 2`.
-  - `godot/scripts/map_data.gd`: línea 79, las calles cargan `"paved"`. Avisado Sistemas.
-  - `godot/scripts/empedrado.gd`: pone el adoquín gris de pared a pared, cortado recto en los extremos (`_lay(..., ends=false)`).
-  - Textura nueva `godot/assets/empedrado/adoquin_gris.png`, de `tools/empedrado_tex.py`; las otras dos texturas salen idénticas.
-  - En `map.json` solo cambian las calles.
-  - Fotos en `guion/fotos/tanda11/santo_domingo_adoquin.jpg`, sin errores de script. Lo cubre la próxima prueba completa.
-- **Sin publicar (Texturas, 15/11): Calle Santa Ana, primer tramo, 21 casas (`stana_2`..`stana_31`).** Lo pidió el usuario: «empezar con calle santa ana». Descritas con Street View de noviembre de 2024.
-  - Fuera: la tienda V.I.P. (`vipshop.gd`, el 14) y `stana_44`; los solares 7, 8 y 22; el 13 y el 23 D, que no dan a la calle.
-  - Frentes corregidos a mano: 10, 17, 27 y 31.
-  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas, solo cambian tres anchos de calzada (`clr`, 0,1-0,2 m).
-  - `run_tests.py casas "solo=stana_"`: OK. Hojas en `guion/fotos/tanda12/`.
-  - Veredicto del usuario: «todo correcto». Se probó a quitar la franja del 27 para que el 25 sobresaliera más en la calle, pero el usuario prefirió dejarlo como estaba («mejor dejarlo como antes, no me convence»). Está deshecho y `map.json` es idéntico al del horneado de Pretil.
-  - Queda una muesca pequeña junto al tejado entre el 27 y el 29.
-- **Sin publicar (Texturas, 15/11): Calle Santa Ana, segundo tramo, 24 casas.** Son los impares del 33 al 65 y los pares del 28 al 48. Lo pidió el usuario: «Continuamos con la calle». Descritas con Street View de noviembre de 2024.
-  - Fuera: `stana_44` (TELE DURUM, que usa `sabotaje.gd`), el solar del 63 y los números que no salen en el Catastro.
-  - Rótulos genéricos: AUTOESCUELA, MODA.
-  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas, solo cambia una pared lateral del 31, que ahora se dibuja.
-  - `run_tests.py casas "solo=stana_3,stana_4,stana_5,stana_6,stana_28"`: OK. Hojas en `guion/fotos/tanda12/santa_ana_5..8.jpg`. Veredicto del usuario: «Perfecto».
-- **Sin publicar (Texturas, 15/11): Calle Santa Ana, tercer tramo, 21 casas.** Son los impares del 67 al 93 y los pares del 50 al 72, hasta donde la calle se abre en dos calzadas. Lo pidió el usuario: «Continúa». Descritas con Street View de noviembre de 2024.
-  - Fuera: el 68 I, el 81 B y el 83, que no dan a la calle.
-  - El 79 y el 70 tienen cuatro plantas, aunque el Catastro dice dos.
-  - Rótulos genéricos: SUPERMERCADO (60 D), FERRETERÍA, PELUQUERÍA, DEPORTES, COMPLEMENTOS, NEUMÁTICOS.
-  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas, solo cambia `stana_48`, por la pared que comparte con el 50, y un `clr`.
-  - `run_tests.py casas "solo=stana_5,...,stana_9"`: OK. Hojas en `guion/fotos/tanda12/santa_ana_9..12.jpg`. Veredicto del usuario: «Perfecto».
-- **Sin publicar (Texturas, 15/11): Calle Santa Ana, último tramo, 30 casas, y con él la calle entera.** Son los impares del 95 al 129 y los pares del 74 B al 102, en el tramo de dos calzadas. Lo pidió el usuario: «Pasemos al último tramo». Descritas con Street View de noviembre de 2024.
-  - El 125 no tiene planta de edificio en el Catastro. Va hecho a mano (`rc: null`, `deep` 8) según Street View: una casa baja encalada.
-  - Fuera: el 92, que no da a la calle.
-  - Rótulos genéricos: BAR (88, con terraza y toldo), COCINAS, ELECTRODOMÉSTICOS, BAZAR.
-  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas no cambia nada.
-  - `run_tests.py casas` (stana_9…, 74…88, 123-127): OK. Hojas en `guion/fotos/tanda12/santa_ana_13..17.jpg`. Veredicto del usuario: «Tiene un aspecto muy bueno».
-- **Sin publicar (Texturas, 15/11): calle del Arroyuelo Bajo, 26 casas (`abajo_*`).** Lo pidió el usuario: «Siguiente calle?». Descritas con el Catastro y con Street View de noviembre de 2024.
-  - Fuera: los solares 4, 11 y 44, y el 10 y el 42, que no dan a la calle.
-  - El 17 es un bloque que se quedó sin terminar: huecos sin carpintería (`gar k=void`) y la planta baja tapiada. El 20 está reformado y ahora es de ladrillo. El 5 es una tapia con portón.
-  - Las aceras levantadas sobre murete no se hacen.
-  - Horneado encima del de Pretil (convento de Santa Ana): `roads` y `clr` salen iguales y aparte de las casas nuevas no cambia nada.
-  - `run_tests.py casas "solo=abajo_"`: OK. Hojas en `guion/fotos/tanda13/abajo_1..5.jpg`. Veredicto del usuario: «Visto bueno a todo».
-  - **Aceras altas, a prueba.** Lo pidió el usuario: «Se podría trabajar en las aceras altas y ver cómo quedan».
-    - Script nuevo `godot/scripts/aceras_altas.gd` (sobre obra.gd, como puente.gd): murete de mampostería, albardilla y suelo de baldosa a cuadros, con escalones en los extremos.
-    - Tramos en `tools/bake_godot.py`, bloque `ACERAS_ALTAS`: seis, a 0,35-0,7 m sobre la calzada. El horneado sube a la acera las casas de esos tramos y exporta 'aceras' en `map.json`.
-    - Engancho en `empedrado.gd`; `map_data.gd` carga `aceras`; `props.gd` (l. 353) apoya en la acera lo que cae encima. Avisado Sistemas.
-    - casas abajo_ OK y relief 19/19. Comparación en `guion/fotos/tanda13/aceras_altas.jpg`. Veredicto del usuario: «Quedan increíbles así. Me encantan». Falta la prueba completa (la hace Sistemas en el próximo hito).
-- **Sin publicar (Texturas, 15/11): calle de Valencia, primer tramo, 26 casas (`valencia_*`).** Son los impares del 1 al 25 y los pares del 2 al 32. Lo pidió el usuario: «Siguiente calle». Descritas con el Catastro y con Street View de noviembre de 2024.
-  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas no cambia nada, y las aceras altas siguen igual.
-  - `run_tests.py casas "solo=valencia_"`: OK. Hojas en `guion/fotos/tanda14/valencia_1..5.jpg`. Veredicto del usuario: «Visto bueno».
-  - Queda el segundo tramo: impares del 27 al 43 y pares del 34 al 60.
+- **Publicada:** 0.0.8 (15/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.8 — completa de las 21:30: 631 ok, 0 fallos. Todo lleva el visto bueno del usuario.
+  - **Hechos a mano (Pretil, sobre `obra.gd`):**
+    - La farmacia de la calle Real (`farmacia.gd`). `real_22/24/26/30` van `["obra"]` en `casas_calles.gd`, y `casas.gd` no las dibuja.
+    - La ermita de la Caridad, con su parque y la guardería (`caridad.gd`; bloque `CARIDAD`).
+    - El convento de Santa Ana con el fraile de bronce (`santaana.gd`; bloque `SANTAANA`). Su huella, `santaana_built`, cuenta para el `clr`.
+    - La calle de las Monjas, empedrada y abierta al tráfico: `PAVED_STREETS`, `paved` 3, tercer bucle de `empedrado.gd`.
+    - El Mercamona (`mercamona.gd`; bloque `MERCAMONA` y `pit()`). Cambia 32 nudos de relieve bajo el aparcamiento, ninguno a menos de 19 m de una calle de coches.
+    - El Todopizza (`todopizza.gd`), en la parcela que deja libre `MERCAMONA`.
+    - El retoque de la escuela Calasanz: sin caseta y con el mural de las palomas.
+  - **Casas (Texturas; hojas en `guion/fotos/tanda10..14/`):**
+    - Oliva, Juan Carlos I este, la Plaza, San José y Santo Domingo. El final de Santo Domingo va en adoquín gris y cerrado al tráfico (`PAVED_LANES`, `paved` 2).
+    - Santa Ana entera (`stana_*`). Fuera queda `stana_44`, que usa `sabotaje.gd`.
+    - Arroyuelo Bajo, con aceras altas (`aceras_altas.gd`, bloque `ACERAS_ALTAS`; `props.gd` apoya en ellas).
+    - El primer tramo de Valencia. Falta el segundo: impares del 27 al 43 y pares del 34 al 60.
+  - **Lanzador de pruebas:** los modos de fotos se abren con ventana sin pedirla.
+- **Publicada antes:** 0.0.7 (15/11/2026).
+  - El puente del Arroyuelo Medio (`puente.gd`; la obra dura hasta las firmas; `half` = 2,6, `kerb()` = hw + 0,75).
+  - La escuela Calasanz.
+  - Las casas de la Palma, Cervantes y Ramón y Cajal.
+  - La Cocina de Henry, en la Palma 3 B.
+- **Sin publicar:** nada.
 
 ## Cómo trabajar (normas del usuario, 15/11/2026)
 
