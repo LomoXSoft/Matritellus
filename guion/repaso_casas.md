@@ -70,6 +70,22 @@ Lista reunida el 16/11/2026, al terminar la calle de Toledo, de todo lo apuntado
 - **22:** la raya blanca en zigzag sale recta.
 - **b007** (la farmacia): los miradores salen como un solo cuerpo blanco.
 
+## Calle de Jesús y María
+
+- **b410:** faltan los ojos de buey redondos.
+- **11, 9 y 7:** el zócalo de piedra blanca de dibujo sale liso.
+- **b015:** los toldos verdes salen como rayas finas.
+
+## Portones que salen amarillos
+
+Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay que cambiarlos a `7a5a38` en `valencia_16`, `valencia_42`, `trsanto_11`, `regidor_11`, `arcos_6`, `rafael_15`, `rafael_22`, `toledano_9` y `alto_10`, que son de calles ya aprobadas. En las calles nuevas ya está cambiado.
+
+## Calle del Romero
+
+- **b101:** el bloque tiene la esquina redonda con una torre de cristal oscuro; aquí la esquina es recta y la torre es un mirador.
+- **41:** el ladrillo es pardo oscuro, casi chocolate; con `brick_dark` sale ya más oscuro, pero todavía rojizo.
+- **24:** falta el rótulo de la tienda de la esquina, porque no se ve en Street View qué vende.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

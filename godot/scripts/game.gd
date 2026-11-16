@@ -384,6 +384,12 @@ func _ready() -> void:
 		props.setup(self, world)
 		for gar in garages:
 			props.add_garage(gar)], ["lights", _setup_lights], ["the rest", _boot_rest], ["traffic cars", func(): traffic.prewarm()]])
+	# Nothing of the town is drawn while it is being built (the user's phone, 16 Nov 2026: 0.0.11 died on the loading
+	# screen). The black loading screen hid it, but every frame the graphics card was still sent the whole town as far
+	# as it had got, every piece at its fullest -- small pieces are only kept from far away once it is all up (thin,
+	# below) -- and with the streets added since 0.0.10 one such frame took a phone's graphics card so long that its
+	# driver gave it up ("Vulkan device was lost") and the game with it. The 3D comes back on once everything is built.
+	get_viewport().disable_3d = true
 	var done_n := 0
 	for st in steps_todo:
 		var t0 := Time.get_ticks_msec()
@@ -401,6 +407,7 @@ func _ready() -> void:
 			print("boot: %-14s %5d ms   memory %5.0f MB   video %5.0f MB" % [st[0], Time.get_ticks_msec() - t0,
 				Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
 		await get_tree().process_frame
+	get_viewport().disable_3d = false
 	if timing:
 		print("boot: all of it     %5d ms" % (Time.get_ticks_msec() - t_all))
 	var thinned := 0 if OS.get_cmdline_user_args().has("--todo") else Parts.thin(self)      # (--todo: everything drawn from any distance, as it was, to compare)

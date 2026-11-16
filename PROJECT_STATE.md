@@ -4,6 +4,12 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 ## Sin publicar
 
+- **Sistemas (16/11): la 0.0.11 se cerraba en Android en la pantalla de carga** (Realme RMX5051, Android 16, 7,5 GB).
+  - No era la memoria del juego: en el móvil llega a 1,3 GB, y quedaban 3 GB libres. Era la tarjeta gráfica: «Vulkan device was lost», con el driver tardando demasiado.
+  - Detrás de la pantalla negra de carga, cada fotograma se dibujaba el pueblo hasta donde iba construido, cada pieza con todo su detalle (las piezas pequeñas solo se recortan al final, en `thin`). Con las calles nuevas, un fotograma fue demasiado para el móvil.
+  - Ahora `get_viewport().disable_3d` está activado mientras se construye y se vuelve a desactivar al acabar (`game.gd`). En el PC la carga también es algo más rápida (35 s en vez de 38) y usa menos memoria de vídeo.
+  - Probado en ese móvil: llega al título (estaba en Modo Silent Hill). Diagnóstico: `adb logcat`; los print y printerr de GDScript no salen en una versión release.
+
 Nada todavía: todo lo anterior salió en la 0.0.11. El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
 ## Versión
@@ -20,11 +26,22 @@ Nada todavía: todo lo anterior salió en la 0.0.11. El detalle de cada pieza es
   - **Texturas:** Arroyuelo Alto, Extremadura, Clavel, Santa María, Toledo, Parto, Mirador, Ejon, San Francisco, Teniente Infante, la Rosa vieja, Castilla-La Mancha, Cervantes y la travesía de Zaragoza.
   - El detalle de cada pieza está en el historial de git (este archivo, antes de la 0.0.11), en los LEEME de `referencias/` y `tools/` y en `guion/`.
 - **Publicada antes:** 0.0.10 (16/11/2026): Android vuelve a arrancar, la flecha verde, la cámara de interiores, verde = objetivo, Rocas por dentro, el Toledano y el Kebab Deluxe.
+- **Sin publicar (Texturas, 16/11): calle de Jesús y María, 27 entradas (`jym_*`), y las casas de otras calles que dan a ella (Arroyuelo Bajo 42, Reina Sofía 45 y 26, Plaza del Toledano 1).**
+  - Comparadas con el Catastro, cuyas fotos aquí son buenas; el 30, que no tiene foto, va por Street View 2024. Son todas viviendas.
+  - Lo que aún no se parece (también en `guion/repaso_casas.md`):
+    - En el `b410` faltan los ojos de buey redondos.
+    - El zócalo de piedra blanca de dibujo del 11, el 9 y el 7 sale liso.
+    - Los toldos verdes del `b015` salen como rayas finas.
+  - Bake: 27 casas nuevas; solo cambian las piezas de `domingo_23`, `clara_1a` y `tinf_jm19`. Un nudo de `clr` baja de 3,1 a 2,5. `casas solo=jym_`: OK. Pretil lo ha comprobado con `toledano` (4/4): `jym_tol1` no pisa la plazuela. Hojas en `guion/fotos/tanda34/jym_1..5.jpg`.
+- **Sin publicar (Texturas, 16/11): calle del Romero, 29 entradas (`romero_*`)**, con las casas de otras calles que dan a ella (Delicias 16, Roma 7).
+  - Comparadas con el Catastro, cuyas fotos son buenas, y con Street View 2024 en la casa nueva de la calle Roma (2024, sin foto) y en el 24.
+  - Los portones de madera clara de tono `b8904a` o `a8803a` salen amarillos. En las calles nuevas van ya en `7a5a38`; los de calles aprobadas quedan en la lista del repaso.
+  - Bake: 29 casas nuevas; cambian las piezas de `stana_9`, `valencia_7`, `valencia_8`, `valencia_10`, `regidor_7` y `rafael_6`. Un nudo de `clr` baja de 3,5 a 2,5. `casas`: OK. Hojas en `guion/fotos/tanda34/romero_1..6.jpg`.
 - **Pendiente:**
   - Texturas:
-    - El visto bueno de Santa María, Toledo, Parto, Mirador, Ejon, San Francisco, Teniente Infante, la Rosa vieja y Cervantes. El usuario quiere terminar antes el casco urbano.
-    - El resto del Clavel, del 73 al 121 y del 62 al 92.
+    - El visto bueno de Santa María, Toledo, Parto, Mirador, Ejon, San Francisco, Teniente Infante y la Rosa vieja. El usuario quiere terminar antes el casco urbano. Cervantes y la travesía de Zaragoza tienen ya su «Visto bueno» (16/11). La calle del Clavel está entera y aprobada.
     - La travesía del Clavel, que hay que hacer a mano.
+    - El repaso de lo que aún no se parece: `guion/repaso_casas.md`.
   - Creador: la criba de piezas que hará el usuario.
   - Sistemas: `sentido` falla a veces (coches en contra al dejar conducir al tráfico); ya pasaba antes de los cambios de rendimiento.
 

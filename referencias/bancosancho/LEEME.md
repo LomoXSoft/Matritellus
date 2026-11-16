@@ -3,7 +3,7 @@
 Pedido por Luis el 17-11-2026: «Te puedes poner con la copistería xijote (que llamaremos copistería Sancho panza) y el
 banco Santander (que llamaremos banco Cantabria). Ambos comparten C. Teniente Infante, 8 ... partiendo la planta baja,
 debajo de unos pisos». Y con su foto marcada: 1 el banco, 2 la copistería (todo el tramo de ladrillo), 3 el electricista.
-Pendiente de su veredicto.
+Veredicto, 17-11: «Visto bueno». Publicado en la 0.0.11.
 
 El modelo es `godot/scripts/bancosancho.gd` (sobre `obra.gd`), en `world.bancosancho`. Es la casa `sfran_b004` de Texturas
 (Catastro 4190004VJ5649S), que casas.gd deja de dibujar («obra»). Herramientas: `tools/bancosancho/`. Dibujos, todos
