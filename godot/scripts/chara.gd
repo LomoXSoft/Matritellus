@@ -83,13 +83,36 @@ func _bat_pose(k: float) -> void:
 			_bat.rotation = Vector3(r.x, r.y, 0.0)
 			return
 
-## a little jump on the spot (or on the run): it gets you over nothing, but it is a jump
+## A jump, on the spot or on the run. The body goes up with the figure, so a jump gets you up a step, a kerb or a raised
+## pavement as high as it reaches (the user, 16 November 2026, stuck in the sunk bed by the bridge: "Se suponía que
+## habíamos puesto el salto para poder saltar a aceras"). It is measured from the height it left (_hop_base), it
+## comes down on whatever the feet are over (MapData.foot: the ground, a pavement, a deck), and never over a car.
+var _hop_base := 0.0
+var _drop := 0.0           # still in the air after a jump down off something (metres over the ground), and how fast it falls
+var _drop_v := 0.0
 func hop() -> bool:
 	if _hop > 0.0:
 		return false
 	_hop = HOP
 	hop_k = HOP_TAP
+	_hop_base = global_position.y
+	_drop = 0.0
 	return true
+
+## how high the feet are, in the jump, over the ground they are above now (0: on it)
+func _hop_air() -> float:
+	if _hop <= 0.0:
+		return 0.0
+	var up := sin((1.0 - _hop / HOP) * PI)
+	return clampf(_hop_base + up * HOP_TOP * hop_k - global_position.y, 0.0, HOP_TOP + 2.0)      # (a stale jump, out of a car somewhere else, lifts no one)
+
+## a car where the step would take you, at the height people walk (a jump does not carry you over one)
+func _car_ahead(motion: Vector3) -> bool:
+	var keep := collision_mask
+	collision_mask = keep & 2
+	var hit := collision_mask != 0 and test_move(global_transform, motion)
+	collision_mask = keep
+	return hit
 
 ## The jump goes higher the longer the key is held, while still on the way up (the user, 15 November 2026: a little
 ## higher than it was, and how high up to you). game.gd calls this every tick the key is down.
@@ -251,10 +274,15 @@ func set_look(o: Dictionary) -> void:
 			b.rotation.z = sx * -0.15
 	if brows == 2:
 		_acc("box", hair_c, Vector3(0, 1.42 + eh + 0.05, 0.46), Vector3(0.46, 0.06, 0.04))
+	elif brows >= FIRST_CEJAS and brows - FIRST_CEJAS < CEJAS.size():      # (fitted over eyes of the ordinary size: up or down with bigger or smaller ones)
+		_pieza_on(CEJAS[brows - FIRST_CEJAS], hair_c, 0, eh - 0.098)
 	_beard(int(o.get("face", 0)), hair_c, skin)
+	if int(o.get("barba3", 0)) == 1 and int(o.get("face", 0)) != 5:      # (three days' beard: an option of its own, with any beard or none)
+		_barba3(hair_c)
 	var ankle: int = o.get("socks", skin)            # (socks under sandals or slides: the foot shows in their colour)
-	_fl = _foot(-0.17, shoes, int(o.get("shoe_type", 0)), ankle)
-	_fr = _foot(0.17, shoes, int(o.get("shoe_type", 0)), ankle)
+	var shod: int = int(o.get("shoe_type", FIRST_CALZADO))     # (neighbours who say nothing of it: the new trainers, as the user asked on 16 Nov 2026)
+	_fl = _foot(-0.17, shoes, shod, ankle)
+	_fr = _foot(0.17, shoes, shod, ankle)
 	_hl = Parts.part("ball", skin, Vector3(-_hx, 0.68, 0), Vector3.ONE * 0.12)
 	_hr = Parts.part("ball", skin, Vector3(_hx, 0.68, 0), Vector3.ONE * 0.12)
 	for n in [_fl, _fr, _hl, _hr]:
@@ -264,7 +292,7 @@ func set_look(o: Dictionary) -> void:
 	inner.add_child(_phone)
 	var hat: String = o.get("hat", "")
 	if hair != null:
-		_hair(int(o.get("hair_style", 0)), hair, skin, hat in ["cap", "beret", "straw", "tophat", "tricorn", "chef"])
+		_hair(int(o.get("hair_style", 0)), hair, skin, hat_cut(hat))
 	var hatc: int = o.get("hat_color", 0xd9643a)
 	match hat:
 		"beret":
@@ -297,24 +325,29 @@ func set_look(o: Dictionary) -> void:
 		"chef":
 			_add("cyl", 0xffffff, Vector3(0, 1.9, 0), Vector3(0.37, 0.24, 0.37))
 			_add("ball", 0xffffff, Vector3(0, 2.1, 0), Vector3(0.46, 0.2, 0.46))
-		"straw":
-			_add("cyl", 0xe6c56a, Vector3(0, 1.8, 0), Vector3(0.78, 0.04, 0.78))
-			_add("cyl", 0xe6c56a, Vector3(0, 1.9, 0), Vector3(0.4, 0.22, 0.4))
+		"straw":                                     # (down onto the head where it is as wide as the crown: it used to sit up on top, 16 Nov 2026)
+			_add("cyl", 0xe6c56a, Vector3(0, 1.69, 0), Vector3(0.78, 0.04, 0.78))
+			_add("cyl", 0xe6c56a, Vector3(0, 1.79, 0), Vector3(0.4, 0.22, 0.4))
 			var band: int = o.get("hat_band", 0x26262b)          # the ribbon round the crown takes the colour chosen
 			if band < 0:                                         # ...or the red, gold and red of the flag
-				_add("cyl", 0xc0392b, Vector3(0, 1.855, 0), Vector3(0.412, 0.07, 0.412))
-				_add("cyl", 0xf2c230, Vector3(0, 1.855, 0), Vector3(0.416, 0.034, 0.416))
+				_add("cyl", 0xc0392b, Vector3(0, 1.745, 0), Vector3(0.412, 0.07, 0.412))
+				_add("cyl", 0xf2c230, Vector3(0, 1.745, 0), Vector3(0.416, 0.034, 0.416))
 			else:
-				_add("cyl", band, Vector3(0, 1.855, 0), Vector3(0.412, 0.065, 0.412))
+				_add("cyl", band, Vector3(0, 1.745, 0), Vector3(0.412, 0.065, 0.412))
 		"horns":
 			for sx in [-1.0, 1.0]:
 				_add("cone", 0x8a7a66, Vector3(sx * 0.25, 1.98, 0), Vector3(0.09, 0.4, 0.09))
 			_add("ball", 0xffffff, Vector3(0, 1.12, 0.42), Vector3(0.1, 0.2, 0.08))
 		"collar":
 			_add("box", 0xffffff, Vector3(0, 0.98, 0.3), Vector3(0.16, 0.08, 0.06))
+		_:
+			if SOMBREROS.has(hat):                   # (from free models: in the colour chosen; red for the red-and-gold)
+				_wear(SOMBREROS[hat], hatc if hatc >= 0 else 0xc0392b, true)
 	_glasses(int(o.get("glasses", 0)))
 	_earrings(int(o.get("earrings", 0)))
 	_pendant(int(o.get("pendant", 0)), int(o.get("kerchief", 0xd23b3b)))
+	if int(o.get("panuelo", 0)) == 1:
+		_panuelo(int(o.get("pena", 0)), int(o.get("kerchief", 0xd23b3b)))
 	Parts.thin(vis)                              # (eyes, buttons and earrings are not drawn from across the square)
 
 ## One foot, shod: 0 trainers · 1 boots · 2 alpargatas (canvas on a rope sole, ribbons round the ankle) · 3 flip-flops
@@ -325,6 +358,20 @@ func _foot(x: float, hex: int, kind: int, skin: int) -> Node3D:
 		var m := Parts.part(shape, colour, pos, scl)
 		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		f.add_child(m)
+	if kind == BAREFOOT:                         # nothing on: the plain foot, a ball (the user: "pies estándar sin calzado (dos bolas)")
+		put.call("ball", skin, Vector3(0, -0.02, 0.02), Vector3(0.14, 0.11, 0.18))
+		return f
+	if kind >= FIRST_CALZADO:                    # a shoe from free models, in the colour chosen; the left one the right one mirrored
+		var m := pieza(CALZADO[kind - FIRST_CALZADO]) if kind - FIRST_CALZADO < CALZADO.size() else null
+		if m != null:
+			var shoe := _dressed(m, hex)
+			shoe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if x > 0.0:
+				shoe.scale.x = -1.0
+			f.add_child(shoe)
+			if CALZADO[kind - FIRST_CALZADO] in OPEN_SHOES:     # (sandals and heels: the foot shows, bare or in its socks)
+				put.call("ball", skin, Vector3(0, -0.035, 0.01), Vector3(0.115, 0.075, 0.165))
+			return f
 	match kind:
 		1:      # boots: up over the ankle, a thick dark sole
 			put.call("ball", hex, Vector3.ZERO, Vector3(0.155, 0.135, 0.205))
@@ -347,6 +394,13 @@ func _foot(x: float, hex: int, kind: int, skin: int) -> Node3D:
 
 # ---------------- clothes ----------------
 func _clothes(top: int, shirt: int, skin: int) -> void:
+	if top == PENA_TEE:                          # the peña's T-shirt: plain, in the peña's colour (creator.gd look), its logo printed on the chest
+		_pena_print(int(look.get("pena", 0)))
+		return
+	if top >= FIRST_ROPA:
+		if top - FIRST_ROPA < ROPA.size():
+			_wear(ROPA[top - FIRST_ROPA], shirt, false, [int(look.get("shirt2", -1)), int(look.get("shirt3", -1))])      # (its other parts: colour 2 and 3)
+		return
 	var sc := Parts.col(shirt)
 	var detail: int = 0x2a2a30 if sc.r * 0.3 + sc.g * 0.59 + sc.b * 0.11 > 0.55 else 0xf4f1e8
 	var collar := func(hex: int) -> void:
@@ -422,8 +476,251 @@ func _clothes(top: int, shirt: int, skin: int) -> void:
 				_strip(shirt, sx * 0.36, 0.9, 0.995, 0.09, 0.016)
 				_strip(shirt, PI + sx * 0.36, 0.9, 0.995, 0.09, 0.016)
 
+# ---------------- hair, beards and eyebrows from free models ----------------
+## The user, 16 November 2026: "Tenemos que importar assets de peinados, barbas y cejas, los que tenemos son muy básicos
+## y algunos terribles (de momento no se borra nada) ... tienen que tener nuestra estética y ser de libre uso". These
+## are free models (CC0: Quaternius, OverScore, The Wild Dodo; assets/creador/CREDITOS.txt) fitted onto our round heads
+## by tools/creador/pelo.py (piezas.json): assets/creador/pelo/<name>.glb, in this model's own frame. A hairstyle has a
+## second mesh, "gorro", for under a cap or a hat (nothing of it above the rim). They take the hair's colour, flat, as
+## the rest of the model. The old styles stay where they were; these come after them.
+const PELOS := ["pelo_raya", "pelo_rapao_fino", "pelo_melena_larga", "pelo_dos_monos", "pelo_rapao_ella", "pelo_afro", "pelo_pixie",
+	"pelo_mullet", "pelo_coleta_alta", "pelo_trenza_larga", "pelo_rizos_cortos", "pelo_bob", "pelo_coletas_bajas", "pelo_cardado",
+	"pelo_mono_abuela", "pelo_ondas", "pelo_flequillo", "pelo_desfilado"]          # hair_style 13 on
+const BARBAS := ["barba_recortada", "barba_poblada", "barba_candao", "bigote_morsa"]      # face 9 on
+const CEJAS := ["cejas_pobladas", "cejas_arqueadas"]                                    # brows 4 on
+const FIRST_PELO := 13
+const FIRST_BARBA := 9
+const FIRST_CEJAS := 4
+static var _piezas := {}
+
+## the mesh of a piece; for hair under a hat, `cut` 1 is what shows under a cap (the "gorro" mesh, nothing over 1.6) and
+## 2 what shows under a hat that sits higher (the "gorro_alto" mesh, nothing over 1.7: a straw hat, a beret); null if
+## nothing of it shows under one
+static func pieza(name: String, cut := 0) -> Mesh:
+	if not _piezas.has(name):
+		var got: Array = [null, null, null]
+		var path := "res://assets/creador/pelo/%s.glb" % name
+		if ResourceLoader.exists(path):
+			var inst: Node = (load(path) as PackedScene).instantiate()
+			for n in inst.find_children("*", "MeshInstance3D", true, false):
+				var nm := String(n.name)
+				got[2 if nm.begins_with("gorro_alto") else (1 if nm.begins_with("gorro") else 0)] = (n as MeshInstance3D).mesh
+			inst.free()
+		_piezas[name] = got
+	return _piezas[name][clampi(cut, 0, 2)]
+
+## how much of the hair a hat leaves: 0 all of it, 1 what is under a cap's rim, 2 what is under a higher hat's
+static func hat_cut(hat: String) -> int:
+	if hat in ["beret", "straw", "tophat", "tricorn", "chef"]:
+		return 2
+	if hat == "cap" or (SOMBREROS.has(hat) and hat != "diadema"):
+		return 1
+	return 0
+
+## for hair, eyebrows and beards: the same, drawn on both sides (the packs make some locks single sheets; from the side
+## they face away they were not drawn, and the scalp showed through: the user, 16 Nov 2026, "se ven calvas")
+static var _hair_mats := {}
+static func _vc_hair(hex: int) -> StandardMaterial3D:
+	if not _hair_mats.has(hex):
+		var m := _vc(hex).duplicate() as StandardMaterial3D
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_hair_mats[hex] = m
+	return _hair_mats[hex]
+
+## the flat colours of the pieces from free models, with the shading of their folds and layers (a vertex colour each
+## carries: tools/creador/pelo.py dirt) multiplied in
+static var _vc_mats := {}
+static func _vc(hex: int) -> StandardMaterial3D:
+	if not _vc_mats.has(hex):
+		var m := Parts.mat(hex).duplicate() as StandardMaterial3D
+		m.vertex_color_use_as_albedo = true
+		_vc_mats[hex] = m
+	return _vc_mats[hex]
+
+## Clothes, hats, things round the neck and shoes from free models (the user, the same day: "Lo mismo que lo anterior
+## pero con la ropa y complementos" and "Rework al calzado ... Usaremos assets de libre uso o pies estándar sin calzado
+## (dos bolas)"), fitted by the same tool. The part of each with most of it takes the colour chosen (the shirt's, the
+## hat's, the shoes'); the rest keeps its own (soles, buttons, stripes).
+const SOMBREROS := {"parpusa": "gorro_parpusa", "fedora": "gorro_fedora", "bombin": "gorro_bombin", "pamela": "gorro_pamela",
+	"panoleta": "gorro_panoleta", "diadema": "gorro_diadema", "beisbol": "gorro_beisbol", "beisbol_atras": "gorro_beisbol_atras",
+	"vaquero": "gorro_vaquero"}
+const ROPA := ["ropa_camisa_cuello", "ropa_sudadera_capucha", "ropa_jersey_cuello_alto", "ropa_plumas", "ropa_chaleco", "ropa_rebeca",
+	"ropa_reflectante", "ropa_futbol", "ropa_marinera", "ropa_anorak"]       # top 11 on
+const CUELLO := ["cuello_corbata", "cuello_pajarita", "cuello_delantal", "cuello_bufanda"]       # pendant 6 on
+const CALZADO := ["calzado_zapatillas", "calzado_botas_faena", "calzado_botas_agua", "calzado_sandalias", "calzado_bailarinas",
+	"calzado_camperas", "calzado_zapatillas_casa", "calzado_tacones"]        # shoe_type 5 on (4: bare feet)
+const FIRST_ROPA := 11
+const FIRST_CUELLO := 6
+const BAREFOOT := 4
+const FIRST_CALZADO := 5
+const OPEN_SHOES := ["calzado_sandalias", "calzado_tacones"]
+static var _own_mats := {}
+
+## a piece in its colours: the first part in `hex`, the others in `extra` (the creator's colour 2 and 3 of the clothes;
+## -1: as the piece comes) or else their own, matt (as everything here is)
+static func _dressed(m: Mesh, hex: int, extra: Array = []) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.mesh = m
+	mi.lod_bias = 100.0                     # (as the hair: the whole piece at any distance)
+	for si in range(m.get_surface_count()):
+		if si == 0:
+			mi.set_surface_override_material(0, _vc(hex))
+			continue
+		if si - 1 < extra.size() and int(extra[si - 1]) >= 0:
+			mi.set_surface_override_material(si, _vc(int(extra[si - 1])))
+			continue
+		var src := m.surface_get_material(si)
+		if not _own_mats.has(src):
+			var c := (src as BaseMaterial3D).albedo_color if src is BaseMaterial3D else Color(0.5, 0.5, 0.5)
+			var own := _vc((int(c.r * 255.0) << 16) | (int(c.g * 255.0) << 8) | int(c.b * 255.0)) if c.a > 0.0 else _vc(0x808080)
+			_own_mats[src] = own
+		mi.set_surface_override_material(si, _own_mats[src])
+	return mi
+
+## puts a piece of clothing (or a hat) on: on the head (`head`) or the body, in `hex`
+func _wear(name: String, hex: int, head: bool, extra: Array = []) -> MeshInstance3D:
+	var m := pieza(name)
+	if m == null:
+		return null
+	var mi := _dressed(m, hex, extra)
+	if head:
+		neck.add_child(mi)
+	else:
+		mi.scale = Vector3(_girth, 1.0, _girth)          # (as wide as the body is)
+		inner.add_child(mi)
+	return mi
+
+## puts a piece on the head, in this colour (`lift`: up or down a little, as the eyebrows go with the eyes' size)
+func _pieza_on(name: String, hex: int, cut := 0, lift := 0.0) -> MeshInstance3D:
+	var m := pieza(name, cut)
+	if m == null:
+		return null
+	var mi := MeshInstance3D.new()
+	mi.mesh = m
+	mi.material_override = _vc_hair(hex)
+	mi.lod_bias = 100.0                     # (never Godot's simplified meshes: thinned, the hair let the scalp show through in specks from a few metres)
+	mi.position.y = lift
+	neck.add_child(mi)
+	return mi
+
+## The classic head of an old lady's on a Saturday (the user, 16 November 2026: "para viejos, me gustaría añadir una
+## cabeza con rulos clásica de señora mayor"): her hair short and close (the "pelusilla" piece) and, over the top of
+## her head, rollers of pink, blue and yellow plastic with the hair wound round them, lying across the head in rows.
+## (No free model of rollers was to be found: a roller is a drum, and the game has drums.) Under a hat, the hair only.
+const RULOS := 31                                # hair_style
+const _RULO_SPOTS := [[0.0, 52.0], [0.0, 74.0], [180.0, 72.0], [180.0, 48.0], [180.0, 26.0], [44.0, 46.0], [-44.0, 46.0],
+	[90.0, 36.0], [-90.0, 36.0], [136.0, 40.0], [-136.0, 40.0], [62.0, 70.0], [-62.0, 70.0], [118.0, 64.0], [-118.0, 64.0]]     # [bearing, elevation] in degrees
+const _RULO_PLASTIC := [0xf28cb5, 0x8cc3f2, 0xf2d36b]
+func _rulos(hair: int, cut: int) -> void:
+	_pieza_on("pelo_rapao_ella", hair, cut)
+	if cut > 0:
+		return
+	for i in range(_RULO_SPOTS.size()):
+		var b := deg_to_rad(float(_RULO_SPOTS[i][0]))
+		var el := deg_to_rad(float(_RULO_SPOTS[i][1]))
+		var out := Vector3(sin(b) * cos(el), sin(el), cos(b) * cos(el))          # (from the middle of the head)
+		var along := Vector3(cos(b), 0.0, -sin(b))                               # (round the head, as a roller lies)
+		var side := along.cross(out)                                             # (a drum's length is its y: along the head)
+		var at := Vector3(0, 1.38, 0) + out * 0.565
+		var core := _acc("cyl", hair, at, Vector3.ONE)                           # the hair wound round it
+		core.transform = Transform3D(Basis(side * 0.062, along * 0.17, out * 0.062), at)
+		var plastic: int = _RULO_PLASTIC[i % _RULO_PLASTIC.size()]
+		for e in [-1.0, 1.0]:                                                    # and the plastic showing at its two ends
+			var end := _acc("cyl", plastic, at, Vector3.ONE)
+			end.transform = Transform3D(Basis(side * 0.074, along * 0.028, out * 0.074), at + along * e * 0.088)
+
+## Bald, and shaved (the user, 16 November 2026: "Añade también calvo y rasurado (zona del cabello gris semitransparente)
+## como peinados"): the shaved head is the scalp where the hair would grow -- the crown, the sides, the back down to
+## the nape, up to the hairline in front -- in a see-through grey, its edge fading out. Built once (_rasurado_mesh).
+const CALVO := 32                               # hair_style
+const RASURADO := 33
+static var _rasurado_mesh: ArrayMesh
+static var _barba3_mesh: ArrayMesh
+static var _shave_mat: StandardMaterial3D
+
+## A see-through grey skin over part of the head (shaved hair, three days' beard): the ball a hair's breadth out, each
+## point as solid as `alpha` says for its bearing round the head (radians, 0 in front, + to the left) and elevation
+## (degrees), from elevation e0 up to e1. One material for both (_shave_mat).
+static func _shave_zone(alpha: Callable, e0: float, e1: float) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const R := 0.506
+	var at := func(b: float, e: float) -> Array:
+		var d := Vector3(sin(b) * cos(deg_to_rad(e)), sin(deg_to_rad(e)), cos(b) * cos(deg_to_rad(e)))
+		return [Vector3(0, 1.38, 0) + d * R, d, clampf(float(alpha.call(b, e)), 0.0, 1.0)]
+	const NB := 72
+	const DE := 3.0
+	for i in range(NB):
+		var b0 := TAU * i / NB - PI
+		var b1 := TAU * (i + 1) / NB - PI
+		var e := e0
+		while e < e1:
+			var ee := minf(e1, e + DE)
+			var q: Array = [at.call(b0, e), at.call(b1, e), at.call(b1, ee), at.call(b0, ee)]
+			if q[0][2] + q[1][2] + q[2][2] + q[3][2] > 0.0:
+				for k in [0, 2, 1, 0, 3, 2]:
+					st.set_normal(q[k][1])
+					st.set_color(Color(1, 1, 1, q[k][2]))
+					st.add_vertex(q[k][0])
+			e = ee
+	if _shave_mat == null:
+		_shave_mat = StandardMaterial3D.new()
+		_shave_mat.albedo_color = Color(0.26, 0.27, 0.29, 0.62)      # grey, see-through: the skin shows under it
+		_shave_mat.vertex_color_use_as_albedo = true
+		_shave_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_shave_mat.roughness = 1.0
+		_shave_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	return st.commit()
+
+## (in the beard's colour: the user, 16 Nov 2026) where a beard grows on our faces: the jaw and the chin from ear to ear, over the lip, never up on the cheeks (their
+## blush is at about 40 degrees round and 13 down); its edge fading out
+static var _barba3_mats := {}
+func _barba3(hex: int) -> void:
+	if _barba3_mesh == null:
+		const FADE := 6.0
+		_barba3_mesh = _shave_zone(func(b: float, e: float) -> float:
+			var side: float = absf(b)                                   # 0 in front, PI/2 at the ears
+			var top: float = lerpf(-11.0, -21.0, smoothstep(0.0, 0.75, side)) + 26.0 * smoothstep(0.8, 1.45, side)      # up to under the nose in front, below the blush, up the sideburns to the ears
+			var a_top: float = 1.0 - smoothstep(top - FADE, top, e)
+			var a_side: float = 1.0 - smoothstep(1.55, 1.8, side)          # (not round the back of the neck)
+			return a_top * a_side, -75.0, 12.0)
+	var mi := MeshInstance3D.new()
+	mi.mesh = _barba3_mesh
+	if not _barba3_mats.has(hex):                  # (in the beard's colour: the hair's, see-through)
+		var m := _shave_mat.duplicate() as StandardMaterial3D
+		m.albedo_color = Color(Parts.col(hex), 0.55)
+		_barba3_mats[hex] = m
+	mi.material_override = _barba3_mats[hex]
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	neck.add_child(mi)
+
+func _rasurado(hair: int) -> void:
+	if _rasurado_mesh == null:
+		const FADE := 7.0                            # degrees over which its edge fades out
+		_rasurado_mesh = _shave_zone(func(b: float, e: float) -> float:
+			var lowest: float = lerpf(-20.0, 36.0, pow((1.0 + cos(b)) / 2.0, 1.3))     # how far down the hair grows (1 in front, 0 behind)
+			return smoothstep(lowest, lowest + FADE, e), -30.0, 90.0)
+	var mi := MeshInstance3D.new()
+	mi.mesh = _rasurado_mesh
+	mi.material_override = _shave_mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	neck.add_child(mi)
+
 # ---------------- hair ----------------
-func _hair(style: int, hair: int, skin: int, hatted: bool) -> void:
+func _hair(style: int, hair: int, skin: int, cut: int) -> void:
+	var hatted := cut > 0
+	if style == CALVO:                      # nothing on top at all
+		return
+	if style == RASURADO:
+		_rasurado(hair)
+		return
+	if style == RULOS:
+		_rulos(hair, cut)
+		return
+	if style >= FIRST_PELO:
+		if style - FIRST_PELO < PELOS.size():
+			_pieza_on(PELOS[style - FIRST_PELO], hair, cut)
+		return
 	var cropped := _mix(hair, skin, 0.35)
 	if style == 3 or style == 6:
 		_add("ball", cropped, Vector3(0, 1.53, -0.05), Vector3(0.506, 0.37, 0.506))        # shaved close: the scalp shows through
@@ -431,6 +728,8 @@ func _hair(style: int, hair: int, skin: int, hatted: bool) -> void:
 		_add("ball", hair, Vector3(0, 1.34, -0.1), Vector3(0.515, 0.22, 0.48))             # only round the back and sides
 	elif style != 4 or hatted:
 		_add("ball", hair, Vector3(0, 1.5, -0.06), Vector3(0.5, 0.42, 0.5))                # the ordinary head of hair
+		if not hatted:                       # ...and over the crown and the top of the forehead, which it left bare (the user, 16 Nov 2026: "Arreglaría esta calva también")
+			_add("dome", hair, Vector3(0, 1.665, 0.0), Vector3(0.43, 0.232, 0.43))
 	match style:
 		1:      # bun
 			_add("ball", hair, Vector3(0, 1.72, -0.42), Vector3.ONE * 0.19)
@@ -476,6 +775,10 @@ func _hair(style: int, hair: int, skin: int, hatted: bool) -> void:
 
 # ---------------- beards ----------------
 func _beard(kind: int, hair_c: int, skin: int) -> void:
+	if kind >= FIRST_BARBA:
+		if kind - FIRST_BARBA < BARBAS.size():
+			_pieza_on(BARBAS[kind - FIRST_BARBA], hair_c)
+		return
 	match kind:
 		1:      # moustache
 			_acc("box", hair_c, Vector3(0, 1.26, 0.48), Vector3(0.26, 0.055, 0.05))
@@ -487,20 +790,9 @@ func _beard(kind: int, hair_c: int, skin: int) -> void:
 			_acc("box", hair_c, Vector3(0, 1.265, 0.48), Vector3(0.38, 0.08, 0.06))
 			for sx in [-1.0, 1.0]:
 				_acc("ball", hair_c, Vector3(sx * 0.2, 1.2, 0.45), Vector3(0.05, 0.09, 0.04))
-		5:      # three days without shaving: a scatter of little dots over the jaw and under the nose
-			var dot := _mix(skin, hair_c, 0.78)
-			for row in range(5):
-				var yy := 1.05 + row * 0.052
-				var half := 0.31 - absf(row - 2.4) * 0.035                      # how far round the face this row goes
-				var count := 9 if row < 3 else 7
-				for k in range(count):
-					var a := (float(k) / (count - 1) * 2.0 - 1.0) * half * PI + (0.11 if row % 2 == 1 else 0.0)
-					if row >= 3 and absf(a) < 0.3:
-						continue                                               # (not over the mouth)
-					var rr := 0.505 - maxf(0.0, 1.2 - yy) * 0.3                  # the head narrows towards the chin
-					_acc("ball", dot, Vector3(sin(a) * rr, yy, cos(a) * rr), Vector3.ONE * 0.018)
-			for k in range(5):                                                 # ...and under the nose
-				_acc("ball", dot, Vector3((k - 2) * 0.045, 1.27, 0.497), Vector3.ONE * 0.016)
+		5:      # three days without shaving: the shaved head's see-through grey, over where a beard grows (the user, 16 Nov 2026:
+			# "Cambia la barba de tres días ... por el mismo efecto que rasurado, pero en la zona de la barba"; it was dots)
+			_barba3(hair_c)
 		6:      # the long beard
 			_add("ball", hair_c, Vector3(0, 1.17, 0.3), Vector3(0.36, 0.26, 0.26))
 			_add("ball", hair_c, Vector3(0, 0.98, 0.37), Vector3(0.25, 0.3, 0.15))
@@ -573,6 +865,14 @@ func _earrings(kind: int) -> void:
 func _pendant(kind: int, kerchief: int) -> void:
 	if kind <= 0:
 		return
+	if kind >= FIRST_CUELLO:                     # (from free models, in their own colours)
+		if kind - FIRST_CUELLO < CUELLO.size():
+			var m := pieza(CUELLO[kind - FIRST_CUELLO])
+			if m != null:
+				var src := m.surface_get_material(0)
+				var c: Color = (src as BaseMaterial3D).albedo_color if src is BaseMaterial3D else Color(0.5, 0.5, 0.5)
+				_wear(CUELLO[kind - FIRST_CUELLO], (int(c.r * 255.0) << 16) | (int(c.g * 255.0) << 8) | int(c.b * 255.0), false)
+		return
 	var metal := 0xcfd4d8 if kind == 3 else 0xe6b422
 	if kind <= 3:
 		_acc("ring_thin", metal, Vector3(0, 0.9, 0.04), Vector3.ONE * 0.37 * _girth).rotation.x = 0.32
@@ -593,12 +893,115 @@ func _pendant(kind: int, kerchief: int) -> void:
 			var tip := _acc("cone", kerchief, Vector3(0, 0.83, _r(0.83) + 0.022), Vector3(0.14, 0.22, 0.03))
 			tip.rotation.z = PI
 
+## Your peña's neckerchief, from the wardrobe at home (the user, 16 November 2026, with a photo of a fiesta neckerchief
+## worn point down the back: "Un pañuelo del color de la peña con el graffiti estampado detrás"): rolled round the neck
+## and knotted at the front, its point hanging down the back, lying on it, with the peña's logo printed on the cloth
+## (assets/creador/panuelo_<id>.png, tools/creador/panuelos.py).
+const PANUELO_IDS := ["nietos", "croquetilla", "bordillo", "centradito", "costrola", "al_prao"]      # (creator.gd PENA_IDS)
+static var _panuelo_mats := {}
+func _panuelo(pena: int, hex: int) -> void:
+	var roll := _acc("ring", hex, Vector3(0, 0.945, 0.0), Vector3(0.335 * _girth, 0.42, 0.335 * _girth))       # the roll round the neck
+	roll.rotation.x = 0.12
+	var front := _r(0.9) + 0.03
+	_acc("ball", hex, Vector3(0, 0.9, front), Vector3(0.075, 0.06, 0.05))                                      # the knot...
+	for sx in [-1.0, 1.0]:                                                                                        # ...and its two ends
+		var end := _acc("cone", hex, Vector3(sx * 0.05, 0.82, front - 0.005), Vector3(0.05, 0.13, 0.02))
+		end.rotation = Vector3(0.0, 0.0, PI + sx * 0.35)
+	# the point down the back: a triangle of cloth laid over the body (a cone), narrowing to its tip
+	var id: String = PANUELO_IDS[clampi(pena, 0, PANUELO_IDS.size() - 1)]
+	if not _panuelo_mats.has(id):
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = Parts.texture("res://assets/creador/panuelo_%s.png" % id)
+		if m.albedo_texture == null:
+			m.albedo_color = Parts.col(hex)
+		m.roughness = 1.0
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		m.rim_enabled = true
+		m.rim = 0.35
+		m.rim_tint = 0.6
+		_panuelo_mats[id] = m
+	const ROWS := 8
+	const COLS := 8
+	const TOP := 0.955               # where it comes out from under the roll
+	const TIP := 0.4                 # how far down the back the point reaches
+	const SPAN := 1.12               # how far round the back it reaches at the top, either way (radians)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var at := func(u: float, v: float) -> Array:
+		var ang: float = PI + (u - 0.5) * 2.0 * SPAN * (1.0 - v)
+		var yy: float = lerpf(TOP, TIP, v)
+		var rr: float = _r(yy) + 0.018 + 0.012 * (1.0 - v)
+		return [Vector3(sin(ang) * rr, yy, cos(ang) * rr), Vector2(0.5 + (u - 0.5) * (1.0 - v), v), Vector3(sin(ang), 0.19, cos(ang)).normalized()]
+	for r in range(ROWS):
+		for c in range(COLS):
+			var q: Array = [at.call(float(c) / COLS, float(r) / ROWS), at.call(float(c + 1) / COLS, float(r) / ROWS),
+				at.call(float(c + 1) / COLS, float(r + 1) / ROWS), at.call(float(c) / COLS, float(r + 1) / ROWS)]
+			for k in [0, 1, 2, 0, 2, 3]:
+				st.set_normal(q[k][2])
+				st.set_uv(q[k][1])
+				st.add_vertex(q[k][0])
+	var cloth := MeshInstance3D.new()
+	cloth.mesh = st.commit()
+	cloth.material_override = _panuelo_mats[id]
+	cloth.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	inner.add_child(cloth)
+
+## The peña's T-shirt, from the wardrobe at home (the user, 16 November 2026: "Aparte del pañuelo el armario también
+## tiene una camiseta básica con el logo de la peña y su color principal"): the plain T-shirt (the body in the peña's
+## colour) with the peña's logo printed across the chest, lying on the body (a cone) as the neckerchief lies on the back.
+const PENA_TEE := 21                         # top
+static var _print_mats := {}
+func _pena_print(pena: int) -> void:
+	var id: String = PANUELO_IDS[clampi(pena, 0, PANUELO_IDS.size() - 1)]
+	if not _print_mats.has(id):
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = Parts.texture("res://assets/penas/%s.png" % id)
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.roughness = 1.0
+		m.albedo_color = Color(0.96, 0.96, 0.96)       # (a print on cotton, a touch duller than the paint on a wall)
+		_print_mats[id] = m
+	var m: StandardMaterial3D = _print_mats[id]
+	var aspect := 1.0
+	if m.albedo_texture != null:
+		aspect = float(m.albedo_texture.get_width()) / float(m.albedo_texture.get_height())
+	const TALL := 0.36                       # how tall the print is
+	const MID := 0.66                        # the height of its middle
+	var wide := TALL * aspect
+	var r_mid := _r(MID) + 0.01
+	var span := wide / r_mid                 # (radians round the body)
+	const ROWS := 6
+	const COLS := 10
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var at := func(u: float, v: float) -> Array:
+		var ang: float = (u - 0.5) * span
+		var yy: float = MID + (0.5 - v) * TALL
+		var rr: float = _r(yy) + 0.01
+		return [Vector3(sin(ang) * rr, yy, cos(ang) * rr), Vector2(u, v), Vector3(sin(ang), 0.19, cos(ang)).normalized()]
+	for row in range(ROWS):
+		for c in range(COLS):
+			var q: Array = [at.call(float(c) / COLS, float(row) / ROWS), at.call(float(c + 1) / COLS, float(row) / ROWS),
+				at.call(float(c + 1) / COLS, float(row + 1) / ROWS), at.call(float(c) / COLS, float(row + 1) / ROWS)]
+			for k in [0, 1, 2, 0, 2, 3]:            # (clockwise, seen from in front)
+				st.set_normal(q[k][2])
+				st.set_uv(q[k][1])
+				st.add_vertex(q[k][0])
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	inner.add_child(mi)
+
 ## walk with real collisions: slides along walls, cars and trees
 ## (People are carried a hand's breadth over the ground while they move and set down again where they end up: the
 ## slope of the street is then never an obstacle, and walls, cars and trees still are.)
+## In a jump they are carried as high as their feet are, over a kerb or a pavement's wall (see hop).
 func walk(dir: Vector2, speed: float) -> void:
+	var air := _hop_air()
 	global_position.y = MapData.foot(p) + CLEAR
 	velocity = Vector3(dir.x * speed, 0.0, dir.y * speed)
+	if air > 0.0 and not _car_ahead(velocity * get_physics_process_delta_time() + Vector3(dir.x, 0.0, dir.y) * 0.1):
+		global_position.y += air
 	move_and_slide()
 	global_position.y = MapData.foot(p)
 
@@ -609,39 +1012,62 @@ func shove(delta_pos: Vector2) -> bool:
 	global_position.y = MapData.foot(p)
 	return hit
 
-func anim(moving: bool, dt: float, speed: float) -> void:
+## Every part is written only when it has moved: writing a position, even the one it already has, sends every piece
+## under that part off to be placed again, and a body is fifty pieces (the user's 2K at 30-odd fps, 16 Nov 2026).
+## `bob`: the little rise and fall of somebody standing about (nobody sees it from more than a few metres off).
+func anim(moving: bool, dt: float, speed: float, bob := true) -> void:
 	_walk += dt * ((9.0 + speed) if moving else 0.0)
 	var s := sin(_walk) if moving else 0.0
-	_fl.position.z = 0.05 + s * 0.22
-	_fr.position.z = 0.05 - s * 0.22
-	_fl.position.y = 0.13 + maxf(0.0, s) * 0.1
-	_fr.position.y = 0.13 + maxf(0.0, -s) * 0.1
-	_hl.position = Vector3(-_hx, 0.68, -s * 0.2)
-	_hr.position = Vector3(_hx, 0.68, s * 0.2)
+	var fl := Vector3(_fl.position.x, 0.13 + maxf(0.0, s) * 0.1, 0.05 + s * 0.22)
+	var fr := Vector3(_fr.position.x, 0.13 + maxf(0.0, -s) * 0.1, 0.05 - s * 0.22)
+	var hl := Vector3(-_hx, 0.68, -s * 0.2)
+	var hr := Vector3(_hx, 0.68, s * 0.2)
 	if guard:
-		_hl.position = Vector3(-0.2, 1.16, 0.44)
-		_hr.position = Vector3(0.2, 1.16, 0.44)
+		hl = Vector3(-0.2, 1.16, 0.44)
+		hr = Vector3(0.2, 1.16, 0.44)
 	if phone:
-		_hr.position = Vector3(0.5, 1.28, 0.12)
-	_phone.visible = phone
+		hr = Vector3(0.5, 1.28, 0.12)
+	if _phone.visible != phone:
+		_phone.visible = phone
 	if punch > 0.0:                    # right hand shoots forward and back
 		punch = maxf(0.0, punch - dt)
 		var k := sin((1.0 - punch / 0.28) * PI)
-		_hr.position.z = 0.15 + k * 0.6
-		_hr.position.y = 0.68 + k * 0.3
+		hr.z = 0.15 + k * 0.6
+		hr.y = 0.68 + k * 0.3
 	if bat_t > 0.0 and _bat != null:   # the bat: up over the shoulder, round, and down
 		bat_t = maxf(0.0, bat_t - dt)
 		_bat_pose(1.0 - bat_t / BAT_SWING)
 		_bat.visible = bat_t > 0.0
-	inner.position.y = absf(cos(_walk)) * 0.07 if moving else sin(Time.get_ticks_msec() / 420.0 + _off) * 0.015
+		hr = _hr.position              # (the swing has put the hand where it goes)
+	var iy := absf(cos(_walk)) * 0.07 if moving else (sin(Time.get_ticks_msec() / 420.0 + _off) * 0.015 if bob else 0.0)
+	if _drop > 0.0 and _hop <= 0.0:
+		_drop_v += 22.0 * dt
+		_drop = maxf(0.0, _drop - _drop_v * dt)
+		iy += _drop
 	if _hop > 0.0:
 		_hop = maxf(0.0, _hop - dt)
 		var up := sin((1.0 - _hop / HOP) * PI)
-		inner.position.y += up * HOP_TOP * hop_k
-		_fl.position.y += up * 0.12              # knees up, arms out
-		_fr.position.y += up * 0.12
-		_hl.position.y += up * 0.25
-		_hr.position.y += up * 0.25
+		var air := _hop_air()                    # (over what is under them now: less up on a pavement, more off one)
+		if _hop < HOP * 0.5 and air <= 0.0:      # on the way down, and something higher than where they left is under them: landed
+			_hop = 0.0
+		elif _hop <= 0.0 and air > 0.05:         # jumped off something: the rest of the way down is a fall
+			_drop = air
+			_drop_v = 0.0
+		iy += air
+		fl.y += up * 0.12              # knees up, arms out
+		fr.y += up * 0.12
+		hl.y += up * 0.25
+		hr.y += up * 0.25
+	if not _fl.position.is_equal_approx(fl):
+		_fl.position = fl
+	if not _fr.position.is_equal_approx(fr):
+		_fr.position = fr
+	if not _hl.position.is_equal_approx(hl):
+		_hl.position = hl
+	if not _hr.position.is_equal_approx(hr):
+		_hr.position = hr
+	if absf(inner.position.y - iy) > 0.00001:   # (the standing bob moves less than a millimetre a frame: still written)
+		inner.position.y = iy
 
 ## The head turns towards `at` (a spot on the map), as far as a neck goes and no further; with nothing to look at
 ## (null), or with it behind them, it comes back to the front. The body goes on facing wherever it was going.

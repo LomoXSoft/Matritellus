@@ -1,0 +1,34 @@
+Cosas del creador de personajes y del armario.
+
+caballete.glb  --  "easel", de yentc atmcdg  --  CC-BY 3.0 (hay que citarlo)  --  https://poly.pizza/m/52cDlIgLNvv
+                  Era el caballete del creador con el graffiti de tu peña (godot/scripts/caballete.gd). YA NO SE USA
+                  (16/11: el graffiti va en la fachada de tu casa); se deja el fichero por si vuelve. Si se borra, quitar
+                  esta linea.
+
+panuelo_<peña>.png  --  la tela del pañuelo de cada peña (el pico que cae por la espalda), dibujada por
+                        tools/creador/panuelos.py: el color de la peña, la trama, el dobladillo con su pespunte y el
+                        logo de la peña estampado (assets/penas/, de Luis). Dibujo propio: nada de la foto de ejemplo
+                        (ni su escudo ni sus letras).
+
+pelo/*.glb  --  peinados, barbas y cejas de modelos libres, adaptados a nuestras cabezas (una bola) con Blender por
+                tools/creador/pelo.py (lista y medidas en tools/creador/piezas.json). Las descargas originales estan
+                en tools/descargas/. Todo CC0 (dominio publico): no obliga a citar; se apunta de donde viene.
+
+  De "Universal Base Characters" [Standard], de Quaternius  --  CC0  --  https://quaternius.itch.io/universal-base-characters
+      pelo_raya, pelo_rapao_fino, pelo_melena_larga, pelo_dos_monos, pelo_rapao_ella, barba_recortada,
+      cejas_pobladas, cejas_arqueadas
+
+  De "OverScore Proxy" 1.5, de overscore_media  --  CC0  --
+      https://opengameart.org/content/overscore-proxy-modular-low-poly-female-character-creation-set
+      pelo_afro, pelo_pixie, pelo_mullet, pelo_coleta_alta, pelo_trenza_larga, pelo_rizos_cortos, pelo_bob,
+      pelo_coletas_bajas, pelo_cardado, pelo_mono_abuela, pelo_ondas, pelo_flequillo, pelo_desfilado;
+      la ropa (ropa_*: camisa de cuello, sudadera con capucha, jersey de cuello alto, plumas, chaleco, rebeca,
+      reflectante, camiseta de futbol, marinera, anorak; sin mangas: nuestra gente no tiene brazos), lo del cuello
+      (cuello_*: corbata, pajarita, delantal, bufanda), los sombreros (gorro_*: parpusa, sombrero de ala, bombin,
+      pamela, pañoleta, diadema, gorra de beisbol, gorra pa' tras, vaquero) y el calzado (calzado_*: deportivas,
+      botas de faena, botas de agua, sandalias, bailarinas, camperas, zapatillas de casa, tacones).
+      (Descalzo, las dos bolas, es de chara.gd.)
+
+  De "Low Poly Male And Female Models", de The-Wild-Dodo  --  CC0  --
+      https://damindudesilva1gmailcom.itch.io/low-poly-male-and-female-models-free-low-poly-3d-model
+      barba_poblada, barba_candao, bigote_morsa

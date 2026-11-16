@@ -8,7 +8,7 @@ var path := "user://matritellus_settings.json"
 var testing := false
 var intro_seen := false                          # so going back to the main menu does not replay the studio logo
 var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8, "music": 7, "sfx": 8, "lang": "es", "keys": {},
-	"window": 0, "shadows": 3, "textures": 2, "draw": 1, "fov": 55, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1,
+	"window": 0, "shadows": 2, "textures": 2, "draw": 1, "fov": 55, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1,
 	"dynres": false, "upscale": 1, "lod": true, "occlusion": true, "silent": false, "dev": false,
 	"warm": ""}         # (warm: which version of the game has had its shaders made on this graphics card: calentar.gd)
 
@@ -29,12 +29,14 @@ var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8
 const SCALES := [50, 67, 75, 85, 100]
 const DRAW := [0.6, 1.0, 1.6, 0.0]               # (0: no limit)
 const FOV := [45, 90]
-## Ready-made sets: Low, Medium, High (the game as it always was), Ultra
+## Ready-made sets: Low, Medium, High (the game as it always was, but for the sun's shadows), Ultra. The user, 16 Nov 2026:
+## "Alto a 100 m, Muy Alto a 140 m" -- High draws the sun's shadows to 100 m (they cost a frame a fifth of its time at
+## 140 m in 2K), Ultra to 140 m.
 const GRAPHICS := ["shadows", "textures", "draw", "fx", "aa", "ssao", "glow", "scale", "traffic", "dynres", "upscale", "lod", "occlusion", "silent"]
 const PRESETS := [
 	{"shadows": 1, "textures": 1, "draw": 0, "fx": 1, "aa": 0, "ssao": false, "glow": false, "scale": 2, "traffic": 0, "dynres": true, "upscale": 1, "lod": true, "occlusion": true, "silent": false},
 	{"shadows": 2, "textures": 2, "draw": 1, "fx": 2, "aa": 1, "ssao": false, "glow": true, "scale": 4, "traffic": 1, "dynres": true, "upscale": 1, "lod": true, "occlusion": true, "silent": false},
-	{"shadows": 3, "textures": 2, "draw": 1, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": true, "occlusion": true, "silent": false},
+	{"shadows": 2, "textures": 2, "draw": 1, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": true, "occlusion": true, "silent": false},
 	{"shadows": 3, "textures": 2, "draw": 2, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1, "dynres": false, "upscale": 1, "lod": false, "occlusion": true, "silent": false},
 ]
 
@@ -89,6 +91,10 @@ func _ready() -> void:
 					data[k] = d[k]
 			if not d.has("window"):              # (settings saved before there were three kinds of window)
 				data["window"] = 1 if bool(d.get("fullscreen", false)) else 0
+			if preset() == -1 and int(data["shadows"]) == 3:      # (High as it was before 16 Nov 2026, shadows to 140 m: High still)
+				data["shadows"] = 2
+				if preset() != 2:
+					data["shadows"] = 3
 	Controls.load_keys(data["keys"])
 	apply()
 

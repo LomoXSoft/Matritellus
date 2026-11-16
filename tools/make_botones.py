@@ -244,8 +244,8 @@ def turn_arrows():
         w = 96
         img, d = canvas(w)
         box = (8 * S, 4 * S, (w - 8) * S, (H + 40) * S)          # an arc along the top of an oval round the feet
-        col = (246, 237, 218, 240)
-        edge = (58, 42, 30, 230)
+        col = (255, 255, 255, 255)                # white with a black edge, as the creator's panel (the user, 16 Nov 2026)
+        edge = (0, 0, 0, 255)
         start, end = (200, 300) if side == 'left' else (240, 340)
         for width, c in [(14 * S, edge), (8 * S, col)]:
             d.arc(box, start, end, fill=c, width=width)

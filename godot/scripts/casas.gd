@@ -51,6 +51,8 @@ const MASONRY := {
 	"brick_salmon": [Color(1.22, 1.06, 0.96), 1.15],    # ...and the pinker one of its foot
 	"brick_rose": [Color(1.2, 1.3, 1.5), 1.15],        # the pale pink facing brick of houses built since 2005
 	"brick_buff": [Color(1.14, 1.26, 1.34), 1.15],      # buff, nearly grey: the facing brick of the 2000s on the Calle de Colón
+	"brick_pardo": [Color(0.9, 0.98, 1.0), 1.15],       # the dull brown-tan of the 1990s and 2000s (Calle del Clavel 54, 55)
+	"brick_tostado": [Color(0.88, 0.84, 0.86), 1.15],   # salmon gone brown: the terraces of 1987 at the end of the Calle del Clavel
 }
 
 func build(world, d: Dictionary) -> Node3D:
@@ -269,6 +271,126 @@ func grille(x: float, y: float, w: float, h: float, face: float, stand := 0.07) 
 		for sy in [y + 0.03, y + h - 0.05]:
 			box(sx, sy, face, 0.02, 0.02, stand, iron)
 
+## a quarter round of wall (a bay's corner): centre (cx, cz) in the plan, radius r, from angle a0 to a1 (degrees: 0 along
+## the front, 90 out into the street), from yb up to yt
+func _round(cx: float, cz: float, r: float, a0: float, a1: float, yb: float, yt: float, key) -> void:
+	var n := 6
+	for k in range(n):
+		var t0 := deg_to_rad(a0 + (a1 - a0) * k / float(n))
+		var t1 := deg_to_rad(a0 + (a1 - a0) * (k + 1) / float(n))
+		var tm := (t0 + t1) / 2.0
+		quad(Vector3(cx + r * cos(t0), yb, cz + r * sin(t0)), Vector3(cx + r * cos(t1), yb, cz + r * sin(t1)),
+			Vector3(cx + r * cos(t1), yt, cz + r * sin(t1)), Vector3(cx + r * cos(t0), yt, cz + r * sin(t0)), key, Vector3(cos(tm), 0, sin(tm)))
+		boxes += 1
+
+## the crest of iron on top of a window's grille: a low arch of flat bar, a curl at each side, a knob at the top
+func crest(xc: float, y: float, w: float, z: float) -> void:
+	var iron := 0x24221f
+	var hw := w * 0.32
+	var ht := 0.2
+	var n := 8
+	for k in range(n):                       # the arch, a short bar at a time
+		var t := PI * (k + 0.5) / float(n)
+		box(xc - hw * cos(t) - 0.03, y + ht * sin(t) - 0.012, z, 0.06, 0.025, 0.015, iron)
+	box(xc - hw, y, z, hw * 2.0, 0.025, 0.015, iron)
+	for sx in [-1.0, 1.0]:                   # the curls either side: a little ring of four bars
+		var cx: float = xc + sx * (hw + 0.09)
+		box(cx - 0.06, y, z, 0.12, 0.02, 0.015, iron)
+		box(cx - 0.06, y + 0.1, z, 0.12, 0.02, 0.015, iron)
+		box(cx + sx * 0.05 - 0.01, y, z, 0.02, 0.12, 0.015, iron)
+		box(cx - sx * 0.05 - 0.01, y + 0.05, z, 0.02, 0.07, 0.015, iron)
+	box(xc - 0.035, y + ht, z, 0.07, 0.07, 0.02, iron)
+
+## a little pediment over a window: a triangle of moulding standing out of the wall, on a ledge
+func pediment(xc: float, y: float, w: float, face: float, key) -> void:
+	var ph := 0.26
+	var x0 := xc - w / 2.0
+	var x1 := xc + w / 2.0
+	var zf := face + 0.07
+	box(x0 - 0.03, y, face, w + 0.06, 0.06, 0.09, key)
+	var yb := y + 0.06
+	tri(Vector3(x0, yb, zf), Vector3(x1, yb, zf), Vector3(xc, yb + ph, zf), key, Vector3(0, 0, 1))
+	quad(Vector3(x0, yb, face), Vector3(x0, yb, zf), Vector3(xc, yb + ph, zf), Vector3(xc, yb + ph, face), key, Vector3(-ph, w / 2.0, 0).normalized())
+	quad(Vector3(xc, yb + ph, face), Vector3(xc, yb + ph, zf), Vector3(x1, yb, zf), Vector3(x1, yb, face), key, Vector3(ph, w / 2.0, 0).normalized())
+	boxes += 1
+
+## the iron of an arched opening: uprights up to the curve, a bar at the springing, and with `fan` the rays of a fan
+## in the arch (the gate of a doorway)
+func arch_grille(x: float, sy: float, w: float, spring: float, z: float, fan := false) -> void:
+	var iron := 0x24221f
+	var rr := w / 2.0
+	var cx := x + rr
+	var n := maxi(4, int(round(w / 0.12)))
+	for i in range(1, n):
+		var bx := x + w * i / float(n)
+		var dx := bx - cx
+		var top := spring + (0.0 if fan else sqrt(maxf(0.0, rr * rr - dx * dx)) - 0.02)
+		box(bx - 0.01, sy, z, 0.02, top - sy, 0.02, iron)
+	for by in [sy + 0.12, sy + (spring - sy) * 0.5, spring]:
+		box(x, by, z - 0.005, w, 0.025, 0.03, iron)
+	var m := 14
+	for k in range(m):                       # the curve itself, in flat bar
+		var t := PI * (k + 0.5) / float(m)
+		box(cx + (rr - 0.02) * cos(t) - 0.04, spring + (rr - 0.02) * sin(t) - 0.012, z, 0.08, 0.025, 0.02, iron)
+	if fan:
+		for k in range(1, 6):                # the rays, from a half ring at the springing
+			var t := PI * k / 6.0
+			for j in range(4):
+				var rj := 0.12 + (rr - 0.16) * (j + 0.5) / 4.0
+				box(cx + rj * cos(t) - 0.015, spring + rj * sin(t) - 0.04, z, 0.03, 0.08, 0.02, iron)
+		for k in range(6):
+			var t := PI * (k + 0.5) / 6.0
+			box(cx + 0.1 * cos(t) - 0.02, spring + 0.1 * sin(t) - 0.01, z, 0.04, 0.025, 0.02, iron)
+
+## the wooden window of an arched opening: jambs and a sill, a transom where the arch springs, a mullion between its
+## two leaves, the frame round the half circle and three bars in the fanlight -- the glass is the opening's dark back
+func arch_frame(x: float, sy: float, w: float, spring: float, z: float, fc: int) -> void:
+	var rr := w / 2.0
+	var cx := x + rr
+	var t := 0.07
+	box(x, sy, z, t, spring - sy, 0.05, fc)
+	box(x + w - t, sy, z, t, spring - sy, 0.05, fc)
+	box(x, sy, z, w, 0.09, 0.06, fc)
+	box(x, spring - 0.04, z, w, 0.07, 0.05, fc)
+	box(cx - 0.03, sy, z, 0.06, spring - sy, 0.05, fc)
+	box(x + 0.02, sy + (spring - sy) * 0.5, z + 0.01, w - 0.04, 0.035, 0.03, fc)      # (each leaf split in panes)
+	for lx in [x + w * 0.25, x + w * 0.75]:
+		box(lx - 0.015, sy, z + 0.01, 0.03, spring - sy, 0.03, fc)
+	var m := 12
+	for k in range(m):                                   # the frame round the half circle
+		var a := PI * (k + 0.5) / float(m)
+		box(cx + (rr - 0.04) * cos(a) - 0.045, spring + (rr - 0.04) * sin(a) - 0.035, z, 0.09, 0.07, 0.05, fc)
+	for k in range(1, 4):                                # the bars of the fanlight
+		var a := PI * k / 4.0
+		for j in range(3):
+			var rj := (rr - 0.06) * (j + 0.5) / 3.0
+			box(cx + rj * cos(a) - 0.02, spring + rj * sin(a) - 0.02, z + 0.005, 0.04, 0.04, 0.04, fc)
+
+## a glazed gallery hung on the front of a floor, from x0 to x1 and `d` out: its floor, a panel under the glass, thin
+## frames, pale glass with white curtains behind, a head and a little roof of tiles
+func _gallery(x0: float, x1: float, d: float, fc: int, y: float, h: float, face: float) -> void:
+	var w := x1 - x0
+	var yb := y + 0.08
+	var yt := y + h - 0.35
+	var gy := yb + 0.8
+	var glass := 0x9fb4c0
+	box(x0 - 0.06, yb - 0.14, face, w + 0.12, 0.14, d + 0.06, fc)                  # its floor, hung off the wall
+	box(x0, yb, face + d - 0.05, w, 0.8, 0.05, fc)                                  # the panel under the glass, front and sides
+	box(x0, yb, face, 0.05, 0.8, d, fc)
+	box(x1 - 0.05, yb, face, 0.05, 0.8, d, fc)
+	box(x0 + 0.05, gy, face + d - 0.035, w - 0.1, yt - gy, 0.012, glass)            # the glass
+	box(x0 + 0.02, gy, face + 0.05, 0.012, yt - gy, d - 0.1, glass)
+	box(x1 - 0.032, gy, face + 0.05, 0.012, yt - gy, d - 0.1, glass)
+	box(x0 + 0.1, gy + 0.05, face + d - 0.22, w - 0.2, (yt - gy) * 0.72, 0.012, 0xf2eee6)   # the curtains behind it
+	var nm := maxi(2, int(round(w / 0.55)))
+	for k in range(nm + 1):                  # the frames: uprights along the front, one at each back corner
+		box(x0 + (w - 0.05) * k / float(nm), gy, face + d - 0.06, 0.05, yt - gy, 0.06, fc)
+	for sx in [x0, x1 - 0.05]:
+		box(sx, gy, face, 0.05, yt - gy, 0.06, fc)
+	box(x0, gy + (yt - gy) * 0.62, face + d - 0.055, w, 0.04, 0.05, fc)            # a transom across the top lights
+	box(x0, yt, face, w, 0.12, d, fc)                                                # its head
+	box(x0 - 0.1, yt + 0.12, face, w + 0.2, 0.08, d + 0.16, 0xb0603e)              # a little roof of tiles
+
 ## a lintel of bricks on end over an opening, with the little ears that hang down at each side of it
 func lintel(xc: float, y: float, w: float, face: float) -> void:
 	box(xc - w / 2.0, y, face - 0.02, w, 0.24, 0.06, "brick")
@@ -446,7 +568,8 @@ func _alemania_7() -> void:
 #           ["shop", at, w, h, {...}]        a shop window, glass from knee height ("f" its frame's colour)
 #         and in {...}: "g" a grille ("bars", "lattice", "tijera": folding, on a window or a door), "b" the blind's colour, "d" how far down it is (0..1), "f" the
 #         frame's colour, "s" a surround (colour or masonry) + "sb" its width, "l": "brick" a lintel of bricks on end,
-#         "bal" a low rail on a window's sill ("iron", "white"), "k" the kind of door ("wood", "metal", "curtain";
+#         "bal" a low rail on a window's sill ("iron", "white"), "rem" (1) a crest of iron on top of the grille (bars; on an
+#         arc the bars follow its curve, and rem makes a fan in it), "fr" a little pediment of that colour over the window, "k" the kind of door ("wood", "metal", "curtain";
 #         "planks", "roller", "sect", "metal"), "c" its colour, "bw" a balcony's width, "nb" no balcony of its own
 #       "terrace": [from, to, how deep, awning colour or -1, (the railing's colour)] -- one long balcony, under an awning
 #       "signs": [[from, to, colour, what it says, the letters' colour], ...] -- the boards over the shops. They say what
@@ -461,7 +584,9 @@ func _alemania_7() -> void:
 #       "band": a string course at its foot, of this colour or masonry
 #       "panels": [[from, to, what, plinth], ...] -- a stretch of this floor's wall in another render or masonry (where one
 #           wall runs across two buildings); plinth as above, null for none, "same" for the floor's own.
-#           In the short form: "paño <from> <to> wall=<what> [plinth=<height>:<what>, or plinth=0 for none]"
+#           In the short form: "paño <from> <to> wall=<what> [plinth=<height>:<what>, or plinth=0 for none] [out=<m>]"; out= makes
+#           it a body standing that far out of the wall (a bay of brick up the front), with its openings in its face; r=<m>
+#           rounds its two front corners
 #   "eaves": "tiles" (the plain edge of the roof), "brackets" (deep, on wooden brackets), "cornice" (a moulded one), "flat"
 #   "tol": how far off the straight line of the front the plot's own outline may wander and still be the front
 # Walls that give on to another street get the same materials and a plain row of the house's own windows.
@@ -489,17 +614,24 @@ static func _word(s: String):
 ## line of pieces separated by "|". The first piece is the floor itself: wall=<colour or masonry> plinth=<height>:<what>
 ## fly=<m> h=<m> band=<what>. The others are what is in it:
 ##     win <at> [w sill h]      bal <at> [w h]      door <at> [w h]      gar <at> [w h]      shop <at> [w h]
+##     arc <at> [w sill h]   (an arched bay set into the wall, a loggia: s= its ring, sb= how wide, d= how deep, bal=iron a rail,
+##                            f=<colour> a window of wood inside it, g=bars its iron)
 ##     sign <from> <to> <colour> <WORDS_LIKE_THIS> <letters' colour>      awn <from> <to> <colour>
 ##     ter <from> <to> <deep> <awning colour or -1> [railing colour]
+##     teja <from> <to> [deep] [y=<m>]   (a tejadillo: a strip of tiled roof leaning out over the doors, its foot y up the wall)
+##     mir <from> <to> [deep] [c=frame]   (a glazed gallery hung on the floor's front, a mirador)
+##     pintada <at> [room]   (graffiti in the photo: props.gd paints a peña's tag there, one of the town's sixty)
+##     parche <at> [w sill h] wall=<what> [k=chapa]   (a patch of other brick or render laid on the wall: a window walled up, a mend;
+##           k=chapa: corrugated sheet, with its ribs)
 ## <at> may be several places at once (.2,.5,.8); what is left out takes the usual size; options are key=value as in
 ## the long form (g=bars b=8a6a4a d=0.5 f=... s=... sb=... l=brick bal=iron k=curtain c=... bw=... nb=1).
 ## A floor written "=" is the one below it again. "tol=0.9" and "trim=<colour>" may stand as lines of their own.
 ## A line that begins "lado " is a floor of the house's longest wall to another street, ground floor first, written the
-## same way (positions along that wall from its left end as you face it; its notices go on it). Without them that wall
+## same way (positions along that wall from its left end as you face it; its notices, signs, awnings and lean-tos go on it). Without them that wall
 ## gets a plain row of the house's own windows; a floor written "lado wall=..." with nothing else is a blank wall.
 static func _unpack(a: Array) -> Dictionary:
 	var spec := {"eaves": String(a[0]), "floors": []}
-	var usual := {"win": [1.1, 1.0, 1.2], "bal": [1.1, 2.2], "door": [1.1, 2.3], "gar": [2.8, 2.6], "shop": [3.0, 2.6]}
+	var usual := {"win": [1.1, 1.0, 1.2], "bal": [1.1, 2.2], "door": [1.1, 2.3], "gar": [2.8, 2.6], "shop": [3.0, 2.6], "arc": [1.6, 0.1, 2.4]}
 	for i in range(1, a.size()):
 		var line := String(a[i])
 		var into := "floors"
@@ -558,7 +690,24 @@ static func _unpack(a: Array) -> Dictionary:
 					if o.has("plinth"):
 						var ps := str(o["plinth"])
 						pp = null if ps.to_float() <= 0.0 else [ps.get_slice(":", 0).to_float(), _word(ps.get_slice(":", 1))]
-					f["panels"].append([String(words[0]).to_float(), String(words[1]).to_float(), o.get("wall", 0xf2efe6), pp])
+					f["panels"].append([String(words[0]).to_float(), String(words[1]).to_float(), o.get("wall", 0xf2efe6), pp, float(o.get("out", 0.0)), float(o.get("r", 0.0))])
+				"parche":                         # a patch of other brick or render on the wall: parche <at>[,<at>...] [w sill h] wall=<what>
+					if not f.has("patches"):
+						f["patches"] = []
+					for at in String(words[0]).split(","):
+						f["patches"].append([at.to_float(), String(words[1]).to_float() if words.size() > 1 else 1.0, String(words[2]).to_float() if words.size() > 2 else 0.6, String(words[3]).to_float() if words.size() > 3 else 1.5, o.get("wall", 0xe8e0d0), String(o.get("k", ""))])
+				"mir":                            # a glazed gallery hung on the wall: mir <from> <to> [deep] [c=its frame]
+					if not f.has("galleries"):
+						f["galleries"] = []
+					f["galleries"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]).to_float() if words.size() > 2 else 0.6, int(o.get("c", 0x5a4030))])
+				"pintada":                        # graffiti seen in the photo: pintada <at> [room]; a peña's tag goes there (props.gd)
+					if not f.has("tags"):
+						f["tags"] = []
+					f["tags"].append([String(words[0]).to_float(), String(words[1]).to_float() if words.size() > 1 else 3.0])
+				"teja":                           # a little lean-to of tiles over the doors: teja <from> <to> [deep] [y=its foot on the wall]
+					if not f.has("tejas"):
+						f["tejas"] = []
+					f["tejas"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]).to_float() if words.size() > 2 else 0.6, float(o.get("y", -1.0))])
 				"ter":
 					var tr: Array = [String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]).to_float(), -1 if String(words[3]) == "-1" else String(words[3]).hex_to_int()]
 					if words.size() > 4:
@@ -725,6 +874,8 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 			match String(o.get("g", "")):
 				"bars":
 					grille(x - 0.06, r.position.y - 0.08, w + 0.12, r.size.y + 0.14, face)
+					if o.get("rem", false):
+						crest(x + w / 2.0, r.end.y + 0.06, w + 0.12, face + 0.07)
 				"lattice":
 					lattice(x, r.position.y, w, r.size.y, face)
 				"tijera":
@@ -733,11 +884,46 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 				surround(r, face, _mat(o["s"]), float(o.get("sb", 0.13)), kind == "bal")
 			if String(o.get("l", "")) == "brick":
 				lintel(x + w / 2.0, r.end.y + 0.03, w + 0.45, face)
+			if o.has("fr"):
+				pediment(x + w / 2.0, r.end.y + (0.3 if o.get("rem", false) else 0.04), w + 0.3, face, _mat(o["fr"]))
 			if kind == "bal":
 				if not o.get("nb", false):
 					balcony(x + w / 2.0, y + 0.02, float(o.get("bw", w + 0.7)), face, 0.38, 0xe8e8e4 if String(o.get("k", "")) == "white" else 0x24221f)
 			elif o.has("bal"):
 				rail(x + w / 2.0, r.position.y, w + 0.3, face, 0.5, String(o["bal"]) == "white")
+		"arc":                                   # an arched bay set into the wall (a loggia): its back in shadow, a ring of brick round its top
+			var sy := r.position.y
+			var rr := w / 2.0
+			var spring := r.end.y - rr
+			var cx := x + rr
+			var dd := float(o.get("d", 1.1))
+			var wk = o.get("_wall", "r%d" % 0xf2efe6)
+			box(x, sy, face - dd - 0.04, w, r.size.y, 0.04, int(o.get("c", 0x4a3c34)))          # the back of the bay, in shadow
+			box(x - 0.05, sy, face - dd, 0.05, r.size.y, dd, wk)                                   # its sides, as deep as it goes
+			box(x + w, sy, face - dd, 0.05, r.size.y, dd, wk)
+			box(x - 0.04, sy - 0.06, face - dd, w + 0.08, 0.06, dd + 0.2, 0xd9d2c2)               # its floor, a little out over the front
+			var n := 16
+			for k in range(n):                   # the round top: the wall filled back above the curve, a strip at a time
+				var xa := x + w * k / float(n)
+				var dx := xa + w / (2.0 * n) - cx
+				var yc := spring + sqrt(maxf(0.0, rr * rr - dx * dx))
+				box(xa, yc, face - dd, w / float(n) + 0.002, r.end.y - yc + 0.01, dd, wk)
+			var ring = _mat(o.get("s", "brick"))
+			var sb := float(o.get("sb", 0.16))
+			var zr := face + 0.03
+			for k in range(n):                   # the ring round it
+				var t0 := PI * k / float(n)
+				var t1 := PI * (k + 1) / float(n)
+				quad(Vector3(cx + rr * cos(t0), spring + rr * sin(t0), zr), Vector3(cx + (rr + sb) * cos(t0), spring + (rr + sb) * sin(t0), zr),
+					Vector3(cx + (rr + sb) * cos(t1), spring + (rr + sb) * sin(t1), zr), Vector3(cx + rr * cos(t1), spring + rr * sin(t1), zr), ring, Vector3(0, 0, 1))
+			box(x - sb, sy, face - 0.02, sb, spring - sy, 0.05, ring)
+			box(x + w, sy, face - 0.02, sb, spring - sy, 0.05, ring)
+			if o.has("bal"):
+				rail(cx, sy, w + 0.1, face, 0.5, String(o["bal"]) == "white")
+			if o.has("f"):                       # a window of wood inside it: its frame, set back behind the iron
+				arch_frame(x, sy, w, spring, face - minf(dd, 0.3) + 0.08, int(o["f"]))
+			if String(o.get("g", "")) == "bars":
+				arch_grille(x, sy, w, spring, face - 0.06, o.get("rem", false))
 		"door":
 			var h := r.end.y - y
 			match String(o.get("k", "wood")):
@@ -835,7 +1021,7 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 			var o: Dictionary = op[-1] if op[-1] is Dictionary else {}
 			var r := Rect2()
 			match kind:
-				"win":
+				"win", "arc":
 					r = Rect2(xc - w / 2.0, y + float(op[3]), w, float(op[4]))
 				"bal":
 					r = Rect2(xc - w / 2.0, y + 0.04, w, float(op[3]))
@@ -849,7 +1035,7 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 		var thick := fly + 0.3
 		var y0 := -1.4 if i == 0 else y
 		var pl = f.get("plinth", null)
-		var cuts: Array = [[0.0, L, key, pl]]                 # its stretches: its own render, and any paño of another
+		var cuts: Array = [[0.0, L, key, pl, 0.0, 0.0]]       # its stretches: its own render, and any paño of another
 		for pn in panels:
 			var a0 := clampf(float(pn[0]) * L, 0.0, L)
 			var a1 := clampf(float(pn[1]) * L, 0.0, L)
@@ -861,26 +1047,53 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 					rest.append(c)
 					continue
 				if c[0] < a0:
-					rest.append([c[0], a0, c[2], c[3]])
+					rest.append([c[0], a0, c[2], c[3], c[4], c[5]])
 				if c[1] > a1:
-					rest.append([a1, c[1], c[2], c[3]])
-			rest.append([a0, a1, _mat(pn[2]), pl if (pn[3] is String) else pn[3]])
+					rest.append([a1, c[1], c[2], c[3], c[4], c[5]])
+			rest.append([a0, a1, _mat(pn[2]), pl if (pn[3] is String) else pn[3], float(pn[4]) if pn.size() > 4 else 0.0, float(pn[5]) if pn.size() > 5 else 0.0])
 			cuts = rest
 		for c in cuts:
 			var cpl = c[3]
+			var co: float = c[4]                     # (out=: a body that stands out of the wall, a bay of brick up the front)
+			var cr: float = minf(float(c[5]), co) if co > 0.0 else 0.0      # (r=: its two front corners rounded)
 			if cpl != null:
-				wall(c[0], c[1], y0, y + float(cpl[0]), fly + 0.035, thick + 0.035, holes, _mat(cpl[1]))
-				wall(c[0], c[1], y + float(cpl[0]), y + h, fly, thick, holes, c[2])
+				wall(c[0] + cr, c[1] - cr, y0, y + float(cpl[0]), fly + co + 0.035, thick + co + 0.035, holes, _mat(cpl[1]))
+				wall(c[0] + cr, c[1] - cr, y + float(cpl[0]), y + h, fly + co, thick + co, holes, c[2])
 			else:
-				wall(c[0], c[1], y0, y + h, fly, thick, holes, c[2])
+				wall(c[0] + cr, c[1] - cr, y0, y + h, fly + co, thick + co, holes, c[2])
+			if cr > 0.0:
+				var bands: Array = [[y0, y + h, c[2], 0.0]] if cpl == null else [[y0, y + float(cpl[0]), _mat(cpl[1]), 0.035], [y + float(cpl[0]), y + h, c[2], 0.0]]
+				for bd in bands:
+					var e: float = bd[3]
+					_round(c[0] + cr, fly + co - cr, cr + e, 180.0, 90.0, bd[0], bd[1], bd[2])
+					_round(c[1] - cr, fly + co - cr, cr + e, 90.0, 0.0, bd[0], bd[1], bd[2])
+					box(c[0] - e, bd[0], -0.3, cr + e, bd[1] - bd[0], fly + co - cr + 0.3, bd[2])      # (the wall's thickness behind each round)
+					box(c[1] - cr, bd[0], -0.3, cr + e, bd[1] - bd[0], fly + co - cr + 0.3, bd[2])
+			if co > 0.0 and i == n - 1:              # ...its top under the eaves: a little roof of its own
+				box(c[0] - 0.05, y + h - 0.02, fly, c[1] - c[0] + 0.1, 0.1, co + 0.14, 0xb0603e)
 		if i > 0 and fly > prev_fly + 0.05:                   # this floor comes out over the one below: what you see of it from underneath
 			box(0.0, y - 0.2, prev_fly, L, 0.2, fly - prev_fly, _mat(spec.get("trim", 0xe9dcc0)))
 		if f.has("band"):
 			box(0.0, y - 0.07, fly, L, 0.14, 0.04, _mat(f["band"]))
-		for it in items:
-			_opening(it[0], it[1], it[2], fly, y)
 		if not side:
-			for sg in f.get("signs", []):            # the board over a shop, and what it says on it
+			for pt in f.get("patches", []):          # a window walled up, a mended stretch: laid on the face of the wall
+				var px0: float = float(pt[0]) * L - float(pt[1]) / 2.0
+				box(px0, y + float(pt[2]), fly - 0.01, pt[1], pt[3], 0.025, _mat(pt[4]))
+				if pt.size() > 5 and pt[5] == "chapa" and pt[4] is int:      # (k=chapa: corrugated sheet, its ribs)
+					for k in range(1, int(float(pt[1]) / 0.19) + 1):
+						box(px0 + k * 0.19 - 0.025, y + float(pt[2]), fly + 0.015, 0.06, pt[3], 0.03, _dark(int(pt[4]), 0.32))
+		for it in items:
+			if it[0] == "arc":
+				it[2]["_wall"] = key                 # (an arched bay fills its round top back with the floor's own wall)
+			var oface := fly
+			for c in cuts:                           # (an opening in a body that stands out is set in its face)
+				if float(c[4]) > 0.0 and (it[1] as Rect2).get_center().x > float(c[0]) and (it[1] as Rect2).get_center().x < float(c[1]):
+					oface = fly + float(c[4])
+			_opening(it[0], it[1], it[2], oface, y)
+		# what hangs on the wall: the front's own, or on the long side to another street what its "lado" lines say
+		var deco: Dictionary = f if not side else ((spec["flank"][i] as Dictionary) if _flank and spec.has("flank") and i < (spec["flank"] as Array).size() else {})
+		if not deco.is_empty():
+			for sg in deco.get("signs", []):         # the board over a shop, and what it says on it
 				var sx0: float = float(sg[0]) * L
 				var sw: float = (float(sg[1]) - float(sg[0])) * L
 				box(sx0, y + 2.66, fly, sw, 0.46, 0.07, int(sg[2]))
@@ -890,14 +1103,29 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 				word.pixel_size = minf(0.0052, sw * 0.86 / maxf(1.0, String(sg[3]).length() * 40.0))
 				word.modulate = Parts.col(int(sg[4]))
 				word.outline_size = 0
-				word.position = Vector3(sx0 + sw / 2.0, y + 2.89, fly + 0.075)
+				word.transform = _xf * Transform3D(Basis.IDENTITY, Vector3(sx0 + sw / 2.0, y + 2.89, fly + 0.075))      # (_xf: the long side's frame)
 				add_child(word)
-			for aw in f.get("awnings", []):          # an awning let down over a shop window
+			for aw in deco.get("awnings", []):          # an awning let down over a shop window
 				var ax0: float = float(aw[0]) * L
 				var aww: float = (float(aw[1]) - float(aw[0])) * L
 				for k in range(5):                    # (it slopes: five strips, each a little lower and further out)
 					box(ax0, y + 2.56 - k * 0.07, fly + k * 0.19, aww, 0.04, 0.2, int(aw[2]))
 				box(ax0, y + 2.1, fly + 0.93, aww, 0.2, 0.025, _dark(int(aw[2]), 0.12))
+			for gl in deco.get("galleries", []):        # a glazed gallery (a mirador): thin frames, pale glass, curtains, a little roof
+				_gallery(float(gl[0]) * L, float(gl[1]) * L, float(gl[2]), int(gl[3]), y, h, fly)
+			for tg in deco.get("tags", []):          # where the photo shows graffiti: the wall is handed to props.gd for a peña's tag
+				if not side and W != null and "hand_tags" in W:
+					W.hand_tags.append([spot(float(tg[0]) * L, fly), out, float(tg[1]), base + y])
+			for tj in deco.get("tejas", []):            # a tejadillo: a strip of tiled roof leaning out over the doors
+				var tx0: float = float(tj[0]) * L
+				var tx1: float = float(tj[1]) * L
+				var td: float = tj[2]
+				var ty: float = y + (float(tj[3]) if float(tj[3]) > 0.0 else h - 0.2)
+				var drop := td * 0.42
+				quad(Vector3(tx0, ty - drop, fly + td), Vector3(tx1, ty - drop, fly + td), Vector3(tx1, ty, fly), Vector3(tx0, ty, fly), "tiles", Vector3(0, 1, 0.42),
+					[Vector2(tx0 / 1.6, td / 1.6), Vector2(tx1 / 1.6, td / 1.6), Vector2(tx1 / 1.6, 0), Vector2(tx0 / 1.6, 0)])
+				box(tx0, ty - drop - 0.1, fly + td - 0.06, tx1 - tx0, 0.1, 0.08, 0x9c5236)       # the row of tile ends along its edge
+				box(tx0, ty - drop - 0.04, fly, tx1 - tx0, 0.03, td - 0.04, 0x8a4a32)             # its underside, seen from the pavement
 		if not side or _flank:
 			for nt in f.get("plates", []):           # the notices people put up: for sale, a garage way, no parking
 				if (nt.size() > 6 and int(nt[6]) == 1) == side:     # (lado=1: on the long side to another street, not on the front)
@@ -1019,6 +1247,12 @@ func _eaves(L: float, zf: float, kind: String) -> float:
 		"flat":
 			box(-0.03, top - 0.02, zf - 0.28, L + 0.06, 0.1, 0.34, 0xd9d4c8)       # the coping of its parapet
 			return zf
+		"dientes":                               # a toothed course of brick under the tiles: bricks set out one by one, a band over them
+			for i in range(int((L - 0.1) / 0.24) + 1):
+				box(0.05 + i * 0.24, top - 0.24, zf, 0.12, 0.12, 0.1, "brick_red")
+			box(-0.05, top - 0.12, zf, L + 0.1, 0.12, 0.16, "brick_red")
+			box(-0.1, top, zf + 0.1, L + 0.2, 0.1, 0.14, 0xb0603e)
+			return zf + 0.24
 	box(-0.08, top - 0.05, zf, L + 0.16, 0.11, 0.2, 0xc9a07a)                     # a course of tiles on edge under the first row
 	box(-0.1, top + 0.06, zf + 0.18, L + 0.2, 0.09, 0.1, 0xb0603e)
 	return zf + 0.3

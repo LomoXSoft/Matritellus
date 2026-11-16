@@ -432,6 +432,18 @@
    "role": "Señora mayor que no para de quejarse del nombre de su calle: «¿A quién se le ocurre?»",
    "where": "Siempre dando vueltas por la calle de la Amargura.",
    "notes": "Le ha pedido al alcalde que le cambie el nombre a la calle. Su hermana vive en la calle de la Paz y ya no la felicita por su santo. A 100 de confianza te confiesa que se cambió el apellido hace años por el de su abuelo de Navarra: el original era francés, Dolores Fuertes Delanno, y no le gustan los franceses (no ve nada gracioso en él)."
+  },
+  {
+   "id": "nino_negro",
+   "name": "Niño Negro Gordo de Pueblo",
+   "foto": true,
+   "pos": [
+    0,
+    5
+   ],
+   "role": "Niño hermoso, de piel muy oscura. Solo habla de ir a la piscina a comer salchipapas, de la bici todo el día y de sus bocadillos (panceta, tortilla, crema de cacao, chopped) y por qué le gusta cada uno.",
+   "where": "Junto a la valla del parque infantil de la plaza, por el lado de la plaza, mirando dentro.",
+   "notes": "Harto de que su madre le diga lo gordo que está: «¡Que no estoy gordo, que estoy hermoso!», como dice su abuela. Ni la madre ni la abuela salen en el juego."
   }
  ],
  "links": [

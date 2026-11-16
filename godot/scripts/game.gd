@@ -23,6 +23,9 @@ const SabotajeS = preload("res://scripts/sabotaje.gd")
 const PintadasS = preload("res://scripts/pintadas.gd")
 const GachaS = preload("res://scripts/gacha.gd")
 const CuartelCocheS = preload("res://scripts/cuartel_coche.gd")
+const NinosS = preload("res://scripts/ninos.gd")
+const ChismesS = preload("res://scripts/chismes.gd")
+const PadronS = preload("res://scripts/padron.gd")
 const MotinS = preload("res://scripts/motin.gd")
 const DerrapeS = preload("res://scripts/derrape.gd")
 const TironesS = preload("res://scripts/tirones.gd")
@@ -42,6 +45,8 @@ const LightsS = preload("res://scripts/lights.gd")
 const MenuS = preload("res://scripts/menu.gd")
 const BoxingS = preload("res://scripts/boxing.gd")
 const VipShopS = preload("res://scripts/vipshop.gd")
+const CasaS = preload("res://scripts/casa_dentro.gd")
+const CaballeteS = preload("res://scripts/caballete.gd")
 
 ## A whole day lasts 48 minutes of play: two minutes an hour. The day of the week moves on at midnight.
 const DAY_SECONDS := 48.0 * 60.0
@@ -176,11 +181,19 @@ var sabotaje                    # Don Luis's side mission: the delivery lorry an
 var pintadas                    # La Chiki's: the walls of the peñas (pintadas.gd)
 var gacha                       # the gumball machines and the figures that come out of them (gacha.gd)
 var cuartel_coche               # the Tricornios' car always parked at their barracks' door (cuartel_coche.gd)
+var ninos                       # the little ones in the nursery yards, and every child at play shouting (ninos.gd)
+var chismes                     # what the town says about the missions you finish (chismes.gd)
+var padron                      # the Padrón Municipal after the creator: your name, the tile on your house, who calls you by it (padron.gd)
 var first_person := false       # (no longer: indoors it was through your own eyes until 16 Nov 2026; now a fixed camera, entradas.gd)
 var cine_lock := false          # a scene of a side mission is playing: your hands are off, the town goes on
 var comida                      # eating, and what comes of eating too much (comida.gd)
 var home_spot := Vector2.ZERO   # the pavement in front of your own door
 var vip                         # the V.I.P. shop: shopfront, inside and ring (vipshop.gd)
+var casa                        # inside your house, Calle de Alemania 5: the bed and the wardrobe (casa_dentro.gd)
+var caballete                   # the easel with your peña's graffiti, by you in the creator (caballete.gd)
+var _armario_was: Array = []    # what you had on when you opened the wardrobe (Volver puts it back)
+var _armario_back := "play"     # the phase before it was opened
+var armario_row := 1
 var indoors := false            # inside the shop (a set built away from the town)
 var vip_crowd: Array = []       # the neighbours who turn up for a fight
 var _door_cool := 0.0
@@ -551,7 +564,11 @@ func _boot_rest() -> void:
 	menu = MenuS.new()
 	hud.root.add_child(menu)
 	Controls.device_changed.connect(_on_device)
-	hud.creator_pick.connect(func(what: String): if phase == "creator": _creator_input(what))
+	hud.creator_pick.connect(func(what: String):
+		if phase == "creator":
+			_creator_input(what)
+		elif phase == "armario":
+			_armario_input(what))
 	menu.builder = _menu_page
 
 func _boot_done() -> void:
@@ -971,6 +988,30 @@ func _add_dolores() -> void:
 	d.beat = beat
 	d.wspeed = 0.85
 
+## Niño Negro Gordo de Pueblo (the user, 16 November 2026): a bonny boy with very dark skin who talks of nothing but the
+## pool and its salchipapas, his bike, and the sandwiches he likes and why (Loc "nino_negro"). He stands by the square's
+## playground, just outside its fence on the side of the square, looking in.
+const NINO_NEGRO_LOOK := {"top": 0, "shirt": 0x3b8fd9, "skin": 0x4a2c1c, "hair": 0x111111, "hair_style": 3, "brows": 0, "eyes": 1,
+	"eye_color": 0x2a1c14, "build": 1.45, "scale": 0.74, "shoe_type": 0, "shoes": 0xf4f1e8, "hat": ""}
+func _add_nino_negro() -> void:
+	if world == null or world.plaza == null:
+		return
+	var pl = world.plaza
+	var play := Vector2(pl.PLAY.x, pl.PLAY.y)
+	var out: Vector2 = -play.normalized()                     # (towards the middle of the square)
+	var lp: Vector2 = play + out * (float(pl.PLAY_R) + 1.4)
+	var at: Vector2 = pl.spot(lp.x, lp.y)
+	var look_to: Vector2 = pl.spot(play.x, play.y)
+	var n = _make_npc("nino_negro", NINO_NEGRO_LOOK, "kid", at)
+	var to: Vector2 = look_to - at
+	n.h = atan2(to.x, to.y)
+	n.still = true
+
+## what somebody you have just walked past may mutter about you: the usual (the old have their own, more often than
+## not), and one line for each mission you have finished (chismes.gd)
+func whisper_pool(n) -> Array:
+	return padron.whispers(Loc.t("whisper_old" if n.voice.begins_with("old") and randf() < 0.6 else "whisper")) + chismes.whispers()
+
 ## Don Luis's own: the grey at his temples, his red apron with its bib and its strings (on him, and on his figure out
 ## of a gumball machine: gacha.gd)
 func dress_luis(c) -> void:
@@ -1027,7 +1068,7 @@ func _setup_bridge() -> void:
 	# (her look, as the user gave it on 12 November: a big blue half-zip sweatshirt with a white band, leopard-print
 	# trousers, slides over black socks, dark hair tied up anyhow)
 	var chiki = _make_npc("chiki", {"shirt": 0x3a5fc0, "skin": 0xe9b58c, "hair": 0x1c1612, "hair_style": 1, "top": 10,
-		"brows": 1, "eye_color": 0x2a1c14, "shoe_type": 3, "shoes": 0x3a3d40, "socks": 0x1b1b1f, "build": 1.0}, "adult_f", bridge.spot(-bridge.open * 0.9, 0.8))
+		"brows": 1, "eye_color": 0x2a1c14, "shoe_type": 8, "shoes": 0x3a3d40, "socks": 0x1b1b1f, "build": 1.0}, "adult_f", bridge.spot(-bridge.open * 0.9, 0.8))
 	chiki.still = true
 	chiki.h = atan2(-bridge.u.x, -bridge.u.y) + 0.5
 	chiki.sync()
@@ -1226,6 +1267,26 @@ func _pick_home() -> Dictionary:
 		return MapData.nearest_road(MapData.poi("Divino Salvador"))
 	return MapData.nearest_road((best.a + best.b) / 2.0)
 
+## The door of your house takes you in (the user, 16 November 2026: "La puerta de nuestra casa pasará a ser un acceso a
+## interiores"): its room is a set of its own (casa_dentro.gd), with the green arrow at the door (entradas.gd). Where
+## the door is comes from the house as it is built (casas.gd: the front runs from its "o" along "u", the door a fifth of
+## the way along; outwards is to the street).
+func _build_casa() -> void:
+	var hd = null
+	for h in MapData.houses:
+		if h["id"] == "alemania_5":
+			hd = h
+	if hd == null:
+		return
+	var o := Vector2(float(hd["o"][0]), float(hd["o"][1]))
+	var u := Vector2(float(hd["u"][0]), float(hd["u"][1])).normalized()
+	var n := Vector2(-u.y, u.x)                                  # (to the street: where the road in front of it is)
+	if n.dot((_start["p"] as Vector2) - o) < 0.0:
+		n = -n
+	var door: Vector2 = o + u * float(hd["len"]) * 0.2
+	casa = CasaS.new()
+	casa.build(self, world, door - n * 0.3, door + n * 1.4, atan2(n.x, n.y))
+
 func _setup_places_and_actors() -> void:
 	var church := MapData.poi("Divino Salvador")
 	var coop: Vector2 = MapData.coop_point(MapData.coop.get("gate", 114.0), 0.0)        # on the avenue, in front of the cooperative's green gate
@@ -1309,7 +1370,8 @@ func _setup_places_and_actors() -> void:
 	var ven = _add_npc("venancio", {"glasses": 4, "build": 0.86, "shirt": 0x2b2b33, "hair": 0x111111, "hat": "tophat", "skin": 0xeadfd6}, "undertaker", places["tanatorio"]["p"], 5.0)
 	ven.still = true
 	_add_dolores()
-	var genaro_look := {"face": 6, "top": 6, "brows": 1, "shirt": 0x8a6a48, "hair": 0xe0e0e0, "hat": "beret", "skin": 0xe2ab80}
+	_add_nino_negro()
+	var genaro_look :={"face": 6, "top": 6, "brows": 1, "shirt": 0x8a6a48, "hair": 0xe0e0e0, "hat": "beret", "skin": 0xe2ab80}
 	if world != null and world.molino != null:      # (the mill built by hand: in its yard, where the curved path ends, facing the red door; Pretil)
 		var miller = _make_npc("genaro", genaro_look, "old_m", MILLER_AT)
 		var to_door: Vector2 = world.molino.door - MILLER_AT
@@ -1326,6 +1388,7 @@ func _setup_places_and_actors() -> void:
 	vip = VipShopS.new()
 	add_child(vip)
 	vip.build()
+	_build_casa()
 	places["vip"] = MapData.nearest_road(vip.out_spawn)
 	var fonsi = _make_npc("vip", {"glasses": 2, "top": 2, "shirt": 0x2f6bb5, "hair": 0x2a1c14, "face": 1, "brows": 1, "hat": "cap", "hat_color": 0x26262b}, "adult_m", vip.keeper_spot)
 	fonsi.still = true
@@ -1362,6 +1425,14 @@ func _setup_places_and_actors() -> void:
 	cuartel_coche = CuartelCocheS.new()
 	add_child(cuartel_coche)
 	cuartel_coche.setup(self)
+	ninos = NinosS.new()
+	add_child(ninos)
+	ninos.setup(self)
+	chismes = ChismesS.new()
+	add_child(chismes)
+	chismes.setup(self)
+	padron = PadronS.new()                       # (it goes into the HUD when its sheet comes up: padron.open)
+	padron.setup(self)
 	motin = MotinS.new()
 	add_child(motin)
 	motin.setup(self)
@@ -1857,6 +1928,7 @@ func _continue(from_slot: int) -> void:
 	menu.close()
 	look_sel = Creator.clean(d.get("look"))
 	_apply_look()
+	padron.plaque()                              # ("Casa de ..." over your door, if the save has your name)
 	money = int(d.get("money", 0))
 	saffron = int(d.get("saffron", 0))
 	bumped = int(d.get("bumped", 0))
@@ -1895,8 +1967,10 @@ func _story_next() -> void:
 
 func _start_creator() -> void:
 	phase = "creator"
+	stats.erase("nombre")                        # (a new game: nobody on the Padrón yet, and no name over the door)
+	padron.plaque()
 	set_time(9.0)                                # (the light the story starts in: Monday morning, as the first mission will be)
-	creator_row = 0
+	creator_row = 1
 	creator_tab = 0
 	create_tween().tween_property(hud.fade, "modulate:a", 0.0, 0.8)
 	named["paca"].visible = false
@@ -1993,14 +2067,27 @@ func _refresh_creator() -> void:
 	var names: Array = Loc.t("c_names")
 	var values: Array = Loc.t("c_values")
 	var rows: Array = Creator.TABS[creator_tab]
-	var text := ""
+	var shown: Array = []
 	for row in range(rows.size()):
 		var i: int = rows[row]
-		var val: String = values[i][look_sel[i]]
-		if (i == 1 and look_sel[0] != 0 and look_sel[0] != 2) or (i == 10 and look_sel[4] == 5):
-			val = "—"                       # that colour needs a cap or a straw hat; a hairstyle needs hair
-		text += ("»  " if row + 1 == creator_row else "     ") + names[i] + ":   ‹ " + val + " ›\n"
-	hud.show_creator(Loc.t("c_title"), text.strip_edges(false, true), Loc.t("c_foot"), Loc.t("c_tabs"), creator_tab, creator_row == 0)
+		var off: bool = Creator.not_used(look_sel, i)       # (a cap's colour with no cap, a hairstyle with no hair...)
+		shown.append({"name": names[i], "value": "—" if off else String(values[i][look_sel[i]]), "colour": Creator.swatch(i, look_sel[i]), "off": off})
+	hud.show_creator(Loc.t("c_title"), shown, Loc.t("c_tabs"), creator_tab, creator_row - 1)
+
+## In the creator, the easel with the peña's graffiti (the user, 16 November 2026: "El grafiti debe salir también durante
+## el selector de personaje. Quizás en un cuadro en un caballete al lado del personaje"): a step behind you and to the
+## side the camera leaves free, its canvas turned to the camera. `at` is where you stand, `f` the way you face, `eye`
+## the camera.
+## No longer (the same day, it went into the wall behind you: "Que tal si ponemos el grafiti en la fachada de la casa,
+## encima de la puerta"): the peña's logo is sprayed over your door for good (casa_dentro.gd _front_tag), and it is in
+## sight in the creator. caballete.gd stays, unused. Here the front's logo only follows the peña being chosen, at once.
+func _creator_easel(_at: Vector2, _f: Vector2, _eye: Vector2) -> void:
+	if casa != null and casa.pena != int(look_sel[11]):
+		casa.set_pena(int(look_sel[11]))
+
+func _hide_easel() -> void:
+	if caballete != null:
+		caballete.visible = false
 
 ## puts the cursor of the character creator on this option, whichever page it is on
 func creator_goto(option: int) -> void:
@@ -2008,31 +2095,38 @@ func creator_goto(option: int) -> void:
 	creator_tab = at[0]
 	creator_row = at[1]
 
-## what: up | down | left | right | random | accept
+## what: up | down | left | right | random | tab | tab_prev | accept | back
+## The page turns only with the shoulder buttons or Tab ("tab", "tab_prev"), or going on and back (Siguiente, Volver);
+## the arrows only ever go up and down the options and change them (the user, 16 November 2026: "solo quiero cambiar
+## de pestaña con los gatillos de mando o las teclas asignadas del teclado o avanzando/retrocediendo en la creación").
+## Rows count from 1.
 func _creator_input(what: String) -> void:
 	var rows: Array = Creator.TABS[creator_tab]
-	var n := rows.size() + 1                     # (row 0 turns the page)
+	var n := rows.size()
+	creator_row = clampi(creator_row, 1, n)
 	match what:
 		"up":
-			creator_row = (creator_row + n - 1) % n
+			creator_row = (creator_row + n - 2) % n + 1
 		"down":
-			creator_row = (creator_row + 1) % n
+			creator_row = creator_row % n + 1
 		"left", "right":
-			if creator_row == 0:
-				creator_tab = (creator_tab + (1 if what == "right" else Creator.TABS.size() - 1)) % Creator.TABS.size()
-			else:
-				var opt: int = rows[creator_row - 1]
-				var count: int = Creator.OPTIONS[opt]["values"].size()
+			var opt: int = rows[creator_row - 1]
+			var count: int = Creator.OPTIONS[opt]["values"].size()
+			look_sel[opt] = (look_sel[opt] + (1 if what == "right" else count - 1)) % count
+			while Creator.skipped(opt, look_sel[opt]):              # (what only the wardrobe has, or what is now an option of its own: not here)
 				look_sel[opt] = (look_sel[opt] + (1 if what == "right" else count - 1)) % count
 		"random":
 			look_sel = Creator.random()
-		"tab":                                   # the other page, wherever the cursor is
-			creator_tab = (creator_tab + 1) % Creator.TABS.size()
-			creator_row = mini(creator_row, Creator.TABS[creator_tab].size())
+		"tab", "tab_prev":                       # the next page (or the one before), wherever the cursor is
+			creator_tab = (creator_tab + (1 if what == "tab" else Creator.TABS.size() - 1)) % Creator.TABS.size()
+			creator_row = clampi(creator_row, 1, Creator.TABS[creator_tab].size())
+		"tab_0", "tab_1":                        # a finger on a tab (a touch screen has no shoulder buttons nor Tab: hud.gd)
+			creator_tab = clampi(int(what.substr(4)), 0, Creator.TABS.size() - 1)
+			creator_row = clampi(creator_row, 1, Creator.TABS[creator_tab].size())
 		"accept":                                # Lustre: on to Pintas; Pintas: done
 			if creator_tab == 0:
 				creator_tab = 1
-				creator_row = mini(creator_row, Creator.TABS[1].size())
+				creator_row = clampi(creator_row, 1, Creator.TABS[1].size())
 			else:
 				_finish_creator()
 				return
@@ -2040,7 +2134,7 @@ func _creator_input(what: String) -> void:
 			if creator_tab == 0:
 				return
 			creator_tab = 0
-			creator_row = mini(creator_row, Creator.TABS[0].size())
+			creator_row = clampi(creator_row, 1, Creator.TABS[0].size())
 		_:
 			return
 	Sfx.beep(520.0, 0.04, 1, -18.0)
@@ -2048,9 +2142,11 @@ func _creator_input(what: String) -> void:
 
 func _finish_creator() -> void:
 	hud.hide_creator()
+	_hide_easel()
 	money = 0; saffron = 0; bumped = 0; retries = 0; pc = 0
-	_save(0)
-	_start_flyover()
+	padron.open(func():                          # (the town hall puts you on its roll first: your name. padron.gd)
+		_save(0)
+		_start_flyover())
 
 ## Before meeting Tía Paca: the camera drifts over the town while the town crier explains the place.
 ## One camera move per line; the last one comes down to the street where she is waiting.
@@ -2110,7 +2206,11 @@ func _end_cutscene() -> void:
 	hud.cine(false)
 	weekday = 0
 	unlocked = {}
+	var nombre = stats.get("nombre")             # (your name, from the Padrón a moment ago: padron.gd)
 	stats = {}
+	if nombre != null:
+		stats["nombre"] = nombre
+	stats["armario"] = Creator.wardrobe_from(look_sel)      # (your wardrobe at home: what you chose in the creator, and your peña's neckerchief)
 	day_n = 0
 	folk.reset()
 	folk.meet("paca")
@@ -2248,7 +2348,7 @@ func begin_step(i: int) -> void:
 			set_target(null, false)
 			hud.set_objective(_tag(), Loc.t("obj_sleep"))
 			var n2 = named[s["npc"]]
-			say(n2.shown_name(), Loc.t(s["lines"]), n2.voice, _go_to_sleep)
+			say(n2.shown_name(), Loc.t(s["lines"]), n2.voice, _to_bed)
 	if side != null:
 		if in_mission():
 			_side_drop()
@@ -2582,6 +2682,7 @@ func _step_open(s: Dictionary) -> bool:
 
 func _complete_step() -> void:
 	var s: Dictionary = steps[si]
+	chismes.step_done(String(s["id"]))           # (the last step of a mission: the town will talk about it)
 	if s.has("thanks"):
 		folk.add(s["thanks"], 10)
 	if s.has("toast"):
@@ -2686,10 +2787,121 @@ func _wake_up() -> void:
 	else:
 		_save(save_si)
 
-## a nap at home whenever you like (not with a delivery on the roof)
+## The story's bedtime: once Tía Paca has said her piece you go into the house and lie down in your bed (the user, 16
+## November 2026, asked whether that should be so: "Sí"). The arrow leads to your door; inside it does not show.
+## With no house to go into (an old map), the screen goes dark straight away as it did before.
+func _to_bed() -> void:
+	if casa == null:
+		_go_to_sleep()
+		return
+	_step_flag = "bed"
+	set_target(entradas.spot(casa, false), false)
+
+## a nap at home whenever you like (not with a delivery on the roof): in your bed, inside the house (casa_dentro.gd;
+## before 16 November 2026 it was anywhere in the street by your door). At bedtime in the story, the same bed.
 func _can_nap() -> bool:
-	return (phase == "play" or phase == "free") and in_car == null and not indoors and dlg == null and steps[si]["type"] != "deliver" and side == null \
-		and steps[si]["type"] != "sleep" and player.p.distance_to(places["home"]["p"]) < 7.0 and comida.faint == null
+	if casa == null:
+		return (phase == "play" or phase == "free") and in_car == null and not indoors and dlg == null and steps[si]["type"] != "deliver" and side == null \
+			and steps[si]["type"] != "sleep" and player.p.distance_to(places["home"]["p"]) < 7.0 and comida.faint == null
+	return (phase == "play" or phase == "free") and in_car == null and indoors and inside_of == casa and dlg == null and steps[si]["type"] != "deliver" \
+		and side == null and (steps[si]["type"] != "sleep" or _step_flag == "bed") and casa.bed_near(player.p) and comida.faint == null
+
+## in front of your wardrobe, at home
+func _can_dress() -> bool:
+	return casa != null and (phase == "play" or phase == "free") and in_car == null and indoors and inside_of == casa and dlg == null \
+		and casa.wardrobe_near(player.p)
+
+# ---------------- the wardrobe (the user, 16 November 2026) ----------------
+## "El armario solo tendrá el lustre que selecciona el jugador en el creador de personaje + el pañuelo de la peña":
+## what you chose in the creator's Pintas, each with taking it off where that can be done, and your peña's neckerchief
+## (Creator.WARDROBE). What you own is stats["armario"]: option -> the values you have (clothes shops will add to it).
+func armario_owned() -> Dictionary:
+	if not stats.has("armario") or not (stats["armario"] is Dictionary):
+		stats["armario"] = Creator.wardrobe_from(look_sel)
+	var own: Dictionary = stats["armario"]
+	for k in own.keys():                         # (whole numbers again, after a save: JSON keeps them as decimals)
+		var vals: Array = []
+		for v in own[k]:
+			vals.append(int(v))
+		own[k] = vals
+	for opt in Creator.WARDROBE:                 # (something new in the wardrobe since this game was saved)
+		if not own.has(str(opt)):
+			own[str(opt)] = Creator.wardrobe_from(look_sel)[str(opt)]
+		for v in Creator.WARDROBE_ONLY_VALUES.get(opt, []):      # (the peña's T-shirt, in a wardrobe from before it)
+			var at: int = Creator.OPTIONS[opt]["values"].find(v)
+			if at >= 0 and not ((own[str(opt)] as Array).has(at)):
+				own[str(opt)].append(at)
+	return own
+
+func _open_armario() -> void:
+	_armario_back = phase
+	phase = "armario"
+	_armario_was = look_sel.duplicate()
+	armario_row = 1
+	_face_turn = 0.0
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE      # (its buttons can be clicked)
+	player.p = casa.wardrobe_spot                    # (in front of it)
+	entradas.visible = false                         # (the way out and the rest of the screen: not in the picture)
+	hud.play_ui.visible = false
+	hud.set_prompt("")
+	Sfx.beep(392.0, 0.06, 2, -16.0)
+	_refresh_armario()
+
+func _refresh_armario() -> void:
+	_apply_look()
+	var own: Dictionary = armario_owned()
+	var names: Array = Loc.t("c_names")
+	var values: Array = Loc.t("c_values")
+	var shown: Array = []
+	for i in Creator.WARDROBE:
+		var have: Array = own.get(str(i), [look_sel[i]])
+		var off: bool = Creator.not_used(look_sel, i) or have.size() < 2
+		shown.append({"name": names[i], "value": "—" if Creator.not_used(look_sel, i) else String(values[i][look_sel[i]]), "colour": Creator.swatch(i, look_sel[i]), "off": off})
+	hud.show_wardrobe(Loc.t("arm_title"), shown, armario_row - 1)
+
+## what: up | down | left | right | accept | back
+func _armario_input(what: String) -> void:
+	var n: int = Creator.WARDROBE.size()
+	armario_row = clampi(armario_row, 1, n)
+	match what:
+		"up":
+			armario_row = (armario_row + n - 2) % n + 1
+		"down":
+			armario_row = armario_row % n + 1
+		"left", "right":                         # only through what you have
+			var opt: int = Creator.WARDROBE[armario_row - 1]
+			var have: Array = armario_owned().get(str(opt), [look_sel[opt]])
+			if have.size() < 2:
+				return
+			var at: int = maxi(0, have.find(look_sel[opt]))
+			look_sel[opt] = int(have[(at + (1 if what == "right" else have.size() - 1)) % have.size()])
+		"accept":
+			_close_armario(true)
+			return
+		"back":
+			_close_armario(false)
+			return
+		_:
+			return
+	Sfx.beep(520.0, 0.04, 1, -18.0)
+	_refresh_armario()
+
+func _close_armario(keep: bool) -> void:
+	if not keep:
+		look_sel = _armario_was.duplicate()
+	_apply_look()
+	hud.hide_creator()
+	phase = _armario_back
+	entradas.visible = true
+	hud.play_ui.visible = true
+	if not Touch.on:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	player.h = PI / 2.0                          # (turned to the room, the wardrobe at your back)
+	player.sync()
+	_door_cool = 0.4
+	Sfx.beep(660.0 if keep else 330.0, 0.06, 2, -16.0)
+	if keep:
+		_save(save_si)                           # (what you have on is kept)
 
 ## the story so far ends here: say so, then leave the town to roam
 func _show_end() -> void:
@@ -2871,6 +3083,7 @@ func _speaker(who: String):
 
 func say(who: String, lines, voice: String, on_done = null) -> void:
 	var arr: Array = lines if lines is Array else [lines]
+	arr = padron.by_name(arr, who)               # (your name instead of "hijo" or "hermosa", if they know it: padron.gd)
 	dlg = {"lines": arr, "i": 0, "shown": 0.0, "voice": voice, "on_done": on_done, "cool": 0.25}
 	dlg["from"] = _speaker(who)
 	hud.set_dlg_point(null)
@@ -3020,6 +3233,8 @@ func talk_to(n, chat_only := false) -> void:
 	var said = Loc.t(key)
 	if key == "generic" and n.voice.begins_with("old"):
 		said = Loc.t("generic_old") + said             # (the old ones have their own sayings too: palabros.md, «Cómo hablan los mayores»)
+	if key == "generic" or key == "generic_kid":
+		said = chismes.talk(said, n)                   # (what they say about the missions you have finished: chismes.gd)
 	var data = Loc.speaker(said, n.voice.ends_with("_f"))      # men talk about their wives, women about their husbands
 	if data[0] is Array:      # several dialogues: cycle through them
 		data = data[n.line_i % data.size()]
@@ -3606,7 +3821,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			else:
 				cam_zoom = minf(1.7, cam_zoom + 0.08)
 	elif e is InputEventMouseMotion:
-		if phase == "creator" and dragging:
+		if (phase == "creator" or phase == "armario") and dragging:
 			_face_turn += e.relative.x * 0.012
 		elif (phase == "play" or phase == "free" or phase == "talking") and not paused and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			# free look: the mouse orbits the camera in any direction
@@ -3623,18 +3838,33 @@ func _unhandled_input(e: InputEvent) -> void:
 				_story_next()
 			return
 		"creator":
+			if padron.active:                        # (the Padrón's sheet is up: its own keys)
+				padron.input(e)
+				return
 			for dir in ["up", "down", "left", "right"]:
 				if e.is_action_pressed("m_" + dir, true):
 					_creator_input(dir)
 					return
 			if e.is_action_pressed("radio"):
 				_creator_input("random")
-			elif (e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB) or (e is InputEventJoypadButton and e.pressed and e.button_index in [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER]):
-				_creator_input("tab")
+			elif e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB:
+				_creator_input("tab_prev" if e.shift_pressed else "tab")
+			elif e is InputEventJoypadButton and e.pressed and e.button_index in [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER]:
+				_creator_input("tab_prev" if e.button_index == JOY_BUTTON_LEFT_SHOULDER else "tab")
 			elif e.is_action_pressed("m_accept"):
 				_creator_input("accept")
 			elif e.is_action_pressed("m_back"):
 				_creator_input("back")
+			return
+		"armario":                               # the wardrobe at home: up and down its rows, left and right through what you have
+			for dir in ["up", "down", "left", "right"]:
+				if e.is_action_pressed("m_" + dir, true):
+					_armario_input(dir)
+					return
+			if e.is_action_pressed("m_accept") or e.is_action_pressed("interact"):
+				_armario_input("accept")
+			elif e.is_action_pressed("m_back") or e.is_action_pressed("pause"):
+				_armario_input("back")
 			return
 		"flyover", "cutscene":
 			if accept:
@@ -3714,6 +3944,8 @@ func interact() -> void:
 		gacha.play(gacha.near(player.p))
 	elif entradas.exit_here() != null:           # on the green arrow by a set's door, inside: out (entradas.gd)
 		entradas.leave()
+	elif _can_dress():                           # at home, in front of the wardrobe
+		_open_armario()
 	elif ajedrez.on_board(player.p):             # (ajedrez) on one of the square's chessboards: a game
 		ajedrez.offer()
 	elif _can_unlock():
@@ -4017,10 +4249,12 @@ func _physics_process(delta: float) -> void:
 		return
 	if phase == "prologue" or phase == "selfshot":      # (selfshot: the test run is holding the camera still for a picture)
 		return
-	if phase == "creator":          # the character stands in the street, turning slowly, camera close in front
-		var f := Vector2(sin(_face), cos(_face))
+	if phase == "creator" or phase == "armario":          # the character stands in the street, turning slowly, camera close in front
+		# (at the wardrobe, the same: you in front of it, turned to the room, the camera a few steps off towards the door)
+		var face: float = _face if phase == "creator" else PI / 2.0
+		var f := Vector2(sin(face), cos(face))
 		var at: Vector2 = player.p
-		var side: Vector2 = ((_start["p"] as Vector2) - at).normalized()      # towards the middle of the street
+		var side: Vector2 = ((_start["p"] as Vector2) - at).normalized() if phase == "creator" else Vector2(0.0, -1.0)      # towards the middle of the street
 		# Q / E, the pad's lower triggers (LT / RT), the right stick, dragging the mouse, or a finger dragged across the
 		# character or the right of a touch screen (touch.gd) turn the character
 		var turn := float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q))
@@ -4030,13 +4264,16 @@ func _physics_process(delta: float) -> void:
 		var feet_at: Vector3 = player.global_position
 		if not cam.is_position_behind(feet_at):
 			hud.creator_turn_at(cam.unproject_position(feet_at), cam.unproject_position(feet_at + Vector3.UP * 1.75))
-		player.h = _face + _face_turn
+		player.h = face + _face_turn
 		player.sync()
 		player.anim(false, dt, 0.0)
 		var eye := at + f * 3.6 + side * 1.1
-		var aim := at + Vector2(f.y, -f.x) * 0.95            # aim to the character's screen-right: they stand left of centre, clear of the panel
-		cam.position = Vector3(eye.x, MapData.height(at) + 1.45, eye.y)
-		cam.look_at(Vector3(aim.x, MapData.height(at) + 1.0, aim.y))
+		var aim := at + Vector2(f.y, -f.x) * 1.75            # aim to the character's screen-right: they stand left of centre, clear of the panel (bigger since 16 Nov 2026)
+		var floor_y: float = MapData.height(at) if phase == "creator" else MapData.foot(at)
+		cam.position = Vector3(eye.x, floor_y + 1.45, eye.y)
+		cam.look_at(Vector3(aim.x, floor_y + 1.0, aim.y))
+		if phase == "creator" and not padron.active:     # (not behind the Padrón's sheet: it went with the creator)
+			_creator_easel(at, f, eye)
 		return
 	if phase == "cutscene":
 		_update_dialog(dt)
@@ -4196,7 +4433,7 @@ func _physics_process(delta: float) -> void:
 	_garages_tick(dt, pp)
 	_protest_tick(dt, pp)
 	_recall_tick(dt)
-	llamadas.tick(dlg == null and not menu.visible and not indoors and not cine_lock and (phase == "play" or phase == "free") and comida.faint == null and not motin.busy())
+	llamadas.tick(dlg == null and not menu.visible and (not indoors or (casa != null and inside_of == casa)) and not cine_lock and (phase == "play" or phase == "free") and comida.faint == null and not motin.busy())      # (at home the phone rings too: you wake up in your room, and Tía Paca rings)
 	marcas.tick(dt, pp)
 	recress.tick(dt, pp)
 	sabotaje.tick(dt, pp)
@@ -4293,6 +4530,8 @@ func _physics_process(delta: float) -> void:
 			pr = gacha.prompt()
 		elif entradas.exit_here() != null:
 			pr = Loc.t("p_salir")
+		elif _can_dress():
+			pr = Loc.t("p_armario")
 		elif ajedrez.on_board(pp):               # (ajedrez) on the square's chessboard: a game
 			pr = Loc.t("p_aj_play")
 		elif near_npc != null:
@@ -4388,7 +4627,10 @@ func _on_device() -> void:
 		"prologue":
 			hud.rt(hud.story_hint, Loc.t("story_next"))
 		"creator":
-			_refresh_creator()
+			if padron.active:
+				padron.refresh()
+			else:
+				_refresh_creator()
 		"failed":
 			hud.rt(hud.ov_foot, Loc.t("fail_retry"))
 		"end":
@@ -4571,6 +4813,7 @@ func _side_over(won: bool) -> void:
 		if in_car != null:
 			in_car.set_speed(in_car.vel * 0.2)
 		stats["menu_done"] = true
+		chismes.mission_over("menu")
 		money += MENU_PAY
 		_refresh_counts()
 		hud.stamp(Loc.t("stamp_done"))
@@ -4687,7 +4930,7 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 				continue
 			var to: Vector2 = n.p - pp
 			if to.length() < 7.0 and to.length() > 1.5 and to.normalized().dot(facing) < -0.35:
-				n.bark(Loc.t("whisper_old" if n.voice.begins_with("old") and randf() < 0.6 else "whisper").pick_random(), 3.0)
+				n.bark(whisper_pool(n).pick_random(), 3.0)
 				_whisper_t = randf_range(9.0, 17.0)
 				break
 	# Neighbours a long way off are moved a quarter as often (in bigger steps), without the leg-work and without
@@ -4709,6 +4952,13 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 		if far and (i + _npc_tick) % 4 != 0:
 			continue
 		var ndt: float = dt * 4.0 if far else dt
+		# How much of them moves (the user's 2K at 30-odd fps, 16 Nov 2026): arms, legs and head only for those in the
+		# picture (or right by you); past 30 m one tick in three, in bigger steps; the standing bob only within 15 m.
+		var shown: bool = not far and (d2 < 64.0 or cam.is_position_in_frustum(Vector3(n.p.x, n.global_position.y + 1.0, n.p.y)))
+		var mid: bool = d2 > 30.0 * 30.0
+		var limbs: bool = shown and (not mid or (i + _npc_tick) % 3 == 0)
+		var adt: float = ndt * (3.0 if mid else 1.0)
+		var bob: bool = d2 < 15.0 * 15.0
 		if n.state == "fly":
 			n.vy -= 22.0 * ndt
 			n.y += n.vy * ndt
@@ -4745,13 +4995,13 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 				var back: Vector2 = (n.home - n.p).normalized()
 				_step(n, back, 1.6, far, ndt)
 				n.h = lerp_angle(n.h, atan2(back.x, back.y), 1.0 - exp(-8.0 * ndt))
-				if not far:
-					n.anim(true, ndt, 0.0)
+				if limbs:
+					n.anim(true, adt, 0.0, bob)
 			elif n.still or (dlg != null and dlg.get("from") == n):      # those with a place to keep, and whoever you are talking to, stand
 				if d_p < 9.0:
 					n.h = lerp_angle(n.h, atan2(pp.x - n.p.x, pp.y - n.p.y), 1.0 - exp(-6.0 * ndt))
-				if not far:
-					n.anim(false, ndt, 0.0)
+				if limbs:
+					n.anim(false, adt, 0.0, bob)
 			elif n.walker:
 				if n.wpts.is_empty():
 					_walker_plan(n)
@@ -4788,8 +5038,8 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 								n.wpts = []
 								n.wa = -1
 								n.wb = -1
-					if not far:
-						n.anim(true, ndt, 0.0)
+					if limbs:
+						n.anim(true, adt, 0.0, bob)
 			elif n.state == "walk":
 				var dv: Vector2 = n.tgt - n.p
 				n.t -= ndt
@@ -4800,19 +5050,19 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 					var dir := dv.normalized()
 					_step(n, dir, 1.3, far, ndt)
 					n.h = lerp_angle(n.h, atan2(dir.x, dir.y), 1.0 - exp(-8.0 * ndt))
-				if not far:
-					n.anim(true, ndt, 0.0)
+				if limbs:
+					n.anim(true, adt, 0.0, bob)
 			else:
 				n.t -= ndt
-				if not far:
-					n.anim(false, ndt, 0.0)
+				if limbs:
+					n.anim(false, adt, 0.0, bob)
 				if n.t <= 0.0:
 					n.state = "walk"
 					n.t = 6.0
 					n.tgt = n.home + Vector2.from_angle(randf() * TAU) * randf_range(2.0, 9.0)
 		# Whoever you go by turns their head to look at you, and goes on with what they were doing: nobody stops in the
 		# street (or in the middle of the road) to stare. The head turns as far as a neck does; the body is its own affair.
-		if not far and n.voice != "goat":
+		if shown and not mid and n.voice != "goat":
 			n.look_at_spot(pp if d2 < 81.0 and (n.state == "idle" or n.state == "walk") else null, ndt)
 		n.sync()
 

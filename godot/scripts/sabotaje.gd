@@ -513,6 +513,7 @@ func _reward() -> void:
 		G.money += PAY
 		G._refresh_counts()
 		G.stats["luis_done"] = int(G.day_n)
+		G.chismes.mission_over("sabotaje")    # (the town will talk about it: chismes.gd)
 		G.hud.stamp(Loc.t("stamp_done"))
 		Sfx.jingle([523, 659, 784, 1047], 0.12)
 		G.folk.add("luis", 10)                   # (which is also what puts him in the Agenda)

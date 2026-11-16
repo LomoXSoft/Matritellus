@@ -1,0 +1,118 @@
+{
+ "rc": "4992002VJ5649S",
+ "record": {
+  "address": "CL ST MARIA 4(A) 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "69",
+  "year": "2006",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "01",
+    "m2": "69"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4992002VJ5649S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 69.0,
+   "ring": [
+    [
+     752.96,
+     -36.04
+    ],
+    [
+     747.29,
+     -35.63
+    ],
+    [
+     746.39,
+     -47.8
+    ],
+    [
+     752.24,
+     -47.78
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      752.96,
+      -36.04
+     ],
+     "b": [
+      747.29,
+      -35.63
+     ],
+     "len": 5.68,
+     "out": [
+      0.072,
+      0.997
+     ],
+     "street": "Calle de la Santa María",
+     "to_centre": 7.12
+    },
+    {
+     "a": [
+      747.29,
+      -35.63
+     ],
+     "b": [
+      746.39,
+      -47.8
+     ],
+     "len": 12.2,
+     "out": [
+      -0.997,
+      0.074
+     ],
+     "street": "Calle de la Santa María",
+     "to_centre": 4.29
+    },
+    {
+     "a": [
+      746.39,
+      -47.8
+     ],
+     "b": [
+      752.24,
+      -47.78
+     ],
+     "len": 5.85,
+     "out": [
+      0.003,
+      -1.0
+     ],
+     "street": "Calle de la Santa María",
+     "to_centre": 7.22
+    },
+    {
+     "a": [
+      752.24,
+      -47.78
+     ],
+     "b": [
+      752.96,
+      -36.04
+     ],
+     "len": 11.76,
+     "out": [
+      0.998,
+      -0.061
+     ],
+     "street": "",
+     "to_centre": 10.05
+    }
+   ],
+   "ground": [
+    -1.16,
+    -1.0
+   ]
+  }
+ ]
+}

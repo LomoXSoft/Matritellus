@@ -67,6 +67,14 @@ func shops() -> Array:
 	var c = G.world.get("comunal") if G.world != null else null
 	if c != null and c.get("tienda") != null:
 		out.append(c.tienda)
+	var n = G.world.get("noche") if G.world != null else null
+	if n != null and n.get("tienda") != null:     # the Noche of the Calle del Teniente Infante (its set: noche_dentro.gd)
+		out.append(n.tienda)
+	var bs = G.world.get("bancosancho") if G.world != null else null
+	if bs != null and bs.get("tienda") != null:   # the Copistería Sancho Panza, the girl of the posters inside (its set: copisteria_dentro.gd)
+		out.append(bs.tienda)
+	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
+		out.append(G.casa)
 	return out
 
 func is_shop(place) -> bool:

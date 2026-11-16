@@ -30,6 +30,8 @@ var _pool: Array = []         # cars left far behind, put away to be used again 
 const POOL := 10
 var max_cars := MAX_CARS        # (the graphics option "traffic": fewer when it is light)
 var _obs: Array = []          # what there is to run into this tick: [position, radius, velocity, kind, owner]
+var _still: Array = []        # ...of which what stands still (asleep parked cars, the trailers): made again twice a second
+var _still_t := 0
 const CELL := 38.0
 var _cells := {}              # the same, by map cell (Vector2i -> Array), so each car only looks at its surroundings
 
@@ -56,6 +58,7 @@ func _put_away(c) -> void:
 	_pool.append(c)
 
 func clear() -> void:
+	_still_t = 0
 	for e in list:
 		if not e.get("auto", false):             # (the player's own car on autopilot is not ours to scrap)
 			e["car"].queue_free()
@@ -151,6 +154,7 @@ func _clear_parked(car) -> void:
 		return
 	game.cars.erase(car)
 	car.queue_free()
+	_still_t = 0                                 # (gone: not to be braked for any more)
 
 ## Streets closed to the town's traffic for a while: the delivery lorry's way across town, while Don Luis's errand
 ## is on (the user's idea, 15 November 2026: it got stuck behind neighbours and parked cars in the narrow streets).
@@ -230,10 +234,26 @@ func _add_vehicle(c, owner = null, vel = null) -> void:
 	for k in [-c.off, c.off]:                # a car is two circles: nose and tail
 		_obs.append([at + f * k, rr, c.vel if vel == null else vel, VEHICLE, c if owner == null else owner])
 
+## (The user's 2K at 30-odd fps, 16 Nov 2026: working out every parked car's two circles, every tick, was most of what
+## the traffic cost. Those asleep -- `freeze`, nowhere near you -- and the trailers do not move: they are worked out
+## twice a second. One woken in between is counted as moving as well, which does no harm.)
 func _gather() -> void:
-	_obs.clear()
+	_still_t -= 1
+	if _still_t <= 0:
+		_still_t = 30
+		_obs.clear()
+		for o in game.cars:
+			if o.freeze and not o.running:
+				_add_vehicle(o)
+		for r in game.props.ramps:               # the trailers parked along the streets
+			var f := Vector2(sin(r["h"]), cos(r["h"]))
+			for k in [-2.6, 0.0, 2.6, 4.9]:
+				_obs.append([(r["p"] as Vector2) + f * k, 1.6, Vector2.ZERO, FIXED, null])
+		_still = _obs.duplicate()
+	_obs = _still.duplicate()
 	for o in game.cars:
-		_add_vehicle(o)
+		if not (o.freeze and not o.running):
+			_add_vehicle(o)
 	for e in list:
 		_add_vehicle(e["car"])
 	for e in game.police.cops:
@@ -249,10 +269,6 @@ func _gather() -> void:
 	for n in game.npcs:
 		if n.visible and not n.away:
 			_obs.append([n.p, 0.6, Vector2.ZERO, PERSON, null])
-	for r in game.props.ramps:               # the trailers parked along the streets
-		var f := Vector2(sin(r["h"]), cos(r["h"]))
-		for k in [-2.6, 0.0, 2.6, 4.9]:
-			_obs.append([(r["p"] as Vector2) + f * k, 1.6, Vector2.ZERO, FIXED, null])
 
 func _index() -> void:
 	_cells.clear()

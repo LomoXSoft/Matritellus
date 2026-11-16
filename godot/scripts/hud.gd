@@ -137,6 +137,11 @@ var creator_turn_r: Array = []
 var creator_drag: TextureRect          # the mouse, dragged (keyboard and mouse only)
 var _creator_page := 0
 var creator_panel: Control             # the creator's panel itself (what a finger presses there is its buttons)
+const CREATOR_SIZE := Vector2(600, 688) # the panel, always this size (at 1280 x 720)
+const CREATOR_ROWS := 12               # as many rows as the longest page has
+const CREATOR_ROW_H := 34
+var creator_rows: Array = []           # each row: {"box", "name", "lt", "swatch", "value", "gt"}
+var _creator_said := ""                # what the rows say, as text (the self-test reads it)
 var _creator_grab := Rect2()            # round the character and its arrows: a finger dragged there turns it
 
 func _ready() -> void:
@@ -507,26 +512,44 @@ func _ready() -> void:
 	_slot(root, story_box, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_CENTER)
 	story_box.visible = false
 
-	# character creation panel (right-hand side)
-	var crp := _panel(CREAM, 30, 4)
+	# character creation panel (right-hand side). The user, 16 November 2026: no yellowish tint ("si usamos blancos usamos
+	# blancos y si las letras son negras, negras"), and one size that never changes as you go through tabs and options
+	# ("haz toda la interfaz más grande y que tenga un tamaño estable"): pure white, pure black, every row built once.
+	var crp := _panel(Color.WHITE, 22, 4, Color.BLACK)
+	(crp.get_theme_stylebox("panel") as StyleBoxFlat).shadow_color = Color(0, 0, 0, 0.35)
+	(crp.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_top = 14
+	(crp.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_bottom = 16
+	(crp.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_left = 20
+	(crp.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_right = 20
+	crp.custom_minimum_size = CREATOR_SIZE
+	crp.clip_contents = true
 	creator_panel = crp
 	var crv := VBoxContainer.new()
-	crv.add_theme_constant_override("separation", 10)
-	creator_title = _label(28, TERRA)
-	creator_text = _label(18, INK)
-	creator_foot = _label(15, TERRA)
-	creator_foot.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	creator_foot.custom_minimum_size = Vector2(300, 0)
-	creator_tabs = HBoxContainer.new()             # the two pages, as the tabs of a folder: the one you are on stands out
-	creator_tabs.add_theme_constant_override("separation", 5)
-	creator_tabs.size_flags_vertical = Control.SIZE_SHRINK_END
-	creator_tab_l = _icon_rect(30)
-	creator_tab_r = _icon_rect(30)
+	crv.add_theme_constant_override("separation", 12)
+	creator_title = _label(36, Color.BLACK)
+	creator_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	creator_text = _label(18, Color.BLACK)         # (no longer shown: the rows are below; it keeps what they say)
+	creator_text.visible = false
+	creator_foot = _label(15, Color.BLACK)
+	creator_foot.visible = false
+	creator_tabs = HBoxContainer.new()             # the two pages: the one you are on in black, the other in white
+	creator_tabs.add_theme_constant_override("separation", 10)
+	creator_tabs.alignment = BoxContainer.ALIGNMENT_CENTER
+	creator_tab_l = _icon_rect(36)
+	creator_tab_r = _icon_rect(36)
 	creator_tabs.add_child(creator_tab_l)
 	creator_tabs.add_child(creator_tab_r)
-	creator_foot.visible = false
+	var cr_rule := ColorRect.new()                 # a black rule under the tabs
+	cr_rule.color = Color.BLACK
+	cr_rule.custom_minimum_size = Vector2(0, 3)
+	var cr_rows := VBoxContainer.new()
+	cr_rows.add_theme_constant_override("separation", 3)
+	cr_rows.custom_minimum_size = Vector2(0, CREATOR_ROWS * (CREATOR_ROW_H + 3))
+	cr_rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	for i in range(CREATOR_ROWS):
+		cr_rows.add_child(_creator_row())
 	creator_btns = HBoxContainer.new()
-	creator_btns.add_theme_constant_override("separation", 12)
+	creator_btns.add_theme_constant_override("separation", 14)
 	creator_btns.alignment = BoxContainer.ALIGNMENT_END
 	creator_back = _creator_button(false)
 	creator_next = _creator_button(true)
@@ -534,7 +557,7 @@ func _ready() -> void:
 	creator_next.pressed.connect(func(): creator_pick.emit("accept"))
 	creator_btns.add_child(creator_back)
 	creator_btns.add_child(creator_next)
-	crv.add_child(creator_title); crv.add_child(creator_tabs); crv.add_child(creator_text); crv.add_child(creator_foot); crv.add_child(creator_btns)
+	crv.add_child(creator_title); crv.add_child(creator_tabs); crv.add_child(cr_rule); crv.add_child(cr_rows); crv.add_child(creator_text); crv.add_child(creator_foot); crv.add_child(creator_btns)
 	crp.add_child(crv)
 	creator_turn = Control.new()
 	creator_turn.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1128,42 +1151,138 @@ func show_story(text: String, hint: String) -> void:
 func hide_story() -> void:
 	story_box.visible = false
 
-func show_creator(title: String, text: String, foot: String, tabs: Array = [], tab := 0, on_tabs := false) -> void:
+## The creator: `rows` is one {"name", "value", "colour" (a colour to show beside the value, or null), "off" (true: it
+## does not apply, as a cap's colour with no cap)} for each option on page `tab`; `at` the one the cursor is on (from 0).
+## The tabs are not a row the cursor goes to: the page only turns with the shoulder buttons, Tab, or Siguiente/Volver
+## (the user, 16 November 2026).
+func show_creator(title: String, rows: Array, tabs: Array = [], tab := 0, at := 0) -> void:
 	while creator_tab_boxes.size() < tabs.size():
 		var box := PanelContainer.new()
-		box.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN       # (two small tabs at the head of the list: together about half its width)
-		var lab := _label(16, INK)
+		box.custom_minimum_size = Vector2(176, 46)
+		var lab := _label(24, Color.BLACK)
 		lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		box.add_child(lab)
+		var tap := Button.new()                  # (a touch screen has neither shoulder buttons nor Tab: there a finger turns the page)
+		tap.flat = true
+		tap.focus_mode = Control.FOCUS_NONE
+		for state in ["normal", "hover", "pressed", "focus"]:
+			tap.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		var page := creator_tab_boxes.size()
+		tap.pressed.connect(func(): creator_pick.emit("tab_%d" % page))
+		box.add_child(tap)
 		creator_tabs.add_child(box)
-		creator_tab_boxes.append([box, lab])
-	for i in range(creator_tab_boxes.size()):
+		creator_tab_boxes.append([box, lab, tap])
+	creator_tabs.visible = not tabs.is_empty()
+	for i in range(mini(creator_tab_boxes.size(), tabs.size())):
 		var here := i == tab
+		(creator_tab_boxes[i][2] as Button).mouse_filter = Control.MOUSE_FILTER_STOP if Touch.on else Control.MOUSE_FILTER_IGNORE      # (with a mouse, the user wants only the keys and buttons)
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = TERRA if here else Color(0.86, 0.8, 0.68)
-		sb.set_corner_radius_all(0)
-		sb.corner_radius_top_left = 10
-		sb.corner_radius_top_right = 10
-		sb.border_color = GOLD if (here and on_tabs) else Color(0.35, 0.25, 0.18)
-		sb.set_border_width_all(3 if (here and on_tabs) else 2)
-		sb.border_width_bottom = 0 if here else 2
-		sb.content_margin_left = 12; sb.content_margin_right = 12
-		sb.content_margin_top = 4 if here else 2
-		sb.content_margin_bottom = 4 if here else 2
+		sb.bg_color = Color.BLACK if here else Color.WHITE
+		sb.set_corner_radius_all(10)
+		sb.border_color = Color.BLACK
+		sb.set_border_width_all(3)
+		sb.content_margin_left = 14; sb.content_margin_right = 14; sb.content_margin_top = 4; sb.content_margin_bottom = 4
 		(creator_tab_boxes[i][0] as PanelContainer).add_theme_stylebox_override("panel", sb)
 		var lab2: Label = creator_tab_boxes[i][1]
-		lab2.text = ("‹ " if (here and on_tabs) else "") + String(tabs[i]) + (" ›" if (here and on_tabs) else "")
-		lab2.add_theme_color_override("font_color", Color.WHITE if here else Color(0.35, 0.25, 0.18))
+		lab2.text = String(tabs[i])
+		lab2.add_theme_color_override("font_color", Color.WHITE if here else Color.BLACK)
 	creator_title.text = title
-	creator_text.text = text
-	creator_foot.text = foot
-	creator_foot.visible = foot != ""
+	var said := ""
+	for i in range(creator_rows.size()):
+		var r: Dictionary = creator_rows[i]
+		var box: PanelContainer = r["box"]
+		if i >= rows.size():
+			box.modulate.a = 0.0                    # (an empty row keeps its room: the panel never changes size)
+			continue
+		box.modulate.a = 1.0
+		var row: Dictionary = rows[i]
+		var here := i == at
+		var ink := Color.WHITE if here else Color.BLACK
+		(box.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = Color.BLACK if here else Color.WHITE
+		(r["name"] as Label).text = String(row["name"])
+		(r["value"] as Label).text = String(row["value"])
+		for k in ["name", "lt", "value", "gt"]:
+			(r[k] as Label).add_theme_color_override("font_color", ink)
+		var off: bool = row.get("off", false)          # (nothing to change there: no arrows, the letters as black as the rest)
+		(r["lt"] as Label).modulate.a = 0.0 if off else 1.0
+		(r["gt"] as Label).modulate.a = 0.0 if off else 1.0
+		var sw: PanelContainer = r["swatch"]
+		var colour = row.get("colour")
+		sw.modulate.a = 1.0 if (colour != null and not off) else 0.0      # (hidden, it keeps its room: the arrows never move)
+		if sw.modulate.a > 0.0:
+			var ss := sw.get_theme_stylebox("panel") as StyleBoxFlat
+			if colour is Array:                   # two colours (the red-and-gold ribbon): the first inside, the second round it
+				ss.bg_color = colour[0]
+				ss.border_color = colour[1]
+				ss.set_border_width_all(5)
+			else:
+				ss.bg_color = colour
+				ss.border_color = Color.WHITE if here else Color.BLACK
+				ss.set_border_width_all(2)
+		said += String(row["name"]) + ": " + String(row["value"]) + "\n"
+	_creator_said = said
+	creator_text.text = said
 	_creator_controls(tab)
 	creator_slot.visible = true
+
+## what the creator's rows say now, as text
+func creator_shown() -> String:
+	return _creator_said
+
+## one row of the creator: the name on the left; on the right, in a box of its own width, ‹ the value ›, with a sample
+## of the colour when the option is one
+func _creator_row() -> PanelContainer:
+	var box := PanelContainer.new()
+	box.custom_minimum_size = Vector2(0, CREATOR_ROW_H)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color.WHITE
+	sb.set_corner_radius_all(8)
+	sb.content_margin_left = 12; sb.content_margin_right = 8
+	box.add_theme_stylebox_override("panel", sb)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 6)
+	box.add_child(hb)
+	var nm := _label(23, Color.BLACK)
+	nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nm.clip_text = true
+	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var lt := _label(26, Color.BLACK)
+	lt.text = "‹"
+	var swatch := PanelContainer.new()
+	swatch.custom_minimum_size = Vector2(24, 24)
+	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var ss := StyleBoxFlat.new()
+	ss.set_corner_radius_all(5)
+	ss.set_border_width_all(2)
+	swatch.add_theme_stylebox_override("panel", ss)
+	var value := _label(23, Color.BLACK)
+	value.custom_minimum_size = Vector2(220, 0)
+	value.clip_text = true
+	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var gt := _label(26, Color.BLACK)
+	gt.text = "›"
+	for c in [nm, lt, swatch, value, gt]:
+		hb.add_child(c)
+	creator_rows.append({"box": box, "name": nm, "lt": lt, "swatch": swatch, "value": value, "gt": gt})
+	return box
 
 func hide_creator() -> void:
 	creator_slot.visible = false
 	creator_turn.visible = false
+	creator_tabs.visible = true
+
+## The wardrobe at home (game.gd _open_armario): the creator's panel, with no pages, its rows what you can put on.
+## Volver puts back what you had on; Me lo pongo keeps it.
+func show_wardrobe(title: String, rows: Array, at := 0) -> void:
+	show_creator(title, rows, [], 1, at)
+	creator_tabs.visible = false
+	creator_back.visible = true
+	creator_back.text = Loc.t("c_back")
+	creator_next.text = Loc.t("arm_wear")
 
 ## a picture of a button, `h` pixels tall (its width follows the picture)
 func _icon_rect(h: int) -> TextureRect:
@@ -1189,20 +1308,23 @@ func _set_icon(r: TextureRect, action: String) -> void:
 func _creator_button(main: bool) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", 20)
-	b.add_theme_constant_override("icon_max_width", 30)
+	b.add_theme_font_size_override("font_size", 25)
+	b.add_theme_constant_override("icon_max_width", 36)
 	b.add_theme_constant_override("h_separation", 10)
+	b.custom_minimum_size = Vector2(0, 52)
 	for state in ["normal", "hover", "pressed"]:
-		var sb := StyleBoxFlat.new()
-		var bg := TERRA if main else Color(0.86, 0.8, 0.68)
-		sb.bg_color = bg.lightened(0.08) if state == "hover" else (bg.darkened(0.1) if state == "pressed" else bg)
+		var sb := StyleBoxFlat.new()            # black with white letters (the main one), white with black (the other)
+		var bg := Color.BLACK if main else Color.WHITE
+		sb.bg_color = bg
+		if state == "hover":
+			sb.bg_color = Color(0.2, 0.2, 0.2) if main else Color(0.9, 0.9, 0.9)
 		sb.set_corner_radius_all(10)
-		sb.border_color = INK
-		sb.set_border_width_all(2)
-		sb.content_margin_left = 12; sb.content_margin_right = 16; sb.content_margin_top = 6; sb.content_margin_bottom = 6
+		sb.border_color = Color.BLACK
+		sb.set_border_width_all(3)
+		sb.content_margin_left = 14; sb.content_margin_right = 18; sb.content_margin_top = 6; sb.content_margin_bottom = 6
 		b.add_theme_stylebox_override(state, sb)
 	for c in ["font_color", "font_hover_color", "font_pressed_color"]:
-		b.add_theme_color_override(c, Color.WHITE if main else INK)
+		b.add_theme_color_override(c, Color.WHITE if main else Color.BLACK)
 	return b
 
 ## the creator's buttons and their pictures, for page `tab` (0 Lustre, 1 Pintas) and whatever is in the player's hands

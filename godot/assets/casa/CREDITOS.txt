@@ -1,0 +1,11 @@
+Muebles de la habitacion de tu casa, Calle de Alemania 5 (godot/scripts/casa_dentro.gd). Todo de Kenney
+(https://www.kenney.nl), licencia CC0 (dominio publico): no obliga a citar a nadie; se apunta de donde viene.
+
+mueble_*.glb  --  "Furniture Kit" de Kenney  --  CC0  --  https://opengameart.org/content/furniture-kit
+                  (los OBJ del kit, pasados a GLB con Blender: tools/creador/muebles_casa.py; originales en
+                  tools/descargas/kenney_furniture_kit/)
+                  Se usan: bedDouble (la cama), bookcaseClosedDoors (el armario: dos juntos),
+                  cabinetBedDrawerTable (la mesilla), lampRoundTable (la lampara), rugRounded (la alfombra).
+
+El resto del cuarto (paredes, zocalo, suelo, vigas, ventana, puerta, bombilla) esta hecho en el codigo.
+El graffiti de la pared es el logo de tu peña (assets/penas/, de Luis).

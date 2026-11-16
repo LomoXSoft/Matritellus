@@ -1,0 +1,139 @@
+{
+ "rc": "4388029VJ5648N",
+ "record": {
+  "address": "CL EXTREMADURA 11 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "11",
+  "year": "1900",
+  "units": [
+   {
+    "use": "APARCAMIENTO",
+    "floor": "00",
+    "door": "",
+    "m2": "11"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4388029VJ5648N_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 12.1,
+   "ring": [
+    [
+     67.01,
+     263.86
+    ],
+    [
+     70.57,
+     264.27
+    ],
+    [
+     71.35,
+     264.36
+    ],
+    [
+     71.05,
+     267.18
+    ],
+    [
+     66.86,
+     266.67
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      67.01,
+      263.86
+     ],
+     "b": [
+      70.57,
+      264.27
+     ],
+     "len": 3.58,
+     "out": [
+      0.114,
+      -0.993
+     ],
+     "street": "Calle de Extremadura",
+     "to_centre": 3.83
+    },
+    {
+     "a": [
+      70.57,
+      264.27
+     ],
+     "b": [
+      71.35,
+      264.36
+     ],
+     "len": 0.79,
+     "out": [
+      0.115,
+      -0.993
+     ],
+     "street": "Calle de Extremadura",
+     "to_centre": 6.01
+    },
+    {
+     "a": [
+      71.35,
+      264.36
+     ],
+     "b": [
+      71.05,
+      267.18
+     ],
+     "len": 2.84,
+     "out": [
+      0.994,
+      0.106
+     ],
+     "street": "",
+     "to_centre": 6.35
+    },
+    {
+     "a": [
+      71.05,
+      267.18
+     ],
+     "b": [
+      66.86,
+      266.67
+     ],
+     "len": 4.22,
+     "out": [
+      -0.121,
+      0.993
+     ],
+     "street": "Calle de Extremadura",
+     "to_centre": 4.19
+    },
+    {
+     "a": [
+      66.86,
+      266.67
+     ],
+     "b": [
+      67.01,
+      263.86
+     ],
+     "len": 2.81,
+     "out": [
+      -0.999,
+      -0.053
+     ],
+     "street": "Calle de Extremadura",
+     "to_centre": 2.06
+    }
+   ],
+   "ground": [
+    -6.39,
+    -6.26
+   ]
+  }
+ ]
+}

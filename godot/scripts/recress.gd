@@ -23,7 +23,7 @@ const PRIZE := 1                 # the tournament's prize gives it back to you..
 const BET := 2                   # ...and beating him at double or nothing doubles it
 const POSTERS := 5
 const CALL_AFTER_H := 12.0       # game hours after the bridge until Alberto rings, if you have not been to see him
-const COPY_SHOP := Vector2(-105.4, 113.5)        # Calle Teniente Infante (Catastro 4190004VJ5649S)
+const COPY_SHOP := Vector2(-112.3, 111.2)        # Calle Teniente Infante (Catastro 4190004VJ5649S): its glass door (Street View 2024; the girl stands inside when the shop is a set: bancosancho.gd)
 const POSTER_REACH := 2.4
 ## the people who only come out for the tournament (and the photos of the family tree: selftest --portraits)
 const LOOKS := {
@@ -127,15 +127,28 @@ func _make_people() -> void:
 	mayor.h = atan2(n.x, n.y)
 	mayor.home = mayor.p
 	mayor.sync()
-	var r: Dictionary = MapData.nearest_road(COPY_SHOP)
-	var to_shop: Vector2 = (COPY_SHOP - (r["p"] as Vector2)).normalized()
-	var stand: Vector2 = (r["p"] as Vector2) + to_shop * minf(float(r["seg"].hw) + 1.0, maxf(1.0, MapData.side_room(r) - 0.6))
+	var shop = _copy_shop()
+	var stand: Vector2
+	var face: float
+	if shop != null:                                 # behind the copy shop's counter, in its set (the user, 17 Nov 2026: "metes a la chica dentro")
+		stand = shop.keeper_spot
+		face = shop.keeper_face
+	else:                                            # (no set: at its door, on the pavement)
+		var r: Dictionary = MapData.nearest_road(COPY_SHOP)
+		var to_shop: Vector2 = (COPY_SHOP - (r["p"] as Vector2)).normalized()
+		stand = (r["p"] as Vector2) + to_shop * minf(float(r["seg"].hw) + 1.0, maxf(1.0, MapData.side_room(r) - 0.6))
+		face = atan2(-to_shop.x, -to_shop.y)
 	var girl = G._make_npc("copista", {"top": 0, "shirt": 0x8e44ad, "hair": 0x2a1c14, "hair_style": 2, "earrings": 1, "glasses": 2, "scale": 0.94},
 		"adult_f", stand)
 	girl.still = true
-	girl.h = atan2(-to_shop.x, -to_shop.y)
+	girl.h = face
 	girl.home = girl.p
 	girl.sync()
+
+## the copy shop you go into (bancosancho.gd's set), or null on a map without it
+func _copy_shop():
+	var bs = G.world.get("bancosancho") if G.world != null else null
+	return bs.tienda if bs != null and bs.get("tienda") != null else null
 
 ## who has a mission for you here (marcas.gd): Alberto with the idea, the mayor waiting for the money
 func givers(free_hands: bool) -> Array:
@@ -414,7 +427,8 @@ func show() -> void:
 			G.set_target(G.named["alcalde"].p, false)
 		"copisteria":
 			G.hud.set_objective(G._tag(), Loc.t("obj_rec_copy"))
-			G.set_target(G.named["copista"].p, false)
+			var shop = _copy_shop()                  # (she is inside it: the arrow leads to its door)
+			G.set_target(shop.door_out if shop != null else G.named["copista"].p, false)
 		"carteles":
 			G.hud.set_objective(G._tag(), Loc.t("obj_rec_posters") % [st["posters"].size(), POSTERS])
 			var s = _nearest_free_shop(G.player.p)
@@ -1122,6 +1136,7 @@ func _finished() -> void:
 	G.hud.stamp(Loc.t("stamp_done"))
 	Sfx.jingle([523, 659, 784, 1047], 0.12)
 	G._mission_done()
+	G.chismes.mission_over("recress")          # (the town will talk about it: chismes.gd)
 	G._show_step()
 
 ## Its hours (the user, 14 November 2026): from three in the afternoon to two at night; the rest of the time shut,

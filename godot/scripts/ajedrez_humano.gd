@@ -207,6 +207,7 @@ func _finish() -> void:
 	G.cam.fov = 55.0
 	G.hud.cine(false)
 	G.stats["ajedrez"] = int(G.day_n)
+	G.chismes.mission_over("ajedrez")         # (the town will talk about it: chismes.gd)
 	G.unlocked["ajedrez"] = Motor.LEVELS.size()
 	G.hud.toast(Loc.t("aj_unlocked"), 7.0)
 	Sfx.jingle([659, 784, 1047, 1319], 0.1)

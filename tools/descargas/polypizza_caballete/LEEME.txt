@@ -1,0 +1,3 @@
+"easel", de yentc atmcdg  --  CC-BY 3.0  --  https://poly.pizza/m/52cDlIgLNvv  (pagina guardada: pagina_easel_yentc.html)
+Bajado el 16/11/2026 de https://static.poly.pizza/c5a02b27-bb11-4970-ae7d-ea8d69e6f941.glb
+En el juego: godot/assets/creador/caballete.glb (el caballete del creador, con el graffiti de tu peña: caballete.gd).

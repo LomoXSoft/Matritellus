@@ -638,6 +638,18 @@ func _place_tags() -> void:
 	nearest.fill(1e12)
 	var cur := rng.randi() % cands.size()
 	var picked: Array = []
+	for ht in world.hand_tags:               # where the photos of a house built by hand show graffiti: those walls first
+		if picked.size() >= TAGS_EACH * Creator.PENAS.size():
+			break
+		picked.append(ht)
+		for j in range(cands.size()):
+			nearest[j] = minf(nearest[j], (cands[j][0] as Vector2).distance_squared_to(ht[0]))
+	if not picked.is_empty():                # (and the spreading starts from the wall furthest from them)
+		var far := -1.0
+		for j in range(cands.size()):
+			if nearest[j] > far:
+				far = nearest[j]
+				cur = j
 	while picked.size() < TAGS_EACH * Creator.PENAS.size():
 		picked.append(cands[cur])
 		var here: Vector2 = cands[cur][0]

@@ -76,9 +76,10 @@ func _wanted() -> Array:
 			return []
 		"ending":
 			return [["Seguir" if es else "Go on", "m_accept", "big"]]
-		"creator":
+		"creator", "armario":
 			# none of ours: the creator's panel has its own buttons (Siguiente on Lustre; Volver and Así me quedo on
 			# Pintas: hud.gd), and a finger presses them. One of ours over the same spot took a single tap twice.
+			# The wardrobe at home is the same panel (hud.show_wardrobe), with Volver and Me lo pongo.
 			return []
 		"prologue", "flyover", "cutscene", "failed", "end":
 			return [["Seguir" if es else "Go on", "interact", "big"]]
@@ -261,10 +262,11 @@ func _input(e: InputEvent) -> void:
 			look_drag += e.position - _look_last
 			_look_last = e.position
 
-## in the character creator, what a finger put down here is for (hud.gd creator_spot): "panel", "turn" or ""
+## in the character creator (and the wardrobe, its same panel), what a finger put down here is for (hud.gd
+## creator_spot): "panel", "turn" or ""
 func _creator_spot(p: Vector2) -> String:
 	var g = _game()
-	if g == null or g.get("phase") != "creator" or g.get("hud") == null:
+	if g == null or not (g.get("phase") in ["creator", "armario"]) or g.get("hud") == null:
 		return ""
 	return g.hud.creator_spot(p)
 

@@ -76,6 +76,7 @@ func _finish() -> void:
 	if done():
 		return
 	G.stats["tags_done"] = int(G.day_n)
+	G.chismes.mission_over("pintadas")        # (the town will talk about it: chismes.gd)
 	G.folk.add("chiki", 50)
 	G.add_pc(3, true)                            # (a side mission: three Puntos Cívicos)
 	G.hud.stamp(Loc.t("stamp_done"))

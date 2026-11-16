@@ -1,0 +1,118 @@
+{
+ "rc": "4388028VJ5648N",
+ "record": {
+  "address": "CL EXTREMADURA 13 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Industrial",
+  "built_m2": "13",
+  "year": "1900",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "",
+    "m2": "13"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4388028VJ5648N_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 13.2,
+   "ring": [
+    [
+     71.05,
+     267.18
+    ],
+    [
+     70.73,
+     270.33
+    ],
+    [
+     66.67,
+     269.86
+    ],
+    [
+     66.86,
+     266.67
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      71.05,
+      267.18
+     ],
+     "b": [
+      70.73,
+      270.33
+     ],
+     "len": 3.17,
+     "out": [
+      0.995,
+      0.101
+     ],
+     "street": "Calle de Extremadura",
+     "to_centre": 6.24
+    },
+    {
+     "a": [
+      70.73,
+      270.33
+     ],
+     "b": [
+      66.67,
+      269.86
+     ],
+     "len": 4.09,
+     "out": [
+      -0.115,
+      0.993
+     ],
+     "street": "Calle de Extremadura",
+     "to_centre": 4.14
+    },
+    {
+     "a": [
+      66.67,
+      269.86
+     ],
+     "b": [
+      66.86,
+      266.67
+     ],
+     "len": 3.2,
+     "out": [
+      -0.998,
+      -0.059
+     ],
+     "street": "Calle de Extremadura",
+     "to_centre": 2.09
+    },
+    {
+     "a": [
+      66.86,
+      266.67
+     ],
+     "b": [
+      71.05,
+      267.18
+     ],
+     "len": 4.22,
+     "out": [
+      0.121,
+      -0.993
+     ],
+     "street": "Calle de Extremadura",
+     "to_centre": 4.19
+    }
+   ],
+   "ground": [
+    -6.53,
+    -6.38
+   ]
+  }
+ ]
+}

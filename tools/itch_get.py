@@ -1,6 +1,8 @@
 """Fetch the free download of an itch.io asset page the way the page's own "Download Now -> No thanks" does.
 
   python -I itch_get.py PAGE_URL OUT_DIR          lists the uploads on offer and saves the free one(s) into OUT_DIR
+  python -I itch_get.py PAGE_URL OUT_DIR WORD     ...only those whose name has WORD in it (a pack with a big "Source"
+                                                  version beside the "Standard" one)
 """
 import sys, re, json, os, html
 import urllib.request, urllib.parse, http.cookiejar
@@ -30,7 +32,11 @@ names = re.findall(r'<strong class="name" title="([^"]*)"', d)
 sizes = re.findall(r'<span class="file_size"><span>([^<]*)</span>', d)
 print("uploads:", ups, names, sizes)
 os.makedirs(out, exist_ok=True)
+only = sys.argv[3] if len(sys.argv) > 3 else ""
 for i, u in enumerate(dict.fromkeys(ups)):
+    if only and (i >= len(names) or only.lower() not in names[i].lower()):
+        print("skipped", names[i] if i < len(names) else u)
+        continue
     f = json.loads(get("%s/file/%s?%s" % (page, u, urllib.parse.urlencode({"source": "game_download"})), {"csrf_token": csrf}))
     if "url" not in f:
         print("no url for", u, f)

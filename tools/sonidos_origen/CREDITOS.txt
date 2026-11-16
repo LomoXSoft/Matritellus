@@ -40,3 +40,9 @@ Freesound (https://freesound.org), cada uno de su autor. Licencia CC0.
   claxon_coche_3.wav            car horn.wav                                 keweldog         https://freesound.org/s/182474/
   claxon_coche_4.wav            Car Honking                                  MicktheMicGuy    https://freesound.org/s/434878/
   claxon_coche_5.wav            Car Horn.wav                                 BeatsbyCasper    https://freesound.org/s/170243/
+
+Niños jugando (16 de noviembre de 2026), para los parques y los patios con niños (godot/scripts/ninos.gd).
+BigSoundBank, CC0 (dominio público), autor Joseph Sardin / LaSonothèque.
+  bigsoundbank/ninos/parque_paris_1082.flac   Parisian park, children's games   https://bigsoundbank.com/parisian-park-children-games-s1082.html
+  -> godot/assets/audio/ninos_jugando.ogg: en mono, sin graves por debajo de 160 Hz, sin el tramo más fuerte (de 44 a 72 s),
+     en bucle de 110 s con fundidos (tools/bucle_ninos.py).

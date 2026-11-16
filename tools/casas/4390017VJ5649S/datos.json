@@ -1,0 +1,118 @@
+{
+ "rc": "4390017VJ5649S",
+ "record": {
+  "address": "CL CERVANTES 44 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "32",
+  "year": "1980",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "01",
+    "m2": "32"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4390017VJ5649S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 31.8,
+   "ring": [
+    [
+     84.09,
+     122.54
+    ],
+    [
+     79.96,
+     122.27
+    ],
+    [
+     79.29,
+     114.87
+    ],
+    [
+     83.61,
+     114.86
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      84.09,
+      122.54
+     ],
+     "b": [
+      79.96,
+      122.27
+     ],
+     "len": 4.14,
+     "out": [
+      -0.065,
+      0.998
+     ],
+     "street": "Calle Cervantes",
+     "to_centre": 5.42
+    },
+    {
+     "a": [
+      79.96,
+      122.27
+     ],
+     "b": [
+      79.29,
+      114.87
+     ],
+     "len": 7.43,
+     "out": [
+      -0.996,
+      0.09
+     ],
+     "street": "Calle Cervantes",
+     "to_centre": 3.36
+    },
+    {
+     "a": [
+      79.29,
+      114.87
+     ],
+     "b": [
+      83.61,
+      114.86
+     ],
+     "len": 4.32,
+     "out": [
+      -0.002,
+      -1.0
+     ],
+     "street": "Calle Cervantes",
+     "to_centre": 5.5
+    },
+    {
+     "a": [
+      83.61,
+      114.86
+     ],
+     "b": [
+      84.09,
+      122.54
+     ],
+     "len": 7.69,
+     "out": [
+      0.998,
+      -0.062
+     ],
+     "street": "",
+     "to_centre": 7.56
+    }
+   ],
+   "ground": [
+    0.35,
+    0.62
+   ]
+  }
+ ]
+}

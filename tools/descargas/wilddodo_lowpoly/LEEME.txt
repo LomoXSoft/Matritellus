@@ -1,0 +1,3 @@
+"Low Poly Male And Female Models", de The-Wild-Dodo  --  CC0 (lo dice su pagina)
+https://damindudesilva1gmailcom.itch.io/low-poly-male-and-female-models-free-low-poly-3d-model
+Bajado el 16/11/2026 con tools/itch_get.py. Lo usa tools/creador/pelo.py (piezas.json): las barbas y el bigote.

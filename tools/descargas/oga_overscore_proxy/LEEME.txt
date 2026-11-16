@@ -1,0 +1,4 @@
+OverScore Proxy 1.5, de overscore_media  --  CC0 (licencia en su pagina: pagina.html)
+https://opengameart.org/content/overscore-proxy-modular-low-poly-female-character-creation-set
+proxy_1.5.blend bajado el 16/11/2026 de https://opengameart.org/sites/default/files/proxy_1.5.blend
+Lo usa tools/creador/pelo.py (piezas.json): peinados, ropa, sombreros, cosas del cuello y calzado.

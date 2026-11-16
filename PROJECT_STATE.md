@@ -4,7 +4,267 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 ## Sin publicar
 
-Nada todavía: todo lo anterior salió en la 0.0.10. Lo detallado de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
+- **Creador de personajes (16/11): rework del creador, la habitación de casa, el pañuelo de la peña y ropa, pelo y calzado de modelos libres.** Enseñado por fases, sin veredicto.
+  - Creador (`hud.gd` `show_creator`, `game.gd` `_creator_input`): blanco y negro puros, panel fijo de 600x688 y letra más grande, muestra de color en las opciones de color. La pestaña solo cambia con LB/RB, Tab (Mayús+Tab atrás) o Siguiente/Volver; las flechas ya no. Flechas de girar en blanco y negro (`make_botones.py`).
+  - Casa (`casa_dentro.gd`, en `entradas.shops()`, `game.casa`): flecha verde en la puerta de Alemania 5; cuarto de 6x6 m con cama (dormir: `_can_nap`, ya no en la calle), armario (`_open_armario`, fase "armario") y el graffiti de tu peña en la pared del fondo. Muebles: Kenney Furniture Kit (CC0).
+  - Armario: solo lo elegido en Pintas (y quitárselo) + el pañuelo de la peña (`stats.armario`, `Creator.wardrobe_from`). Pañuelo nuevo (opción 20, solo del armario): roll al cuello y pico a la espalda con el logo estampado (`chara.gd _panuelo`, `tools/creador/panuelos.py`).
+  - Pelo, barbas, cejas, ropa, sombreros, cosas del cuello y calzado de modelos CC0 (Quaternius, OverScore Proxy, The Wild Dodo), adaptados en Blender con `tools/creador/pelo.py` y `piezas.json`; GLB en `assets/creador/pelo/`, créditos en `assets/creador/CREDITOS.txt`. Valores añadidos al final de cada opción (los guardados valen); los viejos siguen. Descalzo = dos bolas. Deportivas nuevas por defecto.
+  - Toca `game.gd`, `hud.gd`, `loc.gd`, `entradas.gd`, `chara.gd`, `creator.gd`, `selftest.gd` (modos `creador`, `casa`, `peinados`, `ropa`; en la prueba completa, el check de "fila 0 + derecha cambia de pestaña" pasa a "las flechas nunca cambian de pestaña, Tab sí"). `creador` 13/13, `casa` 13/13, `peinados` 1/1, `ropa` 1/1, `tactil touch` 9/9 (en el móvil las pestañas se tocan: botón transparente en cada una, solo con Touch.on; el armario va como el creador en touch.gd, hecho por la sesión principal). Prueba completa sin pasar.
+  - Respuestas del usuario (16/11): el sueño de la historia también va por la cama (la Paca habla, la flecha lleva a tu puerta, te acuestas: `game._to_bed`; en casa suena el móvil: `llamadas.tick`) y los vecinos llevan el calzado nuevo (sin `shoe_type` = deportivas; La Chiki, sandalias con calcetines). Prueba completa ajustada en ese punto (entra y se acuesta; luego sale por la puerta). Modo nuevo `dormir` 7/7.
+  - Arreglos tras sus fotos: relleno bajo el pelo (sin calvas), corte de pelo según el sombrero (`chara.hat_cut`: gorra 1.6 / paja, boina 1.7), sombrero de paja más bajo, sombreros de ala más bajos y menos altos, y sombreado de pliegues y capas en la ropa (color de vértice, `pelo.py dirt`/`layers`).
+  - Más del usuario (16/11): en el creador, un caballete junto al personaje con el graffiti de tu peña (`caballete.gd`, "easel" de yentc atmcdg, CC-BY 3.0: `assets/creador/CREDITOS.txt`); y Color 1/2/3 de la ropa para las prendas de varias partes (opciones 21 y 22, `Creator.top_parts`; «—» si la prenda no tiene esa parte). `creador` 16/16.
+  - Y además (16/11): coletas (bajas y alta) y ondas menos exageradas (`piezas.json`); peinado de rulos de señora mayor (hair_style 31, `chara._rulos`, hecho con piezas del juego: no había rulos libres); camiseta de la peña solo del armario (top 21, `Creator.PENA_TEE`, `WARDROBE_ONLY_VALUES`; color de la peña y logo en el pecho: `chara._pena_print`). `creador` 17/17, `casa` 14/14. Tras regenerar GLB con `pelo.py`, hay que hacer `--import` antes de probar.
+  - Calvas (16/11, foto del usuario): el relleno de los peinados nuevos cubre siempre la coronilla (`pelo.py fill_top`, 34°) y los peinados viejos de la bola de pelo (el «Corto» y demás) llevan una cúpula en la coronilla (`chara._hair`; también la llevan los vecinos con esos peinados). El armario se llama «Ropero» en el juego (`arm_title`, `p_armario`).
+  - Las calvas a puntos que se veían de lejos eran las mallas simplificadas que Godot genera al importar (LOD): las piezas de `assets/creador/pelo/` y el caballete tienen `meshes/generate_lods=false` en su .import y `lod_bias = 100` en chara.gd. Para una pieza nueva, poner lo mismo en su .import tras la primera importación.
+  - «Gorro de piscina» (16/11, foto del usuario): el relleno bajo el pelo ya no baja por la frente (`pelo.py fill_front` 38°) y es del color del pelo. Las calvas de verdad eran dos cosas: mechones de una sola cara que no se pintaban (pelo, barbas y cejas ahora a dos caras: `chara._vc_hair`) y el nacimiento del pelo de Quaternius muy alto en nuestras cabezas (`piezas.json` el_eye_pelo -12, crown_ease 0.5).
+  - Peinados «{Calvo|Calva}» (hair_style 32, sin nada) y «Rasurao» (33: la zona del pelo en gris semitransparente con el borde difuminado, `chara._rasurado`).
+  - Frentes (16/11, foto del usuario): nueve peinados de OverScore nacían muy arriba; bajados con `el_eye_pelo`/`crown_ease` por pieza en `piezas.json`. `tools/creador/frente.py` mide la frente al aire de cada GLB (ahora 0 en todos). Barba de tres días (face 5): ya no son puntitos sino la misma sombra gris semitransparente del rasurao en la zona de la barba (`chara._barba3`, `_shave_zone` compartido).
+  - Barba de tres días (16/11, el usuario): ya no es una barba sino una opción aparte Sí/No llamada «Dejadez» (opción 23 `barba3`, en Lustre bajo Barba), del color de la barba, combinable con bigote o perilla. El valor viejo (face 5) sigue para partidas y vecinos, pero el creador lo salta (`Creator.RETIRED`, `skipped`) y `clean()` lo convierte. Panel: 12 filas de 34 px (600x694). `creador` 18/18.
+  - Caballete fuera (16/11: «clippea con la pared»): el logo de tu peña va pintado en la fachada de Alemania 5, sobre la puerta y el azulejo del Padrón, siempre, y no cuenta para el recuento de pintadas (`casa_dentro._front_tag`, fuera de `props.tags`). `caballete.gd` y su modelo se quedan sin usar. Una línea de la prueba `padron` de Sistemas, hecha a prueba de caballete null.
+  - Pendiente del usuario: criba de piezas. Ojo: el CC-BY del caballete (y los coches de Poly by Google) solo se citan en los CREDITOS.txt, no en la pantalla de créditos del juego.
+- **Pretil (17/11): la rotonda de los Tricornios, delante del cuartel, a mano y sin rehorneado** (`rotonda.gd`, `world.rotonda`). «Visto bueno» (17/11).
+  - Sobre la isleta del anillo del mapa: bordillo rojo y blanco, grava, arbustos, ciruelos morados, riego, báculo con dos focos, señales azules.
+  - El mástil blanco de 16 m con la bandera ondeando y el monolito de granito con el emblema de forja (nuestro: corona y tricornio) y la placa (escudo de Matritellus y logo de los Tricornios).
+  - Toca `world.gd` (constante, variable, paso, `_build_rotonda`) y `selftest.gd` (modo `rotonda`, `_rotonda_checks` tras `_kebabdeluxe_checks`). `rotonda`: 3/3. Añade decks inclinados y dos focos a `lamp_spots`.
+  - Detalles: `referencias/rotonda_tricornios/LEEME.md`.
+- **Pretil (17/11): el IES Valdeacero (el IES Valdehierro), junto al Camino Viejo de Tembleque, a mano y sin rehorneado** (`ies.gd`, `world.ies`). «Mucho mejor. Visto bueno» (17/11, tras rehacer la entrada).
+  - El mapa no tenía nada ahí (campo). Plantas trazadas sobre la ortofoto; desde la calle (Street View), la valla azul, la puerta del aparcamiento, el pabellón de la entrada con el nombre y las banderas, el gimnasio.
+  - La entrada, rehecha a petición del usuario y medida con rumbos: marquesina larga con el rótulo en letras en relieve, pilar con el cartel y verja abierta, conserjería con lamas, y detrás las tres banderas ondeando (región, España, Europa: `assets/ies/bandera_*.png`, `tools/ies/banderas.py`).
+  - Peine de aulas de dos plantas con patios y porche, pistas con canastas, porterías y focos, gimnasio, salón de tejado rojo, bloque de FP con jardín, aparcamiento, huerto con invernadero. Las fachadas que no se ven desde ninguna calle, inventadas a juego.
+  - Toca `world.gd` (constante, variable, paso, `_build_ies`) y `selftest.gd` (modo `ies`, `_ies_checks` tras `_rotonda_checks`). `ies`: 3/3. Añade sus edificios a `MapData.outlines` y cuatro focos a `lamp_spots`.
+  - Detalles: `referencias/ies_valdeacero/LEEME.md`.
+- **Pretil (17/11): el MasAhorro (el Ahorramás de la Calle de las Viñas con la de la Noria), a mano y con rehorneado** (`masahorro.gd`, `world.masahorro`). «Visto bueno» (17/11, al darle el horario).
+  - Coches de clientes, a petición del usuario («Spawnean al menos 4 o 5 coches en el aparcamiento mientras abierto?»): mientras está abierto hay 5 aparcados, y 7 a mediodía (12:00–14:30) y por la tarde (18:00–21:00). Van de morro, casi todos cerca de las puertas, y algún eléctrico en los cargadores. Aparecen y se van donde no miras; cerrado, no queda ninguno. Si te llevas uno o lo sacan de su plaza, deja de ser de la tienda. Van en `G.cars` como cualquier coche aparcado (`masahorro.gd` `_tend_cars`, sin tocar `game.gd`).
+  - Rehorneado con el OK de Sistemas y Texturas: el bloque del Catastro 4286902VJ5648N no se levanta y no hay árboles en su zona; clave `masahorro` en map.json. Ensayo con `tools/colegio/ensayo.py` y comparación: el relieve, las calles, los nudos y las casas a mano no cambian; se van 6 paredes, un tejado y un árbol, y cambia el `clr` de 9 nudos de alrededor.
+  - Segundo rehorneado (OK de Sistemas y Texturas, sobre el map.json de la Calle Toledo de Texturas): `DROP_WAYS` en el horneado quita la vía de servicio de OSM 1304199745, que cruzaba la fila doble de plazas del aparcamiento. Sus puntos siguen numerados, así que no cambia ningún nudo; solo se va esa calle (657 → 656).
+  - La nave, 1,5 m más cerca de la Noria que en el Catastro (la acera medida en Street View). El frente de paneles amarillos con el rótulo en relieve (nuestro), la marquesina, el cristal con dos puertas automáticas y el interior que se ve por él, el paseo con bolardos y rampa, el lado de chapa gris de la Noria, la zona de carga y el cuarto de máquinas detrás, las placas del tejado.
+  - El aparcamiento: plazas (azules, verdes con dos cargadores), paso de cebra, flechas, la marquesina de los carros con sus carros, cinco báculos, vallas, la P, señales, placa del horario y contenedor de ropa en la entrada de la Viñas.
+  - Horario, del usuario (17/11): de lunes a sábado de 9:00 a 21:30, el domingo cerrado (`open_at`, `set_open`). Abierto: las luces de dentro, las de la marquesina y las pantallas, y el rótulo iluminado al anochecer (sin sombreado, en sus colores). Cerrado: a oscuras.
+  - `selftest.gd`, de paso (con el OK de Sistemas): en `relief`, las luces de farola admiten hasta 13 m en vez de 9, por los báculos altos de la rotonda, el IES y el MasAhorro. `relief` 19/19.
+  - Toca `tools/bake_godot.py` (bloque MASAHORRO), `map_data.gd` (variable `masahorro` y su carga), `world.gd` (constante, variable, paso, `_build_masahorro`) y `selftest.gd` (modo `masahorro`, `_masahorro_checks` tras `_ies_checks`). Añade su planta a `MapData.outlines`, decks (el paseo y su rampa) y cinco focos a `lamp_spots`.
+  - Detalles: `referencias/masahorro/LEEME.md`.
+- **Pretil (17/11): la Noche (el Dia de la Calle del Teniente Infante), a mano, con rehorneado y con interior** (`noche.gd`, `noche_dentro.gd`, `world.noche`). «Está impecable» (17/11); a petición suya, el póster de Roster en el blanco a la izquierda de la puerta (`assets/chinos/poster_roster.png`). Cerrado. `noche` 5/5.
+  - Rehorneado con el OK de Sistemas y Texturas, sobre el map.json de San Francisco de Texturas: el bloque 4290005VJ5649S no se levanta; clave `noche` en map.json. Comparado con un ensayo antes: solo se va la finca (25 paredes y 4 tejados, 2 contornos nuevos) y entra el `sfran_12` que Texturas ya tenía en calles.json; `portugal_10b`, que toca la espalda de la nave, cambia sus `pieces`.
+  - La casa de tres alturas (balcones en curva, barandillas, portal verde de arco rebajado en su cerco de ladrillo, cornisa curva). La tienda con el diseño de antes, como pidió el usuario con su foto: banda roja de esquinas redondeadas, rótulo rojo «Noche» con una luna en vez del porcentaje, franja verde lima «MARKET», entrada metida con paredes verde lima y puertas de cristal, banderola con la luna (`assets/noche/`, `tools/noche/dibujos.py`).
+  - Horario del usuario: de lunes a sábado de 9:00 a 21:30, el domingo cerrado. Abierta: persiana arriba, tienda iluminada, caballete de ofertas en la acera, y al anochecer el rótulo en sus colores. Cerrada: persiana gris bajada.
+  - Se entra por la flecha verde (`entradas.gd`, en `shops()` tras Rocas) a un interior genérico apartado, en (1800, 1800): caja, fruta, tres góndolas, frescos, bebidas, lácteos y el logo al fondo.
+  - Toca `tools/bake_godot.py` (bloque NOCHE), `map_data.gd` (`noche`), `world.gd` (constante, variable, paso, `_build_noche`), `entradas.gd` (una línea) y `selftest.gd` (modo `noche`, `_noche_checks` tras `_masahorro_checks`).
+  - Detalles: `referencias/noche/LEEME.md`.
+- **Pretil (17/11): la esquina del Banco Cantabria y la Copistería Sancho Panza (Teniente Infante con San Francisco), a mano, sin rehorneado, con la copistería visitable** (`bancosancho.gd`, `copisteria_dentro.gd`, `world.bancosancho`). «Visto bueno» (17/11); hojas en `guion/fotos/bancosancho/`.
+  - Sobre la casa `sfran_b004` de Texturas, que casas.gd ya no dibuja (`["obra"]` en `casas_calles.gd`). Dos plantas de pisos que vuelan 0,97 m sobre las aceras, ventanas de marco blanco con persiana, balcones de hierro y el balcón curvo que dobla la esquina. Abajo, con la foto marcada del usuario: 1 el banco (granito, banda roja «Banco Cantabria · Agentes», emblema nuestro, carteles, puerta y cajero), 2 la copistería (todo el tramo de ladrillo: la puerta de madera de los pisos, la de cristal y el escaparate con el panel y el burro), 3 el electricista (sin nombre, con lo que hace). Por San Francisco, en revoco blanco (el Street View de 2024; la foto del Catastro de 2018 lo daba de granito), el otro portal con su cerco gris, la puerta de malla con los dos aires a su lado y la ventana con reja.
+  - Horarios que el usuario dio por buenos: banco de lunes a viernes 8:30–14:30; copistería de lunes a viernes 9:30–14:00 y 17:00–20:30, sábados 10:00–13:30; electricista de lunes a viernes 9:00–14:00 y 17:00–20:00. Abiertos, sus salas iluminadas tras el cristal; la copistería cuelga ABIERTO/CERRADO. El cajero, siempre encendido.
+  - «No respetes esa puerta. Haz la copistería una tienda que se pueda visitar y metes a la chica dentro»: flecha verde en la puerta de cristal mientras está abierta (`entradas.gd`, `shops()`), y un interior aparte en (1450, 1800): mostrador verde, copiadoras, plóter, estantería de papelería, mesa de encuadernar, muestras de lonas y vinilos. La chica de los carteles de la Recress está tras el mostrador (`keeper_spot`), y el objetivo lleva a la puerta (`recress.gd`, con el OK de Sistemas).
+  - «La copistería estará abierta durante la misión. Usaremos los horarios que has puesto ya» (17/11): mientras la Recress está en la etapa `copisteria`, abre a cualquier hora (`bancosancho.for_the_posters`); el resto del tiempo, sus horarios. La prueba de `recress` ya no mueve el reloj y lo comprueba.
+  - Toca `world.gd` (constante, variable, paso, `_build_bancosancho`), `entradas.gd` (una línea), `recress.gd` (sitio de la copistería, la chica dentro, el objetivo a la puerta) y `selftest.gd` (modo `bancosancho`, `_bancosancho_checks` tras `_noche_checks`; la parte de la copista de `recress` entra y sale por la flecha). `bancosancho` 5/5, `recress` 14/14, `entradas` 4/4.
+  - Detalles: `referencias/bancosancho/LEEME.md`.
+
+- **Sistemas (16/11): el salto levanta el cuerpo, no solo la figura.** El usuario se quedó encerrado en el cauce del puente durante la manifestación: entre las aceras elevadas (1,05 m), la valla de la obra y el puente no había salida.
+  - `chara.gd`: `hop()` guarda la altura de la que sales; `walk()` lleva el cuerpo a la altura de los pies mientras dura el salto, así que se sube a un bordillo, un escalón o una acera elevada si el salto llega. Se aterriza en lo que diga `MapData.foot` (suelo, acera, deck). Al saltar desde algo alto, la figura termina de caer en vez de dar un salto brusco hasta el suelo. Por encima de un coche no se pasa (`_car_ahead`, capa 2).
+  - Un toque llega a unos 1,1 m; manteniendo la tecla, a unos 1,75 m. La valla municipal del puente (2,6 m) sigue cerrándolo.
+  - `selftest.gd`: modo `salto` y `_salto_checks` en la completa tras `_dolores_checks`. `salto` 7/7, `puente` 5/5.
+- **Sistemas (16/11): niños jugando y Niño Negro Gordo de Pueblo.**
+  - `ninos.gd`: los pequeños de las guarderías salen a sus patios (Calasanz y la Caridad), cinco en cada uno, de lunes a viernes de 10 a 13 y nunca con lluvia. Salen y entran solo cuando nadie mira; corren de un sitio a otro, se paran y saltan. Si el patio no tiene suelo para la gente, se le pone un deck. El parque de la plaza ya tenía sus niños (`plaza.gd`, de Pretil).
+  - Todos los niños que juegan, también los de la plaza (meta `crio`), se gritan cosas cuando estás cerca (`crio_grito`). `generic_kid` pasa de 4 a 18 charlas, con salvajadas de niño que no sabe lo que dice.
+  - Niño Negro Gordo de Pueblo (`nino_negro`): hermoso, de piel muy oscura y camiseta azul, junto a la valla del parque de la plaza, por el lado de la plaza. Siete charlas: la piscina y sus salchipapas, la bici, los bocadillos de panceta, tortilla, crema de cacao y chopped con su porqué, y que está harto de que su madre le diga lo gordo que está. También en el gacha (25 figuras) y en el árbol de relaciones (`guion/fotos/nino_negro.png`).
+  - Ruido de niños jugando donde hay niños fuera: en el parque de la plaza y en los dos patios (un poco más agudo en estos), en 3D, apagándose con la distancia (a 55 m ya no se oye). Grabación CC0 de BigSoundBank (n.º 1082, Joseph Sardin), en bucle de 110 s: `godot/assets/audio/ninos_jugando.ogg`, hecha con `tools/bucle_ninos.py`. Original en `tools/sonidos_origen/bigsoundbank/ninos/`; crédito en `CREDITOS.txt`.
+  - Toca `game.gd` (`NinosS`, `ninos`, `_add_nino_negro`), `loc.gd`, `gacha.gd` (FIGURES) y `selftest.gd` (modo `ninos` y `_ninos_checks` en la completa tras `_salto_checks`). `ninos` 11/11, `gacha` 5/5. «Visto bueno» (16/11).
+- **Sistemas (16/11): los vecinos hablan de las misiones que acabas** (`chismes.gd`).
+  - Al acabar una misión, su noticia va al final de una cola. En cada charla con un vecino sin nombre se prueban las noticias en orden: la primera vez que le toca, al 100 %; luego al 50, al 25 y al 10 %. Si no sale, se prueba la siguiente. Una noticia que espera detrás no gasta su 100 % hasta que le llega el turno. Después de sus cuatro oportunidades pasa al pool y queda como una frase más de los vecinos.
+  - Cada vecino tiene un carácter, elegido una vez según su tipo (los mayores refunfuñan más, los niños pasan más): se alegra (bien), lo critica (mal) o le da igual (igual). Hay 10 misiones: aceite, velatorio, móvil, firmas, puente, menú, pintadas, Recress, el sabotaje de Don Luis y el ajedrez. Cada una tiene 2 charlas por carácter (`chisme_<misión>_<carácter>`). El jamón de cada jueves no cuenta: se repite.
+  - Se guarda en `stats` (`chismes`, `chismes_pool`). Enganches: `game._complete_step` (`STEP_NEWS`), el menú de la Josefa, `pintadas.gd`, `recress.gd`, `sabotaje.gd` y `ajedrez_humano.gd`.
+  - Y a tus espaldas: cada misión acabada añade, desde ese momento, una frase a los murmullos de los vecinos al pasar (`murmullo_<misión>`, `game.whisper_pool`, `chismes.whispers`).
+  - `selftest.gd`: modo `chismes` y `_chismes_checks` en la completa tras `_ninos_checks`. `chismes` 6/6 (de 4000 tandas: 100, 49, 24 y 11 %).
+- **Sistemas (16/11): el Padrón Municipal y tu nombre** (`padron.gd`).
+  - Tras el creador, y antes del vuelo sobre el pueblo, sale la hoja del Ayuntamiento, sin ninguna calle. Se escribe el nombre: solo letras, guion y apóstrofo, 16 como mucho, y mayúscula al empezar cada palabra. Sin nombre no te da de alta. Con mando salen teclas de letras; B borra y Start firma. Al firmar, tu firma (un garabato sin letras, siempre el mismo para el mismo nombre) se dibuja junto a la del alcalde, que ya está (un garabato que dice «Don Alcalde»). Luego cae el sello «EMPADRONAO», grande, torcido, al 90 % y con la tinta a grumos (un shader con ruido), y empieza el vuelo.
+  - Mientras está la hoja, la fase sigue siendo `creator` (cámara, táctil y música igual que en el creador); manda `padron.active`. El nombre va en `stats.nombre` y se conserva en `_end_cutscene`.
+  - Sobre la puerta de tu casa (alemania_5) aparece un azulejo blanco con borde azul que dice «Casa de [nombre]».
+  - Te llaman por tu nombre en vez de «hijo», «hermosa», «majo»… (se cambian las palabras con que te llaman, entre comas o tras ¡): los vecinos con nombre a partir de 50 de confianza; los demás desde la mitad de las misiones de la historia (2 de 4). Desde entonces tampoco murmuran que eres «el de la Eufrasia», y salen murmullos con tu nombre (`whisper_nombre`).
+  - Toca `game.gd` (`_finish_creator`, `_start_creator`, `_end_cutscene`, `_continue`, `say`, `whisper_pool`, la cámara del caballete, la entrada y `_on_device`), `loc.gd` (`pad_*`, `whisper_nombre`) y `selftest.gd`: modo `padron`; la completa firma como «Prueba» y luego borra el nombre, para que el resto compare las frases tal cual. `padron` 8/8, `creador` 18/18.
+
+- **Sistemas (16/11): rendimiento.** El usuario: en 2K y todo en Alto, bajones a 30 y muchos (RX 9060 XT, i7-10700F). «Visto bueno» (16/11).
+  - Las sombras, a petición del usuario («Alto a 100 m, Muy Alto a 140 m»): Alto las dibuja a 100 m (`shadows` 2, como el valor por defecto) y Muy alto a 140 m. Quien tenía el Alto de antes pasa al nuevo al cargar sus ajustes. `reglas` 55/55.
+  - El culpable era `MapData.foot()`: miraba uno a uno los 298 decks de los sitios hechos a mano, a 89 µs la llamada, en cada paso de cada vecino. Ahora usa una rejilla de 16 m (`_index_decks`; conserva el orden y se rehace si cambia la lista): 1,8 µs. `--suelos` comprueba que da las mismas alturas que antes en 17 073 puntos.
+  - Además, `chara.anim` solo escribe las piezas que se mueven y el balanceo de estar quieto, a menos de 15 m. Los vecinos solo mueven brazos y cabeza en pantalla, y a más de 30 m un tick de cada tres. `traffic._gather` rehace los obstáculos quietos dos veces por segundo.
+  - Medido sin otro Godot en marcha. Banco en la Plaza: de día de 65 a 84 fps, de noche de 50 a 67. Conduciendo un minuto: media de 83 a 105 fps; mediana de 13,7 a 10,3 ms; el peor 1 %, de 17,5 a 13,8 ms.
+  - Probado y quitado: fundir cada coche comprado en una sola malla. Las llamadas de dibujo no bajaban y podía dar tirones al aparecer coches.
+  - Lo que más cuesta ahora: las sombras del sol en Alto (140 m, 4 cortes, unos 3 ms; a 100 m y 2 cortes, unos 1,2 ms menos), el tick de Jolt (unos 2 ms) y unos 0,5 ms por coche en marcha.
+  - Herramientas: `--perfil` (pantalla completa; apaga cosas de una en una), `--suelos`, `--tirones`, `--bench`. Con otro Godot en marcha, o con Steam y Brave abiertos, los números bailan ±10 fps.
+  - Pruebas: `suelos` 1/1 (también en la completa); `masahorro`, `noche`, `rotonda`, `toledano`, `puente`, `salto`, `ninos`, `conduccion` y `tricornio`, todas bien.
+  - `sentido` falla a veces (5-15 % de coches en contra en la parte que deja conducir al tráfico) y también sin mis cambios: es de antes y queda pendiente.
+Lo detallado de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
+
+- **Texturas (16/11): Arroyuelo Alto, segundo tramo, 19 casas (`alto_*`): del 37 al 61 y del 34 al 50. «Visto bueno» (16/11), tras el repaso con Street View.**
+  - Fuera: el 35 y el 45 son solares; el 59 es parte del 57; el 63 da a otra calle. El 36 no tiene ficha en el Catastro, pero sí foto.
+  - Hojas en `tanda31/alto_8..11.jpg`.
+- **Texturas (16/11): calle de Extremadura, 25 casas (`extre_*`). «Visto bueno» (16/11), tras el repaso con Street View.**
+  - Calle estrecha: casi todas las fachadas van a 2,7 m del eje, con `clear`.
+  - Fuera: el 15 y el 22 son solares; el 24 tiene ficha pero no contorno. El 27 (de 2016) no tiene foto: se ha hecho por la del 23.
+  - Hojas en `guion/fotos/tanda32/extre_1..5.jpg`.
+- Repaso con Street View 2024, a petición del usuario (16/11). Hojas `tanda32/repaso_1..3.jpg`.
+  - Arroyuelo Alto 37, 43, 34, 36 y 42: colores y huecos según el Street View; los portones de madera, menos amarillos.
+  - Extremadura 2, 5, 6, 12, 14 y 16: lo mismo, más el ladrillo claro del 5 y el 16.
+  - Extremadura 8 salía con paneles flotando: su frente estaba en un costado, 10 m dentro de la manzana. Ahora usa su tramo real de 4,5 m a la calle, con `reach` 6.
+  - Bake: solo cambian `extre_8` y `extre_10`. `casas` OK.
+- Los dos se prepararon en borrador durante la congelación de la 0.0.10 y se volcaron después. Bake: 44 casas nuevas y ninguna otra cambia; cambia el `clr`. `casas` OK. Revisado con `flotantes.py`.
+- **Texturas (16/11): calle del Clavel, primer tramo, 26 casas (`clavel_*`): del 1 al 29 y del 8 al 28. «Visto bueno» (16/11).**
+  - Cada casa, cotejada con el Street View de 2024 antes de enseñarla.
+  - El 11 es una casa retranqueada tras su tapia. La tapia no está en el Catastro: va como `clavel_11t`, con `rc` null.
+  - Fuera: el 2, el 4 y el 24 son solares; el 6 es la parcela de la Travesía; el 12 no da a esta calle.
+  - La Travesía del Clavel se queda sin hacer. Sus casas en hilera de 2004 dan a un paseo elevado con escaleras que el mapa no tiene, y la línea del mapa pasa por detrás de ellas. Necesita hacerse a mano, como la Rosa.
+  - Bake: 27 entradas nuevas; solo cambian las piezas de `rafael_15`. `casas solo=clavel_`: OK. Hojas en `guion/fotos/tanda33/clavel_1..6.jpg`.
+  - Segundo tramo (16/11), 34 casas: del 31 al 71 y del 30 al 60. Cotejadas con el Street View de 2024. **Sin visto bueno: el usuario (16/11) sigue adelante y pide repasar más tarde las que no se parecen.** El 54 y el 55 no se parecen todavía: les faltan cornisa, recuadros de ventana, tejadillos y soportal.
+    - Fuera: el 39 y el 69 son solares; el 53 no existe.
+    - Bake: 34 casas nuevas; solo cambian las piezas de `rafael_29d` y `clavel_28`. `casas` OK. Hojas en `tanda33/clavel_7..13.jpg`.
+    - Arreglos pedidos por el usuario (`tanda33/clavel_arreglo2.jpg`):
+      - El 55 tiene su soportal de dos arcos. Hueco nuevo en `casas.gd`: `arc <at> [w sill h]`, un arco con fondo en sombra, recerco (`s=`, `sb=`), hondo (`d=`) y barandilla (`bal=iron`).
+      - El 54 y el 55, de ladrillo pardo. Ladrillo nuevo en `casas.gd`: `brick_pardo`.
+  - Tercer tramo (16/11), 21 casas: del 73 al 101 y del 62 al 76. Cada casa comparada hueco a hueco con su foto. «Visto bueno» (16/11), con la lista de repaso de abajo.
+    - Alero nuevo en `casas.gd`: `dientes`, una hilera de ladrillos en diente bajo la teja (el 81 y el 74).
+    - Lo que no se parece todavía, para el repaso:
+      - El 83 tiene el revoco a parches.
+      - El 75 tiene un dibujo de rombos en el revoco.
+      - El 74 tiene un piñón con su ventana triple y un porche de ladrillo sobre la cochera.
+      - En las casas bajas (el 91 y otras) no se ve el tejado de teja.
+    - Fuera: el 95 es solar; el 103 no da a esta calle. El 97 no tiene foto en el Catastro: va por el Street View.
+    - Bake: 21 casas nuevas; solo cambia `clavel_71`. `casas` OK. Hojas en `tanda33/clavel_14..18.jpg`.
+  - Último tramo (16/11), 18 entradas: del 107 al 121 y del 84 al 92, más la esquina de Santa María 8 (`maria_8`). Cada casa, sacada del Street View de 2024 y comparada con él. «Visto bueno» (16/11), tras dos tandas de arreglos.
+    - Han cambiado desde la foto del Catastro: el 88 está pintado de blanco; el 109 tiene la planta baja blanca; la casa del 92 está pintada en crema.
+    - El 119 D y el 121 (de 1987) tienen ficha pero no planta en el Catastro. Van como cajas `rc` null, con la forma de su parcela (sacada del WFS de parcelas del Catastro).
+    - El 92 va en tres piezas: la casa (`clavel_92`), el almacén de la esquina (`clavel_92b`, con `only` 1) y la tapia de ladrillo del medio (`clavel_92t`, `rc` null).
+    - Piezas nuevas en `casas.gd`:
+      - `teja <de> <a> [hondo]`: un tejadillo de teja sobre las puertas.
+      - `paño ... out=<m>`: un cuerpo saliente, como los miradores de ladrillo de los adosados. Sus huecos van en su cara.
+      - `parche <en> [w sill h] wall=<qué> [k=chapa]`: un remiendo sobre la pared, como una ventana tapiada o chapa ondulada.
+    - Arreglos pedidos por el usuario (16/11), hojas `tanda33/clavel_arreglo3.jpg` y `clavel_arreglo4.jpg`:
+      - Los miradores de los adosados, con las esquinas redondas: `paño ... out= r=<m>`.
+      - El ladrillo de los adosados y de la 115, más pardo-salmón: ladrillo nuevo `brick_tostado`.
+      - La 113 tiene su galería de cristal ligera: `mir <de> <a> [hondo] [c=marco]`, con marcos finos, cristal claro, visillos y tejadillo.
+      - El 109 tiene sus frontoncillos sobre las ventanas de arriba: opción `fr=<color>` en `win` y `bal`.
+      - Las rejas llevan remate. En `win`, `rem=1` pone una crestería encima de la reja (la 88 y la 113). En `arc`, `g=bars` pone barrotes que siguen el arco, y `rem=1` un abanico en la cancela (la 86).
+      - Pintadas en la 84 y en la tapia de la 92 (`pintada <en> [sitio]`). Son firmas de peña, no el texto real. `casas.gd` las apunta en `world.hand_tags`, y `props.gd` las reparte antes que las demás, así que siguen siendo 60 pintadas y 10 por peña. `pintadas` OK.
+    - Las ventanas en arco de la 86 llevan dentro su ventana de madera, a petición del usuario (16/11). En `arc`, `f=<color>` pone jambas, travesaño, parteluz, marco del medio punto y barrotes del montante; tras el cristal, visillos claros (`c=`). Hoja `tanda33/clavel_arreglo5.jpg`.
+    - Bake: 18 entradas nuevas; solo cambian las piezas de `rafael_75`, porque ahora asoma por encima de la 86. `casas` OK. Hojas en `tanda33/clavel_19..22.jpg`, a cuatro columnas: Catastro, Street View 2024, frente y sesgo.
+
+- **Texturas (16/11): calle de Santa María, 18 entradas (`maria_*`): del 0 al 18, más la esquina del 8 (hecha con el Clavel). Sin visto bueno todavía.**
+  - Cada casa, sacada del Street View de 2024 y comparada con él. Las calles son estrechas, así que van vistas en sesgo.
+  - Los panoramas del tramo sur están muy espaciados.
+  - El 0a y el 0b son parcelas sin número (un almacén de 2000 y un local de 2023). La foto del Catastro de las dos es la de la esquina del Clavel 90: van solo por Street View.
+  - El 10, el 14 y el 16 tienen ficha pero no planta en el Catastro. Van como cajas `rc` null con la forma de su parcela (WFS de parcelas).
+  - El 20 y la acera de enfrente pasado el 13 son solares. Las tapias de ese solar van como `maria_13t` (`rc` null).
+  - El 13 tiene delante un cuerpo bajo de 1,8 m y la planta alta retranqueada. Va en dos piezas: `maria_13` con `only` 1 y `maria_13b` con `only` 2.
+  - Colores cotejados con el Street View. El ladrillo tostado de los 2000 es `brick_buff` (`brick` y `brick_pale` salían naranjas); el del 4 es `brick_rose`.
+  - Pintada de peña en la tapia del 4 A. Sigue habiendo 60; `pintadas` OK.
+  - Lo que aún no se parece:
+    - Falta el cartel ovalado del local 0b (no se lee qué vende).
+    - El chapado de losas claras del 0b sale como revoco liso.
+    - Falta la escalera exterior del 4, que sube a la puerta de arriba.
+    - El costado ciego del 13 es blanco de revoco; aquí sale de ladrillo.
+    - La tapia de ladrillo de `maria_13t` es más baja que la de bloques.
+    - El tejadillo de chapa sobre el portón del 4 A no está.
+  - Bake: 16 casas nuevas; solo cambian las piezas de `maria_8` y `clavel_92b`. `casas solo=maria_`: OK. Hojas en `guion/fotos/tanda34/maria_1..3.jpg`, a cuatro columnas.
+
+- **Texturas (16/11): calle de Toledo, tramos 1 y 2, 43 entradas (`toledo_*`): del 2 al 47 y lo que da a ella con otro número. Sin visto bueno; el usuario pide terminar el núcleo urbano antes de los repasos.**
+  - Elegida con `faltan.py`: era la calle céntrica con más frente genérico (unos 750 m, a 80 m de la plaza).
+  - Comparadas con el Catastro y el Street View de 2024. El tramo 1, casa a casa. El tramo 2, con vistas en sesgo cada 25 m; allí las fotos del Catastro son recientes.
+  - El 9 iba ya con la Palma, y las esquinas con el Arroyuelo Medio y el Santo ya estaban.
+  - Con otro número o sin él dan a la calle: el 22, el 22 D, el 35 B, Tembleque 30 y Tembleque 65 (la esquina).
+  - Cajas `rc` null:
+    - `toledo_15`: un edificio a medio hacer en el solar de Oliva 4 (estructura de hormigón, valla de chapa, celosía y una pintada).
+    - `toledo_17`: el almacén del 17 (la casa está detrás).
+    - `toledo_18`: la tapia del solar del 18, con una pintada.
+    - `toledo_20` y `toledo_20b`: la valla de chapa de un solar de 56 m.
+  - La calle es estrecha y su eje va descentrado. Las cajas de la acera par están a 2,7 m del eje; en el codo del 33 la holgura bajaba a 1,5 m y ahora queda en 2,3. Para eso la valla va partida en dos en el codo.
+  - Pintadas de peña en el 15 y el 18 (siguen siendo 60).
+  - Lo que aún no se parece:
+    - El 15 es una estructura abierta; aquí, una pared gris con huecos oscuros.
+    - Los desconchones del 14 y de Tembleque 65 son irregulares, no rectángulos.
+    - El 37 y el 47 tienen el revoco rayado en grandes sillares; no está.
+    - Faltan los azulejos oscuros del ladrillo del 25.
+    - El bloque del 4 tiene la esquina redondeada.
+    - Del 44 no hay foto del Catastro ni vista de frente: va liso.
+    - El ladrillo del 45 sale más rojo que el real.
+    - Falta la reja sobre el portón del 2.
+  - Bake: 43 casas nuevas. Solo cambian las piezas de `palma_14`, `oliva_4`, `sanisidro_12` y `santo_26`, y el `clr` de dos nudos de Toledo. `casas solo=toledo_`: OK. Hojas en `guion/fotos/tanda34/toledo_1..7.jpg`.
+  - Tramo 3 (16/11), 17 entradas: del 49 al 74, más la esquina de después de Tembleque (`toledo_x13`). Van por las fotos del Catastro, cotejadas con vistas de Street View en sesgo.
+    - El eje del mapa pasa pegado a las fachadas pares. Esos frentes van a mano, a 2,7 m del eje, con `clear` 2,6.
+    - El 66 y el 70 tienen apenas 2,4 m de fachada.
+    - Monjas 84 queda para la calle de las Monjas: su cara a Toledo está a 10 m del eje.
+    - Lo que aún no se parece: falta la balaustrada blanca del tejado del 51.
+    - Bake: 17 casas nuevas y ninguna otra cambia; un nudo de `clr` sube de 2,3 a 2,4. `casas solo=toledo_`: OK. Hojas en `tanda34/toledo_8..10.jpg`.
+  - La calle de Toledo está terminada.
+
+- **Texturas (16/11): callejón del Parto, calle del Mirador y calle Ejon Mirador, 26 entradas (`parto_*`, `mirador_*`, `ejon_*`). El usuario sigue con el núcleo urbano; los repasos, después.**
+  - Elegidas con `faltan.py`: eran, junto a la plaza, las de más frente genérico y casi nada hecho.
+  - Comparadas con el Catastro y vistas de Street View 2024 a lo largo de cada calle. Las parcelas de bloques sin ficha única van como `b...`.
+  - El 13 del Mirador tiene «CARNICERIA» pintado en la pared. Es una carnicería cerrada hace 50 años y el usuario quiere que se quede tal cual.
+  - En el bajo del `mirador_b005` hay una oficina de la compañía eléctrica: su rótulo dice solo «ELECTRICIDAD», no el nombre de la compañía.
+  - Pintadas de peña en `ejon_7e` y `ejon_7c`, donde las fotos tienen pintadas (siguen siendo 60).
+  - En las fotos de las calles estrechas flotan trozos de la casa de enfrente: la cámara cae dentro de ella y el plano cercano la corta. No pasa en el juego.
+  - Lo que aún no se parece (también en `guion/repaso_casas.md`):
+    - En el `mirador_1b`, los dos arcos abiertos del último piso salen pequeños, y su ladrillo es crema claro, no tostado.
+    - El zócalo alto de azulejo jaspeado del `mirador_12` sale rojo oscuro.
+    - La verja blanca del patio de `ejon_7e` sale como un hueco negro.
+    - Del `mirador_b017` (la joyería de la foto del Catastro) no he podido ver si sigue abierta en 2024: va con la persiana bajada y sin rótulo.
+  - Bake: 26 casas nuevas; solo cambian las piezas de `toledano_22`, y el `clr` del callejón sube de 2,4 a 2,6. `casas`: OK. Hojas en `guion/fotos/tanda34/centro_1..5.jpg`.
+
+- **Texturas (16/11): calle de San Francisco, 23 entradas (`sfran_*`), de la calle de las Cruces a la de Teniente Infante. El Petril se queda en `petril.gd`, de Pretil.**
+  - Comparada con el Catastro y con Street View 2024.
+  - La carnicería del 6 (abierta) lleva un rótulo negro que dice solo «CARNICERIA».
+  - El 17 es un bar: zócalo de piedra, toldo blanco sobre la cristalera.
+  - El `b024` estaba pintado de naranja en la foto del Catastro y en 2024 es blanco.
+  - La esquina con Teniente Infante (`sfran_b004`, Catastro 4190004) son dos cosas, según las fotos del usuario (Street View 2024). Después pasó a Pretil, que la hace a mano (ver Teniente Infante, más abajo):
+    - En la esquina y a lo largo de San Francisco, un banco, con chapado gris y un rótulo «BANCO».
+    - Por Teniente Infante, pasado el portal de los pisos, la copistería de la misión del Recress, en ladrillo visto, con puerta de cristal, escaparate y rótulo «COPISTERIA». Coincide con `COPY_SHOP` de `recress.gd`.
+    - Novedad en `casas.gd`: los rótulos, toldos, tejadillos y galerías se pueden poner también en las líneas `lado` (el costado largo a otra calle). El rótulo usa el marco de ese costado.
+    - Fotos en `tanda34/sfran_copisteria.jpg`, junto a la del usuario.
+    - Falta: los arcos rebajados de ladrillo sobre los huecos del bajo.
+  - El 12 es una casona de 26 m. Su frente, en el Catastro, es una parte de 0 plantas; va con `floors` 0 para que la tome entera.
+  - Lo que aún no se parece (también en `guion/repaso_casas.md`):
+    - En la esquina hay balcones curvos, y los huecos del bajo de la copistería tienen arcos rebajados de ladrillo.
+    - La tienda del `b012` tiene una puerta dorada labrada; aquí es lisa.
+    - El cuerpo oscuro del 8 es un mirador cerrado con su tejadillo.
+    - No he podido comprobar si sigue la panadería del 11.
+  - Bake: 23 casas nuevas; ninguna otra cambia y el Petril queda igual. El arreglo del 12 entró en el rehorneado de la Noche de Pretil, que además cambió `portugal_10b`: al quitar el bloque de detrás, su borde trasero ya no va oculto y casas.gd dibuja ahí una tapia lisa de 3 m (avisado a Pretil). La piedra del 12 sale algo más oscura que la real. `casas solo=sfran_`: OK. Hojas en `guion/fotos/tanda34/sfran_1..4.jpg`.
+
+- **Texturas (16/11): calle del Teniente Infante, 29 entradas (`tinf_*`): el tramo de los Arcos a San Francisco y el del oeste.**
+  - Los nombres del mapa no coinciden con los del Catastro: en el primer tramo, las primeras casas son de la calle Cervantes (`tinf_c*`); en el del oeste, de la avenida de Juan Carlos I (`tinf_jc*`).
+  - Quedan fuera la Noche de Pretil (el 18) y la esquina del banco y la copistería.
+  - Comparadas con el Catastro y con Street View 2024 donde están las tiendas. Los rótulos dicen solo lo que se vende: SOCIEDAD RECREATIVA, CHURRERIA, BAR, BANCO, PINTURAS, FERRETERIA y REGALOS, LOTERIAS y TABACOS, SEGUROS.
+  - El 14 es un casino social, pintado en 2024 de blanco con recercos azules y con mesas en la acera.
+  - Pintada de peña en el `b015`, que tiene pintadas en la foto (siguen siendo 60).
+  - La esquina del banco y la copistería (`sfran_b004`) **es ahora de Pretil**: queda como `["obra"]` en casas_calles.gd, sin rehornear (la quiere a mano: «Banco Cantabria» y «Copistería Sancho Panza», con horarios). Mi descripción anterior, que nunca se commiteó, está en las notas compartidas: `sfran_b004_antes_de_pretil.md`.
+  - Lo que aún no se parece (también en `guion/repaso_casas.md`):
+    - El ladrillo del 6 sale más anaranjado que el rosado real.
+    - Los arcos del bajo del `b701` salen pequeños y negros.
+    - Las cortinas de leopardo del Juan Carlos I 34 y 36 salen lisas.
+  - Bake: 29 casas nuevas. La Noche y el colegio, iguales; solo cambian las piezas de `real_3` y `clara_21`. `casas solo=tinf_`: OK. Hojas en `guion/fotos/tanda34/tinf_1..5.jpg`.
+
+- **Texturas (16/11): calle de la Rosa de Santa María, tramo viejo, 32 entradas (`rsm_*`): desde la calle de Toledo hacia el oeste.** Las adosadas de 1999 (`rosa_*`) ya estaban hechas.
+  - Comparadas con las fotos del Catastro, que son buenas, y con Street View 2024 en el 8 (vacía y en ruina), el 20, el 28 (sin foto del Catastro) y el 11.
+  - Muchas casas llevan la hilera de dientes de ladrillo bajo la teja (`dientes`).
+  - El 46 no da a esta calle.
+  - Lo que aún no se parece (también en `guion/repaso_casas.md`):
+    - En el 31 no se ve la cancela de hierro del portal en arco.
+    - Las rayas de sillería del revoco del 32 y del 34 no están.
+  - El 14 y el 16, rehechos a petición del usuario (16/11). El 16 es una fachada amarilla en T: su planta alta, con los dientes, pasa por encima del 14. El 14 es solo un bajo rojizo de 2,9 m, con zócalo de azulejo marrón, ventana enrejada y cortina de rayas; antes había puesto ese tramo rosa dentro del 16. Hoja `tanda34/rsm_arreglo_T.jpg`.
+  - Bake: 32 casas nuevas; ninguna otra cambia. `casas solo=rsm_`: OK. Hojas en `guion/fotos/tanda34/rsm_1..6.jpg`.
+
+- **Texturas (16/11): avenida de Castilla-La Mancha, 22 entradas (`castilla_*`). «Visto bueno» (16/11).** El Kebab Deluxe (`castilla_17`) sigue siendo de Pretil.
+  - Comparadas con el Catastro y con Street View 2024 en las tiendas. Los rótulos dicen solo lo que es: FARMACIA, FISIOTERAPIA, FONTANERIA, CLINICA DENTAL.
+  - La farmacia tiene en 2024 un frente blanco nuevo con letras grandes, y así va.
+  - El 31, que el Catastro da por solar, es una tapia de ladrillo con una pintada en Street View; lleva firma de peña (siguen siendo 60).
+  - Lo que aún no se parece (también en `guion/repaso_casas.md`):
+    - La floristería del 13 tiene su nombre en el toldo de arriba; aquí no lleva rótulo.
+    - La raya blanca en zigzag del 22 sale recta.
+    - Los miradores del bloque de la farmacia salen como un solo cuerpo blanco.
+  - Bake: 22 casas nuevas; solo cambian las piezas de `arcos_26`, y un nudo de `clr` de la avenida baja de 4,3 a 3,9. `casas solo=castilla_`: OK. Hojas en `guion/fotos/tanda34/castilla_1..4.jpg`.
+
+- **Texturas (16/11): calle Cervantes, calle de Cervantes y travesía de Zaragoza, 12 entradas (`cerv_*`, `trzar_*`).** Es lo que les quedaba sin hacer.
+  - Comparadas con el Catastro y con Street View 2024 en los bloques con tiendas. Rótulos: OPTICA, MODA.
+  - Los frentes de la travesía van sobre la línea del mapa; quedan a mano, a 2,7 m, con `clear` 2,6. El `clr` de la travesía sube de 2,4 a 2,7.
+  - Fuera: la parcela 4291717 es una manzana de 24 partes y da a la calle de Cervantes solo por un pasaje de 5,5 m. El horneado no la levantaba y se queda genérica.
+  - Sin visto bueno todavía: se cerraron para la 0.0.11 a petición de Sistemas.
+  - Bake: 12 casas nuevas; ninguna otra cambia. `casas solo=cerv_,trzar_`: OK. Hojas en `guion/fotos/tanda34/cerv_1..2.jpg`.
 
 ## Versión
 

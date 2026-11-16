@@ -29,6 +29,53 @@ func _creator_pick(option: int, value: int) -> void:
 		g._creator_input("right")
 		guard += 1
 
+## a row of people out in the fields by the house's room, six at a time, each with the creator's look changed by one
+## of `tries`, photographed from the front and from behind (`low`: the camera down by their feet). Returns how many
+## have nothing of the piece they were given.
+func _lineup(tries: Array, prefix: String, low := false) -> int:
+	var Ch = load("res://scripts/chara.gd")
+	var Cr = load("res://scripts/creator.gd")
+	var base: Dictionary = Cr.look(Cr.defaults())
+	var at := Vector2(-1800.0, -1540.0)
+	g.player.p = at - Vector2(0.0, 12.0)
+	g.player.sync()
+	var along := Vector2(0.0, 1.0)
+	var across := Vector2(1.0, 0.0)
+	var people: Array = []
+	for i in range(tries.size()):
+		var o: Dictionary = base.duplicate()
+		for k in tries[i]:
+			o[k] = tries[i][k]
+		var c = Ch.new()
+		g.add_child(c)
+		c.setup(o)
+		c.collision_layer = 0
+		c.collision_mask = 0
+		people.append(c)
+	var per_row := 6
+	for row in range(int(ceil(tries.size() / float(per_row)))):
+		var mid: Vector2 = at + along * 6.0
+		for k in range(people.size()):
+			people[k].visible = k >= row * per_row and k < (row + 1) * per_row
+			if people[k].visible:
+				var j: int = k - row * per_row
+				people[k].p = mid + across * ((j - (per_row - 1) / 2.0) * 1.35)
+		for side in ["frente", "espalda"]:
+			var eye: Vector2 = mid - along * (3.6 if low else 5.2) if side == "frente" else mid + along * (3.6 if low else 5.2)
+			for c in people:
+				if c.visible:
+					c.h = atan2(eye.x - c.p.x, eye.y - c.p.y) if side == "frente" else atan2(c.p.x - eye.x, c.p.y - eye.y)
+					c.sync()
+			g.cam_fixed = [MapData.at(eye, 0.9 if low else 1.6), MapData.at(mid, 0.35 if low else 1.05)]
+			g.cam_pos = g.cam_fixed[0]
+			g.cam_look = g.cam_fixed[1]
+			await _frames(15)
+			await _shot("%s_%d_%s" % [prefix, row + 1, side])
+	g.cam_fixed = null
+	for c in people:
+		c.queue_free()
+	return 0
+
 ## is the story at the step with this id?
 func _at(id: String) -> bool:
 	return g.steps[g.si]["id"] == id
@@ -191,6 +238,83 @@ func _measure(label: String, seconds := 2.5) -> void:
 		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000000.0]
 	print(row)
 	_bench_rows.append(row)
+
+## (--perfil) three seconds of frames: how long they take and what the parts of the game's tick took in them
+func _perfil(label: String) -> void:
+	await _frames(30)
+	g.prof = {}
+	var sums := {}
+	var t0 := Time.get_ticks_usec()
+	var f0 := Engine.get_frames_drawn()
+	var phys := 0.0
+	var gpu := 0.0
+	var cpu := 0.0
+	var n := 0
+	var vp := get_viewport().get_viewport_rid()
+	while Time.get_ticks_usec() - t0 < 3000000:
+		await get_tree().process_frame
+		phys += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+		gpu += RenderingServer.viewport_get_measured_render_time_gpu(vp)
+		cpu += RenderingServer.viewport_get_measured_render_time_cpu(vp)
+		for k in g.prof:
+			sums[k] = float(sums.get(k, 0.0)) + float(g.prof[k])
+		g.prof.clear()
+		n += 1
+	var secs := (Time.get_ticks_usec() - t0) / 1e6
+	var fps: float = (Engine.get_frames_drawn() - f0) / secs
+	var parts: Array = sums.keys()
+	parts.sort_custom(func(a, b): return sums[a] > sums[b])
+	print("perfil: %-40s %6.1f fps %6.2f ms | physics tick %5.2f  render cpu %5.2f gpu %5.2f | %s" % [label, fps, 1000.0 / fps, phys / n, cpu / n, gpu / n,
+		", ".join(parts.slice(0, 6).map(func(k): return "%s %.2f" % [k, sums[k] / n]))])
+	g.prof = null
+
+## The decks people walk on, found through a grid (map_data.gd, foot): the same height as going through every one of
+## them, in order, at spots on and round every deck and all over the town; and far quicker.
+func _suelos_checks() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var spots: Array = []
+	for d in MapData.decks:
+		var o: Vector2 = d["o"]
+		for k in range(40):
+			spots.append(o + Vector2(rng.randf_range(-25.0, 25.0), rng.randf_range(-25.0, 25.0)))
+		if d.has("poly"):
+			for q in (d["poly"] as PackedVector2Array):
+				spots.append(q + Vector2(rng.randf_range(-0.3, 0.3), rng.randf_range(-0.3, 0.3)))
+	for k in range(4000):
+		spots.append(Vector2(rng.randf_range(-900.0, 900.0), rng.randf_range(-1300.0, 700.0)))
+	var wrong := 0
+	var first := ""
+	for p in spots:
+		var a: float = MapData.foot(p)
+		var b: float = _foot_every(p)
+		if absf(a - b) > 0.0001:
+			wrong += 1
+			if first == "":
+				first = "%s: %.3f, not %.3f" % [str(p), a, b]
+	var t0 := Time.get_ticks_usec()
+	for p in spots:
+		MapData.foot(p)
+	var each := (Time.get_ticks_usec() - t0) / float(spots.size())
+	_check(wrong == 0 and each < 15.0, "the decks people walk on are found through a grid: the same height at all %d spots tried (%s), %.1f microseconds a call" % [spots.size(), first if first != "" else "none differs", each])
+
+## the height somebody on foot stands at, going through every deck in turn (as map_data.gd did before its grid)
+func _foot_every(p: Vector2) -> float:
+	var h: float = MapData.height(p)
+	for d in MapData.decks:
+		var rel: Vector2 = p - (d["o"] as Vector2)
+		if d.has("poly"):
+			if rel.length_squared() < float(d["r2"]) and Geometry2D.is_point_in_polygon(p, d["poly"]):
+				return float(d["top"]) + (rel.dot(d["grad"]) if d.has("grad") else 0.0)
+			continue
+		var ax: Vector2 = d["ax"]
+		var s := rel.dot(ax)
+		var a := absf(s)
+		if a < float(d["half"]) and absf(rel.dot(Vector2(-ax.y, ax.x))) < float(d["wide"]):
+			if d.has("low"):
+				return lerpf(float(d["low"]), float(d["top"]), clampf((float(d["half"]) + s) / float(d["ramp"]), 0.0, 1.0))
+			return lerpf(h, float(d["top"]), clampf((float(d["half"]) - a) / float(d["ramp"]), 0.0, 1.0))
+	return h
 
 func _bench() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -935,14 +1059,14 @@ func _tester_checks() -> void:
 	probe.set_look(Cr.look(sel))
 	var extras: int = probe.inner.get_child_count() + probe.neck.get_child_count() - plain
 	probe.queue_free()
-	_check(dots >= 25 and extras >= 14, "three days' beard is a scatter of dots (%d of them), and lashes, hat band and hoops are all there on the face (%d pieces more)" % [dots, extras])
+	_check(dots >= 1 and extras >= 12, "three days' beard is there on the face (%d piece: a shadow since 16 Nov 2026, the creator session), and lashes, hat band and hoops are too (%d pieces more)" % [dots, extras])
 	g.look_sel = Cr.clean(g.look_sel)
 	g.creator_tab = 0
 	g.creator_row = 3
 	g._refresh_creator()
-	var two_tabs: bool = g.hud.creator_tab_boxes.size() == 2 and g.hud.creator_tab_boxes[0][1].text == "LUSTRE" and g.hud.creator_tab_boxes[1][1].text == "PINTAS" and not g.hud.creator_text.text.contains("LUSTRE")
+	var two_tabs: bool = g.hud.creator_tab_boxes.size() == 2 and g.hud.creator_tab_boxes[0][1].text == "LUSTRE" and g.hud.creator_tab_boxes[1][1].text == "PINTAS" and not g.hud.creator_shown().contains("LUSTRE")
 	g._creator_input("tab")
-	_check(two_tabs and g.creator_tab == 1 and g.hud.creator_text.text.contains(Loc.t("c_names")[0]), "Lustre and Pintas are two tabs in plain sight, and Tab turns from one to the other")
+	_check(two_tabs and g.creator_tab == 1 and g.hud.creator_shown().contains(Loc.t("c_names")[0]), "Lustre and Pintas are two tabs in plain sight, and Tab turns from one to the other")
 	g.creator_tab = 0
 	g.hud.hide_creator()
 	# the jump
@@ -1377,6 +1501,423 @@ func _dolores_checks(wait: bool) -> void:
 ## taking it is stealing a car of theirs (the heat as game._steal gives it); once it has gone, no other that day, and
 ## the day after one in its place, out of your sight; the one taken stays where it was left. Everything it touches
 ## (the heat, the chase, the day, where you stand, the cars) is put back as it was.
+## The Padrón Municipal (padron.gd; the user, 16 Nov 2026): after the creator the town hall's sheet, with no street on
+## it, where you write your name; a pad gets letter keys; the name goes on a tile over your door ("Casa de ..."); and
+## people call you by it instead of "hijo" or "hermosa" -- a neighbour with a name from 50 of trust, anybody else once
+## half the story's missions are done -- and stop muttering that you are Eufrasia's.
+func _padron_checks(pictures := false) -> void:
+	var P = g.padron
+	var was_stats: Dictionary = g.stats.duplicate(true)
+	var was_si: int = g.si
+	var was_pad: bool = Controls.pad
+	g.look_sel = load("res://scripts/creator.gd").defaults()
+	g._start_creator()
+	await _frames(10)
+	g._creator_input("accept")
+	g._creator_input("accept")
+	await _frames(10)
+	_check(P.active and P.visible and g.phase == "creator" and not g.hud.creator_slot.visible and P.player_name() == "", "after the creator, the Padrón's sheet, empty")
+	if pictures:
+		await _shot("padron_vacio")
+	var sheet_text := ""
+	for l in P.find_children("*", "Label", true, false):
+		sheet_text += (l as Label).text + " "
+	var streets: Array = MapData.roads.map(func(r): return String(r["n"])).filter(func(nm): return nm.length() > 6 and sheet_text.contains(nm))
+	_check(streets.is_empty() and sheet_text.contains(Loc.t("pad_title")), "and no street named on it (%s)" % [streets])
+	P.sign_up()
+	var refused: bool = not P.signed and P._warn.modulate.a > 0.5
+	Controls.pad = true
+	P.refresh()
+	var keys_shown: bool = P._keys.visible
+	for k in ["J", "U", "A", "N"]:
+		P._type(k)
+	P._type(" ")
+	P._type("P")
+	P._type("Ñ")
+	P.rub_out()
+	for k in ["E", "P", "E"]:
+		P._type(k)
+	var typed: String = P._name.text
+	Controls.pad = was_pad
+	P.refresh()
+	_check(refused and keys_shown and typed == "Juan Pepe" and P._keys.visible == Controls.pad, "with no name it will not register you; with a pad there are letter keys (typed: %s), with a keyboard there are not" % typed)
+	P.type_text("ana maría!!3")
+	var cleaned: String = P._name.text
+	var mayor_there: bool = P._mayor.text == "Don Alcalde" and P._mayor.k >= 1.0 and P._signature.text == "" and P._signature.k <= 0.0
+	P.sign_up()
+	if pictures:                                 # (the moment the stamp is down: the sheet goes a second and a half later)
+		for i in range(240):
+			if P._stamp.visible and P._stamp.modulate.a >= 0.99 and P._stamp.scale.x <= 1.01:
+				break
+			await _frames(1)
+		await RenderingServer.frame_post_draw
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://shots"))
+		get_viewport().get_texture().get_image().save_png("res://shots/padron_firmado.png")
+	await _frames(150)
+	var st: Label = P._stamp
+	_check(mayor_there and P._signature.k >= 1.0 and P._signature.text == "" and st.visible and absf(st.rotation) > 0.25 and st.get_theme_font_size("font_size") >= 70
+		and st.material is ShaderMaterial and is_equal_approx(float((st.material as ShaderMaterial).get_shader_parameter("opacity")), 0.9),
+		"two signatures: the mayor's there already (a scrawl that says Don Alcalde) and yours, a scrawl of no letters; the stamp big, crooked, in patchy ink at 90 %")
+	_check(cleaned == "Ana María" and P.player_name() == "Ana María" and not P.active and g.phase == "flyover" and (g.caballete == null or not g.caballete.visible),
+		"signed as %s (letters only, capitals at the start), stamped, and on to the fly-over (the creator's easel gone)" % cleaned)
+	# the tile over your door
+	var tile = P._plaque
+	var label: Label3D = null
+	if tile != null:
+		for c in tile.get_children():
+			if c is Label3D:
+				label = c
+	var near_door: float = Vector2(tile.global_position.x, tile.global_position.z).distance_to(g.HOME_DOOR) if tile != null else 99.0
+	_check(tile != null and label != null and label.text == "Casa de Ana María" and near_door < 3.0, "Casa de Ana María on a tile over the door of your house (%.1f m from it)" % near_door)
+	# your name in people's mouths
+	var paca = g.named["paca"]
+	var folk_was: Dictionary = g.folk.data.duplicate(true)
+	var line := ["¡Ay, hermosa! Tiés cara de calcetín hervío.", "Gracias, maja, muchas gracias.", "Mira tu vecino, qué majo."]
+	g.folk.meet("paca")
+	g.folk.data["paca"]["t"] = 20
+	var stranger: Array = P.by_name(line, paca.shown_name())
+	g.folk.data["paca"]["t"] = 60
+	var friend: Array = P.by_name(line, paca.shown_name())
+	_check(stranger == line and friend[0] == "¡Ay, Ana María! Tiés cara de calcetín hervío." and friend[1] == "Gracias, Ana María, muchas gracias." and friend[2] == line[2],
+		"Tía Paca calls you hermosa at 20 of trust and by your name from 50 (%s); a word that is not calling you stays" % friend[0])
+	g.folk.data = folk_was
+	var n = g.spawn_neighbour(g.player.p + Vector2(2, 0), true)
+	g.near_npc = n
+	var who: String = Loc.t("generic_names")[int(n.display_name)]
+	g.si = 0
+	var early: Array = P.by_name(line, who)
+	var early_w: Array = P.whispers(Loc.t("whisper"))
+	g.si = g._idx("josefa")                      # (the oil, the wake: two of the story's four missions done)
+	var share: float = P.town_share()
+	var later: Array = P.by_name(line, who)
+	var later_w: Array = P.whispers(Loc.t("whisper"))
+	_check(early == line and String(later[0]).contains("Ana María") and share >= 0.5 and early_w.any(func(w): return String(w).contains("Eufrasia"))
+		and not later_w.any(func(w): return String(w).contains("Eufrasia")) and later_w.any(func(w): return String(w).contains("Ana María")),
+		"a neighbour of no name: hermosa at first; with half the story done (%.0f %%) your name, and nobody mutters that you are Eufrasia's any more" % [share * 100.0])
+	if pictures and tile != null:
+		g.si = was_si
+		var out := Vector3(tile.global_transform.basis.z.x, 0.0, tile.global_transform.basis.z.z).normalized()      # (its front, to the street)
+		var eye: Vector3 = tile.global_position + out * 4.0 + Vector3(0, -1.1, 0)
+		g.player.p = Vector2(eye.x, eye.z) + Vector2(out.x, out.z) * 3.0
+		g.player.sync()
+		await _frames(20)
+		await _view_at(eye, tile.global_position + Vector3(0, -0.9, 0), "padron_casa", 50.0)
+	g.near_npc = null
+	g.npcs.erase(n)
+	n.queue_free()
+	g.si = was_si
+	g.stats = was_stats
+	P.plaque()
+
+## What the town says about your missions (chismes.gd; the user, 16 Nov 2026): the next talk with a neighbour of no name
+## after a mission is about it, then half, a quarter and a tenth of them, and after that it is one more of their sayings;
+## two missions before any talk wait in a queue, the second keeping its 100 % for its turn; each neighbour says it as they
+## are (glad, against, not caring); and it is all kept in a saved game.
+func _chismes_checks() -> void:
+	var C = g.chismes
+	var was := [g.stats.get("chismes"), g.stats.get("chismes_pool")]
+	var missing: Array = []
+	for id in C.NEWS:
+		for c in C.CHARACTERS:
+			var e = Loc.TX.get("chisme_%s_%s" % [id, c])
+			if e == null or e["es"].size() < 2 or e["es"].size() != e["en"].size():
+				missing.append("%s_%s" % [id, c])
+	var step_ids: Array = g.steps.map(func(st): return String(st["id"]))
+	var no_step: Array = C.STEP_NEWS.keys().filter(func(k): return not step_ids.has(k))
+	_check(missing.is_empty() and no_step.is_empty(), "each of the %d missions has what the glad, the grumblers and those who do not care say of it (missing: %s; steps not in the story: %s)" % [C.NEWS.size(), missing, no_step])
+	# the chances: one mission, and the talks after it, many times over
+	var told := [0, 0, 0, 0, 0, 0]
+	var runs := 4000
+	for r in range(runs):
+		g.stats["chismes"] = []
+		g.stats["chismes_pool"] = []
+		C.mission_over("aceite")
+		for k in range(6):
+			if C.next_news(null) == "aceite":
+				told[k] += 1
+	var f: Array = told.map(func(x): return float(x) / runs)
+	_check(f[0] == 1.0 and absf(f[1] - 0.5) < 0.04 and absf(f[2] - 0.25) < 0.03 and absf(f[3] - 0.1) < 0.02 and f[4] == 0.0 and f[5] == 0.0
+		and (g.stats["chismes_pool"] as Array).has("aceite") and (g.stats["chismes"] as Array).is_empty(),
+		"after a mission the next talk is about it, then %.0f %%, %.0f %%, %.0f %% of them; after that it is one more of their sayings" % [f[1] * 100.0, f[2] * 100.0, f[3] * 100.0])
+	# two missions before any talk: the first talk is about the first; the second keeps its 100 % until its turn
+	var wrong := 0
+	var at_second := 0
+	for r in range(2000):
+		g.stats["chismes"] = []
+		g.stats["chismes_pool"] = []
+		C.mission_over("aceite")
+		C.mission_over("velatorio")
+		var second_out := false
+		for k in range(8):
+			var id: String = C.next_news(null)
+			if k == 0 and id != "aceite":
+				wrong += 1
+			if not second_out and id != "aceite":
+				if id != "velatorio":
+					wrong += 1                     # (its turn came and it did not come out)
+				second_out = true
+				if k == 1:
+					at_second += 1
+		if not second_out:
+			wrong += 1
+	_check(wrong == 0 and absf(at_second / 2000.0 - 0.5) < 0.05,
+		"two missions with no talk between: the first is talked of first; the second waits with its 100 %% and always comes out when its turn comes (at the second talk %.0f %% of the times)" % [at_second / 20.0])
+	# a neighbour of no name says it as they are, and stays as they are
+	var n = g.spawn_neighbour(g.player.p + Vector2(2, 0), true)
+	var ch: String = C.character(n)
+	g.stats["chismes"] = []
+	g.stats["chismes_pool"] = []
+	C.step_done("alberto_back")                  # (the signatures' mission, over)
+	var expect: Array = []
+	for d in Loc.speaker(Loc.t("chisme_firmas_" + ch), n.voice.ends_with("_f")):
+		expect.append(String(d[0]))
+	g.dlg = null
+	g.talk_to(n, true)
+	var first: String = String(g.dlg["lines"][0]) if g.dlg != null else ""
+	g.dlg = null
+	g.hud.dlg_slot.visible = false
+	_check(C.CHARACTERS.has(ch) and C.character(n) == ch and expect.has(first), "a neighbour of no name talks about it as they are (%s): «%s»" % [ch, first])
+	# used up, it is among their sayings
+	for k in range(4):
+		C.next_news(null)
+	var pool_said: Array = C.talk([["(lo de siempre)"]], n)
+	var in_pool: bool = pool_said.size() > 1 and pool_said.any(func(d): return Loc.t("chisme_firmas_" + ch).has(d))
+	# kept in a saved game (through JSON, as the game keeps it) and going on from there
+	g.stats["chismes"] = []
+	C.mission_over("menu")
+	C.next_news(null)
+	var back = JSON.parse_string(JSON.stringify({"chismes": g.stats["chismes"], "chismes_pool": g.stats["chismes_pool"]}))
+	g.stats["chismes"] = back["chismes"]
+	g.stats["chismes_pool"] = back["chismes_pool"]
+	C.next_news(null)
+	var q: Array = g.stats["chismes"]
+	_check(in_pool and (g.stats["chismes_pool"] as Array).has("firmas") and q.size() == 1 and int(q[0]["n"]) == 2,
+		"once used up it is one of the things they say; and a saved game keeps where each piece of news is")
+	# behind your back: one line for each mission over, from the moment it is over, among the usual mutterings
+	var no_whisper: Array = C.NEWS.filter(func(id): return not (Loc.TX.has("murmullo_" + id) and Loc.TX["murmullo_" + id]["es"] is String and Loc.TX["murmullo_" + id]["en"] is String))
+	g.stats["chismes"] = [{"id": "aceite", "n": 0}]
+	g.stats["chismes_pool"] = ["firmas"]
+	var muttered: Array = g.whisper_pool(n)
+	var mine: Array = C.whispers()
+	_check(no_whisper.is_empty() and mine.size() == 2 and mine.has(Loc.t("murmullo_aceite")) and mine.has(Loc.t("murmullo_firmas")) and not mine.has(Loc.t("murmullo_ajedrez"))
+		and muttered.has(Loc.t("murmullo_aceite")) and muttered.size() > mine.size(),
+		"and behind your back, one muttering for each mission over (missing for: %s), among the usual ones: «%s»" % [no_whisper, Loc.t("murmullo_aceite")])
+	g.npcs.erase(n)
+	n.queue_free()
+	for i in range(2):
+		var key: String = ["chismes", "chismes_pool"][i]
+		if was[i] == null:
+			g.stats.erase(key)
+		else:
+			g.stats[key] = was[i]
+
+## Children at play (the user, 16 Nov 2026): the little ones out in the two nursery yards on school mornings and home
+## otherwise, every child at play shouting to the others while you are near, what they say when you talk to them; and
+## Niño Negro Gordo de Pueblo by the square's playground, who talks of the pool, his bike and his sandwiches.
+func _ninos_checks(pictures := false) -> void:
+	var N = g.ninos
+	var b = g.named.get("nino_negro")
+	var pl = g.world.plaza if g.world != null else null
+	var play: Vector2 = pl.spot(pl.PLAY.x, pl.PLAY.y) if pl != null else Vector2.ZERO
+	_check(b != null and b.voice == "kid" and b.still and b.shown_name() == "Niño Negro Gordo de Pueblo" and float(b.look_data["build"]) >= 1.4
+		and int(b.look_data["skin"]) == g.NINO_NEGRO_LOOK["skin"] and pl != null and b.p.distance_to(play) > pl.PLAY_R and b.p.distance_to(play) < pl.PLAY_R + 3.0,
+		"Niño Negro Gordo de Pueblo is a bonny boy with very dark skin, by the fence of the square's playground")
+	var es: Array = Loc.TX["nino_negro"]["es"]
+	var said := ""
+	for talk in es:
+		said += " ".join(talk) + " "
+	var missing: Array = ["piscina", "salchipapas", "bici", "panceta", "tortilla", "crema de cacao", "chopped", "gordo", "madre"].filter(func(w): return not said.contains(w))
+	_check(es.size() == 7 and Loc.TX["nino_negro"]["en"].size() == es.size() and missing.is_empty(),
+		"he talks of the pool and its salchipapas, his bike, his sandwiches and why, and his mother on at him (%d talks; missing: %s)" % [es.size(), missing])
+	var phase_was: String = g.phase
+	var p_was: Vector2 = g.player.p
+	g.phase = "free"
+	if b != null:
+		g.player.p = b.p + Vector2(sin(b.h), cos(b.h)) * 1.6
+		g.player.sync()
+		g.talk_to(b)
+		var first: String = String(g.dlg["lines"][0]) if g.dlg != null else ""
+		if pictures:
+			await _frames(30)
+			await _shot("nino_negro_habla")
+		await _skip_dialog()
+		g.talk_to(b)
+		var second: String = String(g.dlg["lines"][0]) if g.dlg != null else ""
+		await _skip_dialog()
+		var firsts: Array = es.map(func(t): return String(t[0]))
+		_check(firsts.has(first) and firsts.has(second) and first != second, "talking to him again, he goes on to the next thing")
+		if pictures:
+			var f := Vector2(sin(b.h), cos(b.h))
+			g.player.p = b.p - f * 6.0
+			g.player.sync()
+			var fy: float = MapData.foot(b.p)                   # (the square is a floor over the ground: MapData.at would be under it)
+			var eye: Vector2 = b.p - f * 2.4 + Vector2(f.y, -f.x) * 0.8
+			await _view_at(Vector3(eye.x, fy + 1.1, eye.y), Vector3(b.p.x, fy + 0.55, b.p.y), "nino_negro", 45.0)
+			var back: Vector2 = b.p - f * 7.0
+			await _view_at(Vector3(back.x, fy + 3.6, back.y), Vector3(play.x, fy + 0.4, play.y), "nino_negro_parque", 55.0)
+	# the nursery yards: out on a school morning, home in the afternoon and at the weekend
+	_check(N.yards.size() == 2, "the little ones play in the two nursery yards (%s)" % [N.yards.map(func(y): return y["name"])])
+	var wd_was = g.weekday
+	var rain_was: float = g.rain
+	var clock_was: float = g.clock
+	g.rain = 0.0
+	g.weekday = 1
+	g.set_time(11.0)
+	var tue: bool = N.play_time()
+	g.set_time(18.0)
+	var evening: bool = N.play_time()
+	g.weekday = 5
+	g.set_time(11.0)
+	var saturday: bool = N.play_time()
+	g.weekday = 1
+	_check(tue and not evening and not saturday, "out on a Tuesday at eleven; at home at six in the evening, and on a Saturday")
+	var where := {}
+	for y in N.yards:
+		for k in y["kids"]:
+			N._send(y, k, true)
+			y["out"] = true
+	await _frames(240)
+	for y in N.yards:
+		var off := 0.0
+		var high := 0.0
+		var moved := 0
+		for k in y["kids"]:
+			var n = k["n"]
+			off = maxf(off, (n.p as Vector2).distance_to(y["c"]) - float(y["r"]))
+			high = maxf(high, absf(n.global_position.y - float(y["top"])))
+			if k["do"] == "run" or (n.p as Vector2).distance_to(n.home) > 0.1 or n.state == "idle":
+				moved += 1
+		where[y["name"]] = [off, high]
+		_check(off < 1.5 and high < 0.2 and (y["kids"] as Array).all(func(k): return not k["n"].away),
+			"in the %s yard the little ones are out, on its floor (%.2f m off it) and inside it (%.1f m beyond its spots at most)" % [y["name"], high, maxf(0.0, off)])
+	# shouting while you are near; and what one says when you talk to it
+	if not N.yards.is_empty():
+		var y0: Dictionary = N.yards[0]
+		g.player.p = (y0["c"] as Vector2) + Vector2(0.0, float(y0["r"]) + 3.0)
+		g.player.sync()
+		N._criers_t = 0.0
+		N._shout_t = 0.0
+		await _frames(3)
+		var shouting: Array = (y0["kids"] as Array).filter(func(k): return k["n"].is_barking())
+		_check(shouting.size() >= 1, "one of them shouts to the others while you are by the yard")
+		# and they are heard: up by the yard while they are out, nothing far away, nothing once they are home
+		var snd: Dictionary = {}
+		for s in N.sounds:
+			if s["name"] == y0["name"]:
+				snd = s
+		_check(N.sounds.size() == N.yards.size() + 1 and not snd.is_empty(), "there is a sound of children at play for each yard and for the square's playground (%d)" % N.sounds.size())
+		if not snd.is_empty():
+			var sp: AudioStreamPlayer3D = snd["p"]
+			await _frames(150)
+			var near_db: float = sp.volume_db
+			var near_on: bool = sp.playing
+			g.player.p = (y0["c"] as Vector2) + Vector2(0.0, 220.0)
+			g.player.sync()
+			await _frames(150)
+			var far_on: bool = sp.playing
+			g.player.p = (y0["c"] as Vector2) + Vector2(0.0, float(y0["r"]) + 3.0)
+			g.player.sync()
+			y0["out"] = false
+			await _frames(150)
+			var home_on: bool = sp.playing
+			y0["out"] = true
+			_check(near_on and near_db > N.SOUND_DB - 3.0 and not far_on and not home_on and sp.stream != null and sp.stream.loop,
+				"and heard: by the yard while they play (%.0f dB), not from far away, not once they have gone home" % near_db)
+		var kid = y0["kids"][0]["n"]
+		var news_was = [g.stats.get("chismes"), g.stats.get("chismes_pool")]     # (no news of missions just now: chismes.gd)
+		g.stats["chismes"] = []
+		g.stats["chismes_pool"] = []
+		g.talk_to(kid)
+		var line: String = String(g.dlg["lines"][0]) if g.dlg != null else ""
+		await _skip_dialog()
+		for i in range(2):
+			var key: String = ["chismes", "chismes_pool"][i]
+			if news_was[i] == null:
+				g.stats.erase(key)
+			else:
+				g.stats[key] = news_was[i]
+		var kid_firsts: Array = (Loc.TX["generic_kid"]["es"] as Array).map(func(t): return String(t[0]))
+		_check(kid_firsts.has(line) and kid_firsts.size() >= 15, "and talking to one, it comes out with a village child's things (%d of them)" % kid_firsts.size())
+		if pictures:
+			for y in N.yards:
+				var pc = y["place"]
+				var c: Vector2 = y["c"]
+				var from2: Vector2 = pc.spot(-3.0, 10.0) if y["name"] == "calasanz" else pc.spot(39.5, 7.5)
+				g.player.p = from2                                # (people far from you are not drawn)
+				g.player.sync()
+				await _frames(30)
+				await _view_at(Vector3(from2.x, float(y["top"]) + 3.2, from2.y), Vector3(c.x, float(y["top"]) + 0.4, c.y), "ninos_" + String(y["name"]), 55.0)
+	# put it all back as it was
+	g.weekday = wd_was
+	g.rain = rain_was
+	g.set_time(clock_was)
+	for y in N.yards:
+		var out: bool = N.play_time()
+		y["out"] = out
+		for k in y["kids"]:
+			N._send(y, k, out)
+	g.phase = phase_was
+	g.player.p = p_was
+	g.player.sync()
+
+## The jump lifts the body as well as the figure: out of the sunk bed by the bridge up on to its pavement, and down
+## again (the user, 16 Nov 2026, shut in there at the demonstration: "Se suponía que habíamos puesto el salto para
+## poder saltar a aceras"); never over a car.
+func _salto_checks() -> void:
+	var b = g.bridge
+	var pl = g.player
+	var was_p: Vector2 = pl.p
+	var phase_was: String = g.phase
+	g.phase = "free"                             # (the game moves a jump on only on foot in the town: in the full run this can come in a scene)
+	var bed: Vector2 = b.spot(-b.hw + 0.9, -3.0)              # in the bed, between the works and the bridge, by the west pavement's wall
+	var pav: Vector2 = b.spot(-b.hw - 0.9, -3.0)              # on that pavement
+	var rise: float = MapData.foot(pav) - MapData.foot(bed)
+	_check(rise > 0.8, "the pavement stands %.2f m over the bed beside it" % rise)
+	pl.p = bed
+	await _frames(3)
+	await _walk_at(pav, 1.5)
+	_check(pl.global_position.y < MapData.foot(bed) + 0.2, "walking into the pavement's wall, with no jump, leaves you in the bed")
+	pl.p = bed
+	await _frames(3)
+	await _hop_at(pav, 2.0)
+	var up: float = pl.global_position.y - MapData.foot(bed)
+	_check(absf(pl.global_position.y - MapData.foot(pav)) < 0.1 and up > 0.8, "a jump at it gets you up on the pavement (%.2f m up)" % up)
+	await _frames(45)
+	_check(pl._hop <= 0.0 and pl._drop <= 0.0, "and you come down on it")
+	await _hop_at(bed + (bed - pav) * 0.4, 1.5)
+	await _frames(45)
+	_check(absf(pl.global_position.y - MapData.foot(bed)) < 0.2 and pl._drop <= 0.0, "a jump off it puts you back down in the bed")
+	# a car: the jump does not carry you over it (the Tricornios' one at their door, if it is there)
+	var waited := 0
+	while g.cuartel_coche.car == null and waited < 60:
+		await _frames(1)
+		waited += 1
+	var car = g.cuartel_coche.car
+	_check(car != null, "there is a car to jump at (the Tricornios' one at their door)")
+	if car != null:
+		var side := Vector2(cos(car.h), -sin(car.h))
+		pl.p = car.p + side * 2.8
+		await _frames(3)
+		await _hop_at(car.p - side * 2.8, 2.0)
+		var gone: float = (pl.p - car.p).dot(side)
+		_check(gone > 0.6, "and a jump at a car's side does not get you over it (%.1f m out from its middle)" % gone)
+	pl.p = was_p
+	g.phase = phase_was
+	await _frames(3)
+
+## like _walk_at, jumping all the way (the key held, and again each time you land)
+func _hop_at(to: Vector2, secs: float) -> float:
+	for i in range(int(secs * 60.0)):
+		var d: Vector2 = to - g.player.p
+		if d.length() < 0.3:
+			break
+		if g.player._hop <= 0.0:
+			g.player.hop()
+		g.player.hop_more(1.0 / 60.0)
+		g.player.walk(d.normalized(), 5.0)
+		await get_tree().physics_frame
+	return g.player.p.distance_to(to)
+
 func _cuartel_coche_checks() -> void:
 	var CC = g.cuartel_coche
 	var s: Dictionary = CC.spot()
@@ -1521,6 +2062,191 @@ func _comunal_checks() -> void:
 		apart = far > 200.0 and walled and level_floor and follows and door_ok and ti.props >= 20 and ti.pieces > 800
 		print("  the stationer's inside: %.0f m from any road, walled %s, floor %s, follows the hours %s, door %s, %d pieces of the kit, %d built" % [far, walled, level_floor, follows, door_ok, ti.props, ti.pieces])
 	_check(apart, "the stationer's inside is a set apart, far from the town, walled and roofed, on a level floor, furnished, its door the arch in the street, and open when the shop is")
+
+## The IES Valdeacero (ies.gd): built; its buildings solid and known to the map; nothing of it in a roadway; its way
+## in on the avenue; its name the game's; its floodlights the town's.
+func _ies_checks() -> void:
+	var ie = g.world.ies
+	_check(ie != null and ie.pieces > 1500 and ie.blocks.size() >= 15, "the IES Valdeacero is built by hand (%d pieces, %d buildings)" % [(ie.pieces if ie != null else 0), (ie.blocks.size() if ie != null else 0)])
+	if ie == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var solid := 0
+	var known := 0
+	for b in ie.blocks:
+		var r: Rect2 = b[0]
+		var c: Vector2 = r.get_center()
+		var a := Vector2(r.position.x - 1.5, c.y)
+		var hit: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + 1.2, a.y), Vector3(c.x, MapData.height(c) + 1.2, c.y), 1)).is_empty()
+		solid += 1 if hit else 0
+		for ring in MapData.outlines:
+			if ring.size() == 4 and (ring[0] as Vector2).is_equal_approx(r.position):
+				known += 1
+				break
+	var nearest := 99.0
+	for q in ie.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(solid >= ie.blocks.size() - 2 and known == ie.blocks.size() and nearest > 0.0,
+		"%d of its %d buildings stop you and the map knows all of them (%d); nothing of it stands in a roadway (the nearest is %.1f m from one)" % [solid, ie.blocks.size(), known, nearest])
+	var street: String = String(MapData.nearest_road(ie.door)["seg"].road["n"])
+	_check(ie.NAME == "I.E.S. VALDEACERO" and street.contains("Tembleque") and g.world.lamp_spots.has(ie.lamps[0]),
+		"its way in gives on to the %s, its name reads %s, and the floodlights of its courts are the town's" % [street, ie.NAME])
+
+## The corner house of the bank and the copy shop (bancosancho.gd): built on Texturas's house, which casas.gd no longer
+## draws; its fronts solid; it stands on the Calle del Teniente Infante; each shop's hours (pure functions: the game's
+## clock and day are not moved) and its lights; the copy shop's inside a set apart, listed among the places you go into,
+## the girl of the posters behind its counter.
+func _bancosancho_checks() -> void:
+	var bs = g.world.get("bancosancho")
+	_check(bs != null and bs.pieces > 800 and bs.tienda != null, "the corner house of the bank and the copy shop is built by hand (%d pieces), with the copy shop's inside" % (bs.pieces if bs != null else 0))
+	if bs == null:
+		return
+	var drawn := 0
+	var found := 0
+	for casa in g.world.casas:
+		if casa.id == bs.HOUSE:
+			drawn += casa.get_child_count()
+			found += 1
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = bs.spot(a.x, a.y)
+		var q: Vector2 = bs.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, bs.level + h, p.y), Vector3(q.x, bs.level + h, q.y), 1)).is_empty()
+	var shut: bool = ray.call(Vector2(5.0, 3.0), Vector2(5.0, -3.0), 1.2) and ray.call(Vector2(20.0, 3.0), Vector2(20.0, -3.0), 1.2) and ray.call(Vector2(28.0, 3.0), Vector2(28.0, -3.0), 1.2) and ray.call(Vector2(-4.0, -8.0), Vector2(4.0, -8.0), 1.2)
+	var street: String = String(MapData.nearest_road(bs.door)["seg"].road["n"])
+	_check(drawn == 0 and shut and street.contains("Teniente Infante") and bs.BANK == "Banco Cantabria" and bs.SHOP == "Copistería Sancho Panza",
+		"it stands on its house of the map, which the houses' own script no longer draws (%d found, %d pieces of it drawn); its fronts stop you; the copy shop gives on to the %s; the names read %s and %s" % [found, drawn, street, bs.BANK, bs.SHOP])
+	var good := true
+	for on in [true, false]:
+		bs.set_open(on, on, on)
+		for key in ["banco", "copia", "elec"]:
+			if bs._rooms[key].visible != on or bs._shut[key].visible == on:
+				good = false
+		good = good and bs.tienda.open == on
+	bs.set_open(bs.open_at("banco", g.weekday, g.clock), bs.open_at("copia", g.weekday, g.clock), bs.open_at("elec", g.weekday, g.clock))
+	var rule: bool = bs.open_at("banco", 0, 9.0) and not bs.open_at("banco", 0, 15.0) and not bs.open_at("banco", 5, 10.0) \
+		and bs.open_at("copia", 0, 10.0) and not bs.open_at("copia", 0, 15.0) and bs.open_at("copia", 0, 18.0) and bs.open_at("copia", 5, 11.0) and not bs.open_at("copia", 6, 11.0) \
+		and bs.open_at("elec", 2, 18.0) and not bs.open_at("elec", 5, 10.0)
+	_check(good and rule, "each shop keeps its hours (the bank in the mornings from Monday to Friday, the copy shop mornings and evenings and Saturday mornings, the electrician's from Monday to Friday): open, lit inside; shut, dark; the copy shop's door with them")
+	var ti = bs.tienda
+	var far: float = (MapData.nearest_road(ti.INSIDE, true)["p"] as Vector2).distance_to(ti.INSIDE)
+	var from := Vector3(ti.in_spawn.x, ti.level + 1.0, ti.in_spawn.y)
+	var walled := true
+	for to in [Vector3(8, 0, 0), Vector3(-8, 0, 0), Vector3(0, 0, 12), Vector3(0, 0, -6), Vector3(0, 6, 0)]:
+		if space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + to, 1)).is_empty():
+			walled = false
+	var level_floor: bool = absf(MapData.foot(ti.in_spawn) - ti.level) < 0.01 and absf(MapData.foot(ti.counter_front) - ti.level) < 0.01
+	var on_pavement: float = MapData.road_edge_dist(g.entradas.spot(ti, false))
+	if MapData.road_hit != null:
+		on_pavement += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+	var girl = g.named.get("copista")
+	var behind: bool = girl != null and girl.p.distance_to(ti.keeper_spot) < 0.6
+	_check(far > 200.0 and walled and level_floor and ti.door_out.distance_to(bs.door) < 2.0 and on_pavement > -0.6 and g.entradas.is_shop(ti) and behind,
+		"the copy shop's inside is a set apart (%.0f m from any road), walled and roofed, on a level floor, its door the shop's (its arrow %.1f m from the roadway), listed among the places you go into, and the girl of the posters behind its counter (%s)" % [far, on_pavement, behind])
+
+## The Noche (noche.gd): built, its front solid, it stands on the Calle del Teniente Infante; its hours (as pure
+## functions: the game's clock and day are not moved), the shutter and its inside follow them; its inside a set apart,
+## walled, on a level floor, its door the shop's, its arrow on the pavement, listed among the places you go into.
+func _noche_checks() -> void:
+	var no = g.world.get("noche")
+	_check(no != null and no.pieces > 400 and no.tienda != null, "the Noche is built by hand (%d pieces), with its inside" % (no.pieces if no != null else 0))
+	if no == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		var p: Vector2 = no.spot(a.x, a.y)
+		var q: Vector2 = no.spot(b.x, b.y)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, no.level + h, p.y), Vector3(q.x, no.level + h, q.y), 1)).is_empty()
+	var shut: bool = ray.call(Vector2(1.9, 3.0), Vector2(1.9, -3.0), 1.2) and ray.call(Vector2(4.0, 3.0), Vector2(4.0, -3.0), 1.2) and ray.call(Vector2(5.6, 3.0), Vector2(5.6, -3.0), 1.2)
+	var street: String = String(MapData.nearest_road(no.door)["seg"].road["n"])
+	_check(shut and street.contains("Teniente Infante") and no.NAME == "Noche" and MapData.outlines.has(no.outline3),
+		"its front stops you (the flats' door, the white, the shop's glass), it gives on to the %s, its name reads %s, and the map knows it" % [street, no.NAME])
+	var good := true
+	for on in [true, false]:
+		no.set_open(on)
+		if no.is_open != on or no._open.visible != on or no._shut.visible == on or no.tienda.open != on:
+			good = false
+	no.set_open(no.open_at(g.weekday, g.clock))
+	var rule: bool = not no.open_at(0, 8.9) and no.open_at(0, 9.0) and no.open_at(0, 21.4) and not no.open_at(0, 21.5) and no.open_at(5, 12.0) and not no.open_at(6, 12.0) and not no.open_at(1, 2.0)
+	_check(good and rule, "it opens from 9:00 to 21:30 from Monday to Saturday and not on Sundays: shut, its shutter is down; open, the shutter up, its board of offers out, and its inside open")
+	var ti = no.tienda
+	var far: float = (MapData.nearest_road(ti.INSIDE, true)["p"] as Vector2).distance_to(ti.INSIDE)
+	var from := Vector3(ti.in_spawn.x, ti.level + 1.0, ti.in_spawn.y)
+	var walled := true
+	for to in [Vector3(12, 0, 0), Vector3(-12, 0, 0), Vector3(0, 0, 20), Vector3(0, 0, -6), Vector3(0, 6, 0)]:
+		if space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + to, 1)).is_empty():
+			walled = false
+	var level_floor: bool = absf(MapData.foot(ti.in_spawn) - ti.level) < 0.01 and absf(MapData.foot(ti.counter_front) - ti.level) < 0.01
+	var on_pavement: float = MapData.road_edge_dist(g.entradas.spot(ti, false))
+	if MapData.road_hit != null:
+		on_pavement += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+	var door_ok: bool = ti.door_out.distance_to(no.door) < 2.0 and ti.out_spawn.distance_to(ti.door_out) > 0.8 and on_pavement > -0.2
+	_check(far > 200.0 and walled and level_floor and door_ok and g.entradas.is_shop(ti) and ti.pieces > 500,
+		"its inside is a set apart (%.0f m from any road), walled and roofed, on a level floor, furnished (%d pieces), its door the shop's, its arrow on the pavement (%.1f m from the roadway) and listed among the places you go into" % [far, ti.pieces, on_pavement])
+
+## The MasAhorro (masahorro.gd): built, its walls stop you and the map knows it, nothing of it in a roadway; it stands on
+## the Calle de la Noria; whoever walks before its doors stands on its raised walk; its hours (as pure functions: the
+## game's clock and day are not moved) and its lights; its lamps are the town's.
+func _masahorro_checks() -> void:
+	var ma = g.world.masahorro
+	_check(ma != null and ma.pieces > 1200 and ma.bays >= 80 and ma.trolleys >= 15, "the MasAhorro is built by hand (%d pieces, %d bays, %d trolleys)" % [(ma.pieces if ma != null else 0), (ma.bays if ma != null else 0), (ma.trolleys if ma != null else 0)])
+	if ma == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var hits := 0
+	for pair in [[Vector2(14.0, 8.0), Vector2(14.0, -10.0)], [Vector2(-6.0, -27.0), Vector2(6.0, -27.0)], [Vector2(15.0, -64.0), Vector2(15.0, -45.0)]]:
+		var a: Vector2 = ma.spot(pair[0].x, pair[0].y)
+		var b: Vector2 = ma.spot(pair[1].x, pair[1].y)
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, ma.level + 1.2, a.y), Vector3(b.x, ma.level + 1.2, b.y), 1)).is_empty():
+			hits += 1
+	var nearest := 99.0
+	for q in ma.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(hits == 3 and MapData.outlines.has(ma.outline) and nearest > 0.0,
+		"its front, its side on the Noria and its back stop you (%d of 3), the map knows it, and nothing of it stands in a roadway (the nearest is %.1f m from one)" % [hits, nearest])
+	var street: String = String(MapData.nearest_road(ma.spot(-6.0, -27.0))["seg"].road["n"])
+	var on_walk: float = MapData.foot(ma.door)
+	_check(street.contains("Noria") and absf(on_walk - ma.level) < 0.05 and ma.NAME == "MasAhorro",
+		"its long side gives on to the %s, whoever stands before its doors is on its raised walk (%.2f m, its floor %.2f m), and its name reads %s" % [street, on_walk, ma.level, ma.NAME])
+	var luz: StandardMaterial3D = ma._mats.get("luz")
+	ma.set_open(false)
+	var dark: bool = luz != null and luz.emission_energy_multiplier == 0.0
+	ma.set_open(true)
+	var lit: bool = luz != null and luz.emission_energy_multiplier > 0.5
+	ma.set_open(ma.open_at(g.weekday, g.clock))
+	_check(ma.open_at(0, 10.0) and not ma.open_at(0, 8.5) and not ma.open_at(5, 22.0) and ma.open_at(5, 21.0) and not ma.open_at(6, 12.0) and dark and lit and g.world.lamp_spots.has(ma.lamps[0]),
+		"it opens from 9:00 to 21:30 and not on Sundays, its lights go with it, and the lamps of its car park are the town's")
+
+## The roundabout before the Tricornios' barracks (rotonda.gd): its island inside the ring road, everything on it
+## within its kerb; whoever walks on it stands on its floor; its kerb, mast, flagpole and monolith solid; its lamps the
+## town's; its flag flying.
+func _rotonda_checks() -> void:
+	var ro = g.world.rotonda
+	_check(ro != null and ro.pieces > 300 and ro.decks >= 1 and ro.flag != null, "the Tricornios' roundabout is built by hand (%d pieces)" % (ro.pieces if ro != null else 0))
+	if ro == null:
+		return
+	var far := 0.0
+	for q in ro.things:
+		far = maxf(far, (q as Vector2).distance_to(ro.mid))
+	var lane: float = ro.ring_r - ro.ring_hw
+	_check(ro.R <= lane + 0.1 and far < ro.R - 0.2 and ro.things.size() >= 20,
+		"its kerb (%.1f m) keeps out of the ring's lane (it begins at %.1f m), and the %d things on it are within it (the farthest %.1f m out)" % [ro.R, lane, ro.things.size(), far])
+	var inside: Vector2 = ro.mid + Vector2(2.0, -2.5)
+	var out: Vector2 = ro.mid + Vector2(ro.ring_r, 0.0)
+	var up: float = MapData.foot(inside) - MapData.height(inside)
+	var off: float = MapData.foot(out) - MapData.height(out)
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + h, a.y), Vector3(b.x, MapData.height(b) + h, b.y), 1)).is_empty()
+	var stops: bool = ray.call(out, ro.mid, 0.07) and ray.call(ro.POLE + Vector2(1.0, 0.3), ro.POLE + Vector2(-1.0, -0.3), 2.5) and ray.call(ro.MAST + Vector2(0.3, 1.0), ro.MAST + Vector2(-0.3, -1.0), 3.0) and ray.call(ro.mono + Vector2(0.9, 0.0), ro.mono - Vector2(0.9, 0.0), ro.KERB + 0.8)
+	_check(absf(up - ro.KERB) < 0.012 and absf(off) < 0.001 and stops and g.world.lamp_spots.has(ro.lamps[0]),
+		("" if stops else "(NOT SOLID) ") + "on foot you stand on its floor (%.2f m up) and on the road out of it (%.2f); its kerb, its mast, its flagpole and its monolith stop you; its lamps are the town's" % [up, off])
 
 ## Kebab Deluxe (kebabdeluxe.gd): built on its house of the map, which the houses' own script no longer draws; its
 ## front stops you; the pavement where the lorry of Don Luis's sabotage leaves its boxes is clear; the name the game's.
@@ -2697,7 +3423,7 @@ func _relief_checks() -> void:
 	var lamps_off := 0
 	for sp in g.lights.spots:
 		var up: float = sp.y - MapData.height(Vector2(sp.x, sp.z))
-		if up < 1.2 or up > 9.0:
+		if up < 1.2 or up > 13.0:          # (the floodlights of courts and car parks stand up to 12 m: the IES, the roundabout, the MasAhorro)
 			lamps_off += 1
 	var trees_off := 0
 	for tr in W.tree_info:
@@ -3128,8 +3854,12 @@ func _mayhem_checks() -> void:
 	for k in range(Creator.PENAS.size()):
 		each.append(g.props.tags_of(k))
 	var furthest := 0.0
+	var by_hand := func(t) -> bool:                # (the walls a house's photos show painted: world.hand_tags, Texturas -- where they are)
+		var mid: Vector2 = (t["p"] as Vector2) - (t["n"] as Vector2) * 1.1
+		return g.world.hand_tags.any(func(h): return (h[0] as Vector2).distance_to(mid) < 0.2)
 	for t in g.props.tags:
-		furthest = maxf(furthest, (t["p"] as Vector2).distance_to(g.props.TOWN))
+		if not by_hand.call(t):
+			furthest = maxf(furthest, (t["p"] as Vector2).distance_to(g.props.TOWN))
 	var firsts: Array = range(Creator.PENAS.size()).map(func(k): return g.props.tags.filter(func(t): return t["first"] == k).size())
 	_check(Creator.PENAS.size() == 6 and g.props.tags.size() == 60 and firsts.all(func(n): return n == 10) and each[mine] == 0 and each.reduce(func(a, b): return a + b, 0) == 60
 		and furthest < g.props.TAG_REACH + 5.0 and g.props.tags.all(func(t): return t["node"].material_override.get_shader_parameter("logo") != null),
@@ -3137,7 +3867,7 @@ func _mayhem_checks() -> void:
 	var gap := 1e9
 	for t1 in g.props.tags:
 		for t2 in g.props.tags:
-			if t1 != t2:
+			if t1 != t2 and not (by_hand.call(t1) and by_hand.call(t2)):
 				gap = minf(gap, (t1["p"] as Vector2).distance_to(t2["p"]))
 	var old_paint: bool = g.props.tags.all(func(t): return float(t["wear"]) >= 0.7 and float(t["node"].material_override.get_shader_parameter("opacity")) <= 0.9)
 	_check(gap > 40.0 and old_paint, "spread out (never two within %.0f m) and old: nine tenths opaque and worn" % gap)
@@ -3894,6 +4624,14 @@ func _reglas_checks(pictures := false) -> void:
 		Settings.data[key] = {"window": 0, "fov": 55}.get(key, Settings.PRESETS[2].get(key))
 	Settings.apply()
 	_check(Settings.preset() == 2 and g.sun.shadow_enabled and is_equal_approx(g.cam.fov, 55.0) and PartsS.draw == 1.0 and PartsS.fx == 1.0 and g.get_viewport().scaling_3d_scale == 1.0, "and back to High, as it was")
+	# High draws the sun's shadows to 100 m, Ultra to 140 (the user, 16 Nov 2026: "Alto a 100 m, Muy Alto a 140 m")
+	var high_m: float = g.sun.directional_shadow_max_distance
+	Settings.step_preset(1)
+	var ultra_m: float = g.sun.directional_shadow_max_distance
+	var ultra: int = Settings.preset()
+	Settings.step_preset(-1)
+	_check(high_m == 100.0 and ultra == 3 and ultra_m == 140.0 and Settings.preset() == 2 and g.sun.directional_shadow_max_distance == 100.0,
+		"High draws the sun's shadows to %.0f m, Ultra to %.0f m" % [high_m, ultra_m])
 	# the cars put away to be used again are nowhere near the town (where they were left, they were invisible walls)
 	_check(g.traffic._pool.all(func(c): return not c.visible and c.p.length() > 4000.0), "the traffic's spare cars are kept out of the town, not standing invisible in its streets")
 	# on a pad the stick sets the pace: no run button
@@ -5453,9 +6191,34 @@ func _recress_checks() -> void:
 		g._choose(0)
 	await _rec_play_out({})
 	_check(asked_pay and R.stage() == "copisteria" and g.money == 120 - R.COST and R.active(), "back with the money: you put it up (%d €), and off to the copy shop" % R.COST)
-	# 2: the posters
-	g.player.p = girl.p + Vector2(1.0, 0.8)
-	await _frames(4)
+	# 2: the posters (the girl is inside the copy shop, a set you go into by the arrow at its door: Pretil, 17 Nov 2026)
+	var BS = g.world.get("bancosancho")
+	var CT = BS.tienda if BS != null else null
+	var in_shop := false
+	var open_for_it := CT == null
+	if CT != null:
+		var E = g.entradas
+		await _frames(3)                                # (open for the posters whatever the hour, the clock not moved: the user, 17 Nov)
+		open_for_it = CT.open and BS.for_the_posters(g)
+		var back: Vector2 = (CT.out_spawn - CT.door_out).normalized()
+		g.player.p = E.spot(CT, false) + back * 4.5     # (far enough for the arrow to arm)
+		g.player.sync()
+		await _frames(10)
+		g.player.p = E.spot(CT, false)
+		g.player.sync()
+		var w := 0
+		while g.inside_of != CT and w < 40:
+			await _frames(1)
+			w += 1
+		in_shop = g.indoors and g.inside_of == CT
+		g.player.p = CT.counter_front
+		g.player.sync()
+		await _frames(6)
+		if shots:
+			await _shot("recress_5_copisteria_dentro")
+	else:
+		g.player.p = girl.p + Vector2(1.0, 0.8)
+		await _frames(4)
 	g.talk_to(girl)
 	var marked := false
 	await _frames(3)
@@ -5469,8 +6232,20 @@ func _recress_checks() -> void:
 	for l in Loc.t("copista_rec"):
 		any_red = any_red or Loc.rich(String(l)).contains("[color=#e8402e]")
 	print("  recress posters: stage %s carteles %s shops %d green %s red %s | %s" % [R.stage(), str(R.st.get("carteles", 0)), R.shops.size(), any_green, any_red, Loc.rich(String(Loc.t("copista_rec")[1])).left(160)])
-	_check(R.stage() == "carteles" and int(R.st.get("carteles", 0)) == 5 and R.shops.size() >= 8 and any_green and any_red,
-		"the copy shop gives you five posters (in green in what she says), and sends you to the shops (in red): %d shop fronts to choose from" % R.shops.size())
+	var out_again := CT == null
+	if CT != null and in_shop:                          # out again by its way out
+		g.player.p = g.entradas.spot(CT, true)
+		g.player.sync()
+		await _frames(5)
+		g.entradas.leave()
+		var w2 := 0
+		while g.indoors and w2 < 30:
+			await _frames(1)
+			w2 += 1
+		g._door_cool = 1.0
+		out_again = not g.indoors
+	_check(R.stage() == "carteles" and int(R.st.get("carteles", 0)) == 5 and R.shops.size() >= 8 and any_green and any_red and (CT == null or in_shop) and out_again and open_for_it,
+		"the copy shop gives you five posters (in green in what she says), and sends you to the shops (in red): %d shop fronts to choose from (open for them at any hour: %s; inside the shop, by its arrow: %s; out again: %s)" % [R.shops.size(), open_for_it, in_shop, out_again])
 	var stuck := 0
 	var prompt_ok := true
 	for k in range(R.POSTERS):
@@ -6301,6 +7076,117 @@ func _run() -> void:
 		print("flecha: worst turn in one frame %.2f rad; %d frames turned more than 0.08 rad; scale %s; visible %s" % [worst_jump, jumps, str(g.arrow_body.scale), g.arrow.visible])
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--suelos"):        # just the decks people walk on, found through a grid: the same heights, quicker
+		await _frames(10)
+		await _suelos_checks()
+		print("SUELOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--perfil"):        # where the physics tick goes: the bench's view, one thing switched off at a time (full screen, no --fixed-fps)
+		Engine.max_fps = 0
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		g.phase = "free"
+		g.set_time(13.0)
+		var th: Dictionary = MapData.townhall
+		var m := Vector2(th["m"][0], th["m"][1])
+		var u := Vector2(th["u"][0], th["u"][1])
+		var nn := Vector2(-u.y, u.x)
+		g.player.p = m + nn * 30.0
+		g.cam_yaw = atan2(-nn.x, -nn.y)
+		g.cam_pitch = 0.25
+		g._keep_crowd_near(g.player.p, 200)
+		await _frames(120)
+		var parked: Array = g.cars.filter(func(c): return c != g.in_car and not c.running)
+		print("perfil: %d nodes, %d neighbours, %d cars (%d parked, %d of them frozen), %d in traffic" % [Performance.get_monitor(Performance.OBJECT_NODE_COUNT), g.npcs.size(), g.cars.size(), parked.size(), parked.filter(func(c): return c.freeze).size(), g.traffic.list.size()])
+		var per := []
+		for nb in g.npcs.slice(0, 20):
+			per.append(nb.find_children("*", "", true, false).size())
+		var near: int = g.npcs.filter(func(nb): return not nb.away and nb.p.distance_to(g.player.p) < 55.0).size()
+		var seen: int = g.npcs.filter(func(nb): return not nb.away and nb.p.distance_to(g.player.p) < 55.0 and g.cam.is_position_in_frustum(MapData.at(nb.p, 1.0))).size()
+		print("perfil: nodes per neighbour %s; %d within 55 m (animated every tick), %d of them in the picture" % [str(per), near, seen])
+		var t_foot := Time.get_ticks_usec()
+		var probe: Vector2 = g.player.p
+		for k in range(2000):
+			MapData.foot(probe + Vector2(k % 50, k / 50))
+		var t_h := Time.get_ticks_usec()
+		for k in range(2000):
+			MapData.height(probe + Vector2(k % 50, k / 50))
+		var t_end := Time.get_ticks_usec()
+		var polys: int = MapData.decks.filter(func(dk): return dk.has("poly")).size()
+		print("perfil: %d decks (%d of them outlines); MapData.foot %.1f us a call, MapData.height %.1f us" % [MapData.decks.size(), polys, (t_h - t_foot) / 2000.0, (t_end - t_h) / 2000.0])
+		var per_car := []
+		for e in g.traffic.list:
+			var cc = e["car"]
+			var verts := 0
+			for mm in cc.find_children("*", "MeshInstance3D", true, false):
+				var msh: Mesh = (mm as MeshInstance3D).mesh
+				if msh != null:
+					for si in range(msh.get_surface_count()):
+						verts += (msh.surface_get_arrays(si)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+			var in_model: int = cc.model.find_children("*", "MeshInstance3D", true, false).size() if cc.get("model") != null else -1
+			per_car.append("%s %d nodes, %d meshes (%d in the model itself), %d vertices" % [cc.kind, cc.find_children("*", "", true, false).size(), cc.find_children("*", "MeshInstance3D", true, false).size(), in_model, verts])
+		print("perfil: in traffic: %s" % ", ".join(per_car))
+		var kinds := {}
+		for cc in g.cars:
+			kinds["%s|%x" % [cc.kind, int(cc.paint)]] = true
+		print("perfil: %d different kinds and paints among the %d cars about" % [kinds.size(), g.cars.size()])
+		if OS.get_cmdline_user_args().has("--solo-coches"):
+			get_tree().quit(0)
+			return
+		await _perfil("as the game is")
+		var awake := parked.filter(func(c): return not c.freeze)
+		for c in awake:
+			c.freeze = true
+		await _perfil("parked cars frozen (%d)" % awake.size())
+		for c in awake:
+			c.freeze = false
+		for c in g.cars:
+			c.set_physics_process(false)
+		await _perfil("cars' own tick off (car.gd)")
+		for c in g.cars:
+			c.set_physics_process(true)
+		g._booted = false
+		await _perfil("game tick off (game.gd returns at once)")
+		g._booted = true
+		for n in g.npcs:
+			n.process_mode = Node.PROCESS_MODE_DISABLED
+		await _perfil("neighbours' nodes disabled")
+		for n in g.npcs:
+			n.process_mode = Node.PROCESS_MODE_INHERIT
+		var shapes := 0
+		for n in g.npcs:
+			for c in n.get_children():
+				if c is CollisionShape3D:
+					c.disabled = true
+					shapes += 1
+		await _perfil("neighbours' colliders off (%d)" % shapes)
+		for n in g.npcs:
+			for c in n.get_children():
+				if c is CollisionShape3D:
+					c.disabled = false
+		var split_was: int = g.sun.directional_shadow_mode
+		var dist_was: float = g.sun.directional_shadow_max_distance
+		g.sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		await _perfil("sun shadows in 2 splits (not 4)")
+		g.sun.directional_shadow_max_distance = 100.0
+		await _perfil("2 splits, to 100 m (not 140)")
+		g.sun.directional_shadow_mode = split_was
+		g.sun.directional_shadow_max_distance = dist_was
+		g.sun.shadow_enabled = false
+		await _perfil("no sun shadows")
+		g.sun.shadow_enabled = true
+		g.set_time(23.0)
+		await _perfil("at night")
+		g.set_time(13.0)
+		g.traffic.clear()
+		g.traffic._spawn_t = 99999.0
+		await _perfil("no traffic")
+		get_tree().quit(0)
+		return
 	if OS.get_cmdline_user_args().has("--tirones"):       # hitches: a minute on autopilot across town, every frame timed. NOT with --fixed-fps or --headless
 		g.menu.close()
 		g.slot = 0
@@ -6606,6 +7492,44 @@ func _run() -> void:
 			await _shot("dolores_habla")
 			await _skip_dialog()
 		print("DOLORES %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--padron"):        # just the Padrón Municipal after the creator: the sheet, the name, the tile on your house, who calls you by it
+		shots = true
+		g.menu.close()
+		g.slot = 0
+		await _frames(20)
+		await _padron_checks(true)
+		print("PADRON %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--chismes"):       # just what the town says about the missions you finish: the chances, the queue, the pool
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		await _frames(20)
+		await _chismes_checks()
+		print("CHISMES %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--ninos"):         # just the children: the nursery yards, their shouts and talk, and Niño Negro Gordo de Pueblo, with pictures
+		shots = true
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		g.set_time(11.0)
+		await _frames(20)
+		await _ninos_checks(true)
+		print("NINOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--salto"):         # just the jump: up a raised pavement out of the bridge's sunk bed, down again, and not over a car
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		await _frames(20)
+		await _salto_checks()
+		print("SALTO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--tricornio"):     # just the Tricornios' car at their barracks' door: there, taken, and back again
@@ -6917,6 +7841,319 @@ func _run() -> void:
 		g.phase = "free"
 		await _todopizza_checks()
 		print("TODOPIZZA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--ies"):      # just the IES Valdeacero: from the avenue, from the air, its courts, its buildings
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(12.5)
+		var ie = g.world.ies
+		if ie == null:
+			print("IES FAILED (not built)")
+			get_tree().quit(1)
+			return
+		for n in g.npcs:
+			n.visible = false
+		for v in [["aire", Vector2(-40.0, -1120.0), 70.0, Vector2(-125.0, -1215.0), 0.0, 60.0], ["aire_norte", Vector2(-120.0, -1340.0), 55.0, Vector2(-125.0, -1220.0), 0.0, 60.0],
+				["entrada", Vector2(-55.0, -1180.0), 1.7, Vector2(-77.0, -1182.0), 2.6, 70.0], ["avenida", Vector2(-48.0, -1220.0), 1.7, Vector2(-85.0, -1210.0), 4.0, 85.0],
+				["entrada_cerca", Vector2(-59.5, -1177.2), 1.6, Vector2(-69.9, -1181.1), 2.9, 68.0], ["entrada_paso", Vector2(-66.0, -1173.0), 1.6, Vector2(-74.0, -1180.0), 1.8, 75.0],
+				["aparcamiento", Vector2(-45.0, -1250.0), 1.7, Vector2(-80.0, -1250.0), 2.0, 80.0], ["pistas", Vector2(-84.0, -1140.0), 1.7, Vector2(-120.0, -1170.0), 2.5, 80.0],
+				["peine", Vector2(-121.0, -1166.0), 1.7, Vector2(-150.0, -1166.0), 3.5, 85.0], ["norte", Vector2(-120.0, -1268.0), 1.7, Vector2(-150.0, -1250.0), 3.0, 80.0],
+				["huerto", Vector2(-125.0, -1282.0), 1.7, Vector2(-170.0, -1288.0), 2.0, 80.0], ["gimnasio", Vector2(-92.0, -1188.0), 1.7, Vector2(-92.0, -1210.0), 5.0, 85.0],
+				["planta", Vector2(-125.0, -1218.0), 160.0, Vector2(-125.0, -1220.0), 0.0, 70.0]]:
+			var eye: Vector2 = v[1]
+			var at: Vector2 = v[3]
+			g.player.p = Vector2(-30.0, -1100.0)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(8)
+			await _shot("ies_%s" % v[0])
+		g.phase = "free"
+		await _ies_checks()
+		print("IES %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--bancosancho"):      # just the corner house of the bank and the copy shop: from both streets, close, open and shut; into the copy shop
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var bs = g.world.get("bancosancho")
+		if bs == null:
+			print("BANCOSANCHO FAILED (not built: its house is not handed over to be built by hand)")
+			get_tree().quit(1)
+			return
+		for n in g.npcs:
+			if n.id != "copista":
+				n.visible = false
+		var day_was: int = g.weekday
+		g.weekday = 0
+		for moment in [["", 11.0], ["_tarde", 15.5], ["_noche", 22.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["esquina", Vector2(-6.0, 9.0), 1.7, Vector2(6.0, -4.0), 4.0, 80.0], ["banco", Vector2(7.5, 4.6), 1.6, Vector2(7.5, 0.0), 2.4, 85.0],
+					["copisteria", Vector2(20.0, 4.4), 1.6, Vector2(20.0, 0.0), 2.0, 85.0], ["electricista", Vector2(27.5, 4.5), 1.6, Vector2(27.5, 0.0), 2.0, 80.0],
+					["calle", Vector2(36.0, 4.0), 1.7, Vector2(12.0, 0.0), 4.5, 70.0], ["sanfrancisco", Vector2(-5.0, -14.0), 1.7, Vector2(1.5, -5.0), 4.0, 80.0]]:
+				if moment[0] != "" and not (v[0] in ["banco", "copisteria", "esquina"]):
+					continue
+				var eye: Vector2 = bs.spot(v[1].x, v[1].y)
+				var at: Vector2 = bs.spot(v[3].x, v[3].y)
+				g.player.p = bs.spot(60.0, 40.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, bs.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(8)
+				await _shot("bancosancho_%s%s" % [v[0], moment[0]])
+		g.set_time(11.0)
+		var mid: Vector2 = bs.spot(14.0, 18.0)
+		var at2: Vector2 = bs.spot(10.0, -6.0)
+		g.cam.position = Vector3(mid.x, MapData.height(mid) + 24.0, mid.y)
+		g.cam.look_at(Vector3(at2.x, bs.level, at2.y))
+		g.cam.fov = 60.0
+		await _frames(8)
+		await _shot("bancosancho_aire")
+		var ti = bs.tienda                                 # the copy shop's inside, the girl behind its counter
+		for v in [["entrada", Vector3(-1.4, 1.6, 0.8), Vector3(-0.4, 1.2, 8.0), 82.0], ["mostrador", Vector3(-0.6, 1.6, 3.4), Vector3(-0.6, 1.4, 6.6), 70.0],
+				["copiadoras", Vector3(-1.8, 1.6, 2.0), Vector3(3.0, 1.0, 3.6), 75.0], ["alto", Vector3(2.9, 2.85, 0.3), Vector3(-1.0, 0.4, 6.0), 88.0]]:
+			g.cam.position = ti.transform * (v[1] as Vector3)
+			g.cam.look_at(ti.transform * (v[2] as Vector3))
+			g.cam.fov = v[3]
+			await _frames(6)
+			await _shot("bancosancho_dentro_%s" % v[0])
+		# into the copy shop by its arrow, and out again
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		var E = g.entradas
+		bs.set_open(true, true, true)
+		var back: Vector2 = (ti.out_spawn - ti.door_out).normalized()
+		var at_door: Vector2 = E.spot(ti, false)
+		g.player.p = at_door + back * 3.0 + Vector2(-back.y, back.x) * 1.2
+		g.player.sync()
+		var foot: float = MapData.height(at_door)
+		g.cam_fixed = [Vector3(at_door.x, foot, at_door.y) + Vector3(back.x, 0, back.y) * 3.4 + Vector3(-back.y, 0, back.x) * 4.5 + Vector3(0, 2.0, 0), Vector3(at_door.x, foot + 1.2, at_door.y)]
+		g.cam_pos = g.cam_fixed[0]                       # there at once, not drifting over from the inside shots
+		g.cam_look = g.cam_fixed[1]
+		await _frames(10)
+		var shown: bool = E.mark_of(ti, false) != null and E.mark_of(ti, false).visible and E.is_shop(ti)
+		await _shot("bancosancho_flecha")
+		g.cam_fixed = null
+		g.player.p = E.spot(ti, false)
+		g.player.sync()
+		var waited := 0
+		while not g.indoors and waited < 30:
+			await _frames(1)
+			waited += 1
+		var went_in: bool = g.indoors and g.inside_of == ti
+		g.player.p = ti.counter_front
+		g.player.sync()
+		await _frames(20)
+		await _shot("bancosancho_dentro_jugador")
+		g.player.p = E.spot(ti, true)
+		g.player.sync()
+		await _frames(5)
+		E.leave()
+		waited = 0
+		while g.indoors and waited < 30:
+			await _frames(1)
+			waited += 1
+		var came_out: bool = not g.indoors and g.player.p.distance_to(ti.out_spawn) < 2.0
+		_check(shown and went_in and came_out, "a green arrow stands before the copy shop's door (%s); stepping on it takes you in (%s); out again by its way out (%s)" % [shown, went_in, came_out])
+		g.weekday = day_was
+		g.set_time(12.0)
+		await _bancosancho_checks()
+		print("BANCOSANCHO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--noche"):      # just the Noche: its front from the street, close, open and shut, at night; walking in by its arrow; its inside
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var no = g.world.get("noche")
+		if no == null:
+			print("NOCHE FAILED (not built: a map baked before it)")
+			get_tree().quit(1)
+			return
+		for n in g.npcs:
+			n.visible = false
+		var day_was: int = g.weekday
+		g.weekday = 0
+		for moment in [["", 12.0], ["_cerrado", 22.5], ["_noche", 20.5]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["frente", Vector2(3.8, 8.2), 2.5, Vector2(3.9, 0.0), 5.0, 80.0], ["tienda", Vector2(5.6, 3.6), 1.6, Vector2(5.6, -0.3), 2.0, 70.0],
+					["este", Vector2(-9.0, 5.5), 1.7, Vector2(5.0, 0.0), 4.0, 70.0], ["oeste", Vector2(17.0, 6.0), 1.7, Vector2(4.0, 0.0), 4.0, 70.0]]:
+				if moment[0] != "" and v[0] != "tienda" and v[0] != "frente":
+					continue
+				var eye: Vector2 = no.spot(v[1].x, v[1].y)
+				var at: Vector2 = no.spot(v[3].x, v[3].y)
+				g.player.p = no.spot(40.0, 30.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, no.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(8)
+				await _shot("noche_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		for v in [["aire", Vector2(4.0, 30.0), 26.0, Vector2(4.0, -6.0), 0.0, 55.0], ["balcones", Vector2(3.9, 8.0), 1.7, Vector2(3.9, 0.0), 9.0, 75.0]]:
+			var eye: Vector2 = no.spot(v[1].x, v[1].y)
+			var at: Vector2 = no.spot(v[3].x, v[3].y)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, no.level + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(8)
+			await _shot("noche_%s" % v[0])
+		var ti = no.tienda                                 # its inside, the set out in the fields
+		for v in [["entrada", Vector3(0.0, 1.6, 0.8), Vector3(0.0, 1.2, 10.0), 82.0], ["pasillo", Vector3(-0.5, 1.6, 4.4), Vector3(-0.5, 1.0, 14.0), 75.0],
+				["caja", Vector3(2.15, 1.7, 3.9), Vector3(-3.4, 1.0, 2.0), 75.0], ["fondo", Vector3(0.0, 1.7, 9.0), Vector3(0.0, 2.2, 16.0), 80.0],
+				["alto", Vector3(4.3, 2.95, 0.4), Vector3(-1.0, 0.4, 8.0), 88.0]]:
+			g.cam.position = ti.transform * (v[1] as Vector3)
+			g.cam.look_at(ti.transform * (v[2] as Vector3))
+			g.cam.fov = v[3]
+			await _frames(6)
+			await _shot("noche_dentro_%s" % v[0])
+		# walking in by its green arrow, and out again
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		var E = g.entradas
+		no.set_open(true)
+		var back: Vector2 = (ti.out_spawn - ti.door_out).normalized()
+		g.player.p = E.spot(ti, false) + back * 3.0
+		g.player.sync()
+		await _frames(10)
+		var shown: bool = E.mark_of(ti, false) != null and E.mark_of(ti, false).visible and E.is_shop(ti)
+		await _shot("noche_flecha")
+		g.player.p = E.spot(ti, false)
+		g.player.sync()
+		var waited := 0
+		while not g.indoors and waited < 30:
+			await _frames(1)
+			waited += 1
+		var went_in: bool = g.indoors and g.inside_of == ti
+		await _frames(20)
+		await _shot("noche_dentro_jugador")
+		g.player.p = E.spot(ti, true)
+		g.player.sync()
+		await _frames(5)
+		g.interact()
+		waited = 0
+		while g.indoors and waited < 30:
+			await _frames(1)
+			waited += 1
+		var came_out: bool = not g.indoors and g.player.p.distance_to(ti.out_spawn) < 2.0
+		_check(shown and went_in and came_out, "a green arrow stands before its door (%s); stepping on it takes you in (%s); the action button on the one inside takes you back out to its door (%s)" % [shown, went_in, came_out])
+		g.weekday = day_was
+		g.set_time(12.0)
+		await _noche_checks()
+		print("NOCHE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--masahorro"):      # just the MasAhorro: its front, its way in, its car park, its sides, from the air, at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(12.0)
+		var ma = g.world.masahorro
+		if ma == null:
+			print("MASAHORRO FAILED (not built: a map baked before it)")
+			get_tree().quit(1)
+			return
+		for n in g.npcs:
+			n.visible = false
+		var day_was: int = g.weekday
+		g.weekday = 0                                                 # (a Monday: on a Sunday it is shut all day)
+		ma.settle_cars(g)                                             # (its customers' cars, parked by now)
+		await _frames(40)
+		var up := Vector3(-ma.U.y, 0.0, ma.U.x)
+		for v in [["aire", Vector2(-30.0, 95.0), 45.0, Vector2(15.0, -15.0), 0.0, 60.0], ["frente", Vector2(14.0, 62.0), 1.7, Vector2(14.0, 0.0), 4.0, 60.0],
+				["entrada", Vector2(4.0, 13.0), 1.6, Vector2(17.0, 0.0), 2.2, 75.0], ["marquesina", Vector2(9.0, 2.0), 1.6, Vector2(24.0, -0.5), 1.8, 80.0],
+				["aparcamiento", Vector2(-2.0, 74.0), 2.2, Vector2(18.0, 20.0), 0.0, 80.0], ["carros", Vector2(6.0, 40.0), 1.7, Vector2(30.0, 25.0), 1.0, 80.0],
+				["noria", Vector2(-9.0, 6.0), 1.7, Vector2(-1.0, -40.0), 3.0, 75.0], ["carga", Vector2(4.0, -62.0), 1.7, Vector2(20.0, -55.0), 2.5, 85.0],
+				["vinas", Vector2(16.0, 88.0), 1.7, Vector2(20.0, 70.0), 1.2, 80.0], ["tejado", Vector2(-12.0, 12.0), 22.0, Vector2(14.0, -30.0), 6.0, 65.0],
+				["maquinas", Vector2(33.0, -66.0), 1.7, Vector2(20.0, -56.0), 2.5, 80.0]]:
+			var eye: Vector2 = ma.spot(v[1].x, v[1].y)
+			var at: Vector2 = ma.spot(v[3].x, v[3].y)
+			g.player.p = ma.spot(60.0, 120.0)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(8)
+			await _shot("masahorro_%s" % v[0])
+		var mid: Vector2 = ma.spot(15.0, 9.0)                         # (straight down, the front at the top: as the orthophoto is turned)
+		g.cam.position = Vector3(mid.x, MapData.height(mid) + 150.0, mid.y)
+		g.cam.look_at(Vector3(mid.x, MapData.height(mid), mid.y), up)
+		g.cam.fov = 52.0
+		await _frames(8)
+		await _shot("masahorro_planta")
+		var midday: int = ma.parked.size()
+		var in_bays := 0
+		for e in ma.parked:
+			if is_instance_valid(e["car"]) and (e["car"].p as Vector2).distance_to(e["at"]) < 0.6 and g.cars.has(e["car"]):
+				in_bays += 1
+		g.set_time(20.5)                                              # at night, open: the lights inside, its name lit
+		await _frames(4)
+		ma.settle_cars(g)
+		await _frames(20)
+		var ne: Vector2 = ma.spot(-6.0, 30.0)
+		var na: Vector2 = ma.spot(16.0, 0.0)
+		g.cam.position = Vector3(ne.x, MapData.height(ne) + 1.8, ne.y)
+		g.cam.look_at(Vector3(na.x, MapData.height(na) + 3.5, na.y))
+		g.cam.fov = 70.0
+		await _frames(12)
+		await _shot("masahorro_noche")
+		var evening: int = ma.parked.size()
+		g.set_time(22.5)                                              # ...and later, shut (it shuts at half past nine): dark, its car park empty
+		await _frames(4)
+		ma.settle_cars(g)
+		await _frames(12)
+		await _shot("masahorro_cerrado")
+		var night: int = ma.parked.size()
+		_check(midday == 7 and in_bays == midday and evening == 7 and night == 0 and ma.bay_spots.size() >= 50,
+			"while it is open its customers' cars stand in its bays (%d at midday, all in their bays: %d; %d in the evening), and shut there are none (%d)" % [midday, in_bays, evening, night])
+		g.weekday = day_was
+		g.set_time(12.0)
+		g.phase = "free"
+		await _masahorro_checks()
+		print("MASAHORRO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--rotonda"):      # just the Tricornios' roundabout: from the streets round it, the monolith, the flag, from the air, at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var ro = g.world.rotonda
+		if ro == null:
+			print("ROTONDA FAILED (the map has no ring road there)")
+			get_tree().quit(1)
+			return
+		for n in g.npcs:                            # (nobody walking across the pictures)
+			n.visible = false
+		var lk: Vector2 = ro.mono + ro._look * 7.5
+		for moment in [["", 12.5], ["noche_", 22.5]]:
+			g.set_time(moment[1])
+			for v in [["desde_sur", ro.mid + Vector2(1.5, 14.0), 1.7, ro.mid, 3.0, 70.0], ["desde_norte", ro.mid + Vector2(-2.0, -15.0), 1.7, ro.mid, 3.0, 70.0],
+					["desde_oeste", ro.mid + Vector2(-15.0, -3.0), 1.7, ro.mid, 3.0, 70.0], ["desde_este", ro.mid + Vector2(14.0, 0.5), 1.7, ro.mid, 3.0, 70.0],
+					["monolito", ro.mono + ro._look * 3.2, 1.5, ro.mono, 1.5, 62.0], ["placa", ro.mono + ro._look * 1.3, 1.3, ro.mono, 1.05, 45.0],
+					["bandera", ro.mono + ro._look * 6.0, 1.6, ro.POLE, 9.0, 75.0], ["como_la_foto", lk, 1.6, ro.mono, 3.5, 68.0],
+					["aire", ro.mid + Vector2(0.0, 24.0), 24.0, ro.mid, 0.0, 55.0]]:
+				if moment[0] != "" and not (v[0] in ["desde_sur", "como_la_foto", "bandera"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = ro.mid + Vector2(60.0, 60.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, ro.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(8)
+				await _shot("rotonda_%s%s" % [moment[0], v[0]])
+		g.set_time(12.5)
+		g.phase = "free"
+		await _rotonda_checks()
+		print("ROTONDA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--kebabdeluxe"):      # just Kebab Deluxe: its front from the avenue, its boards, through its glass, at night
@@ -7988,6 +9225,10 @@ func _run() -> void:
 		await finger.call(g.hud.creator_back)
 		_check(on_lustre.is_empty() and on_pintas.is_empty() and to_pintas and g.creator_tab == 0 and g.phase == "creator",
 			"the creator on a touch screen: its own panel buttons, pressed by a finger (Siguiente to Pintas, one page only; Volver back), and no touch buttons over them %s %s" % [str(on_lustre), str(on_pintas)])
+		await finger.call(g.hud.creator_tab_boxes[1][0])          # (no shoulder buttons nor Tab on a phone: a finger on the tab)
+		var tab_tapped: bool = g.creator_tab == 1 and g.phase == "creator"
+		await finger.call(g.hud.creator_tab_boxes[0][0])
+		_check(tab_tapped and g.creator_tab == 0, "on a touch screen a finger on a tab turns the creator's page to it")
 		await _shot("tactil_creador")
 		print("TACTIL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
@@ -8398,6 +9639,412 @@ func _run() -> void:
 		ccam.queue_free()
 		print("NUEVO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--dormir"):        # the story's bedtime in your own bed (16 Nov 2026): Paca, the door, the bed, the morning call
+		var fails0 := fails
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		g.set_time(21.5)
+		await _frames(20)
+		var i_sleep: int = g._idx("sleep")
+		g.si = i_sleep
+		g.player.p = g._start["p"]
+		g.player.sync()
+		g.begin_step(i_sleep)
+		await _frames(20)
+		_check(g.dlg != null, "at bedtime Paca has her say")
+		await _skip_dialog()
+		_check(g.phase == "play" and g._step_flag == "bed" and g.target != null, "then the arrow leads to your door, and the screen does not go dark yet")
+		g.player.p = g.entradas.spot(g.casa, false)
+		g.player.sync()
+		var waited := 0
+		while not g.indoors and waited < 60:
+			await _frames(1)
+			waited += 1
+		_check(g.indoors and g.inside_of == g.casa, "the arrow at the door takes you in")
+		g.player.p = g.casa.bed_spot
+		g.player.sync()
+		await _frames(10)
+		_check(g._can_nap(), "by the bed the button puts you to sleep")
+		g.interact()
+		await _frames(5)
+		_check(g.phase == "ending", "the screen goes dark")
+		await _frames(150)
+		_check(g.phase == "play" and _at("call") and g.indoors and absf(g.clock - 8.0) < 0.3 and g.phone_call != null, "you wake up in your room, in the morning, with the phone ringing (phase %s, step %s, indoors %s, %.1f h, call %s)" % [g.phase, g.steps[g.si]["id"], g.indoors, g.clock, g.phone_call != null])
+		g._use_door(false, g.casa)
+		await _frames(10)
+		_check(not g.indoors, "and you can go out")
+		print("DORMIR %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+		get_tree().quit(1 if fails > fails0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--ropa"):          # the clothes, hats, things round the neck and shoes from free models (16 Nov 2026)
+		shots = true
+		var fails0 := fails
+		g.menu.close()
+		g.phase = "free"
+		g.set_time(11.0)
+		g.hud.play_ui.visible = false
+		var Ch = load("res://scripts/chara.gd")
+		var Cr = load("res://scripts/creator.gd")
+		var shirts := [0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f]
+		var tries: Array = []
+		for i in range(Ch.ROPA.size()):
+			tries.append({"top": Ch.FIRST_ROPA + i, "shirt": shirts[i % shirts.size()]})
+		var hats: Array = Cr.OPTIONS[0]["values"].slice(4)
+		for i in range(hats.size()):
+			tries.append({"hat": hats[i], "hat_color": [0x1f9a55, 0xc0392b, 0x2f6bb5, 0xe6b422, 0x26262b][i % 5], "hair_style": Ch.FIRST_PELO + 2})
+		for i in range(Ch.CUELLO.size()):
+			tries.append({"pendant": Ch.FIRST_CUELLO + i, "shirt": 0xf8f8f8})
+		var ok_pieces := true
+		for name in Ch.ROPA + Ch.CUELLO + Ch.CALZADO + Ch.SOMBREROS.values():
+			if Ch.pieza(name) == null:
+				ok_pieces = false
+				print("  missing ", name)
+		_check(ok_pieces, "every new piece of clothing, hat, thing round the neck and shoe has its model")
+		await _lineup(tries, "ropa")
+		var feet: Array = [{"shoe_type": Ch.BAREFOOT}]
+		for i in range(Ch.CALZADO.size()):
+			feet.append({"shoe_type": Ch.FIRST_CALZADO + i, "shoes": [0x4a3424, 0x1b1b1f, 0xf8f8f8, 0xb23a3a, 0x3b5fa8, 0x3f7d4a, 0xe6c229, 0xef8fa9][i % 8]})
+		await _lineup(feet, "calzado", true)
+		var folk: Array = []                      # neighbours as the game makes them: with no shoes said, the new trainers (16 Nov 2026)
+		for id in ["paca", "josefa", "maruja", "loli", "alberto", "chiki"]:
+			if g.named.has(id):
+				folk.append(g.named[id].look_data)
+		var no_word: bool = folk.all(func(o): return not o.has("shoe_type") or int(o["shoe_type"]) >= Ch.FIRST_CALZADO)
+		_check(no_word, "the neighbours wear the new shoes")
+		await _lineup(folk, "vecinos", true)
+		var multi: Array = []                     # clothes of several parts, their colour 2 and 3 chosen (16 Nov 2026)
+		for pair in [["ropa_futbol", 0x3b5fa8, 0xf8f8f8, 0xe6c229], ["ropa_marinera", 0xf8f8f8, 0x3b5fa8, -1], ["ropa_reflectante", 0xef7f1a, 0x26262b, -1],
+				["ropa_camisa_cuello", 0x7fb069, 0xf8f8f8, -1], ["ropa_sudadera_capucha", 0x9d4edd, 0xf8f8f8, -1], ["ropa_anorak", 0xe8553d, 0x26262b, -1]]:
+			multi.append({"top": Ch.FIRST_ROPA + Ch.ROPA.find(pair[0]), "shirt": pair[1], "shirt2": pair[2], "shirt3": pair[3]})
+		await _lineup(multi, "colores")
+		print("ROPA %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+		get_tree().quit(1 if fails > fails0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--peinados"):      # the hair, beards and eyebrows from free models (16 Nov 2026), in rows of people
+		shots = true
+		var fails0 := fails
+		g.menu.close()
+		g.phase = "free"
+		g.set_time(11.0)
+		g.hud.play_ui.visible = false
+		var Ch = load("res://scripts/chara.gd")
+		var Cr = load("res://scripts/creator.gd")
+		var base: Dictionary = Cr.look(Cr.defaults())
+		var tries: Array = []                     # [look changes] for each person
+		for i in range(Ch.PELOS.size()):
+			tries.append({"hair_style": Ch.FIRST_PELO + i, "hair": [0x5a3a22, 0x2a1c14, 0xd9a441, 0xb5451b, 0xd9d9de, 0xe86aa6][i % 6]})
+		for i in range(Ch.BARBAS.size()):
+			tries.append({"face": Ch.FIRST_BARBA + i, "hair": [0x2a1c14, 0x5a3a22, 0xd9d9de, 0xb5451b][i % 4], "hair_style": 3})
+		for i in range(Ch.CEJAS.size()):
+			tries.append({"brows": Ch.FIRST_CEJAS + i, "hair": 0x2a1c14, "hair_style": 0})
+		tries.append({"hair_style": Ch.RULOS, "hair": 0xd9d9de, "glasses": 1, "top": 7, "shirt": 0x4f7d8f})      # (an old lady's curlers)
+		tries.append({"hair_style": Ch.CALVO, "hair": 0x2a1c14, "face": 4})         # (bald)
+		tries.append({"hair_style": Ch.RASURADO, "hair": 0x2a1c14})                 # (shaved)
+		tries.append({"hair_style": Ch.RASURADO, "hair": 0x2a1c14, "barba3": 1})      # (shaved, three days' beard)
+		tries.append({"hair_style": 0, "hair": 0x5a3a22, "barba3": 1, "face": 1})    # (a moustache and three days' beard)
+		tries.append({"hair_style": 0, "hair": 0xb5451b, "barba3": 1, "face": 3})    # (a goatee and three days' beard)
+		tries.append({"hair_style": Ch.FIRST_PELO, "hat": "cap", "hat_color": 0x1f9a55, "emblem": 0xf2c230})      # (under a cap: the "gorro" mesh)
+		tries.append({"hair_style": Ch.FIRST_PELO + 2, "hat": "straw", "hat_band": 0x26262b})
+		var at := Vector2(-1800.0, -1540.0)        # (out in the fields by the house's room: room for a row of them)
+		g.player.p = at - Vector2(0.0, 12.0)
+		g.player.sync()
+		var along := Vector2(0.0, 1.0)
+		var across := Vector2(1.0, 0.0)
+		var people: Array = []
+		var all_ok := true
+		for i in range(tries.size()):
+			var o: Dictionary = base.duplicate()
+			for k in tries[i]:
+				o[k] = tries[i][k]
+			var c = Ch.new()
+			g.add_child(c)
+			c.setup(o)
+			c.collision_layer = 0
+			c.collision_mask = 0
+			people.append(c)
+			var tri := 0
+			for n in c.neck.get_children():
+				if n is MeshInstance3D and (n as MeshInstance3D).mesh is ArrayMesh and (n as MeshInstance3D).mesh.get_surface_count() > 0 and (n as MeshInstance3D).mesh.get_aabb().size.length() > 0.2:
+					tri += 1
+			if not tries[i].has("hat") and tri == 0 and int(tries[i].get("hair_style", 0)) != Ch.CALVO:      # (bald: nothing to have)
+				all_ok = false
+				print("  missing piece for ", tries[i])
+		_check(all_ok, "every new hairstyle, beard and pair of eyebrows has its model (%d people)" % tries.size())
+		var per_row := 6
+		for row in range(int(ceil(tries.size() / float(per_row)))):
+			for j in range(per_row):
+				var i := row * per_row + j
+				for k in range(people.size()):
+					people[k].visible = k >= row * per_row and k < (row + 1) * per_row
+				if i < people.size():
+					var c = people[i]
+					c.p = at + along * 6.0 + across * ((j - (per_row - 1) / 2.0) * 1.35)
+					c.h = atan2(-along.x, -along.y)
+					c.sync()
+			var mid: Vector2 = at + along * 6.0
+			for side in ["frente", "espalda"]:
+				var eye: Vector2 = mid - along * 5.2 if side == "frente" else mid + along * 5.2
+				for c in people:
+					if c.visible:
+						c.h = atan2(eye.x - c.p.x, eye.y - c.p.y) if side == "frente" else atan2(c.p.x - eye.x, c.p.y - eye.y)
+						c.sync()
+				g.cam_fixed = [MapData.at(eye, 1.6), MapData.at(mid, 1.05)]
+				g.cam_pos = g.cam_fixed[0]                 # (straight there: it would glide in from the town otherwise)
+				g.cam_look = g.cam_fixed[1]
+				await _frames(15)
+				await _shot("peinados_%d_%s" % [row + 1, side])
+		for k in [0, 1, 2]:                      # close up, from a little above: any skin showing through the hair
+			for c in people:
+				c.visible = c == people[k]
+			var who = people[k]
+			who.h = 0.0
+			who.sync()
+			var close_eye: Vector2 = who.p + Vector2(0.0, 1.9)
+			g.cam_fixed = [MapData.at(close_eye, 2.3), MapData.at(who.p, 1.6)]
+			g.cam_pos = g.cam_fixed[0]
+			g.cam_look = g.cam_fixed[1]
+			await _frames(12)
+			await _shot("peinados_cerca_%d" % k)
+		g.cam_fixed = null
+		print("PEINADOS %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+		get_tree().quit(1 if fails > fails0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--casa"):          # your house (16 Nov 2026): in by the green arrow, the bed, the wardrobe, your peña on the wall
+		shots = true
+		var fails0 := fails
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		g.set_time(12.5)
+		await _frames(20)
+		var E = g.entradas
+		var C = g.casa
+		_check(C != null and E.is_shop(C), "the house has a room of its own, with the green arrow at its door")
+		if C == null:
+			print("CASA FAILED (%d failed)" % (fails - fails0))
+			get_tree().quit(1)
+			return
+		g.phase = "free"
+		var arrow_at: Vector2 = E.spot(C, false)
+		var back: Vector2 = (C.out_spawn - C.door_out).normalized()
+		var side := Vector2(-back.y, back.x)
+		g.player.p = arrow_at + back * 1.6 + side * 2.6
+		g.player.sync()
+		var eye: Vector2 = arrow_at + back * 3.4 - side * 4.5
+		g.cam_fixed = [MapData.at(eye, 1.9), MapData.at(arrow_at - back * 0.6, 1.2)]
+		await _frames(25)
+		var out_mark = E.mark_of(C, false)
+		_check(out_mark != null and out_mark.visible, "the arrow stands at your door")
+		await _shot("casa_1_puerta")
+		g.cam_fixed = null
+		g.player.p = arrow_at
+		g.player.sync()
+		var waited := 0
+		while not g.indoors and waited < 30:
+			await _frames(1)
+			waited += 1
+		_check(g.indoors and g.inside_of == C, "stepping on it takes you into your room")
+		g.player.p = C.INSIDE + Vector2(1.3, 3.0)
+		g.player.h = 2.9
+		g.player.sync()
+		g.hud.play_ui.visible = false               # (the room alone, for the picture)
+		await _frames(40)
+		await _shot("casa_2_cuarto")
+		g.hud.play_ui.visible = true
+		_check(C.pena == g.look_sel[11], "your peña's graffiti is on the back wall (%d)" % C.pena)
+		# the wardrobe: only what you chose, and the neckerchief
+		g.player.p = C.wardrobe_spot
+		g.player.sync()
+		await _frames(10)
+		_check(g._can_dress(), "in front of the wardrobe the button opens it")
+		g.interact()
+		await _frames(30)
+		_check(g.phase == "armario" and g.hud.creator_slot.visible and not g.hud.creator_tabs.visible, "the wardrobe opens in the creator's own panel, with no pages")
+		_check(Touch._wanted().is_empty() and g.hud.creator_spot(g.hud.creator_panel.get_global_rect().get_center()) == "panel",
+			"on a touch screen the wardrobe has no buttons of the touch layer over it (its panel's own), and a finger on the panel is the panel's")
+		await _shot("casa_3_armario")
+		var own: Dictionary = g.armario_owned()
+		var only_mine := true
+		for k in own.keys():
+			var opt := int(k)
+			var have: Array = own[k]
+			if opt == 20:
+				only_mine = only_mine and have.size() == 2
+			else:
+				only_mine = only_mine and have.has(int(g._armario_was[opt])) and have.size() <= 2
+		_check(only_mine, "it has only what you chose in the creator (and taking it off) and your peña's neckerchief: %s" % str(own))
+		g.armario_row = Creator.WARDROBE.find(20) + 1
+		g._armario_input("right")
+		await _frames(10)
+		_check(g.look_sel[20] == 1, "the neckerchief can be put on")
+		g._face_turn = PI                       # (round, to see your back)
+		await _frames(30)
+		await _shot("casa_4_panuelo")
+		g._face_turn = PI * 0.8
+		await _frames(20)
+		await _shot("casa_4b_panuelo_lado")
+		# the peña's T-shirt: also in the wardrobe, in the peña's colour with its logo on the chest (the user, 16 Nov 2026)
+		g.armario_row = Creator.WARDROBE.find(15) + 1
+		var tee_at: int = Creator.OPTIONS[15]["values"].find(Creator.PENA_TEE)
+		var tries_tee := 0
+		while g.look_sel[15] != tee_at and tries_tee < 4:
+			g._armario_input("right")
+			tries_tee += 1
+		await _frames(8)
+		var worn_tee: Dictionary = Creator.look(g.look_sel)
+		_check(g.look_sel[15] == tee_at and worn_tee["shirt"] == Creator.KERCHIEFS[g.look_sel[11]] and Creator.not_used(g.look_sel, 2),
+			"the wardrobe has the peña's T-shirt too, in the peña's colour (and no other colour to choose for it)")
+		g._face_turn = 0.0
+		await _frames(25)
+		await _shot("casa_4c_camiseta")
+		g._armario_input("accept")
+		await _frames(10)
+		_check(g.phase == "free" and g.look_sel[20] == 1 and not g.hud.creator_slot.visible, "Me lo pongo keeps it on")
+		# the bed: a nap, and you wake up in your room
+		g.player.p = C.bed_spot
+		g.player.sync()
+		await _frames(10)
+		_check(g._can_nap(), "by the bed the button puts you to sleep")
+		var day0: int = g.day_n
+		g.interact()
+		await _frames(150)
+		_check((g.phase == "free" or g.phase == "play") and g.indoors and absf(g.clock - 8.0) < 0.5 and g.day_n == day0 + 1, "you sleep and wake up at eight, in your room")
+		g.phase = "free"
+		# every peña on the wall
+		for i in range(Creator.PENA_IDS.size()):
+			g.look_sel[11] = i
+			C.set_pena(i)
+			if i == 1 or i == 4:
+				g.player.p = C.INSIDE + Vector2(1.3, 3.0)
+				g.player.sync()
+				g.hud.play_ui.visible = false
+				await _frames(25)
+				await _shot("casa_5_pena_%s" % Creator.PENA_IDS[i])
+				g.hud.play_ui.visible = true
+		g.look_sel[11] = 0
+		# and out
+		g.player.p = E.spot(C, true)
+		g.player.sync()
+		await _frames(30)
+		g.interact()
+		waited = 0
+		while g.indoors and waited < 30:
+			await _frames(1)
+			waited += 1
+		_check(not g.indoors and g.player.p.distance_to(C.out_spawn) < 1.0, "the arrow inside takes you back out to the street")
+		print("CASA %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+		get_tree().quit(1 if fails > fails0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--creador"):       # the creator reworked (16 Nov 2026): white and black, one size, pages only by Tab/LB/RB
+		shots = true
+		g.menu.close()
+		g.look_sel = load("res://scripts/creator.gd").defaults()
+		g._start_creator()
+		await _frames(40)
+		var sizes: Array = []
+		var fails0 := fails
+		var CrO = load("res://scripts/creator.gd")
+		var named_all := true
+		for lang in ["es", "en"]:
+			var vals: Array = Loc.TX["c_values"][lang]
+			var nms: Array = Loc.TX["c_names"][lang]
+			named_all = named_all and nms.size() == CrO.OPTIONS.size() and vals.size() == CrO.OPTIONS.size()
+			for k in range(mini(vals.size(), CrO.OPTIONS.size())):
+				if (vals[k] as Array).size() != CrO.OPTIONS[k]["values"].size():
+					named_all = false
+					print("  option %d (%s): %d names for %d values" % [k, lang, (vals[k] as Array).size(), CrO.OPTIONS[k]["values"].size()])
+		_check(named_all, "every option and every value has its name, in Manchego and in English")
+		sizes.append(g.hud.creator_panel.size)
+		await _shot("creador_1_lustre")
+		for d in ["down", "down", "right", "down", "down", "right", "up", "left", "left"]:   # through the rows, changing things
+			g._creator_input(d)
+			await _frames(3)
+			sizes.append(g.hud.creator_panel.size)
+			_check(g.creator_tab == 0, "the arrows (%s) never turn the page" % d)
+		await _shot("creador_2_filas")
+		g._creator_input("tab")
+		await _frames(8)
+		sizes.append(g.hud.creator_panel.size)
+		await _shot("creador_3_pintas")
+		for k in range(14):                       # every row of Pintas, every value of the longest
+			g._creator_input("right" if k % 3 != 2 else "down")
+			await _frames(2)
+			sizes.append(g.hud.creator_panel.size)
+		g._creator_input("tab_prev")
+		await _frames(4)
+		var same := true
+		for sz in sizes:
+			same = same and (sz as Vector2).is_equal_approx(sizes[0])
+		_check(same and g.creator_tab == 0, "the creator's panel keeps one size through both pages and every value (%s)" % str(sizes[0]))
+		g._creator_input("accept")
+		await _frames(4)
+		_check(g.creator_tab == 1 and g.phase == "creator", "Siguiente goes on to Pintas")
+		g._creator_input("back")
+		await _frames(4)
+		_check(g.creator_tab == 0, "Volver goes back to Lustre")
+		Controls.pad = true
+		Controls.device_changed.emit()
+		g._creator_input("tab")
+		await _frames(12)
+		await _shot("creador_4_mando")
+		Controls.pad = false
+		Controls.device_changed.emit()
+		# the three days' beard is an option of its own now: Barba never offers it, and an old save with it gets the option
+		g.creator_goto(8)
+		var never_stubble := true
+		for k in range(CrO.OPTIONS[8]["values"].size() + 2):
+			g._creator_input("right")
+			never_stubble = never_stubble and CrO.OPTIONS[8]["values"][g.look_sel[8]] != CrO.STUBBLE_FACE
+		var old_save: Array = CrO.defaults().slice(0, 20)
+		old_save[8] = CrO.OPTIONS[8]["values"].find(CrO.STUBBLE_FACE)
+		var mended: Array = CrO.clean(old_save)
+		_check(never_stubble and mended[8] == 0 and mended[23] == 1 and CrO.TABS[0].has(23),
+			"the three days' beard is a yes or no of its own on Lustre, not a beard; a game saved with it as a beard keeps it")
+		g.look_sel[8] = 0
+		# the peña's T-shirt is the wardrobe's: the creator's Ropa row never lands on it
+		var tee_i: int = CrO.OPTIONS[15]["values"].find(CrO.PENA_TEE)
+		g.creator_goto(15)
+		var never_tee := true
+		for k in range(CrO.OPTIONS[15]["values"].size() + 2):
+			g._creator_input("right")
+			never_tee = never_tee and g.look_sel[15] != tee_i
+		for k in range(CrO.OPTIONS[15]["values"].size() + 2):
+			g._creator_input("left")
+			never_tee = never_tee and g.look_sel[15] != tee_i
+		_check(never_tee, "the creator never offers the peña's T-shirt (only the wardrobe has it)")
+		# the easel by you with your peña's graffiti, following your choice (the user, 16 Nov 2026)
+		var front = g.casa.front_tag() if g.casa != null else null      # (the peña's logo on the front of your house, over the door, in sight)
+		var easel_ok: bool = front != null and front.visible and g.casa.pena == int(g.look_sel[11]) and not g.cam.is_position_behind(front.global_position) 			and Rect2(Vector2.ZERO, g.get_viewport().get_visible_rect().size).has_point(g.cam.unproject_position(front.global_position))
+		g.look_sel[11] = 3
+		g._refresh_creator()
+		await _frames(6)
+		_check(easel_ok and g.casa.pena == 3 and not g.props.tags.any(func(t): return t.get("node") == front),
+			"in the creator your peña's graffiti is in sight over the door of your house, it changes with the peña, and it is none of the town's walls")
+		# clothes of several parts: colour 1, 2 and 3 (the football shirt has three)
+		var Ch2 = load("res://scripts/chara.gd")
+		g.look_sel[15] = CrO.OPTIONS[15]["values"].find(Ch2.FIRST_ROPA + Ch2.ROPA.find("ropa_futbol"))
+		g.look_sel[2] = 2                         # white
+		g.look_sel[21] = 1                        # red
+		g.look_sel[22] = 6                        # black
+		g._refresh_creator()
+		await _frames(6)
+		var dyed := false
+		for n in g.player.inner.get_children():
+			if n is MeshInstance3D and (n as MeshInstance3D).mesh != null and (n as MeshInstance3D).mesh.get_surface_count() >= 3:
+				var m1 = (n as MeshInstance3D).get_surface_override_material(1)
+				dyed = m1 is BaseMaterial3D and (m1 as BaseMaterial3D).albedo_color.is_equal_approx(Color("e8553d"))
+		_check(not CrO.not_used(g.look_sel, 21) and not CrO.not_used(g.look_sel, 22) and CrO.not_used([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 21) and dyed,
+			"clothes of several parts have a colour 2 and 3 in the creator (the football shirt's second part in red); one of one part has not")
+		g.creator_tab = 1
+		g.creator_row = 5
+		g._refresh_creator()
+		await _shot("creador_5_colores")
+		g._finish_creator()
+		_check(g.caballete == null and front.visible, "no easel, and the graffiti over the door stays after the creator")
+		print("CREADOR %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+		get_tree().quit(1 if fails > fails0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--creator"):       # the character creator: its two tabs, and the newer choices on a face
 		shots = true
@@ -8868,10 +10515,19 @@ func _run() -> void:
 	await _comunal_checks()
 	await _toledano_checks()
 	await _kebabdeluxe_checks()
+	await _rotonda_checks()
+	await _ies_checks()
+	await _masahorro_checks()
+	await _noche_checks()
+	await _bancosancho_checks()
 	await _gacha_checks()
 	await _sentido_checks(false)
 	await _cuartel_coche_checks()
 	await _dolores_checks(false)
+	await _salto_checks()
+	await _ninos_checks()
+	await _chismes_checks()
+	await _suelos_checks()
 	await _ajedrez_checks()                              # (ajedrez) last of the list, as Sistemas asked; it puts everything back
 	var th: Dictionary = MapData.townhall
 	var th_m := Vector2(th["m"][0], th["m"][1])
@@ -8942,11 +10598,16 @@ func _run() -> void:
 	_creator_pick(7, 1)               # bushy eyebrows
 	_creator_pick(12, 2); _creator_pick(13, 2); _creator_pick(14, 5); _creator_pick(15, 3); _creator_pick(16, 2)     # thick glasses, hoops, neckerchief, checked shirt, well fed
 	_creator_pick(17, 2); _creator_pick(18, 3)              # red alpargatas
-	g.creator_row = 0
+	# the page turns only with the shoulder buttons, Tab, or Siguiente/Volver: never with the arrows (the user, 16 Nov 2026)
 	g.creator_tab = 0
-	g._creator_input("right")
-	_check(g.creator_tab == 1 and Loc.t("c_tabs").size() == Creator.TABS.size() and Creator.TABS[0].size() + Creator.TABS[1].size() == Creator.OPTIONS.size(), "the choices come on two pages, Lustre and Pintas, and between them they cover every option")
-	g._creator_input("left")
+	g.creator_row = 1
+	var arrows_stay := true
+	for d in ["up", "left", "right", "down"]:
+		g._creator_input(d)
+		arrows_stay = arrows_stay and g.creator_tab == 0 and g.creator_row >= 1
+	g._creator_input("tab")
+	_check(arrows_stay and g.creator_tab == 1 and Loc.t("c_tabs").size() == Creator.TABS.size() and Creator.TABS[0].size() + Creator.TABS[1].size() + Creator.WARDROBE_ONLY.size() == Creator.OPTIONS.size(), "the choices come on two pages, Lustre and Pintas, and between them they cover every option (but the wardrobe's own); the arrows never turn the page, Tab does")
+	g._creator_input("tab_prev")
 	var worn: Dictionary = Creator.look(g.look_sel)
 	_check(worn["shoe_type"] == 2 and worn["shoes"] == 0xb23a3a and g.player._fl.get_child_count() >= 3, "footwear can be chosen too: kind and colour")
 	_check(worn["glasses"] == 2 and worn["earrings"] == 2 and worn["pendant"] == 5 and worn["top"] == 3 and worn["build"] > 1.1 and worn["kerchief"] == Creator.KERCHIEFS[2], "glasses, earrings, something round the neck, clothes and build can be chosen too (the neckerchief takes your peña's colour)")
@@ -8982,7 +10643,20 @@ func _run() -> void:
 		"the creator writes no instructions out: Siguiente on Lustre, Volver and Así me quedo on Pintas, each with its button; the page buttons by the tabs and turning arrows round the character")
 	await _shot("0b_creator_pintas")
 	g._creator_input("accept")                   # Pintas: Así me quedo
-	_check(g.phase == "flyover" and g.dlg != null and g._fly_shots.size() == Loc.t("flyover").size(), "confirming starts the fly-over of the town, one camera move per line")
+	# the Padrón Municipal first (padron.gd): your name, or no registration
+	await _frames(10)
+	var pad_up: bool = g.padron.active and g.padron.visible and g.phase == "creator" and not g.hud.creator_slot.visible
+	await _shot("0b_padron")
+	g.padron.sign_up()
+	var refused: bool = not g.padron.signed and g.padron.active
+	g.padron.type_text("prueba")
+	g.padron.sign_up()
+	_check(pad_up and refused and g.padron.signed and String(g.stats.get("nombre", "")) == "Prueba",
+		"then the Padrón Municipal: with no name it will not register you; with one it is signed and stamped (Prueba)")
+	await _frames(120)
+	_check(g.phase == "flyover" and g.dlg != null and g._fly_shots.size() == Loc.t("flyover").size(), "once stamped, the fly-over of the town, one camera move per line")
+	g.stats.erase("nombre")                      # (the rest of the run checks what people say word for word: no name in their mouths)
+	g.padron.plaque()
 	await _frames(50)
 	var bub: Control = g.hud.dlg_bubble
 	var screen_h: float = g.hud.get_viewport().get_visible_rect().size.y
@@ -9155,6 +10829,24 @@ func _run() -> void:
 	await _frames(260)
 	await _shot("7_night")
 	await _skip_dialog()
+	if g.casa != null:                  # bedtime is in your own bed now (the user, 16 Nov 2026): in by the arrow at your door, and lie down
+		_check(g.phase == "play" and g._step_flag == "bed" and g.target != null, "once Paca has had her say, the arrow takes you to your door")
+		if g.in_car != null:
+			g.in_car.set_speed(Vector2.ZERO)
+			await _frames(10)
+			g._exit_car()
+		await _frames(20)
+		g.player.p = g.entradas.spot(g.casa, false)
+		g.player.sync()
+		var waited_in := 0
+		while not g.indoors and waited_in < 60:
+			await _frames(1)
+			waited_in += 1
+		g.player.p = g.casa.bed_spot
+		g.player.sync()
+		await _frames(10)
+		_check(g.indoors and g.inside_of == g.casa and g._can_nap(), "in the house, by the bed, the button puts you to sleep")
+		g.interact()
 	_check(g.phase == "ending", "the screen goes dark")
 	var slept_on: int = g.weekday
 	await _frames(150)
@@ -9168,6 +10860,9 @@ func _run() -> void:
 	await _shot("d1_on_the_phone")
 	await _skip_dialog()
 	_check(_at("josefa") and g.phone_call == null and not g.player.phone, "hanging up sends you to Josefa")
+	if g.indoors and g.casa != null and g.inside_of == g.casa:      # (you woke up in your room: out into the street)
+		g._use_door(false, g.casa)
+		await _frames(10)
 	g.talk_to(g.named["josefa"])
 	await _skip_dialog()
 	_check(_at("vip"), "Josefa hands over the phone for the V.I.P. shop")
@@ -9366,13 +11061,33 @@ func _run() -> void:
 	await _frames(60)
 	_check(g.clock > before_h + 0.012 and g.clock < before_h + 0.022, "time runs by itself while you play (%.3f h in 2 s)" % (g.clock - before_h))
 	_check(g._step_open({"days": [g.weekday]}) and not g._step_open({"days": [(g.weekday + 1) % 7]}) and g._step_open({"hours": [22.0, 14.0]}) and not g._step_open({"hours": [14.0, 22.0]}), "a mission step can be tied to days of the week or to hours")
-	# a nap at home
+	# a nap at home: in by the arrow at your door, and lie down on the bed (casa_dentro.gd)
 	g.player.p = g.places["home"]["p"]
 	await _frames(5)
-	_check(g._can_nap(), "at home you can lie down whenever you like")
+	if g.casa != null:
+		var door_at: Vector2 = g.entradas.spot(g.casa, false)
+		g.player.p = door_at + (g.places["home"]["p"] - door_at).normalized() * 4.5
+		await _frames(5)
+		g.player.p = door_at
+		var waited := 0
+		while not g.indoors and waited < 90:
+			await _frames(1)
+			waited += 1
+		g.player.p = g.casa.bed_spot
+		await _frames(10)
+	_check(g._can_nap(), "at home you can lie down whenever you like (by the bed, indoors)")
 	day_before = g.weekday
 	g._go_to_sleep()
 	await _frames(150)
+	if g.indoors:                                # (you wake in your room: out again for what follows, by the arrow at the door)
+		g.player.p = g.entradas.spot(g.casa, true)
+		await _frames(3)
+		g.entradas.leave()
+		var out_t := 0
+		while g.indoors and out_t < 90:
+			await _frames(1)
+			out_t += 1
+		g._door_cool = 1.0
 	_check(g.weekday == (day_before + 1) % 7 and absf(g.clock - 8.0) < 0.3 and g.phase == "free", "and wake up the next morning")
 	# Thursday morning: somebody you know rings, and wants a roast ham
 	_check(not g.negocio("restaurantes") or g.weekday != 3 or g.phone_call != null or int(g.stats.get("thu", -1)) == g.day_n, "(if the nap ended on a Thursday morning, the phone is already ringing of its own accord)")

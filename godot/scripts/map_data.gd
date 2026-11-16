@@ -41,6 +41,8 @@ var toros: Dictionary = {}       # the old bullring's (toros.gd): {o: the middle
 var calasanz: Dictionary = {}    # the nursery school of the Calle del Palo's (calasanz.gd): {o: the north-west corner of its front, u: along the front}; empty on a map baked without it
 var caridad: Dictionary = {}     # the hermitage of the Caridad's island (caridad.gd): {o: the hermitage's south-west corner, u: along its south side}; empty on a map baked without it
 var mercamona: Dictionary = {}   # the supermarket's (mercamona.gd): {o: the shop's north-west corner, u: along its west side, low: its car park's level}; empty on a map baked without it
+var masahorro: Dictionary = {}   # the supermarket of the Calle de las Viñas's (masahorro.gd): {o: the corner of its front on the Noria, u: along the front}; empty on a map baked without it
+var noche: Dictionary = {}       # the Noche of the Calle del Teniente Infante's (noche.gd): {o: the east end of its front, u: along the front}; empty on a map baked without it
 var cuartel: Dictionary = {}     # the barracks' (cuartel.gd): {o: the north end of its main front, u: along that front}; empty on a map baked without it
 var colegio: Dictionary = {}     # the old school's (colegio.gd): {o: the south-west corner of its west tower, u: along its front}; empty on a map baked without it
 var santaana: Dictionary = {}    # the convent of Santa Ana's (santaana.gd): {o: the south end of its front, u: along the front}; empty on a map baked without it
@@ -104,6 +106,8 @@ func _ready() -> void:
 	colegio = data.get("colegio", {})
 	cuartel = data.get("cuartel", {})
 	mercamona = data.get("mercamona", {})
+	masahorro = data.get("masahorro", {})
+	noche = data.get("noche", {})
 	wall_y = data.get("wall_y", [])
 	looks = data.get("looks", [])
 	houses = data.get("houses", [])
@@ -275,9 +279,56 @@ func block(s: Seg) -> void:
 ## its -ax end up to `top` over `ramp`, and level from there on. With "poly" (and o, r2: a circle round it) it is a
 ## level floor of that outline (the raised pavement and the square above the Arroyuelo, plaza.gd) -- or, with "grad"
 ## (how much it rises to the metre, as a vector on the map), one that slopes: `top` is its height at o (puente.gd).
+##
+## The decks are found through a grid (the user's 2K at 30-odd fps, 16 Nov 2026): every step of every neighbour asks
+## this, and going through all of them -- nearly three hundred, with the places built by hand -- took 89 microseconds
+## a call. Each cell keeps the decks that reach into it, in their order in `decks` (the first that holds the spot is
+## the one: a flight of steps is put before the floors it joins). The grid is made again whenever `decks` is another
+## list or changes length (the places add theirs when they are built; the footbridge by the plaza while it is across).
+const DECK_CELL := 16.0
+var _deck_cells := {}
+var _deck_list = null
+var _deck_n := -1
+
+func _index_decks() -> void:
+	_deck_cells.clear()
+	_deck_list = decks
+	_deck_n = decks.size()
+	for i in range(decks.size()):
+		var d: Dictionary = decks[i]
+		var lo := Vector2(1e9, 1e9)
+		var hi := Vector2(-1e9, -1e9)
+		if d.has("poly"):
+			for q in (d["poly"] as PackedVector2Array):
+				lo = lo.min(q)
+				hi = hi.max(q)
+		else:
+			var o: Vector2 = d["o"]
+			var ax: Vector2 = d["ax"]
+			var side := Vector2(-ax.y, ax.x) * float(d["wide"])
+			for q in [o + ax * float(d["half"]) + side, o + ax * float(d["half"]) - side, o - ax * float(d["half"]) + side, o - ax * float(d["half"]) - side]:
+				lo = lo.min(q)
+				hi = hi.max(q)
+		for cx in range(floori(lo.x / DECK_CELL), floori(hi.x / DECK_CELL) + 1):
+			for cy in range(floori(lo.y / DECK_CELL), floori(hi.y / DECK_CELL) + 1):
+				var key := Vector2i(cx, cy)
+				if not _deck_cells.has(key):
+					_deck_cells[key] = PackedInt32Array()
+				var arr: PackedInt32Array = _deck_cells[key]
+				arr.append(i)
+				_deck_cells[key] = arr
+
 func foot(p: Vector2) -> float:
 	var h := height(p)
-	for d in decks:
+	if decks.is_empty():
+		return h
+	if not is_same(decks, _deck_list) or decks.size() != _deck_n:
+		_index_decks()
+	var cell = _deck_cells.get(Vector2i(floori(p.x / DECK_CELL), floori(p.y / DECK_CELL)))
+	if cell == null:
+		return h
+	for i in (cell as PackedInt32Array):
+		var d: Dictionary = decks[i]
 		var rel: Vector2 = p - (d["o"] as Vector2)
 		if d.has("poly"):
 			if rel.length_squared() < float(d["r2"]) and Geometry2D.is_point_in_polygon(p, d["poly"]):

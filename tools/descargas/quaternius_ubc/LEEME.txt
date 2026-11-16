@@ -1,0 +1,6 @@
+Quaternius, "Universal Base Characters" [Standard]  --  CC0 1.0 (x/License_Standard.txt)
+https://quaternius.itch.io/universal-base-characters
+
+Bajado el 16/11/2026 con: python -I tools/itch_get.py https://quaternius.itch.io/universal-base-characters <carpeta>
+(el zip pesa 129 MB, mas de lo que GitHub admite: aqui solo queda lo que usa tools/creador/pelo.py -- el cuerpo
+del hombre, para medir la piel, y los peinados, la barba y las cejas en glTF; sin las texturas, que no se usan).
