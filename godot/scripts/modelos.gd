@@ -251,6 +251,8 @@ static func make(kind: String, spec: Dictionary, paint: int) -> Node3D:
 	var side: float = 0.0 if m.get("mid", false) else size.x * 0.21
 	root.set_meta("seat", Vector3(side, size.y * (float(at[2]) if at.size() > 2 else 0.97) - 0.93, size.z * float(at[1])))
 	_extras(root, kind, size)
+	if kind == "tricornio":         # (not in _extras: Los Pitufos borrow its lights from there)
+		preload("res://scripts/tricornio_marcas.gd").dress(root, kind, size)
 	return root
 
 static func _hex(hex: int) -> Color:
@@ -548,6 +550,7 @@ static func make_from(table: Dictionary, kind: String, spec: Dictionary, paint: 
 						Vector3((bar_hi.x - bar_lo.x) / 2.0 - 0.04, bar_hi.y - bar_lo.y + 0.02, bar_hi.z - bar_lo.z + 0.02))
 					half_bar.name = "luz_a" if sgn < 0.0 else "luz_b"
 					root.add_child(half_bar)
+				preload("res://scripts/tricornio_marcas.gd").dress(root, kind, size)      # their badge and the flag's stripe (the user, 16 Nov 2026)
 			"pitufo":
 				root.add_child(Parts.part("box", 0xf4f4f0, Vector3(0, size.y * 0.43, -size.z * 0.05), Vector3(size.x + 0.03, size.y * 0.2, size.z * 0.4)))
 				_extras(root, "tricornio", size)
@@ -571,6 +574,7 @@ static func make_from(table: Dictionary, kind: String, spec: Dictionary, paint: 
 		"tricornio":        # white over green: the roof; and the lights
 			root.add_child(Parts.part("box", 0xf4f4f0, Vector3(0, size.y + 0.005, -size.z * 0.12), Vector3(size.x * 0.74, 0.03, size.z * 0.5)))
 			_extras(root, "tricornio", size)
+			preload("res://scripts/tricornio_marcas.gd").dress(root, kind, size)          # their badge and the flag's stripe
 		"pitufo":           # white doors, and the lights
 			root.add_child(Parts.part("box", 0xf4f4f0, Vector3(0, size.y * 0.43, -size.z * 0.05), Vector3(size.x + 0.03, size.y * 0.2, size.z * 0.4)))
 			_extras(root, "tricornio", size)

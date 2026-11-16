@@ -2,6 +2,205 @@
 
 Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas, publicación, quién toca qué) está en `README.md`. Actualízalo al cerrar un trabajo.
 
+## Sin publicar
+
+- **Texturas (15/11, después de la 0.0.8): calle de Valencia, segundo tramo, 19 casas.** Son los impares del 27 al 43 y los pares del 34 al 52; del 54 al 60 son solares. Descritas con el Catastro y comprobadas con Street View de noviembre de 2024.
+  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas no cambia nada.
+  - `run_tests.py casas "solo=valencia_27,valencia_29,valencia_3,valencia_4,valencia_5"`: OK.
+  - Hojas en `guion/fotos/tanda14/valencia_6..9.jpg`. Veredicto del usuario: «Visto bueno». Con este tramo la calle de Valencia queda entera.
+- **Texturas (15/11): calle del Regidor, primer tramo, 20 casas (`regidor_*`).** Son los impares del 1 al 25 y los pares del 6 al 30. Descritas con el Catastro y comprobadas con Street View de noviembre de 2024.
+  - Fuera: el solar del 4; el 2 y el 5, que no dan a la calle.
+  - El 24 es una tapia con portón en la línea de la calle, `regidor_24t` con `rc: null`; su casa queda al fondo del corral (`regidor_24`).
+  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas no cambia nada.
+  - `run_tests.py casas "solo=regidor_"`: OK. Hojas en `guion/fotos/tanda15/`. Veredicto del usuario: «Perfecto».
+- **Texturas (15/11): calle del Regidor, segundo tramo, 25 casas.** Son los impares del 27 al 51 y los pares del 32 al 54; con este tramo la calle queda entera. Descritas con el Catastro y comprobadas con Street View de noviembre de 2024. Hay carteles de «se vende» en el 48 y de «se alquila» en el 50.
+  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas solo cambia `regidor_30`, por la pared que comparte con el 32.
+  - `run_tests.py casas "solo=regidor_27,regidor_29,regidor_3,regidor_4,regidor_5"`: OK. Hojas en `guion/fotos/tanda15/regidor_5..9.jpg`. Veredicto del usuario: «Genial».
+- **Texturas (15/11): calle de Roma, primer tramo, 22 casas (`roma_*`).** Son los impares del 5 al 27 y los pares del 4 al 30; el 7 D es un solar. Descritas con el Catastro y comprobadas con Street View de noviembre de 2024.
+  - La tienda del 19 va sin rótulo, porque en Street View no se ve qué vende.
+  - Toca `casas_calles.gd`, `calles.json` y `map.json`. Aparte de las casas nuevas solo cambian `valencia_26`, por la pared que comparte con una de Roma, y el `clr` de dos nudos (0,1 m).
+  - `run_tests.py casas "solo=roma_"`: OK. Hojas en `guion/fotos/tanda16/roma_1..4.jpg`.
+  - Corrección (el usuario: la E sin ventanas en los balcones; la B con ventanas y puertas de tamaños extraños):
+    - El Catastro tiene la parcela del 10 dentro de la fachada del 8, así que las dos fachadas se dibujaban una encima de otra.
+    - Nueva clave `"with": [rc, ...]` en `calles.json` (en `house_of` de `bake_godot.py`): una casa se queda con otras parcelas enteras.
+    - `roma_8` lleva dentro el 10 y es un solo bloque descrito con las dos fotos del Catastro: bajo ocre elevado sobre losas, escalera en un recerco de ladrillo, balcones de hierro. `roma_10` desaparece.
+    - Terrazas (`ter`) de `roma_18`, `roma_22` y `roma_4` con sus puertas y ventanas detrás: una terraza sola no pone huecos.
+    - `roma_12` rehecha según Street View: es un edificio gris con soportal tras una verja, no el final del bloque.
+    - `casas.gd`: `gar k=void g=bars` dibuja una verja delante del hueco.
+    - `roma_4`: el portón verde era del vecino bajo; ahora tiene una tienda de alimentación tras una reja de tijera, una terraza y una galería acristalada.
+    - `roma_22`: le sobraba el garaje azul, que es del 20.
+    - Bake: solo cambia `roma_8` y se va `roma_10` (los contornos se mueven 1 cm por redondeo). `casas` de las cinco: OK. Hoja `tanda16/roma_5.jpg`. Veredicto: «Genial».
+    - Arroyuelo 16 y 18 (el usuario: «Arréglala y pásame comparativas»):
+      - El Catastro tiene la 16 rodeando a la 18.
+      - Ahora `arroyuelo_16` (`only` 3) es el bloque de tres plantas de la esquina con la calle de Toledo, con su fachada entera de 8,9 m.
+      - `arroyuelo_16b` (`only` 2) es la casa de dos plantas que hay pasada la 18.
+      - `arroyuelo_18` va enfoscada en blanco, según Street View de 2024. Todo es de ladrillo, como en las fotos; antes era un enfoscado rojo.
+    - `casas.gd` (`_edges`): si el borde de la parcela sigue la línea de la fachada y pasa de sus extremos, se dibuja solo lo que sobra a los lados. Antes salía una segunda fachada encima de la buena, que tapaba sus puertas y ventanas.
+      - Lo arregla en `stana_12`, `stana_73`, `stana_107`, `cajal_7`, `cajal_24`, `arroyuelo_42`, `arroyuelo_55`, `arroyuelo_71` y `labradores_27`. `central` no cambia y `real_26` es obra.
+      - Comprobación: `bordes.py` en el scratchpad.
+    - Bake: solo cambian `arroyuelo_16`, la nueva `arroyuelo_16b` y dos paredes de la casa de detrás, que ahora asoman sobre la 16b (6,94 m frente a 6,4 m).
+    - `casas` de todas ellas: OK.
+    - Comparativas en `tanda16/arroyuelo_16_18.jpg` y `tanda16/fachada_doble.jpg`; falta el veredicto.
+    - Veredicto del usuario: «Genial».
+- **Texturas (16/11): dos terrazas sin huecos detrás.** Lo encontró una búsqueda por todas las calles.
+  - `arroyuelo_64`: una puerta tras la terraza de la esquina.
+  - `stana_79`: ventanas y una puerta tras la terraza de la última planta.
+  - `casas` de las dos: OK.
+- **Texturas (16/11): calle de Roma, segundo tramo, 27 entradas.** El usuario: «Las dos terrazas y roma».
+  - Impares del 29 al 49 y pares del 32 al 54, más la 32 A y la 32 B, que el Catastro tiene aparte.
+  - La 51 es un solar sin edificar. La 52 no existe: el callejero del Catastro la manda a la 47.
+  - Fotos del Catastro (2009-2012) comprobadas con Street View de noviembre de 2024.
+  - `roma_39`: `house_street` había tomado la pared de atrás, a 8 m de la calle; ahora es la de la calle.
+  - Partidas con `only`:
+    - `roma_43`: el bloque de los arcos, de tres plantas (`roma_43`), y la casa blanca de dos (`roma_43b`).
+    - `roma_50`: la casa gris de dos plantas (`roma_50`) y su parte baja (`roma_50b`).
+  - `roma_54t`: el muro del corral de la 54 con su portón (`rc` null).
+  - Bake: entran 27 casas y no cambia ninguna de las que ya había. `solapes.py` y `bordes.py` sin nada de Roma.
+  - `casas` del tramo: OK. Hojas en `guion/fotos/tanda17/roma_6..10.jpg`. Veredicto del usuario: «Visto bueno».
+- **Texturas (16/11): calle de Portugal, primer tramo, 19 entradas (`portugal_*`).** El usuario: «continuamos».
+  - Impares del 1 al 21 y pares del 2 al 22. La 6, 8, 11 y 18 no existen en el Catastro.
+  - Fotos del Catastro comprobadas con Street View de 2024. Cambios por Street View: la 16 y la 19 ya son blancas.
+  - La 13 y la 15 son solares en el Catastro, pero en 2024 hay casas. Van con `rc` null y `deep` 10, porque el bake no usa las partes de 0 plantas.
+  - Partidas con `only`:
+    - `portugal_2`: el bloque de 4 plantas en la esquina (`portugal_2`) y su parte de 2 (`portugal_2b`).
+    - `portugal_20`: 3 plantas (`portugal_20`) y 2 (`portugal_20b`).
+  - La 10 de verdad es 4290011. 4290004 es la 10 (B), un colegio: `portugal_10b` (`only` 1) es solo su verja entre pilares de ladrillo, y los edificios de clases quedan como estaban. Candidato a hacerse a mano si el usuario quiere; no se muestra su nombre.
+  - Sin rótulos: la tienda de una cadena en la 3 y el letrero político pintado en la 12.
+  - La 9 se queda fuera: el Catastro le da un garaje con 1,6 m de fachada, y lo que hay ahí en 2024 es una casa de la avenida de al lado.
+  - La fachada de la 7 se alargó hasta el final de su parcela (11,8 m).
+  - Bake: 19 casas nuevas. `castilla_4` cambia solo en marcas de pared vecina. El `clr` de tres nudos baja hasta 0,4 m frente a la 13 y la 15.
+  - `casas solo=portugal_`: OK. Hojas en `guion/fotos/tanda18/portugal_1..4.jpg`. Veredicto del usuario: «Visto bueno».
+- **Texturas (16/11): calle de Portugal, segundo tramo, 20 entradas.** El usuario: «Sí, segundo tramo».
+  - Impares del 25 al 45, pares del 24 al 38 y `portugal_23`, el muro de ladrillo del corral (solar en el Catastro; `rc` null, `deep` 0,9: con 0,6 no llegaba a los 5 m² que pide el bake).
+  - La 40, la 42 y la 44 no existen. Entre la 27 y la 29 desemboca la calle de las Viñas; el edificio de esa esquina (4289242, sin dirección en Portugal) queda como estaba.
+  - Alturas según las fotos: la 27 tiene tres plantas (h 9,3), la 29 es baja con cámara (h 5,4) y la 33 tiene dos (h 6,6). La 33 lleva su «se vende» (Street View 2024).
+  - Preparado en una copia mientras Sistemas (sentido único, campo `ow`) y Pretil (bloque COLEGIO) horneaban. Se añadió cuando Pretil avisó de que había terminado.
+  - Bake: 20 casas nuevas; ninguna otra cambia, y `clr`, calles, relieve y colegio quedan iguales. `solapes.py` y `bordes.py` sin nada de Portugal.
+  - `casas` del tramo: OK. Hojas en `guion/fotos/tanda19/portugal_5..8.jpg`. Veredicto del usuario: «Visto bueno». La calle queda completa.
+- **Texturas (16/11): calle de Argentina, primer tramo, 21 entradas (`argentina_*`).** El usuario: «Sí, Argentina».
+  - Impares del 1 al 27 y pares del 8 al 24.
+  - La 2 es el centro de salud (`SALUD_RC`, hecho a mano) y no se toca. La 4, 5, 6 y 11 son direcciones que el Catastro manda a la 1 y a la 7.
+  - `argentina_23` es un solar en el Catastro. En Street View de 2024 es un edificio bajo de bloque tostado con dos ventanales tras malla: `rc` null, `deep` 6.
+  - Alturas corregidas por las fotos: la 8 y la 25 tienen tres plantas, la 9 dos, la 10 es una casa baja (h 4,2), y la 18 y la 20 tienen dos.
+  - La 20 sale crema, con un garaje marrón en un marco de piedra, como en Street View de 2024 (el Catastro la tenía de ladrillo).
+  - El hueco entre la 3 y la 7 es el costado de una casa de la calle Santa Ana (4690003); queda como estaba.
+  - Bake: 21 casas nuevas y ninguna otra cambia; `clr`, calles, relieve, colegio y centro de salud quedan iguales. `solapes.py` y `bordes.py` sin nada de Argentina.
+  - `casas solo=argentina_`: OK. Hojas en `guion/fotos/tanda20/argentina_1..4.jpg`. Veredicto del usuario: «Visto bueno».
+- **Texturas (16/11): calle de Argentina, segundo tramo, 20 entradas.** El usuario: «Visto bueno. Segundo tramo».
+  - Impares del 31 al 55 y pares del 26 al 42. La calle queda completa.
+  - No existen la 29, la 45, la 49 ni las de más de 42 en los pares: el callejero del Catastro las manda a otras.
+  - La 37, la 39 (A) y la 41 son solares en el Catastro. En Street View de 2024 hay una casita blanca (`argentina_37`, `rc` null) y la tapia de ladrillo de los solares con una puerta blanca (`argentina_39t`, 35 m, `deep` 0,9).
+  - Entre la 43 y la 47 hay una nave baja blanca con portón beige (`argentina_45t`, `rc` null).
+  - La fachada de la 31 se alargó hasta la 27. En 2024 es un edificio de ladrillo con arcos (portón abajo y balcón arriba).
+  - Bake: 20 casas nuevas. `stana_24` y `stana_26` solo cambian en marcas de pared vecina. `clr`, calles y relieve quedan iguales. `solapes.py` y `bordes.py` sin nada de Argentina.
+  - `casas` del tramo y de esas dos: OK. Hojas en `guion/fotos/tanda20/argentina_5..8.jpg`. Veredicto del usuario: «Visto bueno».
+- **Texturas (16/11): calle de San Isidro, primer tramo, 16 casas (`sanisidro_*`).** El usuario: «Sí, San Isidro».
+  - Impares del 9 al 27 y pares del 10 al 20, con la 20 A (parcela aparte en el Catastro).
+  - Fuera:
+    - La 1 es un almacén sin fachada a esta calle.
+    - La 4, la 6 y la 8: la calle del mapa pasa por encima de sus parcelas (la línea de OSM va desviada) y `house_street` les daba fachadas de 2 m o ninguna. Se quedan como estaban.
+    - La 2, 3, 5 y 7 son direcciones repetidas.
+  - Los huecos entre fachadas son costados de casas de las calles Tembleque y Toledo.
+  - Fotos del Catastro comprobadas con Street View de 2024. Los cambios que vienen de ahí: la 11 es blanca sobre un zócalo verde, la 15 ocre y la 21 baja, con cámara.
+  - Bake: 16 casas nuevas y ninguna otra cambia; `clr`, calles y relieve quedan iguales. `solapes.py` y `bordes.py` sin nada de San Isidro.
+  - `casas solo=sanisidro_`: OK. Hojas en `guion/fotos/tanda21/sanisidro_1..4.jpg`. Veredicto del usuario: «Visto bueno».
+- **Texturas (16/11): calle de San Isidro, segundo tramo, 16 casas.** El usuario: «Sí, segundo tramo».
+  - Impares del 29 al 57 (en el cruce la calle se parte en dos ramales) y pares del 22 al 34. La calle queda completa.
+  - Fuera:
+    - La 41 es un solar.
+    - La 51 y la 53 quedan bajo la calzada del mapa en el cruce: sus paredes a la calle están a menos de 1 m del eje y `house_street` les daba 1,5 y 2,4 m de fachada.
+    - La 59 es un cuartito de 9 m².
+    - La 32 no existe y la 36, 37, 38, 40, 42 y 44 son repetidas.
+  - La 47 ya está en Street View de 2024: tres plantas blancas sobre un zócalo ocre, con una escalera de baldosa roja que sube por el centro (un hueco `k=void`).
+  - Bake: 16 casas nuevas y ninguna otra cambia; `clr`, calles y relieve quedan iguales. `solapes.py` y `bordes.py` sin nada de San Isidro.
+  - `casas` del tramo: OK. Hojas en `guion/fotos/tanda21/sanisidro_5..7.jpg`. Veredicto del usuario: «Visto bueno».
+- **Texturas (16/11): calle de la Rosa de Santa María, 23 entradas (`rosa_*`).** El usuario: «Sí, esa».
+  - El Catastro la llama `CL ROSA` (números del 1 al 15 y del 2 al 12). Esos números son del tramo corto que sube a la calle de Tembleque.
+  - El tramo largo que el mapa llama igual (de x −276 a −483) tiene las casas con números de otras calles; queda como estaba.
+  - Es una urbanización de 1999-2000: adosadas ocres de tres plantas, con canecillos bajo el alero, garaje a medio sótano y la puerta arriba de unos escalones bajo una pérgola de teja.
+  - Las casas van 4-6 m retranqueadas, detrás de un patio cerrado por un murete con cancelas blancas.
+  - Fachadas a lo ancho de cada parcela (de 5,3 a 6,5 m), a la altura de la pared más adelantada. `house_street` daba trozos de 3-4 m por los escalones de la planta.
+  - Muretes: `rosa_Nt`, `rc` null, h 1,5, a 1,2 m del bordillo, `deep` = máx(0,8; 5,2/L) para pasar los 5 m² del bake.
+    - Llevan `"lado wall=..."` en blanco, porque si no la cara de atrás se dibujaba como fachada a la calle, con una ventana.
+  - La 2 es un almacén blanco con persiana marrón (Street View 2024; sin foto del Catastro). Las 14, 16-20 son repetidas.
+  - Bake: 23 entradas nuevas y ninguna otra cambia. El `clr` de dos nudos baja (7,7 → 4,8 y 8,0 → 4,7) por los muretes. `solapes.py` y `bordes.py` sin nada de la Rosa.
+  - Hojas de la primera versión en `guion/fotos/tanda22/rosa_1..3.jpg`. El usuario: «No están muy bien. Se mezclan entre ellas y no se diferencian … parecen todas planas … usar de ejemplo calle segadores / labradores».
+  - Rehechas con un constructor propio, `casas.gd` `_rosa(p)`, al estilo de `_adosado`. La tabla `ROSAS` en `casas_calles.gd` da, para la 5, 7, 9, 11, 13, 6, 8 y 10:
+    - el lado del bloque adelantado;
+    - el corte entre el bloque y el entrante;
+    - la cara del bloque, la del entrante y el fondo, todo en metros desde el murete y sacado de las partes del Catastro.
+  - Cada casa lleva:
+    - el bloque ocre de tres plantas, con garaje y ventanas, balaustradas blancas en la última planta y canecillos;
+    - el entrante de teja oscura, con la escalera a la puerta;
+    - un tejado común con el triángulo entre los dos faldones, chimenea y una línea oscura entre casas;
+    - el patio solado, con murete a la acera, cancelas blancas de coche y de paso, contador y pérgola de teja sobre vigas blancas.
+    - Las casas van alternadas, L/R, así que los entrantes quedan de dos en dos, como en la calle.
+  - El frente de la casa es ahora la línea del murete. Los `rosa_Nt` pasan a `["obra"]`: no se dibujan, pero siguen siendo sólidos.
+  - La 2 de verdad es 3893105: una casa de 1999 color teja, con garaje blanco y balcón largo, que está delante de la 4. La parcela que yo llamaba 2 pasa a `rosa_2d` (el almacén de la 2 D).
+  - La 4 vuelve a su fachada corta, sin patio: queda detrás de la 2.
+  - Bake: frente al mapa de antes de la Rosa, solo hay entradas nuevas; el `clr` es el mismo. `casas solo=rosa_`: OK.
+  - Hojas en `guion/fotos/tanda22/rosa_4..5.jpg` y vistas `godot/shots/vista_rosa_impar/par.png`. Veredicto del usuario: «Visto bueno».
+- **Texturas (16/11): calle de los Arcos, primer tramo, 25 entradas (`arcos_*`).** El usuario: «Sí, los Arcos».
+  - Impares del 3 al 21 y pares del 2 al 26, con la 2 D, la 4 D y la 20 D (parcelas aparte en el Catastro).
+  - `arcos_10t`: el murete de mampostería con seto del jardín de la 10, un edificio público bajo de ladrillo retranqueado (`rc` null). No se muestra su nombre.
+  - La 1 da a la otra calle. La 6/11, 18/23, 19/24 y 20/25 son repetidas.
+  - Rótulos solo con lo que se vende: «ELECTRODOMESTICOS» (la 5, de una cadena) y «CLINICA DENTAL» (la 2, sin el nombre del dentista).
+  - La 7 es en 2024 un edificio público nuevo de mampostería con recuadros de ladrillo.
+  - La 13 y la 17 estaban cruzadas: el Street View de la 17 muestra un «13» pintado. La 17 es el edificio de ladrillo de tres plantas con arcos de la esquina (foto del Catastro y Street View), y la 13 la casa vieja de enfoscado tostado.
+  - Preparado en una copia mientras Pretil horneaba el cuartel (CUARTEL); se añadió cuando avisó.
+  - Bake: 25 casas nuevas y ninguna otra cambia; el `clr` de dos nudos baja 0,1 m. Calles, relieve y cuartel quedan iguales.
+  - `casas solo=arcos_`: OK. Hojas en `guion/fotos/tanda23/arcos_1..5.jpg`. Veredicto del usuario: «Visto bueno».
+- **Texturas (16/11): calle de los Arcos, segundo tramo, 15 casas.** El usuario: «Empieza».
+  - Hechas: impares 27, 31, 35, 37, 39, 41 y 53; pares 30, 34, 40, 42, 44, 46, 50 y 52.
+  - Fuera:
+    - La 33, 36 y 51 son solares. La 48 es repetida.
+    - La 29 da a la calle de Granada.
+    - La 28, 32 y 38 son parcelas de fondo, sin pared a esta calle.
+    - La 43, 45, 47 y 49: la línea de OSM de la calle va 3-4 m desviada hacia los impares y pasa por encima de sus fachadas. El usuario: «Hazlas igual».
+      - Se han hecho con la fachada al borde de la calzada (4 m del eje) y cortes por donde empieza de verdad cada casa (la 43 y la 45 se solapan por detrás).
+      - Clave nueva en `bake_godot.py`: `"clear": <m>`. Quita de la parcela lo que queda delante de la fachada, hasta esa distancia hacia la calle.
+      - Bake: entran las cuatro y no cambia nada más. `casas`: OK. Hoja `tanda23/arcos_9.jpg`.
+- **Texturas (16/11): calle de la Amargura, 11 casas (`amargura_*`).** El usuario: «Sí, la Amargura». Calle completa.
+  - Impares 1, 5, 7, 9, 11, 13, 15 y 17; pares 4, 8 y 10.
+  - La 6 B es un solar. La 2 y la 3 son repetidas de la 1.
+  - En el trozo de la 9 a la 17, la línea de OSM pasa por encima de las fachadas reales (hasta 3,5 m dentro). Esas cinco van a 2,7 m del eje, a la misma distancia que las demás, con `clear` 1,2. La 9 y la 15 toman su tramo de calle por donde de verdad dan a ella.
+  - Bake: 11 casas nuevas y ninguna otra cambia. El `clr` de dos nudos sube (2,4 → 3,0 y 2,3 → 2,8) porque la fachada se ha retirado.
+  - `casas solo=amargura_`: OK. Hojas en `guion/fotos/tanda24/amargura_1..2.jpg`.
+  - El usuario vio la 8 «despegada». Se me había pasado la 8 B (3893740, de 2011), que es parcela aparte en el Catastro. Era una casa genérica blanca metida 2 m, y dejaba a la vista el costado de la 8.
+    - Ahora `amargura_8b` es la casa de ladrillo claro de tres plantas, retranqueada. `amargura_8bt` (`rc` null) es su murete con cancelas a la acera, a ras de la 8.
+- **Texturas (16/11): Travesía del Santo, 28 casas (`trsanto_*`).** El usuario: «Sí, esa». Calle completa. **Sin veredicto todavía.**
+  - En el Catastro es «TR SANTO». Impares: 1-11, 13-27, más la 7 D, la 9 D y la 27 D. Pares: 4-10, 14-22, 26 y 28.
+  - Fuera: la 2 y la 2 D son solar; la 12 no existe. La 24 (de 2026) y la 9 I quedan atrás, sin dar a la calle.
+  - Los huecos entre fachadas son los cruces con la calle del Santo (entre la 9 D y la 11, y entre la 10 y la 14) y con la de los Huertos (en la 23 y la 22). Las casas de esquina de esas calles quedan para cuando se hagan.
+  - Mandó el Street View de 2024 cuando no coincidía con el Catastro:
+    - las fotos de la acera par del Catastro salen demasiado amarillas (la 4 y la 14 son blancas);
+    - la 13 es blanca;
+    - la 9 D es un almacén de 2018, de ladrillo con paños blancos;
+    - la 7 D y la 9 comparten foto en el Catastro.
+  - Al oeste (de la 23 a la 28), las fachadas reales quedan entre 0,3 y 1,4 m dentro de los 7,5 m de calle del mapa. Siguen a unos 2,7 m del eje, fuera del pasillo, así que no hizo falta `clear`.
+  - La 8 quedaba 2 m por encima de la acera. Su parcela tiene un cuerpo de dos plantas 35 m atrás, cuesta arriba, y la casa toma la base más alta de sus partes.
+    - Clave nueva en `bake_godot.py`: `"reach": <m>`. Una parte de la parcela que esté más lejos que eso de la fachada se queda como casa normal. La 8 lleva `reach` 15.
+  - Bake: 28 casas nuevas y ninguna otra cambia. `clr`, calles, relieve y aceras, iguales.
+  - `casas solo=trsanto_`: OK, 4 de 4. Repetido con la 6, la 8 y la 10 después del `reach`.
+  - Hojas en `guion/fotos/tanda25/trsanto_1..6.jpg`.
+    - Ojo: `plinth=0` en la línea de un piso no vale; rompe `_mat`. El zócalo cero solo se puede poner en un `paño`.
+    - `casas solo=amargura_8,amargura_10`: OK. Hoja `tanda24/amargura_3.jpg`. Veredicto del usuario: «Visto bueno». La calle queda terminada.
+  - Los pares de este tramo quedan 4-7 m detrás del bordillo del mapa. Coincide con la acera ancha de baldosa a cuadros que hay en la calle de verdad.
+  - La 30 lleva «se alquila» y la 52 (hostelería) va sin rótulo.
+  - Bake: 15 casas nuevas y ninguna otra cambia; el `clr` de un nudo baja 0,1 m. `bordes.py` sin nada de los Arcos.
+  - `casas` del tramo: OK. Hojas en `guion/fotos/tanda23/arcos_6..9.jpg` y vista `godot/shots/vista_arcos_hueco.png`. Veredicto del usuario: «Visto bueno». La calle queda completa.
+  - Queda el segundo tramo: impares del 29 al 51 y pares del 32 al 54.
+
+- **Ajedrez humano (16/11; sesión del ajedrez, lanzada por Sistemas; visto bueno del usuario, con los retoques):** la misión del alcalde tras los Recress, «Partidas en la cabeza», y el minijuego en los dos tableros de la plaza.
+  - El diseño, con las palabras del usuario y lo que eligió (minimax propio, el alcalde de rival, 4/6/8/12 PC), está en `guion/ajedrez.md`.
+  - Archivos nuevos: `ajedrez.gd` (reglas e IA), `ajedrez_humano.gd` y `assets/ajedrez/perro.glb` (Shiba Inu CC0 de Quaternius).
+  - Toca, en pequeño y marcado `(ajedrez)`: `game.gd` (fase «ajedrez», «Jugar» en el tablero, el alcalde antes de `recress.talk`, Agenda, `_play_minigame`), `missions.gd` (`MINIGAMES`), `loc.gd` (claves `aj_*` y `((…))` entre dientes en `rich`), `marcas.gd`, `touch.gd` y `selftest.gd`.
+  - Retoque del usuario: los perros miraban al revés y van girados. Encima de cada pieza, un holograma con su símbolo, siempre de cara a la cámara; lo dibuja `tools/make_ajedrez.py` en `assets/ajedrez/holo_*.png`, con mipmaps.
+  - La hora sigue corriendo durante la partida; el pueblo no se mueve, pero el cielo y las farolas sí. Lo hizo Sistemas el 16/11 a petición del usuario, en `game.gd` (`_advance_clock`, `sky_fx` y `lights` en la rama «ajedrez»), y añadió su comprobación. Por eso no hay límite diario de PC.
+  - Pruebas: modo `ajedrez`, 16/16 (Sistemas). Saca 27 fotos `aj_*` en `godot/shots/`; con `ajedrez sinfotos --headless`, sin fotos, en 40 s. `palabros` OK.
+  - `_ajedrez_checks` va en la completa, la última de la lista, detrás de `_cuartel_coche_checks`, como pidió Sistemas. No mueve la hora y deja todo como estaba: fase, `cine_lock`, `cam_fixed`, dinero, PC, `stats` clave a clave, minijuegos, confianza y ratón. Su última comprobación lo verifica.
+  - La completa, sin pasar.
+
 ## Versión
 
 - **Publicada:** 0.0.8 (15/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.8 — completa de las 21:30: 631 ok, 0 fallos. Todo lleva el visto bueno del usuario.
@@ -17,14 +216,46 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
     - Oliva, Juan Carlos I este, la Plaza, San José y Santo Domingo. El final de Santo Domingo va en adoquín gris y cerrado al tráfico (`PAVED_LANES`, `paved` 2).
     - Santa Ana entera (`stana_*`). Fuera queda `stana_44`, que usa `sabotaje.gd`.
     - Arroyuelo Bajo, con aceras altas (`aceras_altas.gd`, bloque `ACERAS_ALTAS`; `props.gd` apoya en ellas).
-    - El primer tramo de Valencia. Falta el segundo: impares del 27 al 43 y pares del 34 al 60.
+    - El primer tramo de Valencia. El segundo va sin publicar (arriba).
   - **Lanzador de pruebas:** los modos de fotos se abren con ventana sin pedirla.
 - **Publicada antes:** 0.0.7 (15/11/2026).
   - El puente del Arroyuelo Medio (`puente.gd`; la obra dura hasta las firmas; `half` = 2,6, `kerb()` = hw + 0,75).
   - La escuela Calasanz.
   - Las casas de la Palma, Cervantes y Ramón y Cajal.
   - La Cocina de Henry, en la Palma 3 B.
-- **Sin publicar:** nada.
+- **Sin publicar (sin commit):** las entradas de debajo, más «Tele Durum» → «Tele Dürum» en `sabotaje.gd`, `loc.gd`, `selftest.gd` y `guion/` (Sistemas; `sabotaje` 45/45 con el kebab nuevo), y el gacha (Sistemas, 16/11; sin veredicto):
+  - **Qué hace:** en la máquina de bolas del Tele Dürum echas 1 €; la máquina vibra y hace clic, sale una bola y dentro hay la figura de uno de los 23 NPC únicos sobre una peana redonda.
+  - **Colección:** página 5 de la Agenda, «Colección». Los que te faltan salen en negro y con «???».
+  - **Archivos:** `gacha.gd` (nuevo); `game.gd` (aviso, interacción, página de la Agenda y `dress_luis`); `menu.gd` (cuadrícula y sexta pestaña); `teledurum.gd` (`_gumball` usa `GachaS.machine()`); `loc.gd` (diez claves).
+  - **Pruebas:** modo `gacha` 5/5 y `teledurum` 4/4. La comprobación de la Agenda (6 páginas) solo va en la completa.
+  - **Retoques del usuario:** al azar; bola opaca con luz que se escapa; confeti si es nueva; trombón triste (sintetizado, `Sfx.sad_trombone()`) si es repetida. Aprobado: «el .wav suena genial».
+- **Sentido único de OpenStreetMap (Sistemas, 16/11; sin veredicto):** el tráfico de los vecinos respeta el `oneway` real: 211 tramos de 63 calles, rotondas y las dos calzadas de la autovía.
+  - **Archivos:** `bake_godot.py` (`one_way()`, campo `"ow"` en `roads`), `map_data.gd` (`one_way_says`), `traffic.gd` (`one_way_ok`).
+  - **Calles sin dato:** donde OSM no dice nada, sigue la regla de las calles estrechas.
+  - **Errores de OSM:** se corregirían con una lista en el bake, como `RENAME`.
+  - **Rehorneado 16/11, 0:48:** solo cambia `roads`; encima va el COLEGIO de Pretil.
+  - **Pruebas:** `sentido` 2/2 (de 326 vistazos, 9 a contramano: coches sin salida que dan la vuelta), `grua` 29/29, `sabotaje` 45/45, `limite` 3/3 con `--repeat`. `_sentido_checks(false)` va en la completa.
+- **Dolores Fuertes D'Varriga (Sistemas, 16/11; sin veredicto):** NPC con nombre, una señora mayor que pasea sin parar por la calle de la Amargura y se queja de su nombre. Pidió el usuario: ninguna mención a lo irónico del suyo.
+  - **Paseo:** `walker` con `beat`, una calle propia (`npc.gd`, `game._walker_plan`, `game._add_dolores`).
+  - **Textos:** cinco conversaciones en `loc.gd` («dolores», `n_dolores`).
+  - **Con confianza 100:** confiesa una vez (`stats["dolores_delanno"]`, `loc` «dolores_delanno») que su apellido era francés, Delanno, y que lo cambió por el de su abuelo navarro. No ve nada gracioso en él: solo le molesta que fuera francés.
+  - **Además:** entra en la Colección del gacha (24 figuras), y en `guion/relaciones.json` y `.html` con su foto.
+  - **Pruebas:** `dolores` 3/3, `gacha` de nuevo; `_dolores_checks(false)` va en la completa.
+- **Coche de los Tricornios en la puerta del cuartel (Sistemas, 16/11; sin veredicto):** siempre uno vacío en `world.cuartel.patrol`.
+  - Robarlo sigue la norma de `_steal` (`add_heat(100)`): el usuario retiró lo de «llenar la primera barra».
+  - Si se va, vuelve otro al día siguiente, sin que lo veas aparecer.
+  - **Archivos:** `cuartel_coche.gd` (nuevo); en `game.gd`, setup, gancho en `_enter_car` y el aviso «Robar».
+  - **Pruebas:** `tricornio` 3/3; `_cuartel_coche_checks` va en la completa.
+
+- **Sin publicar (Pretil, 15/11, después de la 0.0.8): el kebab de la calle Santa Ana, «Tele Dürum»** (`teledurum.gd`, `world.teledurum`), hecho a mano sobre la casa `stana_44` (marcada `["obra"]` en `casas_calles.gd`), con su máquina de bolas en la acera. Sin rehorneado. Toca `world.gd` (paso "the kebab house of Santa Ana") y `selftest.gd` (modo `teledurum`, 4/4, y `_teledurum_checks` en la completa). Sistemas cambió el nombre a «Tele Dürum» en la misión y los textos; `sabotaje` 45/45 con ello. **Tiene horario (el usuario, 15/11): abre de 18:00 a 04:00** — cerrado, persianas bajadas; abierto, persianas subidas, puertas abiertas, luces y el asador de Kebab Luis girando (`open_at`, `set_open`, lee `game.clock`); la comprobación no mueve la hora del juego. **Visto bueno del usuario el 15/11 («Perfecto. Visto bueno»)**; sin confirmar en git ni publicar todavía. Detalles: `referencias/tele_durum/LEEME.md`.
+
+- **Sin publicar (Pretil, 15/11): la tienda de la punta entre San José y Santo Domingo, «los chinos del Arroyuelo»** (`chinos.gd`, `world.chinos`), hecha a mano sobre la casa `sanjose_1` (marcada `["obra"]` en `casas_calles.gd`): tres fachadas de ladrillo con sus rejas, la tienda en la punta con rótulo y toldo, balcón, alero, azotea, y las dos señales de la punta. Sin rehorneado. Toca `world.gd` (paso "the grocer's at the point") y `selftest.gd` (modo `chinos`, 5/5, y `_chinos_checks` en la completa, sin mover la hora). `casas solo=sanjose_` 4/4. **Tiene horario (el usuario): 7–21 de lunes a viernes, 6–2 sábados y domingos** (`open_at(dia, hora)`, lee `game.weekday` y `game.clock`): cerrada, puerta cerrada, luces apagadas, toldo recogido y la persiana metálica bajada; abierta, una hoja abierta, toldo extendido y luces encendidas. En la puerta, y otros dos en la persiana, el cartel de «Roster Energy» del usuario pasado a colores planos (`tools/chinos/poster.py`, `godot/assets/chinos/poster_roster.png`). **Finalizado por el usuario el 16/11.** **Visto bueno del usuario el 15/11 («Estoy sin palabras, impresionante»; sin figuras en la azotea)**; sin confirmar en git ni publicar todavía. Detalles: `referencias/chinos_arroyuelo/LEEME.md`.
+
+- **Sin publicar (Pretil, 16/11): el viejo colegio de la avenida de Juan Carlos I** (`colegio.gd`, `world.colegio`), hecho a mano entre Peso y Santa Clara: cuerpo de dos plantas entre dos torres, la puerta en su paño de celosía con la placa de azulejo que lleva su nombre real, «Instituto Garcilaso de la Vega» (excepción expresa del usuario: lleva años cerrado), ala de Santa Clara con su portón, pista roja tras su verja (los focos, pegados a ella), acera en damero con la marquesina del autobús blanca y azul (rótulo «La Mancha», cartel de Roster dentro). De paso, por orden del usuario, los dos rótulos del centro de salud (`salud.gd`) pasan de «Castilla-La Mancha» a «La Mancha»: en los rótulos del juego la región se llama así. **Con rehorneado** (bloque `COLEGIO` en `tools/bake_godot.py`, RC `3891715VJ5639S`; clave `colegio` en `map.json`; hecho el 16/11 detrás del de los sentidos únicos). Toca `map_data.gd`, `world.gd` (paso "the old school") y `selftest.gd` (modo `colegio`, 3/3, y `_colegio_checks` en la completa). `relief` 19/19, `caridad` 3/3. Para ensayar horneados sin tocar el mapa: `tools/colegio/ensayo.py`. El usuario: «Increíble», con sus notas hechas (focos junto a la verja, la marquesina, la placa). **Cerrado por el usuario el 16/11.** Detalles: `referencias/colegio_viejo/LEEME.md`.
+
+- **Sin publicar (Pretil, 16/11): el cuartel de la Guardia Civil de la avenida de la Constitución, el de los Tricornios** (`cuartel.gd`, `world.cuartel`), hecho a mano en la esquina con Víctor Pradera: cuatro bloques blancos de tres plantas con patio, la entrada retranqueada con escalinata, rampa, bandera y rótulos (lema real; placa «…DEL TRICORNIO» y placa propia con un tricornio, aprobados por el usuario), plazas en batería y cajetín amarillo, la verja del patio, el corral de la calle Nueva. **Con rehorneado** (bloque `CUARTEL` en `tools/bake_godot.py`, RC `4397001VJ5649N`; clave `cuartel` en `map.json`). Toca `map_data.gd`, `world.gd` (paso "the Tricornios' barracks") y `selftest.gd` (modo `cuartel`, 4/4, y `_cuartel_checks` en la completa). `relief` 19/19, `sentido` 2/2. Expone `patrol`, `door`, `gate`, `bays`; el coche patrulla siempre aparcado en la puerta lo lleva Sistemas (`cuartel_coche.gd`, prueba `tricornio`). **Logo de los Tricornios** (tricornio dorado sobre negro, `godot/assets/tricornios/`, `tools/cuartel/logo.py`) en la placa de la fachada y, con la franja de bandera, en todos sus coches (`tricornio_marcas.gd`: calcomanías `Decal` en capó y laterales, capa de render 15; tres líneas en `modelos.gd`); `tricornio` 3/3, `limite` 6/6. Primera versión enseñada, pendiente del veredicto del usuario. Detalles: `referencias/cuartel_tricornios/LEEME.md`.
+
+- **Sin publicar (Pretil, 16/11): la Universidad Popular («Universidad Comunal») y la papelería de al lado («Papelería Rocas»), calle de los Arcos** (`comunal.gd`, `world.comunal`), hechas a mano en un solo guion sobre las casas `arcos_10`, `arcos_10t` y `arcos_12` (las tres `["obra"]` en `casas_calles.gd`): la escuela de ladrillo tras su tapia con seto, el porche con su rótulo y su verja, el tablón de anuncios, la papelería con su arco de malla y su rótulo verde, y el bloque sin terminar de la calle Cervantes. Sin rehorneado. Toca `world.gd` (paso "the people's university and the stationer's") y `selftest.gd` (modo `comunal`, 4/4, y `_comunal_checks` en la completa). `casas solo=arcos_` 4/4. La papelería se llamó primero «Flechas»; el usuario la renombró «Rocas» y le dio horario (lunes a viernes 10-14 y 17:30-21, sábados 10-14, domingos cerrada: `open_at(day, hour)`): abierta, el arco es un hueco con la tienda entera detrás (suelo, estantes en las dos paredes, mostrador al fondo, luces); cerrada, la malla bajada y a oscuras. Parece que se puede pasar, pero el frente sigue parando al jugador (no se entra). Enseñada con el cambio, pendiente del veredicto del usuario. Detalles: `referencias/universidad_comunal/LEEME.md`.
 
 ## Cómo trabajar (normas del usuario, 15/11/2026)
 
@@ -40,6 +271,7 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 ## Fallos conocidos
 
+- **Límite, «everybody comes after you»:** intermitente. A veces el calor sale 98 cuando se pide ≥ 99: baja un poco si el juego va lento, por ejemplo con otro Godot abierto. Falló una vez el 16/11 y pasó 3/3 con `--repeat` justo después.
 - **Grúa:** a veces se queda parada a unos 130 m del coche, en la esquina de (871, 254) o (880, 247), detrás de un coche aparcado. Está atenuado con `_room_at` y `_clear_parked`; vigilarlo.
 - **Sabotaje:** la furgoneta se atascaba en calles estrechas, sobre todo en (-472, -340), tramos 856-858. Ahora tiene la ruta cerrada; vigilarlo en las completas.
 - **Turbo del Julietta:** la segunda pasada se quedaba a 0 km/h de vez en cuando; ahora la prueba usa un coche nuevo.
@@ -61,4 +293,4 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 - Costados de las casas que dan a otra calle: terminados. 42 de 71 descritos (y 5 más de los cortos, de 6 a 8 m) con Street View (líneas `lado` en `casas_calles.gd`, `"flank"` en `casas.gd`); los otros 29 se quedan lisos porque no se ven desde ninguna calle (dan a patios o tienen otra casa pegada delante) o no hay foto.
 - Música «urbana»: en Rap-A-Polvo. El usuario no ha dicho nada en contra.
 - Galaxy Recress (desde la 0.0.3; diseño en `guion/recress.md`, prueba `recress`): abre de 15:00 a 2:00 y, si estás dentro a la hora de cierre, espera a que salgas. El alcalde pide 100 € y devuelve 200 €. Una llamada no corta una conversación ni una escena (`llamadas.gd`). Pendiente del usuario: los nombres provisionales (el alcalde, la de la copistería, la mujer y la madre del alcalde, el comentarista).
-- Habla (desde la 0.0.3): los mancheguismos, sobre todo para los mayores (`generic_old`, `whisper_old`, `ouch_old`). «Apretar» sin diptongo: apreta, apretes. Todo en `guion/palabros.md`, contado con nuestras palabras porque su web es CC BY-NC-ND. José-María Moreno García va en los créditos. Lo comprueba `python tools/run_tests.py palabros`.
+- Habla (desde la 0.0.3): los mancheguismos, sobre todo para los mayores (`generic_old`, `whisper_old`, `ouch_old`). «Apretar» sin diptongo: apreta, apretes. Y en boca de todos (15/11, sin publicar): «tiés» por «tienes» y «ande» por «dónde/donde». Todo en `guion/palabros.md`, contado con nuestras palabras porque su web es CC BY-NC-ND. José-María Moreno García va en los créditos. Lo comprueba `python tools/run_tests.py palabros`.

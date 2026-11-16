@@ -32,6 +32,15 @@ Y más (Luis, 14-11-2026):
 - **El mancheguismo es sobre todo de los mayores:** las palabras y las pronunciaciones de «Cómo hablan los mayores»
   (abajo) van en boca de abuelos y abuelas; los demás, alguna suelta.
 
+Y más (Luis, 15-11-2026). Estas dos van en boca de todos, como «apreta», no solo de los mayores:
+
+- **«Tienes» → «tiés»:** «¿Tienes prisa?» → **«¿Tiés prisa?»**; «Aquí tienes» → **«Aquí tiés»**.
+- **«Dónde» y «donde» → «ande»:** «¿Dónde estás?» → **«¿Ande estás?»**; «¿De dónde eres?» → **«¿De ande eres?»**;
+  «por donde» se queda en «ande», sin el «por»: «¡Engánchalo por donde puedas!» → **«¡Engánchalo ande puedas!»**;
+  «¿Por dónde se habrá ido?» → **«¿Ande se habrá ido?»**. Con un nombre detrás basta con «ande», sin el verbo:
+  «allí donde vive Julián» → **«allí ande Julián»**.
+- La prueba `palabros` avisa si algún texto en castellano dice «aprieta», «tienes», «dónde» o «por ande».
+
 ---
 
 ## El pueblo por dentro (para ambientar)

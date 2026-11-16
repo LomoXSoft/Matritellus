@@ -61,15 +61,27 @@ def node_index(i):
     if i not in nid:
         nid[i] = len(npts); npts.append(proj(onodes[i]['lat'], onodes[i]['lon']))
     return nid[i]
+# One-way streets as the map's source has them (the user, 16 November 2026: the traffic was being put right street by
+# street): "ow": 1 on a street that is driven only in the order of its points. OSM's oneway=-1 is turned round so that
+# it reads the same; a roundabout is one way unless it says otherwise. Footpaths and tracks never are.
+def one_way(t, h):
+    if KIND.get(h, 0) != 0 or t.get('oneway') == 'no': return 0
+    if t.get('oneway') in ('yes', 'true', '1'): return 1
+    if t.get('oneway') == '-1': return -1
+    return 1 if t.get('junction') in ('roundabout', 'circular') else 0
 for w in ways:
     t = w.get('tags', {}); h = t.get('highway')
     if h not in WIDTH: continue
+    ow = one_way(t, h)
     run = []
     for i in w['nodes'] + [None]:
         if i is not None and inside(*proj(onodes[i]['lat'], onodes[i]['lon'])):
             run.append(node_index(i)); continue
-        if len(run) > 1: roads.append({'w': WIDTH[h], 'k': KIND.get(h, 0), 'h': h, 'n': t.get('name', ''), 'p': run})
+        if len(run) > 1:
+            roads.append({'w': WIDTH[h], 'k': KIND.get(h, 0), 'h': h, 'n': t.get('name', ''), 'p': run[::-1] if ow < 0 else run})
+            if ow: roads[-1]['ow'] = 1
         run = []
+print('one way (OpenStreetMap): %d stretches' % sum(1 for r in roads if r.get('ow')))
 # Streets the map's source names wrongly or not at all, by where they run (their two ends, within a few metres).
 # The two parallel streets of the UA-20 development (user, 12 November 2026): Segadores is the southern one.
 # (Corrected the same evening: I had them the wrong way round. z runs SOUTH, so the street at z -377..-463 is the southern
@@ -349,6 +361,34 @@ santaana = {'o': list(SANTAANA['o']), 'u': list(SANTAANA['u'])}
 _santaana_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'santaana.gd')
 if not (os.path.exists(_santaana_gd) and 'const READY := true' in open(_santaana_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
     SANTAANA_RC, santaana, santaana_zone = None, {}, Polygon()
+# The old school of the Avenida de Juan Carlos I, between the Calle del Peso and the Calle de Santa Clara
+# (godot/scripts/colegio.gd; the user, 16 November 2026; referencias/colegio_viejo/): Catastro's parts of it are not
+# raised -- colegio.gd builds the school and its two towers -- and the map plants no trees in it or in its court.
+# The ground is not levelled: colegio.gd lays the court as a floor of its own over it, behind its fence.
+COLEGIO_RC = '3891715VJ5639S'
+COLEGIO = {'o': (-427.35, 121.61), 'u': (0.9706, -0.2407)}
+def _col(pts): return Polygon([(COLEGIO['o'][0] + COLEGIO['u'][0] * x - COLEGIO['u'][1] * z, COLEGIO['o'][1] + COLEGIO['u'][1] * x + COLEGIO['u'][0] * z) for x, z in pts])
+colegio_zone = _col(((-0.8, -22.5), (41.2, -22.5), (41.2, 6.0), (38.0, 22.5), (35.5, 24.0), (-0.5, 20.0)))
+# what colegio.gd builds on it, as one outline: the streets beside it are only as wide as it leaves them
+colegio_built = _col(((0, 0), (40.35, 0), (40.35, -21.7), (32.64, -21.7), (32.64, -20.5), (12.2, -20.5), (12.2, -13.3), (0, -13.3)))
+colegio = {'o': list(COLEGIO['o']), 'u': list(COLEGIO['u'])}
+_colegio_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'colegio.gd')
+if not (os.path.exists(_colegio_gd) and 'const READY := true' in open(_colegio_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    COLEGIO_RC, colegio, colegio_zone = None, {}, Polygon()
+# The Guardia Civil's barracks of the Avenida de la Constitución, at the corner of the Calle de Víctor Pradera -- the
+# Tricornios' in the game (godot/scripts/cuartel.gd; the user, 16 November 2026; referencias/cuartel_tricornios/):
+# Catastro's parts of it are not raised -- cuartel.gd builds its four blocks -- and the map plants no trees in it, in
+# the apron before it or in its yard. The ground is not levelled.
+CUARTEL_RC = '4397001VJ5649N'
+CUARTEL = {'o': (46.84, -534.47), 'u': (0.165, 0.986)}
+def _cua(pts): return Polygon([(CUARTEL['o'][0] + CUARTEL['u'][0] * x - CUARTEL['u'][1] * z, CUARTEL['o'][1] + CUARTEL['u'][1] * x + CUARTEL['u'][0] * z) for x, z in pts])
+cuartel_zone = _cua(((-2.5, 9.5), (37.5, 9.0), (40.5, -1.0), (56.0, -31.0), (47.0, -31.0), (39.5, -35.0), (38.5, -38.6), (36.0, -38.6), (36.0, -48.2), (-2.5, -48.2)))
+# what cuartel.gd builds on it, as one outline (its court is shut): the streets beside it are only as wide as it leaves them
+cuartel_built = _cua(((0, -1.61), (4.9, -1.61), (4.9, 0), (30.62, 0), (30.62, -1.62), (35.63, -1.62), (35.65, -37.9), (22.0, -37.9), (22.0, -43.6), (13.45, -43.6), (13.45, -47.59), (0, -47.59)))
+cuartel = {'o': list(CUARTEL['o']), 'u': list(CUARTEL['u'])}
+_cuartel_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'cuartel.gd')
+if not (os.path.exists(_cuartel_gd) and 'const READY := true' in open(_cuartel_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    CUARTEL_RC, cuartel, cuartel_zone = None, {}, Polygon()
 # The supermarket by the old Madrid-Cádiz road, "Mercamona" in the game (godot/scripts/mercamona.gd; the user, 15 November
 # 2026; referencias/mercamona/): Catastro's parts of it and of the little old house north of it are not raised --
 # mercamona.gd builds them -- and the map plants no trees there. Its car park lies a whole floor below the shop and runs in
@@ -492,9 +532,11 @@ if os.path.exists(_calles):
 # "strip": <m> on a house: the lower parts of its plot that lie within that many metres of its front line (thin strips
 # Catastro draws along a front: an overhang, a step) are dropped instead of standing as little houses against the front
 STRIP_RC = {hd['rc']: name for name, hd in HOUSES.items() if hd.get('strip') and hd.get('rc')}
+# "with": [<reference>, ...] on a house: other plots it takes in whole, where one building stands on several and
+# Catastro has one inside another's front (Calle de Roma 8 wraps round no. 10): one front, not two laid over each other
 def house_of(bid, floors):
     for name, hd in HOUSES.items():
-        if hd['rc'] == bid and (floors == hd['only'] if 'only' in hd else floors >= hd['floors']): return name
+        if (hd['rc'] == bid or bid in hd.get('with', ())) and (floors == hd['only'] if 'only' in hd else floors >= hd['floors']): return name
     return None
 def house_frame(hd):
     (lx, lz), (rx, rz) = hd['front']
@@ -528,6 +570,8 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid == CALASANZ_RC: return                                # ...and the nursery school of the Calle del Palo
     if bid in CARIDAD_RCS: return                                # ...and the hermitage of the Caridad, its nursery, and the house that is not there
     if bid == SANTAANA_RC: return                                # ...and the convent of Santa Ana
+    if bid == COLEGIO_RC: return                                 # ...and the old school of the Avenida de Juan Carlos I
+    if bid == CUARTEL_RC: return                                 # ...and the Guardia Civil's barracks
     if bid in MERCAMONA_RCS: return                              # ...and the supermarket by the old road, and the old house beside it
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
@@ -556,6 +600,9 @@ for pid, floors, v in raw:
         if ph is not None: petril_parts.append((bid, floors, p, ph))
         continue
     hand = house_of(bid, floors)
+    if hand and 'reach' in HOUSES[hand] and LineString(HOUSES[hand]['front']).distance(p) > HOUSES[hand]['reach']:
+        hand = None                         # ("reach": <m> -- a block of a deep plot farther than that behind the front stays an ordinary part:
+                                            #  up the hill at the back, it would lift the floor of the whole house; Travesía del Santo 8)
     if hand is None and bid in STRIP_RC:    # (a strip stuck on the front of a hand-built house: see "strip")
         sd_ = HOUSES[STRIP_RC[bid]]
         o_, u_, n_, ln_ = house_frame(sd_)
@@ -571,6 +618,10 @@ for pid, floors, v in raw:
             a0, a1, deep = hd['porch']
             at_ = lambda s, d: (o_[0] + u_[0] * s + n_[0] * d, o_[1] + u_[1] * s + n_[1] * d)
             p = p.difference(Polygon([at_(a0, 1.0), at_(a1, 1.0), at_(a1, -deep), at_(a0, -deep)]))
+        if 'clear' in hd:                   # "clear": <m> -- what of the plot lies in front of its front, this far out, goes
+            o_, u_, n_, ln_ = house_frame(hd)     # (where the map's street runs over the real fronts: the house stands at the kerb)
+            at_ = lambda s, d: (o_[0] + u_[0] * s + n_[0] * d, o_[1] + u_[1] * s + n_[1] * d)
+            p = p.difference(Polygon([at_(-1.0, hd['clear']), at_(ln_ + 1.0, hd['clear']), at_(ln_ + 1.0, 0.0), at_(-1.0, 0.0)]))
         hand_groups.setdefault(hand, [bid, floors, []])[2].append(p)
         continue
     look = look_of(pid, floors)
@@ -958,6 +1009,8 @@ for g in blocks:
     if ring.geom_type == 'Polygon' and ring.area > 3: outlines.append([r2(v) for xy in list(ring.exterior.coords)[:-1] for v in xy])
 block_list = [Polygon(g.exterior) for g in blocks]
 if santaana: block_list.append(santaana_built)      # (the convent of Santa Ana: not a block of the map's, but it does narrow its streets)
+if colegio: block_list.append(colegio_built)        # (the old school, likewise)
+if cuartel: block_list.append(cuartel_built)        # (the barracks, likewise)
 if mercamona: block_list.append(mercamona_built)    # (the supermarket, likewise)
 block_tree = STRtree(block_list)
 def building_dist(x, z):
@@ -1019,6 +1072,8 @@ trees = [t for t in trees if not toros_zone.contains(Point(t[0], t[1]))]       #
 trees = [t for t in trees if not calasanz_zone.buffer(1.5).contains(Point(t[0], t[1]))]      # ...and the school's yard
 trees = [t for t in trees if not caridad_zone.contains(Point(t[0], t[1]))]      # ...and the island of the hermitage of the Caridad (caridad.gd plants its own)
 trees = [t for t in trees if not santaana_zone.contains(Point(t[0], t[1]))]     # ...and the convent of Santa Ana
+trees = [t for t in trees if not colegio_zone.contains(Point(t[0], t[1]))]      # ...and the old school and its court (colegio.gd plants its own)
+trees = [t for t in trees if not cuartel_zone.contains(Point(t[0], t[1]))]      # ...and the barracks, its apron and its yard
 trees = [t for t in trees if not mercamona_zone.contains(Point(t[0], t[1]))]    # ...and the supermarket, its lawns and its car park
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
@@ -1032,7 +1087,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

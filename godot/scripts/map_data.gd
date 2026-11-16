@@ -41,6 +41,8 @@ var toros: Dictionary = {}       # the old bullring's (toros.gd): {o: the middle
 var calasanz: Dictionary = {}    # the nursery school of the Calle del Palo's (calasanz.gd): {o: the north-west corner of its front, u: along the front}; empty on a map baked without it
 var caridad: Dictionary = {}     # the hermitage of the Caridad's island (caridad.gd): {o: the hermitage's south-west corner, u: along its south side}; empty on a map baked without it
 var mercamona: Dictionary = {}   # the supermarket's (mercamona.gd): {o: the shop's north-west corner, u: along its west side, low: its car park's level}; empty on a map baked without it
+var cuartel: Dictionary = {}     # the barracks' (cuartel.gd): {o: the north end of its main front, u: along that front}; empty on a map baked without it
+var colegio: Dictionary = {}     # the old school's (colegio.gd): {o: the south-west corner of its west tower, u: along its front}; empty on a map baked without it
 var santaana: Dictionary = {}    # the convent of Santa Ana's (santaana.gd): {o: the south end of its front, u: along the front}; empty on a map baked without it
 var puente: Dictionary = {}      # the old bridge of the Arroyuelo Medio's (puente.gd): {o: its middle, u: down the bed, top: its deck, pav: [[z, level], ...] the pavements}; empty on a map baked without it
 var aceras: Array = []          # high pavements on walls of rubble (aceras_altas.gd): [{street, side, h, w, pts: [[x, z, nx, nz, top, node a, node b, f], ...]}]; empty on a map baked without them
@@ -80,7 +82,7 @@ func _ready() -> void:
 		var p := PackedInt32Array()
 		for v in r["p"]:
 			p.append(int(v))
-		roads.append({"w": float(r["w"]), "k": int(r["k"]), "h": String(r["h"]), "n": fictional(String(r["n"])), "p": p, "paved": int(r.get("paved", 0))})   # (paved 1: a pedestrian street in setts and brick; 2: a lane in grey pavers, closed to traffic -- empedrado.gd)
+		roads.append({"w": float(r["w"]), "k": int(r["k"]), "h": String(r["h"]), "n": fictional(String(r["n"])), "p": p, "paved": int(r.get("paved", 0)), "ow": int(r.get("ow", 0))})   # (paved 1: a pedestrian street in setts and brick; 2: a lane in grey pavers, closed to traffic -- empedrado.gd)
 	clr = data["clr"]
 	walls = data["walls"]
 	roofs_gable = data["roofs_gable"]
@@ -99,6 +101,8 @@ func _ready() -> void:
 	calasanz = data.get("calasanz", {})
 	caridad = data.get("caridad", {})
 	santaana = data.get("santaana", {})
+	colegio = data.get("colegio", {})
+	cuartel = data.get("cuartel", {})
 	mercamona = data.get("mercamona", {})
 	wall_y = data.get("wall_y", [])
 	looks = data.get("looks", [])
@@ -526,6 +530,14 @@ func neighbours(node: int) -> Array:
 
 func seg_between(a: int, b: int) -> Seg:
 	return _seg_of.get(Vector2i(mini(a, b), maxi(a, b)))
+
+## A one-way street of the map's source (OpenStreetMap; the bake's "ow"): may it be driven from node a to node b? Only in
+## the order of its points. Any other stretch (two-way, a footpath, no stretch at all): yes.
+func one_way_says(a: int, b: int) -> int:
+	var s = seg_between(a, b)
+	if s == null or int(s.road.get("ow", 0)) == 0 or int(s.road["k"]) != 0:
+		return 0                                     # (it says nothing)
+	return 1 if s.na == a else -1
 
 func nearest_node(p: Vector2) -> int:
 	return _nearest_node(p, false)

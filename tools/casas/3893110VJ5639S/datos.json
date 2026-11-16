@@ -1,0 +1,130 @@
+{
+ "rc": "3893110VJ5639S",
+ "record": {
+  "address": "CL ROSA 12 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "135",
+  "year": "1999",
+  "units": [
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "01",
+    "m2": "51"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "00",
+    "door": "02",
+    "m2": "18"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "66"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "3893110VJ5639S_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 62.7,
+   "ring": [
+    [
+     -393.8,
+     -135.42
+    ],
+    [
+     -401.06,
+     -137.67
+    ],
+    [
+     -398.28,
+     -145.72
+    ],
+    [
+     -391.35,
+     -143.37
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      -393.8,
+      -135.42
+     ],
+     "b": [
+      -401.06,
+      -137.67
+     ],
+     "len": 7.6,
+     "out": [
+      -0.296,
+      0.955
+     ],
+     "street": "Calle de la Rosa de Santa María",
+     "to_centre": 3.9
+    },
+    {
+     "a": [
+      -401.06,
+      -137.67
+     ],
+     "b": [
+      -398.28,
+      -145.72
+     ],
+     "len": 8.52,
+     "out": [
+      -0.945,
+      -0.326
+     ],
+     "street": "Calle de Tembleque",
+     "to_centre": 1.73
+    },
+    {
+     "a": [
+      -398.28,
+      -145.72
+     ],
+     "b": [
+      -391.35,
+      -143.37
+     ],
+     "len": 7.32,
+     "out": [
+      0.321,
+      -0.947
+     ],
+     "street": "Calle de Tembleque",
+     "to_centre": 5.5
+    },
+    {
+     "a": [
+      -391.35,
+      -143.37
+     ],
+     "b": [
+      -393.8,
+      -135.42
+     ],
+     "len": 8.32,
+     "out": [
+      0.956,
+      0.295
+     ],
+     "street": "Calle de la Rosa de Santa María",
+     "to_centre": 8.26
+    }
+   ],
+   "ground": [
+    7.34,
+    7.72
+   ]
+  }
+ ]
+}

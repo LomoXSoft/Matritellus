@@ -1,0 +1,3 @@
+perro.glb: "Shiba Inu" de Quaternius (https://quaternius.com), CC0. https://poly.pizza/m/y4wdQpg767
+Copia sin tocar de tools/descargas/perro_shiba/shiba.glb.
+holo_*.png: los símbolos de ajedrez de la fuente DejaVu Sans (licencia de Bitstream Vera / DejaVu, libre), dibujados como hologramas por tools/make_ajedrez.py. Se sube el dibujo, no la fuente.

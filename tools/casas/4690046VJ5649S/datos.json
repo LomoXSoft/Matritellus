@@ -1,0 +1,160 @@
+{
+ "rc": "4690046VJ5649S",
+ "record": {
+  "address": "CL ARGENTINA 15 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "19",
+  "year": "1900",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "",
+    "m2": "19"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4690046VJ5649S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 18.6,
+   "ring": [
+    [
+     179.27,
+     115.51
+    ],
+    [
+     180.58,
+     115.89
+    ],
+    [
+     184.64,
+     117.08
+    ],
+    [
+     183.53,
+     120.2
+    ],
+    [
+     180.6,
+     119.4
+    ],
+    [
+     178.27,
+     118.77
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      179.27,
+      115.51
+     ],
+     "b": [
+      180.58,
+      115.89
+     ],
+     "len": 1.36,
+     "out": [
+      0.279,
+      -0.96
+     ],
+     "street": "Calle de Argentina",
+     "to_centre": 5.88
+    },
+    {
+     "a": [
+      180.58,
+      115.89
+     ],
+     "b": [
+      184.64,
+      117.08
+     ],
+     "len": 4.23,
+     "out": [
+      0.281,
+      -0.96
+     ],
+     "street": "Calle de Argentina",
+     "to_centre": 5.85
+    },
+    {
+     "a": [
+      184.64,
+      117.08
+     ],
+     "b": [
+      183.53,
+      120.2
+     ],
+     "len": 3.31,
+     "out": [
+      0.942,
+      0.335
+     ],
+     "street": "Calle de Argentina",
+     "to_centre": 4.18
+    },
+    {
+     "a": [
+      183.53,
+      120.2
+     ],
+     "b": [
+      180.6,
+      119.4
+     ],
+     "len": 3.04,
+     "out": [
+      -0.263,
+      0.965
+     ],
+     "street": "Calle de Argentina",
+     "to_centre": 2.52
+    },
+    {
+     "a": [
+      180.6,
+      119.4
+     ],
+     "b": [
+      178.27,
+      118.77
+     ],
+     "len": 2.41,
+     "out": [
+      -0.261,
+      0.965
+     ],
+     "street": "Calle de Argentina",
+     "to_centre": 2.49
+    },
+    {
+     "a": [
+      178.27,
+      118.77
+     ],
+     "b": [
+      179.27,
+      115.51
+     ],
+     "len": 3.41,
+     "out": [
+      -0.956,
+      -0.293
+     ],
+     "street": "Calle de Argentina",
+     "to_centre": 4.17
+    }
+   ],
+   "ground": [
+    1.9,
+    1.91
+   ]
+  }
+ ]
+}

@@ -163,12 +163,17 @@ static func closed_key(a: int, b: int) -> int:
 func is_closed(a: int, b: int) -> bool:
 	return not closed.is_empty() and closed.has(closed_key(a, b))
 
-## A street too narrow for two cars to pass is one way for the town's traffic (the user, 15 November 2026: they met
-## nose to nose in it and stuck). Which way is fixed for each stretch (from its lower-numbered end). Only the
-## neighbours keep to it: you, the police after you and the cars on a job go where they must. And at a corner with
-## no way on that is allowed, a car turns round as it always did.
+## The town's one-way streets, as the map's source has them (OpenStreetMap's "oneway", kept by the bake: the user,
+## 16 November 2026, instead of putting the traffic right street by street), roundabouts and the motorway's two
+## carriageways among them. Where the source says nothing, a street too narrow for two cars to pass is one way as before
+## (the user, 15 November 2026: they met nose to nose in it and stuck), its way fixed from its lower-numbered end.
+## Only the neighbours keep to it: you, the police after you and the cars on a job go where they must. And at a corner
+## with no way on that is allowed, a car turns round as it always did.
 const ONE_WAY_HW := 2.4                      # half-widths under this: a street under 4.8 m
 func one_way_ok(a: int, b: int) -> bool:
+	var says: int = MapData.one_way_says(a, b)
+	if says != 0:
+		return says > 0
 	var s = MapData.seg_between(a, b)
 	if s == null or MapData.fitted_hw(s) >= ONE_WAY_HW:
 		return true

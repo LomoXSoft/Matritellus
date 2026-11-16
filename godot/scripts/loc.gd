@@ -44,6 +44,8 @@ const OBJ_A := "{{o:"                # (placeholders for the marks, while the ot
 const OBJ_B := ":o}}"
 const AIM_A := "{{a:"
 const AIM_B := ":a}}"
+const ASIDE_A := "{{s:"              # (ajedrez) ((under one's breath))
+const ASIDE_B := ":s}}"
 
 ## (the letters a line shows, without the marks of mission objects and objectives: for the speed it is spoken at)
 func plain_len(text: String) -> int:
@@ -54,6 +56,7 @@ func rich(text: String) -> String:
 	# taken out first, before any colour goes in: the colours' own "#" would otherwise be taken for marks.
 	if _marks == null:
 		_marks = [RegEx.create_from_string("[*]([^*]+)[*]"), RegEx.create_from_string("#([^#]+)#")]
+	text = text.replace("((", ASIDE_A).replace("))", ASIDE_B)        # (ajedrez) ((said under one's breath)): in grey
 	var t: String = _marks[0].sub(text, OBJ_A + "$1" + OBJ_B, true)
 	t = _marks[1].sub(t, AIM_A + "$1" + AIM_B, true)
 	if _names == null:
@@ -64,6 +67,7 @@ func rich(text: String) -> String:
 	out = _forces[0].sub(out, "[color=#2f6bff]$1[/color]", true)
 	out = _forces[1].sub(out, "[color=#2f8f55]$1[/color]", true)
 	out = out.replace(OBJ_A, "[outline_size=7][outline_color=#14301a][color=#3fd25a]").replace(OBJ_B, "[/color][/outline_color][/outline_size]")
+	out = out.replace(ASIDE_A, "[font_size=21][color=#8f8478](").replace(ASIDE_B, ")[/color][/font_size]")
 	return out.replace(AIM_A, "[outline_size=7][outline_color=#101010][color=#e8402e]").replace(AIM_B, "[/color][/outline_color][/outline_size]")
 
 func _gender(v):
@@ -504,7 +508,7 @@ const TX := {
 		"en": ["That's what a peña is: belonging. A community. Helping each other out when things go badly.", "Well. Mostly it's getting drunk together.", "And at the fair, riding the Toro Loco to see who throws up first. But with a lot of feeling."]},
 	"chiki_intro_tour": {"es": ["¿Ves esa pintada? Las hay por todo el pueblo. Cada peña tiene su logo.", "El trabajo de una peña es pintar su logo encima del de la peña rival. Pared a pared.", "Es como una guerra de territorios de mafias, pero con menos muertos. Drogas, las mismas."],
 		"en": ["See that one? They're all over town. Every peña has its logo.", "A peña's job is to paint its logo over the rival peña's. Wall by wall.", "It's like a mafia turf war, with fewer dead. The same amount of drugs, though."]},
-	"chiki_intro_spray": {"es": ["¿Tú tienes spray?", "…", "Ya veo que no."], "en": ["Have you got a spray can?", "…", "I see you haven't."]},
+	"chiki_intro_spray": {"es": ["¿Tú tiés spray?", "…", "Ya veo que no."], "en": ["Have you got a spray can?", "…", "I see you haven't."]},
 	"chiki_spray_same": {"es": ["Toma el mío. Entre marzistas hay que ayudarse.", "Y cuando tapes una de las otras, piensa en mí. Bueno, mejor no pienses en mí: tú tapa."],
 		"en": ["Take mine. Marzistas help each other.", "And when you cover one of the others, think of me. Actually, don't think of me: just cover it."]},
 	"chiki_spray_other": {"es": ["Toma. Está medio vacío, que conste.", "A mí no me gusta ayudar a otras peñas. Pero estoy en control de la ira, por lo del estrés, y dice el psicólogo que ayudar me viene bien.", "(De todas las peñas del pueblo, ha ido a escoger {pena}. La más cutre.)"],
@@ -583,11 +587,11 @@ const TX := {
 	"firma_again_si": {"es": ["Que ya te he firmao. ¿Quiés que te firme también la frente?"], "en": ["I’ve already signed. Do you want me to sign your forehead as well?"]},
 	"firma_again_no": {"es": ["Que no. Y si me lo vuelves a pedir, que menos."], "en": ["No. And if you ask again, even less."]},
 	"firma_si": {
-		"es": ["Trae pa'cá. ¿Dónde firmo? ¿Aquí? ¿Y esto no será pa un crédito?",
+		"es": ["Trae pa'cá. ¿Ande firmo? ¿Aquí? ¿Y esto no será pa un crédito?",
 			"Yo firmo lo que sea si es contra el Ayuntamiento.",
 			"Por ese puente pasé yo de [[novio|novia]]. Y de [[casao|casá]]. Y huyendo. Trae.",
 			"Firmo. Pero pon que soy de Consuegra, que aquí no quiero líos.",
-			"¿El puente? Claro, hombre. ¿Y dónde va uno a mirar el agua cuando llueve?",
+			"¿El puente? Claro, hombre. ¿Y ande va uno a mirar el agua cuando llueve?",
 			"Venga. Mi firma y la de mi [[mujer|marido]], que firma igual que yo porque se la hago yo."],
 		"en": ["Give it here. Where do I sign? Here? This isn’t for a loan, is it?",
 			"I’ll sign anything if it’s against the town hall.",
@@ -626,6 +630,8 @@ const TX := {
 	"firma_no_anselmo": {"es": "{Hijo|Hija}, la Iglesia no firma. La Iglesia espera. Llevamos dos mil años esperando y mira qué bien.", "en": "My child, the Church does not sign. The Church waits. Two thousand years of waiting, and look how well it’s gone."},
 	"firma_si_ramirez": {"es": "Firmo como ciudadano. Como teniente, no he visto nada.", "en": "I sign as a citizen. As a lieutenant, I saw nothing."},
 	"firma_no_ramirez": {"es": "Negativo. Un agente no firma: un agente levanta acta. ¿Quiés un acta?", "en": "Negative. An officer doesn’t sign: an officer files a report. Would you like a report?"},
+	"firma_si_dolores": {"es": "Firmo, firmo, que el puente no tiene la culpa de na. Y ya que estáis, apuntad debajo que le cambien el nombre a mi calle.", "en": "I’ll sign, I’ll sign, the bridge has done nothing wrong. And while you’re at it, put underneath that they change my street’s name."},
+	"firma_no_dolores": {"es": "Yo no firmo na hasta que le cambien el nombre a la calle de la Amargura. Cada cosa a su tiempo, {hijo|hija}.", "en": "I’m not signing anything until they change the name of Calle de la Amargura. One thing at a time, {hijo|hija}."},
 	"firma_si_maruja": {"es": "Firmo, firmo. ¿Y quién más ha firmao? Déjame ver la lista. No, por na. Por saber.", "en": "I’ll sign, I’ll sign. Who else has signed? Let me see the list. No reason. Just to know."},
 	"firma_no_maruja": {"es": "No firmo hasta saber quién ha firmao antes. Que yo al lao de según quién no pongo mi nombre.", "en": "I’m not signing until I know who signed before me. There are names I won’t put mine next to."},
 	"firma_si_venancio": {"es": "Firmo. Un puente viejo que se cae da trabajo; uno que tiran aposta no deja ni eso.", "en": "I’ll sign. An old bridge that falls down is work for me; one they knock down on purpose isn’t even that."},
@@ -635,7 +641,7 @@ const TX := {
 	"firma_si_kevin": {"es": "Firmo. Con el nombre entero: Kevin-José. Con guion. El guion es lo más mío.", "en": "I’ll sign. Full name: Kevin-José. With the hyphen. The hyphen is the part that’s really me."},
 	"firma_no_kevin": {"es": "No puedo: soy menor. Pero te lo notarío por dos euros.", "en": "I can’t: I’m a minor. But I’ll notarise it for two euros."},
 	"firma_si_goat": {"es": ["Beeeh.", "(Moja la pezuña en un charco y la planta en el papel. En este pueblo ha valío pa cosas peores.)"], "en": ["Beeeh.", "(She dips a hoof in a puddle and plants it on the paper. In this town that has counted for worse.)"]},
-	"firma_no_goat": {"es": ["Beeeh.", "(Se come la esquina del papel donde iba la firma. Lo cuentas como un no.)"], "en": ["Beeeh.", "(She eats the corner of the page where the signature was to go. You count that as a no.)"]},
+	"firma_no_goat": {"es": ["Beeeh.", "(Se come la esquina del papel ande iba la firma. Lo cuentas como un no.)"], "en": ["Beeeh.", "(She eats the corner of the page where the signature was to go. You count that as a no.)"]},
 	"firma_si_josefa": {"es": "¿Otra vez? Trae. Con esta van cinco. Y dile al Alberto que la sexta se la cobro.", "en": "Again? Give it here. That makes five. And tell Alberto I’m charging for the sixth."},
 	"firma_no_josefa": {"es": "No, {hijo|hija}, que ya le he firmao cuatro veces y a la quinta me empadronan en el puente.", "en": "No, {hijo|hija}: I’ve signed four times already, and at the fifth they register me as living on the bridge."},
 	"firma_si_vip": {"es": "Firmo. Son cuarenta euros. Es broma. Son veinte. Que no, hombre, que firmo.", "en": "I’ll sign. That’s forty euros. Joking. Twenty. No, no, I’ll sign."},
@@ -693,7 +699,7 @@ const TX := {
 		"en": ["Hey… you and me are proper mates now, right? So I'm gonna tell you something nobody knows.", "Katakumba69 is my battle name. My real one is… Ignacio José Gómez-Carreño de la Llave.", "Nachín, to my friends.", "Well, my friends on the forum. I haven't got any in the flesh.", "Don't you go telling anyone, eh? You'd sink my rep in the rankings."]},
 	"alberto_rec_1": {
 		"es": ["¡Hombre! ¿Qué tal llevas lo de las actividades cívicas? ¿Has hecho mucho por el pueblo?",
-			"A mí es que lo del pueblo me tira mucho, oye. Que yo el noventa por ciento del año estoy fuera: Madrid, Valencia, donde me mande el curro…",
+			"A mí es que lo del pueblo me tira mucho, oye. Que yo el noventa por ciento del año estoy fuera: Madrid, Valencia, ande me mande el curro…",
 			"Pero lo mío es esto. El pueblo. Lo de toa la vida."],
 		"en": ["Hey! How's the civic business going? Done much for the town?",
 			"The town really pulls at me, you know. Ninety per cent of the year I'm away: Madrid, Valencia, wherever work sends me…",
@@ -719,7 +725,7 @@ const TX := {
 		"es": ["¿Y si los abrimos pa un día? ¡Un torneo de Tokken 9! El de lucha, el que está ahora de moda.", "Pa eso hace falta el permiso del #alcalde#. ¿Te encargas tú? Yo te echo una mano en lo que pueda."],
 		"en": ["What if we opened it up for a day? A Tokken 9 tournament! The fighting one, the one everybody's playing now.", "For that we need the #mayor#'s say-so. Will you see to it? I'll lend a hand however I can."]},
 	"alberto_rec_busy": {"es": ["¿Cómo va lo del torneo? Tú tira, que yo voy diciéndolo por ahí."], "en": ["How's the tournament coming on? You carry on, I'm spreading the word."]},
-	"alberto_rec_call": {"es": ["¡Ey! Soy Alberto. Oye, ¿tienes un rato? Pásate por el puente, que se me ha ocurrido una cosa pa darle vidilla al pueblo."],
+	"alberto_rec_call": {"es": ["¡Ey! Soy Alberto. Oye, ¿tiés un rato? Pásate por el puente, que se me ha ocurrido una cosa pa darle vidilla al pueblo."],
 		"en": ["Hey! It's Alberto. Listen, got a minute? Come by the bridge, I've had an idea to put some life into the town."]},
 	"alberto_rec_packed": {"es": ["¡Pero bueno! ¿Qué has hecho? ¡Los recreativos están hasta arriba de gente!", "¡Vente ya pa'cá, que esto empieza!"],
 		"en": ["Well I never! What have you done? The arcade's packed to the rafters!", "Get yourself over here, it's about to start!"]},
@@ -773,13 +779,95 @@ const TX := {
 	"alcalde_rec_excuse": {"es": ["Sí, bueno, es que los nuevos sistemas de combos y cancelaciones son muy raros.", "El juego no es el mismo desde que cambiaron el motor gráfico…"],
 		"en": ["Yes, well, these new combo and cancel systems are very odd.", "The game hasn't been the same since they changed the graphics engine…"]},
 	"alcalde_rec_curse": {"es": "Motor gráfico… Tokken 2, eso sí que era un juego…", "en": "Graphics engine… Tokken 2, now that was a game…"},
+	# (ajedrez) the mayor's chess, after the Recress (ajedrez_humano.gd; the user's design in guion/ajedrez.md). He still
+	# speaks like a politician. ((…)) is said under his breath (Loc.rich: in grey).
+	"aj_title": {"es": "Partidas en la cabeza", "en": "Games in his head"},
+	"mg_ajedrez": {"es": "Ajedrez humano", "en": "Human chess"},
+	"mg_ajedrez_unlock": {"es": "Escucha al alcalde hablar de su ajedrez, después del torneo de los Recress.", "en": "Hear the mayor out about his chess, after the Recress tournament."},
+	"log_aj_open": {"es": "el alcalde quiere hablar contigo en la puerta del ayuntamiento", "en": "the mayor wants a word at the town hall door"},
+	"p_aj_play": {"es": "<interact> Jugar", "en": "<interact> Play"},
+	"aj_unlocked": {"es": "Has desbloqueado el Ajedrez humano como minijuego", "en": "You've unlocked Human Chess as a minigame"},
+	"aj_m_intro": {"es": ["Hombre, usted por aquí. Pase, pase. Bueno, no pase, que estamos en la calle.",
+			"Le voy a confesar una cosa. Desde que perdí en el torneo de Tokken 9, he dejado un poco los videojuegos.",
+			"Un servidor necesitaba reorientar su estrategia de ocio. Y he vuelto a mis antiguos hobbies. Como el ajedrez."],
+		"en": ["Well, look who it is. Come in, come in. Well, don't come in, we're in the street.",
+			"I'll confess something. Since I lost the Tokken 9 tournament, I've rather given up video games.",
+			"Yours truly needed to realign his leisure strategy. So I've gone back to my old hobbies. Like chess."]},
+	"aj_m_window": {"es": ["Cuando miro por la ventana de mi despacho, veo el tablero de la plaza.",
+			"Y me imagino partidas. Aperturas, tácticas, finales… Todo aquí, en la cabeza, para entrenar."],
+		"en": ["When I look out of my office window, I can see the chessboard in the square.",
+			"And I imagine games. Openings, tactics, endgames… All up here, in my head, to keep in training."]},
+	"aj_m_pieces": {"es": ["Lo más gracioso es que, como veo pasar a la gente del pueblo, las figuras que me imagino han empezado a ser… gente del pueblo.",
+			"La gente alta, de alfiles.", "La gente bajita, de torres.", "Los niños, de peones.", "Los perros, de caballos.", "E incluso mi mujer y yo… de reina y de rey."],
+		"en": ["The funny thing is, since I watch the townsfolk go by, the pieces I imagine have started to be… townsfolk.",
+			"Tall people as bishops.", "Short people as rooks.", "Children as pawns.", "Dogs as knights.", "And even my wife and I… as queen and king."]},
+	"aj_m_ask": {"es": ["…", "Usted pensará que estoy loco, ¿verdad?"], "en": ["…", "You must think I'm mad, don't you?"]},
+	"aj_q": {"es": "¿Piensas que está loco?", "en": "Do you think he's mad?"},
+	"aj_q_no": {"es": "Noooo, que vaaa, muy normal todo", "en": "Noooo, not at aaall, all perfectly normal"},
+	"aj_q_yes": {"es": "Como una puñetera regadera", "en": "Mad as a bloody box of frogs"},
+	"aj_m_sarcasm": {"es": ["Mire, no me gustan los sarcasmos.", "Bastante tengo que aguantar en el trabajo. En los plenos, sin ir más lejos."],
+		"en": ["Look, I don't care for sarcasm.", "I have to put up with enough of it at work. At council meetings, for a start."]},
+	"aj_m_honest": {"es": ["¡Ja, ja, ja, ja! ¡Como una puñetera regadera! ¡Muy bueno!", "Le agradezco la sinceridad, de verdad. Escasea. En política, más todavía."],
+		"en": ["Ha, ha, ha, ha! Mad as a bloody box of frogs! Very good!", "I appreciate your honesty, truly. It's in short supply. In politics, even more so."]},
+	"aj_m_bye": {"es": ["Bueno, le dejo, que tengo mucho trabajo ((y una partida abierta en SuperChess 2.0))."],
+		"en": ["Right, I'll leave you to it, I've got a lot of work ((and a game going on SuperChess 2.0))."]},
+	"aj_lv_0": {"es": "Con desgana", "en": "Half-hearted"},
+	"aj_lv_1": {"es": "Entre dientes", "en": "Under his breath"},
+	"aj_lv_2": {"es": "En serio", "en": "For real"},
+	"aj_lv_3": {"es": "Modo SuperChess 2.0", "en": "SuperChess 2.0 mode"},
+	"aj_level": {"es": "%s  ·  si ganas, +%d Puntos Cívicos", "en": "%s  ·  win for +%d Puntos Cívicos"},
+	"aj_level_q": {"es": "¿Cómo de en serio se lo toma el alcalde?", "en": "How seriously does the mayor take it?"},
+	"aj_side_q": {"es": "¿Con cuáles juegas?", "en": "Which side do you play?"},
+	"aj_white": {"es": "Blancas (sales tú)", "en": "White (you go first)"},
+	"aj_black": {"es": "Grises (sale el alcalde)", "en": "Grey (the mayor goes first)"},
+	"aj_random": {"es": "A suertes", "en": "Leave it to chance"},
+	"aj_later": {"es": "Mejor otro rato", "en": "Another time"},
+	"aj_resume": {"es": "Seguir la partida de antes (%s)", "en": "Carry on with the last game (%s)"},
+	"aj_new": {"es": "Empezar otra", "en": "Start a new one"},
+	"aj_promo_q": {"es": "El crío ha llegao al final. ¿En qué se convierte?", "en": "The kid has made it to the end. What does it become?"},
+	"aj_promo_5": {"es": "Reina (otra alcaldesa)", "en": "Queen (another mayor's wife)"},
+	"aj_promo_4": {"es": "Torre", "en": "Rook"},
+	"aj_promo_3": {"es": "Alfil", "en": "Bishop"},
+	"aj_promo_2": {"es": "Caballo (un perro)", "en": "Knight (a dog)"},
+	"aj_go_on": {"es": "Seguir jugando", "en": "Keep playing"},
+	"aj_save": {"es": "Dejarla pa luego", "en": "Leave it for later"},
+	"aj_resign": {"es": "Rendirse", "en": "Resign"},
+	"aj_b_out": {"es": "Salir", "en": "Leave"},
+	"aj_b_view": {"es": "Vista", "en": "View"},
+	"aj_b_drop": {"es": "Soltar", "en": "Drop"},
+	"aj_stamp": {"es": "¡JAQUE MATE!", "en": "CHECKMATE!"},
+	"aj_won": {"es": "¡Jaque mate al alcalde! +%d Puntos Cívicos", "en": "Checkmate on the mayor! +%d Puntos Cívicos"},
+	"aj_lost": {"es": "Jaque mate. Ha ganao el alcalde.", "en": "Checkmate. The mayor wins."},
+	"aj_draw": {"es": "Tablas.", "en": "A draw."},
+	"aj_thinking": {"es": "El alcalde está pensando…", "en": "The mayor is thinking…"},
+	"aj_your_turn": {"es": "Te toca. Llevas las %s.", "en": "Your move. You're %s."},
+	"aj_whites": {"es": "blancas", "en": "white"},
+	"aj_greys": {"es": "grises", "en": "grey"},
+	"aj_check": {"es": "¡Jaque!", "en": "Check!"},
+	"aj_no_moves": {"es": "Aún no se ha movido nadie.", "en": "Nobody has moved yet."},
+	"aj_keys": {"es": "Ratón o <interact>: coger y mover · <radio> Vista · <pause> Menú", "en": "Mouse or <interact>: pick up and move · <radio> View · <pause> Menu"},
+	"aj_keys_end": {"es": "<interact> Salir", "en": "<interact> Leave"},
+	"aj_c_hello_0": {"es": ["Venga, una rapidita, que tengo pleno a las doce.", "Juego con desgana, ¿eh? Que conste."], "en": ["Go on, a quick one, I've got a council meeting at twelve.", "I'm playing half-heartedly, mind. Let it be noted."]},
+	"aj_c_hello_1": {"es": ["Juego entre dientes, que estoy con los presupuestos."], "en": ["I'm playing under my breath, I'm in the middle of the budget."]},
+	"aj_c_hello_2": {"es": ["Esta vez, en serio. Sin concesiones ni subvenciones."], "en": ["This time, for real. No concessions and no subsidies."]},
+	"aj_c_hello_3": {"es": ["Modo SuperChess 2.0 activado. Que Dios reparta suerte."], "en": ["SuperChess 2.0 mode activated. May God hand out the luck."]},
+	"aj_c_think": {"es": ["Mmm…", "Déjeme que lo lleve a comisión.", "Esto requiere un estudio de viabilidad.", "Un momento, que lo consulto con la almohada."],
+		"en": ["Hmm…", "Let me take it to committee.", "This calls for a feasibility study.", "One moment, I'll sleep on it."]},
+	"aj_c_check": {"es": ["Jaque. Con todos mis respetos.", "Jaque. Y que conste en acta."], "en": ["Check. With all due respect.", "Check. And let it be minuted."]},
+	"aj_c_checked": {"es": ["Uy. Uy, uy, uy.", "Eso es una moción de censura en toda regla."], "en": ["Oh. Oh, oh, oh.", "That's a vote of no confidence if ever I saw one."]},
+	"aj_c_take": {"es": ["Lo siento por la criatura.", "Una reestructuración necesaria.", "Recorte de plantilla, me temo."], "en": ["Sorry about that one.", "A necessary restructuring.", "Staff cuts, I'm afraid."]},
+	"aj_c_lost_queen": {"es": ["¡Mi mujer! Esta noche duermo en el sofá."], "en": ["My wife! I'm sleeping on the sofa tonight."]},
+	"aj_c_lost_rook": {"es": ["¡Una torre! Eso no entraba en los presupuestos."], "en": ["A rook! That wasn't in the budget."]},
+	"aj_c_win": {"es": ["Jaque mate. Por mayoría absoluta.", "Jaque mate. Como en las elecciones: sin sorpresas."], "en": ["Checkmate. By an absolute majority.", "Checkmate. Like the elections: no surprises."]},
+	"aj_c_lose": {"es": ["¡Recórcholis! Exijo un recuento.", "Esto lo voy a revisar en SuperChess 2.0, que algo ha fallado."], "en": ["Good grief! I demand a recount.", "I'll go over this on SuperChess 2.0, something went wrong."]},
+	"aj_c_draw": {"es": ["Tablas. Empate técnico: gobernaremos en coalición."], "en": ["A draw. A dead heat: we'll govern in coalition."]},
 	"firma_si_alcalde": {"es": ["Firmo, firmo. A título personal, ¿eh? No en calidad de alcalde."], "en": ["I'll sign, I'll sign. In a personal capacity, mind. Not as mayor."]},
 	"firma_no_alcalde": {"es": ["Comprenderá que el consistorio no puede posicionarse sobre ese particular."], "en": ["You'll understand the council cannot take a position on that matter."]},
 	"copista": {"es": [["¿Fotocopias? Hoy no, que se ha atascao la máquina otra vez."], ["Anoche me vi cuatro capítulos seguidos en el Nerflis. Cuatro. Y madrugo, ¿eh?"]],
 		"en": [["Photocopies? Not today, the machine's jammed again."], ["Last night I watched four episodes back to back on Nerflis. Four. And I'm up early, mind."]]},
 	"copista_rec": {
 		"es": ["¡Ah, eres tú! El alcalde ya ha llamao. Es raro que paguen por adelantao, en cosas del ayuntamiento… Pero yo no me voy a quejar, encima.",
-			"Aquí tienes los *carteles*: cinco. Yo de videojuegos no entiendo, ¿eh? Yo soy más de ver el Nerflis.",
+			"Aquí tiés los *carteles*: cinco. Yo de videojuegos no entiendo, ¿eh? Yo soy más de ver el Nerflis.",
 			"Yo si fuera tú iría a algún #comercio# a pegar los *carteles*. A cinco, uno en cada uno."],
 		"en": ["Oh, it's you! The mayor's already rung. Funny, the council paying in advance… Not that I'm going to complain.",
 			"Here are the *posters*: five of them. I don't know a thing about video games, mind. I'm more of a Nerflis person.",
@@ -825,7 +913,7 @@ const TX := {
 	"obj_rec_play": {"es": "Siéntate a la máquina para jugar contra el alcalde", "en": "Sit down at the machine to play the mayor"},
 	"t_rec_poster": {"es": "Cartel pegado (%d/%d)", "en": "Poster up (%d/%d)"},
 	"t_rec_posters_done": {"es": "¡Todos los carteles pegados!", "en": "All the posters are up!"},
-	"t_rec_posters": {"es": "Tienes los carteles: cinco", "en": "You have the posters: five of them"},
+	"t_rec_posters": {"es": "Tiés los carteles: cinco", "en": "You have the posters: five of them"},
 	"t_rec_paused": {"es": "Misión en pausa: vuelve con el dinero cuando lo tengas", "en": "Mission on hold: come back with the money when you have it"},
 	# Tokken 9 (tokken.gd): the machine speaks plain Spanish, in capitals
 	"tk_pick": {"es": "Elige luchador", "en": "Choose your fighter"},
@@ -888,7 +976,7 @@ const TX := {
 	"log_rec_money": {"es": "El alcalde espera el dinero", "en": "The mayor is waiting for the money"},
 	# the switchboard (llamadas.gd): somebody kept waiting by an engaged line has a go at you first
 	"call_engaged": {
-		"es": ["¡Hombre, {Don Ocupado|Doña Ocupada}! ¿Ya has terminao de cascar?", "¿Qué pasa, que no tienes cobertura? Te estaba llamando.",
+		"es": ["¡Hombre, {Don Ocupado|Doña Ocupada}! ¿Ya has terminao de cascar?", "¿Qué pasa, que no tiés cobertura? Te estaba llamando.",
 			"¿Con quién hablabas tanto rato, con {tu novia|tu novio}?", "Comunicando, comunicando… ¡Paeces la centralita del ayuntamiento!"],
 		"en": ["Well, if it isn't {Mr Busy|Miss Busy}! Finished nattering, have we?", "What's up, no signal? I was ringing you.",
 			"Who were you on to all that time, {your girlfriend|your boyfriend}?", "Engaged, engaged… You're worse than the town hall switchboard!"]},
@@ -898,7 +986,7 @@ const TX := {
 		"en": ["It’s on its way, he says. They said that about the high-speed train too.", "“Five minutes.” Five minutes, La Mancha time.", "They put me on hold. Half an hour of hold music."]},
 	"tow_wait": {"es": ["¿Y la grúa? ¿Viene andando?", "Si lo sé, vengo en la mula.", "Esto con el Hebro no me pasaba.", "A este paso se me pasa la ITV otra vez."],
 		"en": ["Where’s that tow truck? Is it walking here?", "I should have come on the mule.", "Never had this with the old tractor.", "At this rate the MOT will have run out again."]},
-	"tow_here": {"es": ["¡Hombre, la grúa! Ya creía que me jubilaba aquí.", "¡Con cuidao, que está recién encerao! …Hace seis años.", "¡Engánchalo por donde puedas, pero engánchalo!"],
+	"tow_here": {"es": ["¡Hombre, la grúa! Ya creía que me jubilaba aquí.", "¡Con cuidao, que está recién encerao! …Hace seis años.", "¡Engánchalo ande puedas, pero engánchalo!"],
 		"en": ["The tow truck, at last! I thought I’d retire here.", "Careful, it’s just been waxed! …Six years ago.", "Hook it wherever you can, but hook it!"]},
 	"n_henry": {"es": "El Henry", "en": "Henry"},
 	"n_luis": {"es": "Don Luis", "en": "Don Luis"},
@@ -982,11 +1070,11 @@ const TX := {
 	"luis_title": {"es": "En el amor y en kebab", "en": "In Love and Kebab"},
 	"n_repartidor": {"es": "El repartidor", "en": "The delivery man"},
 	"luis_mision": {"es": ["Ven acá, que tengo un bug en el negocio. Soy el cuarto kebab que abre en este pueblo. ¡El cuarto! Y el pueblo no es tan grande.",
-			"Kebab Deluxe, Tele Durum, ShawarMadridejos… y yo. Aquí no hay estómagos pa tanto pan de pita.",
+			"Kebab Deluxe, Tele Dürum, ShawarMadridejos… y yo. Aquí no hay estómagos pa tanto pan de pita.",
 			"Necesito que vayas a los otros tres y les sabotees la comida. Un moco aquí, una meadica allá… Lo que te pida el cuerpo.",
 			"No es ético, pero en el amor y en kebab todo vale."],
 		"en": ["Come here, I’ve got a bug in the business. I’m the fourth kebab house to open in this town. The fourth! And the town isn’t that big.",
-			"Kebab Deluxe, Tele Durum, ShawarMadridejos… and me. There aren’t stomachs here for that much pitta.",
+			"Kebab Deluxe, Tele Dürum, ShawarMadridejos… and me. There aren’t stomachs here for that much pitta.",
 			"I need you to go to the other three and spoil their food. A bogey here, a little piss there… Whatever the body asks of you.",
 			"It isn’t ethical, but all’s fair in love and kebab."]},
 	"luis_go": {"es": ["Así me gusta. El camión del reparto, el que nos trae el género a los cuatro, acaba de irse de aquí ahora mismo.",
@@ -1058,7 +1146,7 @@ const TX := {
 	"t_side_dropped_menu": {"es": "Lo primero es lo primero. El recado de la Josefa, pa otro rato.", "en": "First things first. Josefa’s errand can wait."},
 	"log_josefa_open": {"es": "te la ofrece la Josefa, en su puerta", "en": "Josefa offers it, at her door"},
 	"neg_informatica": {"es": "tiendas de informática (V.I.P.)", "en": "computer shops (V.I.P.)"},
-	"neg_restaurantes": {"es": "restaurantes (La Cocina de Henry, Kebab Luis, Kebab Deluxe, Tele Durum, ShawarMadridejos)", "en": "restaurants (La Cocina de Henry, Kebab Luis, Kebab Deluxe, Tele Durum, ShawarMadridejos)"},
+	"neg_restaurantes": {"es": "restaurantes (La Cocina de Henry, Kebab Luis, Kebab Deluxe, Tele Dürum, ShawarMadridejos)", "en": "restaurants (La Cocina de Henry, Kebab Luis, Kebab Deluxe, Tele Dürum, ShawarMadridejos)"},
 	"t_negocio": {"es": "Ya conoces: %s.", "en": "You now know: %s."},
 	"log_negocios": {"es": "Negocios que conoces: %s", "en": "Businesses you know: %s"},
 	"log_pc": {"es": "Puntos Cívicos: %d  ·  misión principal 5 · secundaria 3 · minijuego 1 (la primera victoria del día)", "en": "Puntos Cívicos: %d  ·  main mission 5 · side mission 3 · minigame 1 (first win of the day)"},
@@ -1218,6 +1306,7 @@ const TX := {
 	"n_anselmo": {"es": "Don Anselmo", "en": "Don Anselmo"},
 	"n_ramirez": {"es": "Teniente Torrezón", "en": "Lieutenant Torrezón"},
 	"n_maruja": {"es": "La Maruja", "en": "Maruja"},
+	"n_dolores": {"es": "Dolores Fuertes D'Varriga", "en": "Dolores Fuertes D'Varriga"},
 	"n_venancio": {"es": "El Venancio (funeraria)", "en": "Venancio (undertaker)"},
 	"n_genaro": {"es": "Tío Gerardo", "en": "Tío Gerardo"},      # (Gerardo, not Genaro: the user, 15 Nov 2026, "por evitar líos")
 	"n_kevin": {"es": "Kevin-José (8 años)", "en": "Kevin-José (age 8)"},
@@ -1306,6 +1395,32 @@ const TX := {
 			["If you must run somebody over, pick somebody I dislike.", "I’ll send you a list. It’s alphabetical."],
 			["I retired two years ago. Still here.", "For the love of it. The tricorn doesn’t retire: the man does."],
 			["I’m not from here, you know. But Madridejos needs me.", "Nobody’s told me to go. There must be a reason."]]},
+	# Dolores, forever up and down the Calle de la Amargura, complaining of its name (the user, 16 November 2026: not
+	# a word about her own)
+	"dolores": {
+		"es": [["¡Ay, {hijo|hija}! ¿Tú sabes cómo se llama esta calle? ¡La Amargura!", "¿A quién se le ocurre? ¿Al concejal de los disgustos?", "Le das las señas al del butano y se te pone a llorar el hombre."],
+			["Cuarenta años viviendo aquí y todavía me da apuro decirlo.", "«¿Ande vive usté, señora?» «En la Amargura.» Y te miran con una pena…", "Podían haberle puesto la calle de la Alegría. O del Chorizo. Algo que dé gusto."],
+			["Yo doy vueltas por aquí a ver si la calle se anima, ¿sabes?", "Pero na. Ni un geranio en flor. Con ese nombre, ¿qué quieres?", "Hasta los gatos van cabizbajos."],
+			["Le he pedío al alcalde que le cambie el nombre.", "Dice que eso cuesta dinero, que hay que cambiar las placas.", "¡Pues que les dé la vuelta y escriba por detrás, que es gratis!"],
+			["Mi hermana vive en la calle de la Paz. ¡La de la Paz!", "Y aquí una, en la Amargura, como si hubiera hecho algo.", "Desde que me lo dijo, ni la felicito por su santo."]],
+		"en": [["Oh, {hijo|hija}! Do you know what this street is called? Bitterness Street! La Amargura!", "Who thinks of these things? The councillor for misery?", "You give the gas man your address and the poor man bursts into tears."],
+			["Forty years living here and I still go red saying it.", "“Where do you live, señora?” “On the Amargura.” And they look at you so sorry…", "They could have called it Joy Street. Or Chorizo Street. Something nice."],
+			["I walk up and down to see if the street cheers up, you know?", "Nothing. Not one geranium in flower. With a name like that, what do you expect?", "Even the cats walk with their heads down."],
+			["I asked the mayor to change its name.", "He says that costs money, the signs have to be changed.", "Then turn them round and write on the back, that’s free!"],
+			["My sister lives on Calle de la Paz. Peace Street!", "And here’s me on the Amargura, as if I’d done something.", "Since she told me, I don’t even wish her a happy saint’s day."]]},
+	# ...and at a hundred of trust, once, where her surname came from (the user: she never sees what is funny about the old
+	# one; all that troubles her is that it was French)
+	"dolores_delanno": {
+		"es": ["Mira, {hijo|hija}, a ti te lo voy a contar porque eres de confianza.", "Yo no siempre me he llamao así. Me cambié el apellido hace ya muchos años.",
+			"Cogí el de mi abuelo, el de Navarra: D'Varriga. Gente seria, de monte, de las de antes.",
+			"El de antes era francés. ¡Francés! Dolores Fuertes Delanno, me llamaba yo.", "¡Yo, un apellido francés, habrase visto!",
+			"Que a mí los franceses ni en pintura. Vinieron aquí con el Napoleón y se llevaron hasta las gallinas.",
+			"Así que ya lo sabes. Y de esto, ni media palabra por la calle, ¿eh?"],
+		"en": ["Look, {hijo|hija}, I’ll tell you because you’re someone I can trust.", "I haven’t always been called this. I changed my surname many years ago.",
+			"I took my grandfather’s, the one from Navarre: D'Varriga. Serious people, mountain people, the old kind.",
+			"The one before was French. French! Dolores Fuertes Delanno, my name was.", "Me, with a French surname, can you imagine!",
+			"I can’t stand the French. They came here with Napoleon and took everything, even the hens.",
+			"So now you know. And not a word of this in the street, eh?"]},
 	"maruja": {
 		"es": [["Yo no cotilleo, {hermoso|hermosa}. Yo archivo."],
 			["Tu madre dice que te estás «buscando a ti mismo».", "A tu edad tu padre ya se había perdío dos veces."],
@@ -1434,4 +1549,15 @@ const TX := {
 		"en": ["Ow, mother! Not with the bat!", "You animal! I’ve got a titanium hip!", "Curse your dead, and your bat!", "I’m telling your mother!", "Brute, you utter brute!"]},
 	"t_bat_kept": {"es": "Henry te deja quedarte el bate. Ahora los golpes son de bate (y los Pitufos lo notan).", "en": "Henry lets you keep the bat. Your hits are bat hits now (and Los Pitufos notice)."},
 	"paca_call": {"es": "¡{Chiquillo|Chiquilla}! ¡Ven p’acá!", "en": "¡{Niño|Niña}! Come here!"},
+	# the gumball machines and their figures (gacha.gd)
+	"p_gacha": {"es": "<interact> Echar %d € a la máquina de bolas", "en": "<interact> Put %d € in the gumball machine"},
+	"p_gacha_broke": {"es": "Máquina de bolas: %d € (no llevas ni uno)", "en": "Gumball machine: %d € (you haven’t got one)"},
+	"t_gacha_broke": {"es": "Sin un euro no hay bola. Ni bola ni na.", "en": "No euro, no ball. No nothing."},
+	"gacha_got": {"es": "Te ha tocao…", "en": "Out of the ball comes…"},
+	"gacha_new": {"es": "¡NUEVA PA LA COLECCIÓN!", "en": "NEW FOR THE COLLECTION!"},
+	"gacha_dup": {"es": "Repetía. Ya tiés %d.", "en": "A repeat. That makes %d."},
+	"gacha_count": {"es": "Colección: %d de %d", "en": "Collection: %d of %d"},
+	"gacha_on": {"es": "<interact> Seguir", "en": "<interact> Carry on"},
+	"log_gacha": {"es": "COLECCIÓN", "en": "COLLECTION"},
+	"log_gacha_how": {"es": "Bolas a %d € en la máquina del Tele Dürum (y en las que vayan saliendo por el pueblo). En cada bola, un vecino en figurita. Los que te faltan, en negro.", "en": "Balls at %d € from the machine at the Tele Dürum (and any others that turn up in town). In each one, a neighbour as a little figure. The ones you’re missing are in black."},
 }

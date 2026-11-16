@@ -346,7 +346,7 @@
     6
    ],
    "role": "Reparte el género a los cuatro kebabs del pueblo. Habla en «árabe», que nunca es árabe («Lo siento, no sé árabe, esto es un texto de ejemplo»).",
-   "where": "En su camión de reparto, del Kebab Luis al Kebab Deluxe, al Tele Durum y al ShawarMadridejos. Solo sale durante la misión de Don Luis.",
+   "where": "En su camión de reparto, del Kebab Luis al Kebab Deluxe, al Tele Dürum y al ShawarMadridejos. Solo sale durante la misión de Don Luis.",
    "notes": "Sin nombre. Personaje y camión provisionales (un Z15 negro): el modelo definitivo está por hacer. La broma, del autor: se ha metido un personaje árabe sin tener ni idea de su idioma."
   },
   {
@@ -420,6 +420,18 @@
    "role": "El friki del Tokken: finalista del torneo contra el alcalde. Katakumba69 es su nombre oficial; el de verdad, Ignacio José Gómez-Carreño de la Llave («Nachín pa los amigos», que solo tiene en el foro), solo te lo dice con la confianza al 100.",
    "where": "En los Galaxy Recress (se queda allí cuando reabren).",
    "notes": "Está convencido de que el alcalde se dejó ganar. En Tokken 9 lleva a Drácula; jugar con él en la máquina grande le sube la confianza."
+  },
+  {
+   "id": "dolores",
+   "name": "Dolores Fuertes D'Varriga",
+   "foto": true,
+   "pos": [
+    8,
+    2
+   ],
+   "role": "Señora mayor que no para de quejarse del nombre de su calle: «¿A quién se le ocurre?»",
+   "where": "Siempre dando vueltas por la calle de la Amargura.",
+   "notes": "Le ha pedido al alcalde que le cambie el nombre a la calle. Su hermana vive en la calle de la Paz y ya no la felicita por su santo. A 100 de confianza te confiesa que se cambió el apellido hace años por el de su abuelo de Navarra: el original era francés, Dolores Fuertes Delanno, y no le gustan los franceses (no ve nada gracioso en él)."
   }
  ],
  "links": [

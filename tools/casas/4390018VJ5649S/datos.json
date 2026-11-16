@@ -1,0 +1,151 @@
+{
+ "rc": "4390018VJ5649S",
+ "record": {
+  "address": "CL ARCOS 2 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "228",
+  "year": "1994",
+  "units": [
+   {
+    "use": "COMERCIO",
+    "floor": "00",
+    "door": "01",
+    "m2": "92"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "02",
+    "m2": "22"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "114"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4390018VJ5649S_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 111.0,
+   "ring": [
+    [
+     96.54,
+     79.2
+    ],
+    [
+     108.48,
+     77.76
+    ],
+    [
+     109.11,
+     78.55
+    ],
+    [
+     109.06,
+     86.65
+    ],
+    [
+     97.23,
+     88.39
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      96.54,
+      79.2
+     ],
+     "b": [
+      108.48,
+      77.76
+     ],
+     "len": 12.03,
+     "out": [
+      -0.12,
+      -0.993
+     ],
+     "street": "Calle del Teniente Infante",
+     "to_centre": 2.92
+    },
+    {
+     "a": [
+      108.48,
+      77.76
+     ],
+     "b": [
+      109.11,
+      78.55
+     ],
+     "len": 1.01,
+     "out": [
+      0.782,
+      -0.623
+     ],
+     "street": "Calle del Teniente Infante",
+     "to_centre": 3.45
+    },
+    {
+     "a": [
+      109.11,
+      78.55
+     ],
+     "b": [
+      109.06,
+      86.65
+     ],
+     "len": 8.1,
+     "out": [
+      1.0,
+      0.006
+     ],
+     "street": "Calle de los Arcos",
+     "to_centre": 3.84
+    },
+    {
+     "a": [
+      109.06,
+      86.65
+     ],
+     "b": [
+      97.23,
+      88.39
+     ],
+     "len": 11.96,
+     "out": [
+      0.146,
+      0.989
+     ],
+     "street": "",
+     "to_centre": 9.73
+    },
+    {
+     "a": [
+      97.23,
+      88.39
+     ],
+     "b": [
+      96.54,
+      79.2
+     ],
+     "len": 9.22,
+     "out": [
+      -0.997,
+      0.075
+     ],
+     "street": "Calle del Teniente Infante",
+     "to_centre": 7.42
+    }
+   ],
+   "ground": [
+    0.59,
+    0.71
+   ]
+  }
+ ]
+}

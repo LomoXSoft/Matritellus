@@ -196,6 +196,60 @@ func jingle(notes: Array, step := 0.11) -> void:
 	for i in range(notes.size()):
 		get_tree().create_timer(i * step).timeout.connect(beep.bind(float(notes[i]), 0.16, 1, -9.0))
 
+## "Wah, wah, wah, waaaah": the sad trombone, for a repeat out of a gumball machine (gacha.gd). Made here, not
+## recorded: four notes going down a semitone at a time, a brassy buzz through a mute that opens and closes on each
+## ("wa-"), the last one long, wobbling and sagging. Built once, the first time it is wanted.
+var _trombone: AudioStreamWAV
+var trombone_rec := "res://assets/audio/trombon_triste.ogg"      # (a recording, if one is ever put there, is used instead)
+
+func sad_trombone(vol_db := -6.0) -> void:
+	if ResourceLoader.exists(trombone_rec):
+		_play(load(trombone_rec), vol_db)
+		return
+	if _trombone == null:
+		_trombone = _make_trombone()
+	_play(_trombone, vol_db)
+
+func _make_trombone() -> AudioStreamWAV:
+	var notes := [[233.08, 0.36], [220.0, 0.36], [207.65, 0.38], [196.0, 1.55]]      # B flat, A, A flat, G
+	var n := 0
+	for nt in notes:
+		n += int(RATE * float(nt[1]))
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	var ph := 0.0
+	var lp1 := 0.0
+	var lp2 := 0.0
+	var i := 0
+	for k in range(notes.size()):
+		var f0: float = notes[k][0]
+		var steps_n := int(RATE * float(notes[k][1]))
+		var last: bool = k == notes.size() - 1
+		for j in range(steps_n):
+			var t := float(j) / RATE
+			var u := float(j) / steps_n
+			var f := f0
+			var open: float
+			if last:
+				var wob := sin(TAU * 5.2 * t) * clampf(t * 2.5, 0.0, 1.0)
+				f *= (1.0 + 0.03 * wob) * (1.0 - 0.07 * u * u)             # the slide wobbling, and sagging at the end
+				open = smoothstep(0.0, 0.12, u) * (0.72 + 0.28 * wob) * (1.0 - 0.55 * u)
+			else:
+				open = smoothstep(0.0, 0.4, u) * (1.0 - 0.7 * smoothstep(0.55, 1.0, u))      # "wa": the mute opening, closing
+			ph += f / RATE
+			var saw := 2.0 * fmod(ph, 1.0) - 1.0
+			var a := 1.0 - exp(-TAU * (230.0 + 1750.0 * open) / RATE)
+			lp1 += a * (saw - lp1)
+			lp2 += a * (lp1 - lp2)
+			var env := smoothstep(0.0, 0.025, t) * (1.0 - smoothstep(0.72 if last else 0.86, 1.0, u))
+			data.encode_s16(i * 2, int(clampf(lp2 * env * 0.95, -1.0, 1.0) * 15000.0))
+			i += 1
+	var s := AudioStreamWAV.new()
+	s.format = AudioStreamWAV.FORMAT_16_BITS
+	s.mix_rate = RATE
+	s.data = data
+	return s
+
 ## A one-second engine loop built from the firing pulses of a four-cylinder (or a slow two-cylinder diesel):
 ## a low fundamental, strong even harmonics, the lumpy every-other-revolution throb of an exhaust, and a little
 ## saturation. Low and rough, where a plain sawtooth just buzzes.

@@ -88,6 +88,10 @@ func _wanted() -> Array:
 			# the arcade fighting game (tokken.gd) says its own buttons: Fuerte, Rápido, Poder, II; Elegir on the roster
 			var tk = g.get("tokken")
 			return tk.touch_buttons() if tk != null and tk.has_method("touch_buttons") else []
+		"ajedrez":
+			# (ajedrez) chess on the square: a finger picks the squares on the board itself; these are Vista, Soltar, II
+			var aj = g.get("ajedrez")
+			return aj.touch_buttons() if aj != null and aj.has_method("touch_buttons") else []
 	if g.get("dlg") != null:
 		return [["Seguir" if es else "Go on", "interact", "big"]]
 	var out: Array = []

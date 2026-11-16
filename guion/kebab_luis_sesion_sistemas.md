@@ -22,7 +22,7 @@ siguiente:
 3. **Reglas generales de misiones**: aceptar o rechazar toda misión; Sí/No en las de teléfono y rellamada; Pitufos a
    la mitad con misión activa.
 4. **Misión secundaria de Don Luis** (sabotear los otros tres kebabs siguiendo al camión de reparto). Los otros tres
-   son **Kebab Deluxe** (Av. Castilla-La Mancha 17), **Tele Durum** (Calle Santa Ana 44) y **ShawarMadridejos**
+   son **Kebab Deluxe** (Av. Castilla-La Mancha 17), **Tele Dürum** (Calle Santa Ana 44) y **ShawarMadridejos**
    (Av. Castilla-La Mancha 4); sus coordenadas salen de `python tools/locate.py AV "CASTILLA LA MANCHA" 17`, etc.
    El camión y el repartidor: usa un vehículo y un personaje de los que hay y avisa de que son provisionales.
 

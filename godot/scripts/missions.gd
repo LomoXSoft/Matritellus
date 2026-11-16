@@ -82,6 +82,9 @@ const SIDE := []
 const MINIGAMES := {
 	"box": {"title": "mg_box", "unlock": "mg_box_unlock", "levels": [{"npc": "vip"}]},
 	"jamon": {"title": "mg_jamon", "unlock": "mg_jamon_unlock", "levels": [{"npc": "henry"}]},      # the roast ham riot (motin.gd)
+	# (ajedrez) the mayor from his window, at the four levels the user asked for, all open at once (ajedrez_humano.gd)
+	"ajedrez": {"title": "mg_ajedrez", "unlock": "mg_ajedrez_unlock", "all_open": true, "levels": [{"npc": "alcalde", "name": "aj_lv_0"},
+		{"npc": "alcalde", "name": "aj_lv_1"}, {"npc": "alcalde", "name": "aj_lv_2"}, {"npc": "alcalde", "name": "aj_lv_3"}]},
 }
 
 static func index_of(id: String) -> int:

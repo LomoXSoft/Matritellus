@@ -1,0 +1,118 @@
+{
+ "rc": "4290010VJ5649S",
+ "record": {
+  "address": "CL PLAZA 2 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "3",
+  "year": "1950",
+  "units": [
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "",
+    "m2": "3"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4290010VJ5649S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 3.4,
+   "ring": [
+    [
+     1.9,
+     139.2
+    ],
+    [
+     1.29,
+     140.51
+    ],
+    [
+     -0.56,
+     139.22
+    ],
+    [
+     -0.11,
+     137.77
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      1.9,
+      139.2
+     ],
+     "b": [
+      1.29,
+      140.51
+     ],
+     "len": 1.45,
+     "out": [
+      0.907,
+      0.422
+     ],
+     "street": "Calle de Portugal",
+     "to_centre": 3.18
+    },
+    {
+     "a": [
+      1.29,
+      140.51
+     ],
+     "b": [
+      -0.56,
+      139.22
+     ],
+     "len": 2.26,
+     "out": [
+      -0.572,
+      0.82
+     ],
+     "street": "Calle de Portugal",
+     "to_centre": 4.29
+    },
+    {
+     "a": [
+      -0.56,
+      139.22
+     ],
+     "b": [
+      -0.11,
+      137.77
+     ],
+     "len": 1.52,
+     "out": [
+      -0.955,
+      -0.296
+     ],
+     "street": "Calle de Portugal",
+     "to_centre": 5.51
+    },
+    {
+     "a": [
+      -0.11,
+      137.77
+     ],
+     "b": [
+      1.9,
+      139.2
+     ],
+     "len": 2.47,
+     "out": [
+      0.58,
+      -0.815
+     ],
+     "street": "Calle de Portugal",
+     "to_centre": 4.4
+    }
+   ],
+   "ground": [
+    -1.11,
+    -0.94
+   ]
+  }
+ ]
+}

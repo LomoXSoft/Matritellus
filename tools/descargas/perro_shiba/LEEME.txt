@@ -1,0 +1,5 @@
+Shiba Inu, de Quaternius. Licencia CC0 (dominio público), según su página:
+https://poly.pizza/m/y4wdQpg767
+Bajado el 16/11/2026 de https://static.poly.pizza/ba6d0ee3-bcc0-4ef0-9d3c-a3e245b41c77.glb
+Uso: los caballos del Ajedrez humano (godot/assets/ajedrez/perro.glb, ajedrez_humano.gd).
+Animaciones: Idle, Idle_2, Idle_2_HeadLow, Walk, Gallop, Gallop_Jump, Jump_ToIdle, Death, Eating, Attack, Idle_HitReact_*.

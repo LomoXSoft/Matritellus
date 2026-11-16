@@ -93,7 +93,7 @@ tiene su prueba: `--selftest --kebab`, `--comida`, `--reglas`, `--sabotaje` (con
 
 ## Misión de Don Luis (`godot/scripts/sabotaje.gd`), «En el amor y en kebab»
 - El título es mío, sacado de su frase. Paga 30 € (**provisional**) y un kebab, que se come en el momento.
-- Orden: Kebab Deluxe (moco), Tele Durum (meada), ShawarMadridejos (cagada).
+- Orden: Kebab Deluxe (moco), Tele Dürum (meada), ShawarMadridejos (cagada).
 - Te ve por el retrovisor si vas a menos de 13 m detrás de él, en marcha, 2 s; lo pierdes a más de 100 m durante 6 s o
   sin verlo 12 s (estando a más de 45 m). Fuera del camión ve 16 m hacia delante. 30 s desde que deja las cajas.
 - Frases de «árabe»: las tres del usuario y tres más del mismo estilo («[Inserte aquí una frase en árabe]», «Error 404:

@@ -3,7 +3,7 @@ extends Node
 ##   - If nobody picks up, they give up after RING_FOR seconds and try again an hour later, game time.
 ##   - If somebody tries to ring you while you are already on the phone (or it is ringing with somebody else), they wait
 ##     until you hang up, ring ten minutes later, game time, and first they have a go at you for it: "Don Ocupado",
-##     "¿Qué pasa, que no tienes cobertura?", "¿Con quién hablabas, con tu novia?"...
+##     "¿Qué pasa, que no tiés cobertura?", "¿Con quién hablabas, con tu novia?"...
 ##
 ## A call is the same dictionary game.gd always used for `phone_call`: {npc, lines | say, ...}, and these keys of
 ## its own here: "valid" (a Callable that says whether the call still makes sense when its turn comes round, e.g.

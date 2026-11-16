@@ -1,0 +1,130 @@
+{
+ "rc": "4592109VJ5649S",
+ "record": {
+  "address": "CL REGIDOR 32 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "170",
+  "year": "1978",
+  "units": [
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "01",
+    "m2": "85"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "85"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4592109VJ5649S_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 75.6,
+   "ring": [
+    [
+     340.56,
+     -38.32
+    ],
+    [
+     332.18,
+     -40.44
+    ],
+    [
+     334.34,
+     -49.01
+    ],
+    [
+     342.59,
+     -46.84
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      340.56,
+      -38.32
+     ],
+     "b": [
+      332.18,
+      -40.44
+     ],
+     "len": 8.64,
+     "out": [
+      -0.245,
+      0.969
+     ],
+     "street": "",
+     "to_centre": 12.49
+    },
+    {
+     "a": [
+      332.18,
+      -40.44
+     ],
+     "b": [
+      334.34,
+      -49.01
+     ],
+     "len": 8.84,
+     "out": [
+      -0.97,
+      -0.244
+     ],
+     "street": "Calle del Regidor",
+     "to_centre": 8.06
+    },
+    {
+     "a": [
+      334.34,
+      -49.01
+     ],
+     "b": [
+      342.59,
+      -46.84
+     ],
+     "len": 8.53,
+     "out": [
+      0.254,
+      -0.967
+     ],
+     "street": "Calle del Regidor",
+     "to_centre": 3.7
+    },
+    {
+     "a": [
+      342.59,
+      -46.84
+     ],
+     "b": [
+      340.56,
+      -38.32
+     ],
+     "len": 8.76,
+     "out": [
+      0.973,
+      0.232
+     ],
+     "street": "Calle del Regidor",
+     "to_centre": 8.13
+    }
+   ],
+   "ground": [
+    5.27,
+    5.78
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": 323.1759181413418,
+  "z0": -58.006430772545755,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

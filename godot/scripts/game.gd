@@ -21,6 +21,8 @@ const ClientesS = preload("res://scripts/clientes.gd")
 const ComidaS = preload("res://scripts/comida.gd")
 const SabotajeS = preload("res://scripts/sabotaje.gd")
 const PintadasS = preload("res://scripts/pintadas.gd")
+const GachaS = preload("res://scripts/gacha.gd")
+const CuartelCocheS = preload("res://scripts/cuartel_coche.gd")
 const MotinS = preload("res://scripts/motin.gd")
 const DerrapeS = preload("res://scripts/derrape.gd")
 const TironesS = preload("res://scripts/tirones.gd")
@@ -29,6 +31,7 @@ const LlamadasS = preload("res://scripts/llamadas.gd")
 const MarcasS = preload("res://scripts/marcas.gd")
 const RecressS = preload("res://scripts/recress.gd")
 const TokkenS = preload("res://scripts/tokken.gd")
+const AjedrezS = preload("res://scripts/ajedrez_humano.gd")
 const CalentarS = preload("res://scripts/calentar.gd")
 const GarageS = preload("res://scripts/garage.gd")
 const PuenteS = preload("res://scripts/puente.gd")
@@ -170,6 +173,8 @@ var _arrow_beat := 0.0          # the phase of the guide arrow's bob, run on its
 var motin                       # the roast ham riot outside La Cocina de Henry, and the minigame it is (motin.gd)
 var sabotaje                    # Don Luis's side mission: the delivery lorry and the other three kebabs (sabotaje.gd)
 var pintadas                    # La Chiki's: the walls of the peñas (pintadas.gd)
+var gacha                       # the gumball machines and the figures that come out of them (gacha.gd)
+var cuartel_coche               # the Tricornios' car always parked at their barracks' door (cuartel_coche.gd)
 var first_person := false       # indoors (the shop, the kebab house) you see through your own eyes: there is no room in there for a camera behind you
 var cine_lock := false          # a scene of a side mission is playing: your hands are off, the town goes on
 var comida                      # eating, and what comes of eating too much (comida.gd)
@@ -266,6 +271,7 @@ var llamadas                    # the switchboard: who rings you, and when they 
 var marcas                      # who has a mission for you: photo on the map, green arrow over the head (marcas.gd)
 var recress                     # "Un torneo en los Galaxy Recress", the Civismo line's second mission (recress.gd)
 var tokken                      # Tokken 9, the fighting game on the Recress's machines (tokken.gd): the phase "tokken" is its own
+var ajedrez                     # (ajedrez) the mayor's chess mission and the game on the square's boards (ajedrez_humano.gd): the phase "ajedrez"
 var inside_of = null            # which set you are inside when `indoors`: V.I.P. (vip) or the Recress (recress.sala)
 var prof = null                 # for hunting hitches (selftest --tirones): {part: the most milliseconds it took in one tick since last asked}
 var _prof_t := 0
@@ -821,6 +827,18 @@ const NEIGHBOUR_VOICES := ["adult_m", "adult_m", "old_m", "old_f", "adult_m", "o
 func _walker_plan(n) -> void:
 	var a: int = n.wb if n.wb >= 0 else MapData.nearest_node(n.p)
 	var opts := MapData.neighbours(a)
+	if not n.beat.is_empty():                    # one who keeps to a street: on along it, and back at its ends
+		if not n.beat.has(a):                    # (knocked off it: back to the nearest point of it)
+			var near_b := -1
+			for i in n.beat:
+				if near_b < 0 or MapData.nodes[i].distance_to(n.p) < MapData.nodes[near_b].distance_to(n.p):
+					near_b = i
+			n.wa = -1
+			n.wb = near_b
+			n.wpts = [MapData.nodes[near_b]]
+			n.wi = 0
+			return
+		opts = opts.filter(func(o): return n.beat.has(o))
 	if a < 0 or opts.is_empty():
 		n.walker = false
 		return
@@ -929,6 +947,36 @@ func spawn_neighbour(p: Vector2, still := false, look: Dictionary = {}):
 	return n
 
 const MILLER_AT := Vector2(-279.5, -735.9)     # Tío Gerardo, in the mill's yard a few steps from its door (molino.gd)
+
+## Dolores Fuertes D'Varriga (the user, 16 November 2026): an old lady forever going up and down the Calle de la
+## Amargura, who complains, to whoever stops her, about whoever gave a street a name like that. She keeps to that
+## street (her `beat`: its nodes), at an old lady's pace.
+const DOLORES_STREET := "Calle de la Amargura"
+func _add_dolores() -> void:
+	var beat := {}
+	var mid := Vector2.ZERO
+	for r in MapData.roads:
+		if String(r["n"]) == DOLORES_STREET and int(r["k"]) == 0:
+			var p: PackedInt32Array = r["p"]
+			for i in p:
+				beat[int(i)] = true
+			mid = MapData.nodes[p[p.size() / 2]]
+	if beat.is_empty():
+		return
+	var d = _add_npc("dolores", {"top": 7, "shirt": 0x2f2f36, "hair": 0xc4c4c9, "hat": "bun", "earrings": 1, "pendant": 3, "glasses": 1, "brows": 0, "scale": 0.88, "build": 1.12}, "old_f", mid, 2.0)      # (a dark flowery housecoat, a little cross)
+	d.walker = true
+	d.beat = beat
+	d.wspeed = 0.85
+
+## Don Luis's own: the grey at his temples, his red apron with its bib and its strings (on him, and on his figure out
+## of a gumball machine: gacha.gd)
+func dress_luis(c) -> void:
+	for sx in [-1.0, 1.0]:
+		c._acc("ball", 0x9a968f, Vector3(sx * 0.46, 1.5, -0.12), Vector3(0.07, 0.17, 0.2))
+	c._acc("box", 0xb5202a, Vector3(0.0, 0.5, c._r(0.5) + 0.03), Vector3(0.62, 0.66, 0.04))
+	c._acc("box", 0xb5202a, Vector3(0.0, 0.88, c._r(0.88) + 0.03), Vector3(0.36, 0.22, 0.04))
+	for sx in [-1.0, 1.0]:
+		c._acc("box", 0xb5202a, Vector3(sx * 0.16, 0.99, c._r(0.99) - 0.02), Vector3(0.04, 0.1, 0.12))
 
 func _add_npc(id: String, look: Dictionary, voice: String, pos: Vector2, shift := 0.0):
 	var r := MapData.nearest_road(pos, true)
@@ -1257,6 +1305,7 @@ func _setup_places_and_actors() -> void:
 	maruja.still = true
 	var ven = _add_npc("venancio", {"glasses": 4, "build": 0.86, "shirt": 0x2b2b33, "hair": 0x111111, "hat": "tophat", "skin": 0xeadfd6}, "undertaker", places["tanatorio"]["p"], 5.0)
 	ven.still = true
+	_add_dolores()
 	var genaro_look := {"face": 6, "top": 6, "brows": 1, "shirt": 0x8a6a48, "hair": 0xe0e0e0, "hat": "beret", "skin": 0xe2ab80}
 	if world != null and world.molino != null:      # (the mill built by hand: in its yard, where the curved path ends, facing the red door; Pretil)
 		var miller = _make_npc("genaro", genaro_look, "old_m", MILLER_AT)
@@ -1294,12 +1343,7 @@ func _setup_places_and_actors() -> void:
 	var luis = _make_npc("luis", {"shirt": 0x1c1b1f, "hair": 0x3a2c22, "hair_style": 8, "face": 2, "brows": 2, "beard": 2, "glasses": 7, "top": 0, "build": 1.3, "skin": 0xf0c4a0}, "adult_m", kebab.keeper)
 	luis.still = true
 	luis.h = kebab.facing
-	for sx in [-1.0, 1.0]:                                                                                  # (the grey at his temples)
-		luis._acc("ball", 0x9a968f, Vector3(sx * 0.46, 1.5, -0.12), Vector3(0.07, 0.17, 0.2))
-	luis._acc("box", 0xb5202a, Vector3(0.0, 0.5, luis._r(0.5) + 0.03), Vector3(0.62, 0.66, 0.04))          # the apron, its bib and its strings
-	luis._acc("box", 0xb5202a, Vector3(0.0, 0.88, luis._r(0.88) + 0.03), Vector3(0.36, 0.22, 0.04))
-	for sx in [-1.0, 1.0]:
-		luis._acc("box", 0xb5202a, Vector3(sx * 0.16, 0.99, luis._r(0.99) - 0.02), Vector3(0.04, 0.1, 0.12))
+	dress_luis(luis)
 	luis.sync()
 	clientes = ClientesS.new()
 	clientes.setup(self, kebab)
@@ -1309,6 +1353,12 @@ func _setup_places_and_actors() -> void:
 	pintadas = PintadasS.new()
 	add_child(pintadas)
 	pintadas.setup(self)
+	gacha = GachaS.new()
+	add_child(gacha)
+	gacha.setup(self)
+	cuartel_coche = CuartelCocheS.new()
+	add_child(cuartel_coche)
+	cuartel_coche.setup(self)
 	motin = MotinS.new()
 	add_child(motin)
 	motin.setup(self)
@@ -1330,6 +1380,9 @@ func _setup_places_and_actors() -> void:
 	tokken = TokkenS.new()
 	add_child(tokken)
 	tokken.setup(self)
+	ajedrez = AjedrezS.new()
+	add_child(ajedrez)
+	ajedrez.setup(self)
 	if not OS.get_cmdline_user_args().has("--tirones"):      # the hitch log (tirones.gd); the self-test's own hitch hunt times the parts itself
 		tirones = TironesS.new()
 		add_child(tirones)
@@ -1617,7 +1670,7 @@ func _menu_page(id: String) -> Dictionary:
 				else:
 					items.append(_plain(opts[k][0], 20))
 			return {"title": _choice.get("title", ""), "items": items, "foot": Loc.t("m_foot")}
-		"log", "log_side", "log_games", "log_folk", "log_radio":
+		"log", "log_side", "log_games", "log_folk", "log_gacha", "log_radio":
 			return _agenda_page(id)
 		"pause":
 			items.append({"text": Loc.t("m_resume"), "do": _close_pause})
@@ -2104,6 +2157,7 @@ func start_game(from_step := 0) -> void:
 		pintadas.assign(look_sel[11])     # every wall back to the peña that painted it (not yours: pintadas.gd)
 	limite.reset()
 	llamadas.reset()
+	gacha.close()                     # (a ball half out of a machine when another game is loaded: put away)
 	recress.load_state()
 	if stats.has("puente") and not stats.has("puente_h"):
 		stats["puente_h"] = llamadas.now()        # (a game saved before this was kept: Alberto's call counts from now)
@@ -2648,12 +2702,13 @@ func _stat_lines() -> Array:
 		"%s:  %d" % [Loc.t("st_broken"), props.broken_count], "%s:  %d €" % [Loc.t("st_money"), money]]
 
 # ---------- the log, and the minigames you open along the way ----------
-## The Agenda: four pages (main missions, side missions, minigames, neighbours). The first row turns the page.
-const AGENDA := ["log", "log_side", "log_games", "log_folk", "log_radio"]
+## The Agenda: six pages (main missions, side missions, minigames, neighbours, the figures out of the gumball machines,
+## the radio). The first row turns the page.
+const AGENDA := ["log", "log_side", "log_games", "log_folk", "log_gacha", "log_radio"]
 
 func _agenda_page(id: String) -> Dictionary:
 	var n: int = AGENDA.find(id)
-	var titles := ["log_main", "log_side", "log_games", "log_folk", "log_radio"]
+	var titles := ["log_main", "log_side", "log_games", "log_folk", "log_gacha", "log_radio"]
 	var items: Array = [{"text": Loc.t("log_page") % [n + 1, AGENDA.size()], "value": Loc.t(titles[n]), "size": 20,
 		"left": _goto.bind(AGENDA[(n + AGENDA.size() - 1) % AGENDA.size()]), "right": _goto.bind(AGENDA[(n + 1) % AGENDA.size()])}]
 	match n:
@@ -2677,6 +2732,8 @@ func _agenda_page(id: String) -> Dictionary:
 				items.append(_plain("%s  ·  %s" % [Loc.t("rec_title"), Loc.t("log_done") if recress.done() else (Loc.t("log_now") if recress.active() else (Loc.t("log_rec_money") if rs == "dinero" else Loc.t("log_rec_open")))], 17))
 			if pintadas.unlocked():                  # La Chiki's
 				items.append(_plain("%s  ·  %s" % [Loc.t("chiki_title"), Loc.t("log_done") if pintadas.done() else Loc.t("log_chiki_open")], 17))
+			if ajedrez.available() or ajedrez.done():     # (ajedrez) the mayor's, after the Recress
+				items.append(_plain("%s  ·  %s" % [Loc.t(AjedrezS.TITLE), Loc.t("log_done") if ajedrez.done() else Loc.t("log_aj_open")], 17))
 			if stats.has("ham_seen"):
 				items.append(_plain("%s  ·  %s" % [Loc.t("ham_title"), Loc.t("log_now") if side != null and side["id"] == "ham" else Loc.t("log_ham") % int(stats.get("ham_done", 0))], 17))
 			elif items.size() == 1:
@@ -2699,8 +2756,9 @@ func _agenda_page(id: String) -> Dictionary:
 				if in_mission() or side != null:
 					items.append(_plain(Loc.t("log_not_now"), 14))
 				var levels: Array = info["levels"]
-				for lv in range(mini(open, levels.size())):
-					items.append({"text": Loc.t("log_level") % [Loc.t(info["title"]), lv + 1, named[levels[lv]["npc"]].shown_name()], "do": _play_minigame.bind(mg, lv), "size": 19})
+				for lv in range(levels.size() if info.get("all_open", false) else mini(open, levels.size())):     # (ajedrez: every level at once, each with its own name)
+					var foe: String = Loc.t(levels[lv]["name"]) if levels[lv].has("name") else named[levels[lv]["npc"]].shown_name()
+					items.append({"text": Loc.t("log_level") % [Loc.t(info["title"]), lv + 1, foe], "do": _play_minigame.bind(mg, lv), "size": 19})
 				items.append(_plain(Loc.t("log_best") % [int(stats.get(mg + "_wins", 0)), int(stats.get(mg + "_fights", 0)), int(stats.get(mg + "_best", 0))], 15))
 				items.append(_plain(Loc.t("log_opened") % Loc.t(info["unlock"]), 13))
 		3:
@@ -2715,7 +2773,11 @@ func _agenda_page(id: String) -> Dictionary:
 				var t: int = folk.trust(who)
 				items.append({"text": named[who].shown_name(), "meter": t / 100.0, "gold": folk.golden(who), "value_text": str(t), "plain": true})
 			items.append(_plain(Loc.t("log_folk_how"), 12))
-		4:                                           # the dial: every station, what it says it is and what it plays
+		4:                                           # the figures: everyone who can come out of a ball, in black until they have
+			items.append(_plain(Loc.t("gacha_count") % [gacha.owned(), GachaS.FIGURES.size()], 17))
+			items.append({"text": "", "grid": gacha.cells(), "cols": 8, "plain": true})
+			items.append(_plain(Loc.t("log_gacha_how") % GachaS.PRICE, 12))
+		5:                                           # the dial: every station, what it says it is and what it plays
 			for k in range(Ambience.stations.size()):
 				var st: Dictionary = Ambience.stations[k]
 				var tunes: Array = []
@@ -2728,14 +2790,14 @@ func _agenda_page(id: String) -> Dictionary:
 			items.append(_plain(Loc.t("log_radio_how") % Controls.glyph("radio"), 12))
 	items.append({"text": Loc.t("m_back"), "do": _goto.bind("pause")})
 	# (the radio's page is a long one: it does without the day over the title, to fit)
-	return {"title": Loc.t("m_log").to_upper(), "sub": "" if n == 4 else _tag(), "items": items, "back": "pause", "foot": Loc.t("log_foot"), "skin": "notebook", "tab": n}
+	return {"title": Loc.t("m_log").to_upper(), "sub": "" if AGENDA[n] == "log_radio" else _tag(), "items": items, "back": "pause", "foot": Loc.t("log_foot"), "skin": "notebook", "tab": n}
 
 ## a fight from the log (or from asking Fonsi): you are taken to the ring and put back where you were afterwards
 func _play_minigame(id: String, _level: int) -> void:
 	if paused:
 		_close_pause()
 	menu.close()
-	if not (id in ["box", "jamon"]) or dlg != null or not (phase == "play" or phase == "free" or phase == "talking") or steps[si]["type"] == "deliver" or in_mission() or side != null \
+	if not (id in ["box", "jamon", "ajedrez"]) or dlg != null or not (phase == "play" or phase == "free" or phase == "talking") or steps[si]["type"] == "deliver" or in_mission() or side != null \
 			or motin.busy() or comida.faint != null:
 		hud.toast(Loc.t("log_not_now"), 3.0)
 		if phase == "talking":
@@ -2747,6 +2809,12 @@ func _play_minigame(id: String, _level: int) -> void:
 	if id == "jamon":                            # the riot outside Henry's, there and then (no Puntos Cívicos this way)
 		indoors = false
 		motin.replay()
+		return
+	if id == "ajedrez":                          # (ajedrez) taken to the square's board, and the side asked
+		if phase == "talking":
+			phase = "play" if steps[si]["type"] != "tbc" else "free"
+		indoors = false
+		ajedrez.from_agenda(_level)
 		return
 	_mg = {"p": player.p, "indoors": indoors, "phase": "free" if steps[si]["type"] == "tbc" else "play"}
 	indoors = true
@@ -2905,10 +2973,16 @@ func talk_to(n, chat_only := false) -> void:
 		else:
 			_vip_spar()
 			return
+	if n.id == "alcalde" and not chat_only and (phase == "play" or phase == "free") and ajedrez.talk(n):      # (ajedrez) after the Recress, his chess
+		return
 	if n.id in ["alberto", "alcalde", "copista", "katakumba"] and not chat_only and (phase == "play" or phase == "free") and recress.talk(n):
 		return
 	if n.id == "repartidor":
 		sabotaje.spoken(n)
+		return
+	if n.id == "dolores" and folk.trust("dolores") >= 100 and not stats.has("dolores_delanno") and (phase == "play" or phase == "free"):
+		stats["dolores_delanno"] = int(day_n)    # at a hundred of trust, once: where her surname came from (the user, 16 Nov 2026)
+		say(n.shown_name(), Loc.t("dolores_delanno"), n.voice)
 		return
 	if n.id == "josefa" and not chat_only and (phase == "play" or phase == "free") and _josefa_job(n):
 		return
@@ -3112,6 +3186,7 @@ func _refresh_counts() -> void:
 func _enter_car(c) -> void:
 	in_car = c
 	c.doze(false)
+	cuartel_coche.entered(c)                     # (the Tricornios' own, from their door: stealing it, as in _steal)
 	c.seat(Creator.look(look_sel))               # you, at the wheel
 	if phase == "play" and si < steps.size() and steps[si].has("passenger"):
 		var with_you = named[steps[si]["passenger"]]
@@ -3507,6 +3582,9 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 	if phase == "title_out":
 		return
+	if phase == "ajedrez":                       # (ajedrez) a game of chess on the square: its own keys, mouse and fingers
+		ajedrez.input(e)
+		return
 	if e is InputEventMouseButton:
 		if e.button_index == MOUSE_BUTTON_LEFT:
 			dragging = e.pressed
@@ -3625,6 +3703,10 @@ func interact() -> void:
 		recress.play()
 	elif recress.at_machine(player.p):
 		recress.free_play(player.p)
+	elif gacha.near(player.p) != null:
+		gacha.play(gacha.near(player.p))
+	elif ajedrez.on_board(player.p):             # (ajedrez) on one of the square's chessboards: a game
+		ajedrez.offer()
 	elif _can_unlock():
 		_unlock_bridge()
 	elif near_npc != null:
@@ -3866,7 +3948,7 @@ func _update_audio(dt: float) -> void:
 		var ear: Vector2 = player.p
 		for t in props.terrazas:
 			_terraza_d = minf(_terraza_d, (t["p"] as Vector2).distance_to(ear))
-	var in_world: bool = phase in ["play", "free", "talking", "failed", "flyover", "cutscene", "boxing"] and not paused and not map_open
+	var in_world: bool = phase in ["play", "free", "talking", "failed", "flyover", "cutscene", "boxing", "ajedrez"] and not paused and not map_open
 	Ambience.town(dt, moment, _terraza_d, in_world)
 
 func _physics_process(delta: float) -> void:
@@ -3877,6 +3959,12 @@ func _physics_process(delta: float) -> void:
 	_update_audio(dt)
 	if phase == "tokken":           # at a machine in the Recress: the town waits (nothing of it is drawn meanwhile)
 		tokken.tick(dt)
+		return
+	if phase == "ajedrez":          # (ajedrez) a game on the square's board: the town waits, drawn as it was (ajedrez_humano.gd runs itself)
+		_advance_clock(dt)          # ...but not the clock: a game of chess is a long one, and can take a whole day (the user, 16 Nov 2026)
+		sky_fx.tick(dt, cam.global_position, player.p)
+		if lights != null:
+			lights.tick(dt, Vector2(cam.global_position.x, cam.global_position.z).lerp(player.p, 0.7))
 		return
 	sky_fx.tick(dt, cam.global_position, player.p)
 	if lights != null:
@@ -4202,10 +4290,14 @@ func _physics_process(delta: float) -> void:
 			pr = Loc.t("p_rec_poster")
 		elif recress.can_play(pp) or recress.at_machine(pp):
 			pr = Loc.t("p_rec_play")
+		elif gacha.near(pp) != null:
+			pr = gacha.prompt()
+		elif ajedrez.on_board(pp):               # (ajedrez) on the square's chessboard: a game
+			pr = Loc.t("p_aj_play")
 		elif near_npc != null:
 			pr = Loc.t("p_talk")                 # (who it is you can see: the tag hangs over their head)
 		elif near_car != null:
-			if near_steal != null:
+			if near_steal != null or (near_car == cuartel_coche.car and near_car != null):      # (theirs, at their door: that is stealing)
 				pr = Loc.t("p_steal")
 			else:
 				pr = Loc.t("p_push") % (near_car.pushes + 1) if near_car.flipped() else Loc.t("p_drive")
@@ -4214,7 +4306,7 @@ func _physics_process(delta: float) -> void:
 		elif _can_nap():
 			pr = Loc.t("p_nap")
 	var about = null                             # who or what the prompt is about: a neighbour, a car... or nobody but you
-	if not frozen and in_car == null:
+	if not frozen and in_car == null and gacha.near(pp) == null and not ajedrez.on_board(pp):     # (at a gumball machine the prompt is about the machine; on the chessboard, about the board)
 		if near_npc != null:
 			about = near_npc
 		elif near_car != null:

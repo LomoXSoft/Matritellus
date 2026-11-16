@@ -16,8 +16,13 @@ const CalasanzS = preload("res://scripts/calasanz.gd")
 const FarmaciaS = preload("res://scripts/farmacia.gd")
 const CaridadS = preload("res://scripts/caridad.gd")
 const SantaAnaS = preload("res://scripts/santaana.gd")
+const ColegioS = preload("res://scripts/colegio.gd")
+const CuartelS = preload("res://scripts/cuartel.gd")
+const ComunalS = preload("res://scripts/comunal.gd")
 const MercamonaS = preload("res://scripts/mercamona.gd")
 const TodopizzaS = preload("res://scripts/todopizza.gd")
+const TeleDurumS = preload("res://scripts/teledurum.gd")
+const ChinosS = preload("res://scripts/chinos.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
@@ -84,8 +89,13 @@ var calasanz                    # the nursery school of the Calle del Palo, when
 var farmacia                    # the pharmacy of the Calle Real and its neighbours, built by hand (farmacia.gd)
 var caridad                     # the hermitage of the Caridad with its square, park and nursery, built by hand (caridad.gd)
 var santaana                    # the convent of Santa Ana, built by hand (santaana.gd)
+var colegio                     # the old school of the Avenida de Juan Carlos I, built by hand (colegio.gd)
+var cuartel                     # the Tricornios' barracks of the Avenida de la Constitución, built by hand (cuartel.gd)
+var comunal                     # the people's university of the Calle de los Arcos and the stationer's beside it, built by hand (comunal.gd)
 var mercamona                   # the supermarket and its car park, built by hand (mercamona.gd)
 var todopizza                   # the pizza house beside it, built by hand (todopizza.gd)
+var teledurum                   # the kebab house of the Calle de Santa Ana, built by hand (teledurum.gd)
+var chinos                      # the grocer's at the point between San José and Santo Domingo, built by hand (chinos.gd)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
@@ -98,7 +108,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["details", _build_details], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["details", _build_details], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -143,6 +153,20 @@ func _build_toros() -> void:
 	toros = TorosS.new()            # the old bullring between Prensa, San Agustín and Vista Alegre, in its two states
 	toros.build(self)
 
+func _build_chinos() -> void:
+	for hd in MapData.houses:        # (the grocer's at the point between San José and Santo Domingo: chinos.gd, on its house of the map)
+		if String(hd["id"]) == ChinosS.HOUSE:
+			chinos = ChinosS.new()
+			chinos.build(self, hd)
+			return
+
+func _build_teledurum() -> void:
+	for hd in MapData.houses:        # (the kebab house of the Calle de Santa Ana, "Tele Dürum": teledurum.gd, on its house of the map)
+		if String(hd["id"]) == TeleDurumS.HOUSE:
+			teledurum = TeleDurumS.new()
+			teledurum.build(self, hd)
+			return
+
 func _build_todopizza() -> void:
 	if MapData.mercamona.is_empty():  # (its parcel is left unraised with the supermarket's: on a map baked before it, Catastro's block stands there)
 		return
@@ -154,6 +178,27 @@ func _build_mercamona() -> void:
 		return
 	mercamona = MercamonaS.new()    # the supermarket by the old road, and its car park a floor below
 	mercamona.build(self)
+
+func _build_comunal() -> void:
+	var found := {}                  # (the people's university of the Calle de los Arcos and the stationer's beside it: comunal.gd, on their houses of the map)
+	for hd in MapData.houses:
+		if String(hd["id"]) == ComunalS.HOUSE or String(hd["id"]) == ComunalS.SHOP:
+			found[String(hd["id"])] = hd
+	if found.has(ComunalS.HOUSE):
+		comunal = ComunalS.new()
+		comunal.build(self, found[ComunalS.HOUSE], found.get(ComunalS.SHOP, {}))
+
+func _build_cuartel() -> void:
+	if MapData.cuartel.is_empty():    # (a map baked before it: Catastro's block stands there)
+		return
+	cuartel = CuartelS.new()        # the Guardia Civil's barracks of the Avenida de la Constitución: its four blocks, its way in, its yard
+	cuartel.build(self)
+
+func _build_colegio() -> void:
+	if MapData.colegio.is_empty():    # (a map baked before it: Catastro's block stands there)
+		return
+	colegio = ColegioS.new()        # the old school of the Avenida de Juan Carlos I: its front, its two towers, its court
+	colegio.build(self)
 
 func _build_santaana() -> void:
 	if MapData.santaana.is_empty():   # (a map baked before it: Catastro's block stands there)

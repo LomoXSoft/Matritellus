@@ -165,6 +165,9 @@ func rebuild() -> void:
 			st_row.add_child(col)
 			_list.add_child(st_row)
 			continue
+		if it.has("grid"):                       # the figures out of the gumball machines: a photo and a name each, in rows
+			_list.add_child(_figure_grid(it))
+			continue
 		if it.has("face"):                       # a saved game: the photo of who it is, and the label beside it
 			var row := HBoxContainer.new()
 			row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -194,6 +197,41 @@ func rebuild() -> void:
 		_list.add_child(l)
 	queue_redraw()
 	_redraw_when_laid_out()
+
+## {"grid": [{"tex", "got", "n", "name"}...], "cols"}: each figure's photo over its name; one you have not had yet in
+## black, named "???"; one you have more than once with how many beside its name
+func _figure_grid(it: Dictionary) -> Control:
+	var grid := GridContainer.new()
+	grid.columns = int(it.get("cols", 8))
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 4)
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	for c in it["grid"]:
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 0)
+		var frame := PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color("efe6cf") if c.get("got", false) else Color("e6dfcc")
+		sb.border_color = Color("b9ad96")
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(4)
+		frame.add_theme_stylebox_override("panel", sb)
+		var pic := TextureRect.new()
+		pic.texture = c.get("tex")
+		pic.custom_minimum_size = Vector2(72, 90)
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		if not c.get("got", false):
+			pic.modulate = Color(0.06, 0.05, 0.05)       # (a black shape: who it is, you will see when you get it)
+		frame.add_child(pic)
+		cell.add_child(frame)
+		var lab := _text(12, INK if c.get("got", false) else Color("8a7a68"))
+		lab.text = String(c.get("name", "???")) + ("  ×%d" % int(c["n"]) if int(c.get("n", 0)) > 1 else "")
+		lab.clip_text = true
+		lab.custom_minimum_size = Vector2(74, 0)
+		cell.add_child(lab)
+		grid.add_child(cell)
+	return grid
 
 ## The wall is painted round the box of text, and the box only takes its new size and place on the next frame:
 ## paint it again then, or the wall stays where the previous page had it until something else is pressed.
@@ -337,7 +375,7 @@ func _unhandled_input(e: InputEvent) -> void:
 ## the left, a coloured tab for each page down the right, and the stain of somebody's coffee.
 func _draw_notebook() -> void:
 	var r := Rect2(_box.global_position - global_position, _box.size).grow_individual(118, 40, 84, 56)
-	var tabs := [Color("d9643a"), Color("e6b422"), Color("5aa84f"), Color("3b5fa8"), Color("8a4fb8")]
+	var tabs := [Color("d9643a"), Color("e6b422"), Color("5aa84f"), Color("3b5fa8"), Color("c94f7c"), Color("8a4fb8")]
 	draw_set_transform(r.get_center(), deg_to_rad(-1.2), Vector2.ONE)
 	var o := -r.size / 2.0                               # (drawn round its own middle, a touch crooked)
 	draw_rect(Rect2(o + Vector2(12, 16), r.size + Vector2(8, 6)), Color(0, 0, 0, 0.32))

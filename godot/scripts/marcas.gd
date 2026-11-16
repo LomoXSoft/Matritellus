@@ -54,6 +54,11 @@ func givers() -> Array:
 		for n in G.recress.givers(free_hands):
 			if n != null and not (n in out):
 				out.append(n)
+	# (ajedrez) the mayor again, after the Recress: his chess (ajedrez_humano.gd)
+	if G.get("ajedrez") != null:
+		for n in G.ajedrez.givers(free_hands):
+			if n != null and not (n in out):
+				out.append(n)
 	return out.filter(func(n): return n != null and is_instance_valid(n))
 
 ## the photo of one of them, for the map (null until it has been taken)

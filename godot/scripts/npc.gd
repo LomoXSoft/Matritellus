@@ -25,6 +25,7 @@ var wi := 0
 var wstuck := 0.0
 var wtries := 0                # times in a row it has got stuck on this walk
 var wspeed := 1.3
+var beat := {}               # a walker who keeps to one street: its road nodes (game._walker_plan)
 var away := false            # riding in the player's car
 var _label: Label3D
 var _bark_t := 0.0

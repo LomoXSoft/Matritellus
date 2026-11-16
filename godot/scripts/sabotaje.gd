@@ -22,7 +22,7 @@ extends Node
 
 const Parts = preload("res://scripts/parts.gd")
 const TITLE := "luis_title"
-const STOPS := [["castilla_17", "moco", "Kebab Deluxe"], ["stana_44", "meo", "Tele Durum"], ["castilla_4", "cago", "ShawarMadridejos"]]
+const STOPS := [["castilla_17", "moco", "Kebab Deluxe"], ["stana_44", "meo", "Tele Dürum"], ["castilla_4", "cago", "ShawarMadridejos"]]
 const LORRY := "z15"
 const LORRY_PAINT := 0x1f1f24
 const MAN := {"shirt": 0x2a9d8f, "hair": 0x111111, "face": 2, "brows": 1, "hat": "cap", "hat_color": 0xc0392b, "top": 4, "skin": 0xc98e5f}

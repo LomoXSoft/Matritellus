@@ -81,6 +81,8 @@ func build(world, d: Dictionary) -> Node3D:
 		call("_" + id)
 	elif Short.ADOSADOS.has(id):
 		_adosado(String(Short.ADOSADOS[id]))
+	elif Short.ROSAS.has(id):
+		_rosa(Short.ROSAS[id] as Array)
 	elif SPECS.has(id):
 		_from_spec(SPECS[id])
 	elif Short.HOUSES.has(id):
@@ -766,6 +768,8 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 			if String(o.get("k", "")) == "void":             # a way through under the house: nothing but the dark of it
 				box(x, y, face - 0.3, w, gh, 0.02, 0x15161a)
 				box(x, y - 0.6, face - 0.3, w, 0.62, 0.34, 0x8a8480)
+				if String(o.get("g", "")) == "bars":         # ...shut off by an iron gate (a porch behind a railing)
+					grille(x + 0.03, y + 0.02, w - 0.06, gh - 0.08, face - 0.14, 0.02)
 				return
 			match String(o.get("k", "planks")):
 				"planks":
@@ -1028,6 +1032,30 @@ func _roof_y(z: float) -> float:
 func _on_front(p: Vector2, tol: float) -> bool:
 	return absf(p.y) < tol and p.x > -0.6 and p.x < length + 0.6
 
+## A piece of the plot's edges. One that runs along the line of the front but on past its ends is cut down to what lies
+## beyond them: the stretch in front of the front is the front, and drawn a second time as a wall of its own it walls
+## up the doors and windows (the plot is often a little wider than the front taken for it). The pieces left are marked
+## (a fifth value), so that one that ends within a hand's breadth of the front is still drawn.
+func _edges(pc: Dictionary, tol: float) -> Array:
+	var res: Array = []
+	for e in pc["edges"]:
+		var a: Vector2 = e[0]
+		var b: Vector2 = e[1]
+		if absf(a.y) < tol and absf(b.y) < tol and absf(b.x - a.x) > 0.05 and maxf(a.x, b.x) > 0.3 and minf(a.x, b.x) < length - 0.3 \
+				and (minf(a.x, b.x) < -0.05 or maxf(a.x, b.x) > length + 0.05):
+			for lim in [0.0, length]:
+				var out_a: bool = a.x < lim if lim == 0.0 else a.x > lim
+				var out_b: bool = b.x < lim if lim == 0.0 else b.x > lim
+				if out_a == out_b:
+					continue
+				var m: Vector2 = a.lerp(b, (lim - a.x) / (b.x - a.x))
+				var piece: Array = [a, m] if out_a else [m, b]
+				if (piece[0] as Vector2).distance_to(piece[1]) > 0.1:
+					res.append([piece[0], piece[1], e[2], e[3], true])
+			continue
+		res.append(e)
+	return res
+
 ## a plain wall along the plot's edge from a to b, a hand's breadth inside it, from y0 up to the roof
 func _plain(a: Vector2, b: Vector2, nrm: Vector2, y0: float, key, cap := 1e9) -> void:
 	var pts: Array = [a]
@@ -1143,7 +1171,7 @@ func _from_spec(spec: Dictionary) -> void:
 	var side_key = _mat(spec.get("side", floors[-1].get("wall", spec.get("wall", 0xf2efe6))))
 	var flank := 0.0                                          # the longest wall that gives on to another street
 	for pc in pieces:
-		for e in pc["edges"]:
+		for e in _edges(pc, tol):
 			var a: Vector2 = e[0]
 			var b: Vector2 = e[1]
 			if (_on_front(a, tol) and _on_front(b, tol)) or e[2] or not e[3]:
@@ -1162,10 +1190,10 @@ func _from_spec(spec: Dictionary) -> void:
 			zmin = minf(zmin, q.y)
 		_rz = maxf(zmin / 2.0, -6.5)
 		# --- the walls that are not the front ---
-		for e in pc["edges"]:
+		for e in _edges(pc, tol):
 			var a: Vector2 = e[0]
 			var b: Vector2 = e[1]
-			if _on_front(a, tol) and _on_front(b, tol):
+			if e.size() < 5 and _on_front(a, tol) and _on_front(b, tol):
 				continue
 			var ln := a.distance_to(b)
 			var d := (b - a) / ln
@@ -1323,6 +1351,138 @@ func _adosado(side: String) -> void:
 	for k in range(6):
 		box(gate0 + 0.1 + k * 0.15, 0.1, -0.19, 0.04, 1.0, 0.04, 0xe8e4d8)
 	box(gate0, 1.06, -0.2, 1.0, 0.05, 0.05, 0xe8e4d8)
+	_acera(W)
+
+## One of the ochre terraced houses of 1999-2000 in the Calle de la Rosa de Santa María (Catastro's "CL ROSA"), after
+## Catastro's parts, its photos and Street View 2024, built the way the Segadores ones are (_adosado). Its front, `length`
+## wide, is the line of its yard's low wall at the pavement. Behind the yard, on one side (p[0]: "L" or "R" as you face
+## it) a block of three floors stands forward, its face p[2] in from the wall; on the other side, from the split p[1]
+## (from the left end), the house goes back to p[3]: a recess of darker render where a stair climbs to the door. p[4] is
+## where the house ends behind. Over a garage half below the street, two floors of ochre with white blinds and white
+## balustrades; deep eaves on wooden brackets; one roof with its ridge along the street. In the yard: a paved floor,
+## its low terracotta wall with white railing gates, a tiled pergola over the gate to the stair.
+func _rosa(p: Array) -> void:
+	var W: float = length
+	var H: float = top
+	var left: bool = String(p[0]) == "L"
+	var xs: float = float(p[1])
+	var Ff: float = float(p[2])
+	var Fr: float = float(p[3])
+	var back: float = float(p[4])
+	var och := "r%d" % 0xdf9f48
+	var ter := "r%d" % 0xc46a3c
+	var foot := "r%d" % 0xb05a36
+	var white := 0xf4f2ec
+	var rail_c := 0xe8e4d8
+	var fx0: float = 0.0 if left else xs              # the block that stands forward...
+	var fx1: float = xs if left else W
+	var rx0: float = xs if left else 0.0              # ...and the recess beside it
+	var rx1: float = W if left else xs
+	var fw: float = fx1 - fx0
+	var rw: float = rx1 - rx0
+	var f1 := 2.8
+	var f2 := 5.6
+	# --- the block that stands forward: the garage half below the street, two floors of windows ---
+	var gw: float = clampf(fw - 1.0, 1.6, 2.4)
+	var gx: float = fx0 + (fw - gw) / 2.0
+	var wa: float = fx0 + fw * 0.27 - 0.5
+	var wb: float = fx0 + fw * 0.73 - 0.5
+	var holes := [Rect2(gx, 0.0, gw, 2.1), Rect2(wa, f1 + 0.9, 1.0, 1.2), Rect2(wb, f1 + 0.9, 1.0, 1.2), Rect2(wa, f2 + 0.5, 1.0, 1.4), Rect2(wb, f2 + 0.5, 1.0, 1.4)]
+	wall(fx0, fx1, -1.4, 0.55, Ff, 0.25, holes, foot)
+	wall(fx0, fx1, 0.55, H, Ff, 0.25, holes, och)
+	sheet_door(gx, 0.0, gw, 2.1, Ff, 0x6a4a34, 0.3)
+	for x in [wa, wb]:
+		window(x, f1 + 0.9, 1.0, 1.2, Ff, 0.55, white, white)
+		window(x, f2 + 0.5, 1.0, 1.4, Ff, 0.4, white, white)
+		rail(x + 0.5, f2 + 0.5, 1.15, Ff, 0.85, true)
+	box(fx0, f1 - 0.05, Ff, fw, 0.1, 0.06, foot)                                  # a band of the darker render between the floors
+	# --- the recess: darker render, the door up a stair, a window over it, a balustraded one at the top ---
+	var dx: float = rx0 + (rw - 0.95) / 2.0
+	var mx: float = rx0 + (rw - 0.8) / 2.0
+	var tx: float = rx0 + (rw - 1.0) / 2.0
+	var holes2 := [Rect2(dx, 1.1, 0.95, 2.1), Rect2(mx, 4.1, 0.8, 1.0), Rect2(tx, f2 + 0.5, 1.0, 1.4)]
+	wall(rx0, rx1, -1.4, H, Fr, 0.25, holes2, ter)
+	panel_door(dx, 1.1, 0.95, 2.1, Fr, 0x6a4428)
+	window(mx, 4.1, 0.8, 1.0, Fr, 0.5, white, white)
+	window(tx, f2 + 0.5, 1.0, 1.4, Fr, 0.4, white, white)
+	rail(tx + 0.5, f2 + 0.5, 1.15, Fr, 0.85, true)
+	for k in range(5):                                                             # the stair up to the door
+		box(dx - 0.15, -1.4, Fr, 1.25, 1.4 + 0.22 * (k + 1), 0.32 * (5 - k), 0xc9b4a0)
+	box(dx - 0.2, 0.0, Fr, 0.05, 1.95, 1.6, rail_c)                                # its white handrail
+	# the side of the forward block, over the recess
+	var sn := Vector3(1.0 if left else -1.0, 0, 0)
+	quad(Vector3(xs, -1.4, Fr), Vector3(xs, -1.4, Ff), Vector3(xs, H, Ff), Vector3(xs, H, Fr), och, sn)
+	# --- its ends against the neighbours, its back, the gables; the roof ---
+	var ridge_z: float = minf((Fr + back) / 2.0, Fr - 1.0)
+	var ridge_y: float = H + 1.45
+	for x in [0.0, W]:
+		var n := Vector3(-1.0 if x == 0.0 else 1.0, 0, 0)
+		var zf: float = Ff if ((x == 0.0) == left) else Fr
+		quad(Vector3(x, -1.4, back), Vector3(x, -1.4, zf), Vector3(x, H, zf), Vector3(x, H, back), och, n)
+		tri(Vector3(x, H, back), Vector3(x, H, zf), Vector3(x, ridge_y, ridge_z), och, n)
+		box(x - 0.02, -1.4, zf, 0.04, H + 1.4, 0.02, 0x3a2a20)                    # where one house ends and the next begins
+	quad(Vector3(0, -1.4, back), Vector3(W, -1.4, back), Vector3(W, H, back), Vector3(0, H, back), och, Vector3(0, 0, -1))
+	tri(Vector3(xs, H, Ff), Vector3(xs, H, Fr), Vector3(xs, ridge_y, ridge_z), och, sn)     # (between the two front slopes)
+	boxes += 4
+	var eave := 0.45
+	for part in [[fx0, fx1, Ff], [rx0, rx1, Fr]]:
+		var a0: float = part[0]
+		var a1: float = part[1]
+		var zf: float = part[2]
+		var run: float = (zf + eave - ridge_z) / 1.6
+		quad(Vector3(a0, H - 0.08, zf + eave), Vector3(a1, H - 0.08, zf + eave), Vector3(a1, ridge_y, ridge_z), Vector3(a0, ridge_y, ridge_z), "tiles", Vector3(0, 1, 0.3),
+			[Vector2(a0 / 1.6, run), Vector2(a1 / 1.6, run), Vector2(a1 / 1.6, 0), Vector2(a0 / 1.6, 0)])
+		box(a0, H - 0.16, zf, a1 - a0, 0.1, eave, 0xc9a07a)
+		var bx: float = a0 + 0.12
+		while bx < a1 - 0.15:                                                      # the wooden brackets under the eaves
+			box(bx, H - 0.42, zf, 0.09, 0.27, eave - 0.06, 0x6a3422)
+			bx += 0.42
+	var runb: float = (ridge_z - back + eave) / 1.6
+	quad(Vector3(0, H - 0.08, back - eave), Vector3(W, H - 0.08, back - eave), Vector3(W, ridge_y, ridge_z), Vector3(0, ridge_y, ridge_z), "tiles", Vector3(0, 1, -0.3),
+		[Vector2(0, runb), Vector2(W / 1.6, runb), Vector2(W / 1.6, 0), Vector2(0, 0)])
+	var cx: float = (fx0 + fx1) / 2.0
+	box(cx - 0.3, ridge_y - 0.6, ridge_z - 0.9, 0.6, 1.3, 0.6, ter)                  # the chimney and its cap
+	box(cx - 0.36, ridge_y + 0.7, ridge_z - 0.96, 0.72, 0.08, 0.72, 0xb0603e)
+	# --- the yard: paved, a low wall to each neighbour, its front wall at the pavement with two white gates ---
+	box(fx0, -1.4, Ff, fw, 1.44, -Ff - 0.2, 0xc99270)
+	box(rx0, -1.4, Fr, rw, 1.44, -Fr - 0.2, 0xc99270)
+	box(0.0, -1.4, Ff if left else Fr, 0.12, 2.5, -(Ff if left else Fr) - 0.2, ter)
+	box(W - 0.12, -1.4, Fr if left else Ff, 0.12, 2.5, -(Fr if left else Ff) - 0.2, ter)
+	var cg0: float = gx - 0.15                                                     # the car's gate, before the garage...
+	var cg1: float = gx + gw + 0.15
+	var pg0: float = dx - 0.05                                                     # ...and the one to the stair
+	var pg1: float = dx + 1.0
+	var gates := [[cg0, cg1], [pg0, pg1]]
+	gates.sort_custom(func(u, v): return u[0] < v[0])
+	var at := 0.0
+	for g in gates + [[W, W]]:
+		if g[0] - at > 0.05:
+			box(at, -1.4, -0.22, g[0] - at, 2.5, 0.2, ter)
+			box(at, 1.1, -0.25, g[0] - at, 0.06, 0.26, 0xd9c8b0)                    # its coping
+		at = maxf(at, g[1])
+	for g in gates:
+		for e in [g[0] - 0.3, g[1]]:                                                # the pillars either side
+			box(e, -1.4, -0.26, 0.3, 2.85, 0.28, ter)
+		var x: float = g[0] + 0.04
+		while x < g[1] - 0.04:
+			box(x, 0.02, -0.17, 0.035, 1.3, 0.035, rail_c)
+			x += 0.12
+		box(g[0], 0.05, -0.18, g[1] - g[0], 0.05, 0.05, rail_c)
+		box(g[0], 1.28, -0.18, g[1] - g[0], 0.05, 0.05, rail_c)
+	box(pg1 + 0.05, 0.35, -0.27, 0.5, 0.75, 0.12, white)                           # the meter box in the wall
+	# --- the pergola over the gate to the stair: white posts, a strip of tiles ---
+	var q0: float = pg0 - 0.45
+	var q1: float = pg1 + 0.45
+	for x in [q0, q1 - 0.12]:
+		for z in [-0.28, -2.2]:
+			box(x, 0.0, z - 0.12, 0.12, 2.8, 0.12, rail_c)
+	for z in [-0.4, -2.32]:                                                       # its two beams, the posts' tops joined
+		box(q0, 2.7, z, q1 - q0, 0.12, 0.12, rail_c)
+	for k in range(5):                                                             # the rafters under the tiles
+		box(q0 + 0.05 + (q1 - q0 - 0.1) * k / 4.0, 2.82, -2.32, 0.06, 0.08, 2.0, rail_c)
+	quad(Vector3(q0 - 0.1, 2.82, 0.05), Vector3(q1 + 0.1, 2.82, 0.05), Vector3(q1 + 0.1, 3.12, -2.45), Vector3(q0 - 0.1, 3.12, -2.45), "tiles", Vector3(0, 1, 0.12),
+		[Vector2(q0 / 1.6, 1.6), Vector2(q1 / 1.6, 1.6), Vector2(q1 / 1.6, 0), Vector2(q0 / 1.6, 0)])
+	boxes += 2
 	_acera(W)
 
 ## a bar from one point to another (the lattice of a mast), as a node of its own
