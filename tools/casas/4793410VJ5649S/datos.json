@@ -1,0 +1,118 @@
+{
+ "rc": "4793410VJ5649S",
+ "record": {
+  "address": "CL SAN RAFAEL 69 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "112",
+  "year": "2002",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "01",
+    "m2": "112"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4793410VJ5649S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 111.2,
+   "ring": [
+    [
+     566.77,
+     -68.05
+    ],
+    [
+     564.61,
+     -58.52
+    ],
+    [
+     553.41,
+     -61.1
+    ],
+    [
+     555.64,
+     -70.5
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      566.77,
+      -68.05
+     ],
+     "b": [
+      564.61,
+      -58.52
+     ],
+     "len": 9.77,
+     "out": [
+      0.975,
+      0.221
+     ],
+     "street": "Calle de San Rafael",
+     "to_centre": 7.41
+    },
+    {
+     "a": [
+      564.61,
+      -58.52
+     ],
+     "b": [
+      553.41,
+      -61.1
+     ],
+     "len": 11.49,
+     "out": [
+      -0.224,
+      0.974
+     ],
+     "street": "Calle de San Rafael",
+     "to_centre": 2.63
+    },
+    {
+     "a": [
+      553.41,
+      -61.1
+     ],
+     "b": [
+      555.64,
+      -70.5
+     ],
+     "len": 9.66,
+     "out": [
+      -0.973,
+      -0.231
+     ],
+     "street": "Calle de San Rafael",
+     "to_centre": 7.56
+    },
+    {
+     "a": [
+      555.64,
+      -70.5
+     ],
+     "b": [
+      566.77,
+      -68.05
+     ],
+     "len": 11.4,
+     "out": [
+      0.215,
+      -0.977
+     ],
+     "street": "",
+     "to_centre": 12.35
+    }
+   ],
+   "ground": [
+    -3.02,
+    -2.52
+   ]
+  }
+ ]
+}

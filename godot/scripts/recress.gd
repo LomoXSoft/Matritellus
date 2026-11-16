@@ -1112,6 +1112,7 @@ func _finished() -> void:
 	G.player.p = sala.out_spawn
 	G.player.h = sala.out_h
 	G.player.sync()
+	G._door_cool = 1.0                       # (out of its door, as by the door: its green arrow does not take you straight back in -- entradas.gd)
 	G.cam_yaw = G.player.h
 	G.create_tween().tween_property(G.hud.fade, "modulate:a", 0.0, 1.0)
 	var pay := maxi(int(st.get("paid", COST)), COST) * PRIZE * BET       # (a game saved when he asked for less: the same 200 €)

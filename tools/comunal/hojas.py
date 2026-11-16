@@ -71,3 +71,7 @@ sheet('02_en_el_juego.jpg', [('El porche', shot('comunal_porche')), ('El rótulo
 sheet('03_papeleria_rocas.jpg', [('Lunes, 12:30: abierta', shot('comunal_papeleria_arco')), ('Desde la puerta', shot('comunal_papeleria_dentro')),
                                   ('Lunes, 15:30: cerrada (abre a las 17:30)', shot('comunal_papeleria_cerrada')), ('Lunes, 20:00: abierta', shot('comunal_papeleria_tarde')),
                                   ('Lunes, 20:00, desde la puerta', shot('comunal_papeleria_tarde_dentro')), ('Domingo, 12:00: cerrada', shot('comunal_papeleria_domingo'))], 800, 450, 2)
+sheet('04_papeleria_rocas_por_dentro.jpg', [('Al entrar', shot('comunal_tienda_entrada')), ('Desde el mostrador, hacia la puerta', shot('comunal_tienda_puerta')),
+                                             ('Los libros', shot('comunal_tienda_libros')), ('La papelería', shot('comunal_tienda_papeleria')),
+                                             ('El mostrador', shot('comunal_tienda_mostrador')), ('La prensa', shot('comunal_tienda_prensa')),
+                                             ('Las mochilas', shot('comunal_tienda_mochilas')), ('Desde arriba', shot('comunal_tienda_alto'))], 800, 450, 2)

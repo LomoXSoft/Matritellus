@@ -1502,6 +1502,101 @@ func _comunal_checks() -> void:
 	rule = rule and co.open_at(5, 10.0) and co.open_at(5, 13.9) and not co.open_at(5, 14.0) and not co.open_at(5, 18.0) and not co.open_at(6, 11.0) and not co.open_at(6, 18.0) and not co.open_at(1, 2.0)
 	_check(good and rule and co._shut.get_child_count() > 0 and co._lights.size() == 2,
 		"the stationer's opens from 10 to 14 and from 17:30 to 21 from Monday to Friday, on Saturday mornings, and not on Sundays: shut, its mesh of wire is down over its arch; open, the arch is an open doorway and its %d lamps are lit" % co._lights.size())
+	var ti = co.tienda                              # its inside: a set built apart, out in the fields (rocas.gd)
+	var apart: bool = ti != null
+	if apart:
+		var far: float = (MapData.nearest_road(ti.INSIDE, true)["p"] as Vector2).distance_to(ti.INSIDE)
+		var from := Vector3(ti.in_spawn.x, ti.level + 1.0, ti.in_spawn.y)
+		var walled := true
+		for to in [Vector3(9, 0, 0), Vector3(-9, 0, 0), Vector3(0, 0, 15), Vector3(0, 0, -6), Vector3(0, 6, 0)]:
+			if space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + to, 1)).is_empty():
+				walled = false
+		var level_floor: bool = absf(MapData.foot(ti.in_spawn) - ti.level) < 0.01 and absf(MapData.foot(ti.counter_front) - ti.level) < 0.01
+		var follows := true
+		for on in [true, false]:
+			co.set_open(on)
+			follows = follows and ti.open == on
+		co.set_open(co.open_at(g.weekday, g.clock))
+		var door_ok: bool = ti.door_out.distance_to(co.shop_door) < 2.0 and ti.out_spawn.distance_to(ti.door_out) > 0.8 and ti.in_spawn.distance_to(ti.in_door) > 1.0
+		apart = far > 200.0 and walled and level_floor and follows and door_ok and ti.props >= 20 and ti.pieces > 800
+		print("  the stationer's inside: %.0f m from any road, walled %s, floor %s, follows the hours %s, door %s, %d pieces of the kit, %d built" % [far, walled, level_floor, follows, door_ok, ti.props, ti.pieces])
+	_check(apart, "the stationer's inside is a set apart, far from the town, walled and roofed, on a level floor, furnished, its door the arch in the street, and open when the shop is")
+
+## Kebab Deluxe (kebabdeluxe.gd): built on its house of the map, which the houses' own script no longer draws; its
+## front stops you; the pavement where the lorry of Don Luis's sabotage leaves its boxes is clear; the name the game's.
+func _kebabdeluxe_checks() -> void:
+	var kd = g.world.kebabdeluxe
+	_check(kd != null and kd.pieces > 200, "Kebab Deluxe is built by hand (%d pieces)" % (kd.pieces if kd != null else 0))
+	if kd == null:
+		return
+	var drawn := 0
+	var found := 0
+	for casa in g.world.casas:
+		if casa.id == kd.HOUSE:
+			drawn += casa.get_child_count()
+			found += 1
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var a: Vector2 = kd.spot(2.1, 2.0)
+	var b: Vector2 = kd.spot(2.1, -1.5)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, kd.level + 1.0, a.y), Vector3(b.x, kd.level + 1.0, b.y), 1)).is_empty()
+	var stop: Dictionary = g.sabotaje.stop(0) if g.sabotaje != null else {}
+	var clear := true
+	if not stop.is_empty():
+		for k in range(6):
+			var p: Vector2 = (stop["door"] as Vector2) + (stop["out"] as Vector2) * (k * 0.3 - 0.3)
+			var q := PhysicsPointQueryParameters3D.new()
+			q.position = Vector3(p.x, MapData.foot(p) + 0.5, p.y)
+			q.collision_mask = 1
+			if not space.intersect_point(q).is_empty():
+				clear = false
+	_check(found == 1 and drawn == 0 and stops and clear and kd.NAME == "Kebab Deluxe",
+		"it stands on its house of the map (no longer drawn by the houses' script), its front stops you, the pavement where the sabotage leaves its boxes is clear (%s), and it is called %s" % [clear, kd.NAME])
+	var good := true
+	for on in [true, false]:
+		kd.set_open(on)
+		if kd.is_open != on or kd._open.visible != on or kd._shut.visible == on or kd._lights[0].visible != on:
+			good = false
+	kd.set_open(kd.open_at(g.weekday, g.clock))
+	var rule: bool = not kd.open_at(0, 12.9) and kd.open_at(0, 13.0) and kd.open_at(0, 23.9) and kd.open_at(1, 1.4) and not kd.open_at(1, 1.5)
+	rule = rule and kd.open_at(5, 1.9) and not kd.open_at(5, 2.0) and kd.open_at(0, 1.9) and not kd.open_at(0, 2.0) and not kd.open_at(4, 1.6) and kd.open_at(6, 13.5)
+	_check(good and rule, "it opens from 13:00 every day until 1:30 in the night after Monday to Thursday and 2:00 after Friday to Sunday: open, its door ajar and its lights and boards on; shut, all of it dark")
+
+## The Plazuela del Toledano (toledano.gd): its islet built on the map's pedestrian ring, clear of the streets round
+## it; everything on it inside its kerb; whoever walks on it stands on its floor; its kerb, its pencil and its trees
+## solid; its lamp one of the town's.
+func _toledano_checks() -> void:
+	var to = g.world.toledano
+	_check(to != null and to.outline.size() >= 3 and to.area > 90.0 and to.area < 230.0 and to.pieces > 200 and to.decks >= 1,
+		"the Plazuela del Toledano is built by hand: an islet of %.0f m2, %d pieces" % [(to.area if to != null else 0.0), (to.pieces if to != null else 0)])
+	if to == null:
+		return
+	var mid := Vector2.ZERO
+	for q in to.outline:
+		mid += q / to.outline.size()
+	var nearest := 99.0
+	for s in MapData.segs:
+		if int(s.road["k"]) != 0:
+			continue
+		for q in to.outline:
+			nearest = minf(nearest, Geometry2D.get_closest_point_to_segment(q, s.a, s.b).distance_to(q))
+	var inside := 0
+	for q in to.things:
+		inside += 1 if Geometry2D.is_point_in_polygon(q, to.outline) else 0
+	_check(nearest > to.CLEAR - 0.06 and inside == to.things.size() and inside >= 14,
+		"its kerb keeps %.2f m from the middle of the nearest street, and the %d things on it (%d inside) stand within its kerb" % [nearest, to.things.size(), inside])
+	var out: Vector2 = to.outline[0] + (to.outline[0] - mid).normalized() * 2.0
+	var up: float = MapData.foot(mid) - MapData.height(mid)
+	var up2: float = MapData.foot(to.PENCIL + Vector2(1.0, 0.6)) - MapData.height(to.PENCIL + Vector2(1.0, 0.6))
+	var off: float = MapData.foot(out) - MapData.height(out)
+	_check(absf(up - to.KERB) < 0.012 and absf(up2 - to.KERB) < 0.012 and absf(off) < 0.001,
+		"on foot you stand on its floor, %.2f m over the ground (%.2f by the pencil), and on the ground itself (%.2f) two metres out of its kerb" % [up, up2, off])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + h, a.y), Vector3(b.x, MapData.height(b) + h, b.y), 1)).is_empty()
+	var stops: bool = ray.call(out, mid, 0.07) and ray.call(to.PENCIL - Vector2(1.2, 0.0), to.PENCIL + Vector2(1.2, 0.0), 1.2) and ray.call(to.BIG_TREE - Vector2(1.2, 0.0), to.BIG_TREE + Vector2(1.2, 0.0), 1.2)
+	var clear: bool = not ray.call(to.PENCIL + Vector2(1.0, 0.6), to.PENCIL + Vector2(1.6, 1.4), 1.0)
+	_check(stops and clear and g.world.lamp_spots.has(to.lamp_at),
+		("" if stops else "(NOT SOLID) ") + "its kerb, its pencil and its big tree stop you, the flags between them do not, and its lamp is one of the town's")
 
 ## The Tricornios' barracks of the Avenida de la Constitución (cuartel.gd): built, with its three signs and its bays;
 ## its fronts, its gate and its yard's wall solid; nothing of it in a roadway; its way in on the avenue and the gate of
@@ -2524,7 +2619,9 @@ func _relief_checks() -> void:
 	_check(W.audit_sheets.size() >= 10 and lost < 0.002 and bridge < 0.003, "the %d sheets of street, field and paint are cut to the ground's own facets: %.1f ha laid, at most %.2f %% lost, at most %.1f mm off it" % [W.audit_sheets.size(), total / 10000.0, lost * 100.0, bridge * 1000.0])
 	# --- every wall goes down into the ground (no daylight under a house), and no house is left hanging or buried
 	var aw: Dictionary = W.audit_walls
-	_check(aw["n"] > 40000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
+	# (how many there are only says the walls were looked at: it goes down as the houses are built by hand one by one
+	# -- each takes over the walls the bake had there -- so 40000 became 35000 when 38948 were left, 16 Nov 2026)
+	_check(aw["n"] > 35000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
 	_check(aw["fronts"] > 5000 and aw["odd"] < aw["fronts"] * 0.01 and aw["high"] < 4.0 and aw["deep"] < 0.8,
 		"houses meet their street: of %d fronts, %d (%.1f %%) have the floor over 1.6 m above the pavement or 0.4 m under it; the worst are %.1f m above (at %.0f, %.0f) and %.1f m under (at %.0f, %.0f)"
 		% [aw["fronts"], aw["odd"], 100.0 * aw["odd"] / maxf(1.0, aw["fronts"]), aw["high"], aw["high_at"].x, aw["high_at"].y, aw["deep"], aw["deep_at"].x, aw["deep_at"].y])
@@ -3447,15 +3544,18 @@ func _kebab_checks(pictures := false) -> void:
 				await _kebab_view(Vector2(14.0, -0.8), 2.3, Vector2(8.5, -10.0), 1.0, "kebab_4_entran", 65.0)
 		await _kebab_view(Vector2(11.0, -2.5), 2.5, Vector2(11.0, -11.0), 1.2, "kebab_5_terraza", 80.0)
 		await _kebab_view(Vector2(1.0, -1.5), 3.0, Vector2(9.0, -12.0), 1.0, "kebab_6_lado", 60.0)
-	# indoors you see through your own eyes; out of doors, from behind as ever
+	# indoors a fixed camera high in a corner, the whole house in sight and you in it (entradas.gd: the user, 16 Nov
+	# 2026, instead of your own eyes); out of doors, from behind as ever
 	g.player.p = K.spot(9.6, -12.8)
 	g.cam_yaw = atan2(K.keeper.x - g.player.p.x, K.keeper.y - g.player.p.y)
 	g.cam_pitch = 0.45
 	await _frames(30)
 	var head := Vector3(g.player.p.x, g.player.global_position.y + 1.5 * g.player.size, g.player.p.y)
-	var to_luis: Vector3 = (MapData.at(K.keeper, 0.0) - g.cam.global_position).normalized()
-	_check(g.first_person and not g.player.vis.visible and g.cam.global_position.distance_to(head) < 0.3 and (-g.cam.global_transform.basis.z).dot(to_luis) > 0.8,
-		"inside the kebab house the camera is your own eyes (%.2f m from your head, looking where you look)" % g.cam.global_position.distance_to(head))
+	var cam_at := Vector2(g.cam.global_position.x, g.cam.global_position.z)
+	var to_you: Vector3 = (head - g.cam.global_position).normalized()
+	var high_in: bool = K.inside(cam_at) and g.cam.global_position.y - MapData.foot(g.player.p) > 2.0 and (-g.cam.global_transform.basis.z).y < -0.2
+	_check(not g.first_person and g.player.vis.visible and high_in and (-g.cam.global_transform.basis.z).dot(to_you) > 0.7,
+		"inside the kebab house the camera is high in a corner by the front, looking down into it with you in sight (%.1f m from your head)" % g.cam.global_position.distance_to(head))
 	if pictures:
 		g.hud.play_ui.visible = true
 		await _shot("kebab_7_dentro")
@@ -5448,16 +5548,17 @@ func _recress_checks() -> void:
 		await _frames(40)
 		await _shot("recress_16_abierto")
 		g.cam_fixed = null
-	# the Recress open: in through the door, and out
-	g.player.p = S.door_out + S.out * 1.0
+	# the Recress open: in by its green arrow before the door (walked up to from a few steps off: entradas.gd), and out
+	g.player.p = S.door_out + S.out * 4.5
 	g.player.h = atan2(-S.out.x, -S.out.y)
 	g._door_cool = 0.0
+	await _frames(3)
+	g.player.p = g.entradas.spot(S, false)            # (and on to it)
+	g.player.sync()
 	for i in range(60):
-		Input.action_press("forward")
 		await get_tree().physics_frame
 		if g.indoors:
 			break
-	Input.action_release("forward")
 	await _frames(5)
 	var went_in: bool = g.indoors and g.inside_of == S
 	if shots and went_in:
@@ -6329,6 +6430,151 @@ func _run() -> void:
 		print("MOTIN %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--entradas"):      # the green arrows into the small shops (the V.I.P.), and green for what you are after
+		shots = true
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		g.set_time(12.5)
+		await _frames(20)
+		var E = g.entradas
+		var V = g.vip
+		g.phase = "free"
+		g.player.p = V.out_spawn + (V.out_spawn - V.door_out).normalized() * 2.5
+		g.player.h = atan2(V.door_out.x - g.player.p.x, V.door_out.y - g.player.p.y)
+		g.player.sync()
+		var arrow_at: Vector2 = E.spot(V, false)
+		var back: Vector2 = (V.out_spawn - V.door_out).normalized()
+		var side := Vector2(-back.y, back.x)
+		g.player.p = arrow_at + back * 2.0 + side * 3.0      # (you, a little way off to one side, out of the picture's way)
+		g.player.sync()
+		var eye: Vector2 = arrow_at + back * 4.5 - side * 1.8
+		g.cam_fixed = [MapData.at(eye, 2.0), MapData.at(arrow_at, 1.1)]
+		await _frames(20)
+		var out_mark = E.mark_of(V, false)
+		var shown_out: bool = out_mark != null and out_mark.visible
+		var arrow_col: Color = (out_mark.get_node("arrow").material_override as StandardMaterial3D).albedo_color if out_mark != null else Color.BLACK
+		var green: bool = arrow_col.g > 0.7 and arrow_col.a < 0.95 and arrow_col.a > 0.5      # (green, and a little see-through)
+		await _shot("entrada_vip")
+		g.cam_fixed = null
+		g.player.p = arrow_at                               # stepping on it
+		g.player.sync()
+		var waited := 0
+		while not g.indoors and waited < 30:
+			await _frames(1)
+			waited += 1
+		var went_in: bool = g.indoors and g.inside_of == V
+		await _frames(20)
+		await _shot("entrada_dentro")
+		await _skip_dialog()
+		g.menu.close()
+		g.phase = "free"
+		var fonsi = g.named.get("vip")
+		if fonsi != null:                                   # talking to him: the close camera
+			g.player.p = fonsi.p + (V.in_spawn - fonsi.p).normalized() * 1.4
+			g.player.sync()
+			g.talk_to(fonsi)
+			await _frames(40)
+		var face: Vector3 = (fonsi.global_position + Vector3(0, 1.3, 0)) if fonsi != null else Vector3.ZERO
+		var close_cam: bool = E.talk_cam and fonsi != null and g.cam.global_position.distance_to(face) < 4.2 \
+			and (-g.cam.global_transform.basis.z).dot((face - g.cam.global_position).normalized()) > 0.95      # (his face before the lens)
+		await _shot("interior_vip_charla")
+		await _skip_dialog()
+		g.menu.close()
+		g.phase = "free"
+		g.player.p = V.in_spawn + (V.in_spawn - V.in_door).normalized() * 1.5
+		g.player.sync()
+		await _frames(40)
+		await _shot("interior_vip")                         # (walking about: the fixed camera, high, at an angle)
+		var floor_y: float = MapData.foot(g.player.p)
+		var room_cam: bool = not E.talk_cam and not g.first_person and g.player.vis.visible and g.cam.global_position.y - floor_y > 1.8 \
+			and (-g.cam.global_transform.basis.z).y < -0.25
+		_check(close_cam and room_cam, "inside, the camera is high by the door, looking down into the room at an angle, you in sight (%s); talking to Fonsi, it comes in close beside the two of you (%s)" % [room_cam, close_cam])
+		var in_mark = E.mark_of(V, true)
+		var shown_in: bool = in_mark != null and in_mark.visible
+		g.player.p = V.in_spawn + (V.in_spawn - V.in_door).normalized() * 2.0      # (off it, then back on it)
+		g.player.sync()
+		await _frames(45)
+		g.player.p = E.spot(V, true)
+		g.player.sync()
+		await _frames(30)
+		var not_by_mistake: bool = g.indoors and E.exit_here() == V      # (standing on it is not enough: the button says Salir)
+		g.cine_lock = true                                  # (in a scene, no arrows in the picture)
+		await _frames(3)
+		var hidden_in_scene: bool = E.mark_of(V, true) != null and not E.mark_of(V, true).visible and E.exit_here() == null
+		g.cine_lock = false
+		await _frames(3)
+		g.interact()
+		waited = 0
+		while g.indoors and waited < 30:
+			await _frames(1)
+			waited += 1
+		var came_out: bool = not g.indoors and not_by_mistake and hidden_in_scene
+		await _frames(60)                                   # (standing where you come out: not straight back in)
+		var stayed_out: bool = not g.indoors
+		_check(E.is_shop(V) and shown_out and green and went_in and shown_in and came_out and stayed_out,
+			"a green arrow stands before the V.I.P.'s door (%s, green %s); stepping on it takes you in (%s); inside another, on which the action button (not just a step) takes you back out, and which no scene shows (%s, %s), and not straight back in (%s)" % [shown_out, green, went_in, shown_in, came_out, stayed_out])
+		# the Papelería Rocas (Pretil's set, world.comunal.tienda): in while it is open; out even if it shuts meanwhile
+		var C = g.world.get("comunal")
+		if C != null and C.get("tienda") != null:
+			var R = C.tienda
+			C.set_open(true)
+			var r_back: Vector2 = (R.out_spawn - R.door_out).normalized()
+			g.player.p = E.spot(R, false) + r_back * 3.0
+			g.player.sync()
+			await _frames(10)
+			var r_shown: bool = E.mark_of(R, false) != null and E.mark_of(R, false).visible and E.is_shop(R)
+			g.player.p = E.spot(R, false)
+			g.player.sync()
+			waited = 0
+			while not g.indoors and waited < 30:
+				await _frames(1)
+				waited += 1
+			var r_in: bool = g.indoors and g.inside_of == R
+			await _frames(15)
+			await _shot("entrada_rocas_dentro")
+			g.set_time(15.0)                                # (closing time, with you inside: shut from 14 to 17:30 on a Monday)
+			await _frames(5)
+			g.player.p = R.in_spawn + (R.in_spawn - R.in_door).normalized() * 1.5
+			g.player.sync()
+			await _frames(45)
+			var r_way_out: bool = E.mark_of(R, true) != null and E.mark_of(R, true).visible
+			g.player.p = E.spot(R, true)
+			g.player.sync()
+			await _frames(5)
+			g.interact()                                    # (the action button on it: out)
+			waited = 0
+			while g.indoors and waited < 30:
+				await _frames(1)
+				waited += 1
+			var r_out: bool = not g.indoors
+			await _frames(10)
+			var r_shut: bool = E.mark_of(R, false) == null or not E.mark_of(R, false).visible
+			g.set_time(12.5)
+			await _frames(5)
+			_check(r_shown and r_in and r_way_out and r_out and r_shut,
+				"the Papelería Rocas has its arrow too (%s): in (%s); shut while you are in, the way out is still there (%s, %s), and outside, shut, no arrow (%s)" % [r_shown, r_in, r_way_out, r_out, r_shut])
+		# green is what you are after: the guide arrow, the light over the place, the target on the map
+		var hot_v = g.arrow_mat.get_shader_parameter("hot")      # (left at the shader's own default: asked of the shader)
+		var hot: Color = hot_v if hot_v != null else RenderingServer.shader_get_parameter_default(g.arrow_mat.shader.get_rid(), "hot")
+		var col: Color = (g.beacon.get_child(0) as MeshInstance3D).material_override.albedo_color
+		_check(hot.g > hot.r and col.g > col.r, "the guide arrow and the column of light over the place to get to are green (arrow %s, light %s)" % [hot, col])
+		var rd: Dictionary = MapData.nearest_road(g.player.p)           # (somewhere down the street: the light over it, in sight)
+		var fwd: Vector2 = rd["u"]
+		g.player.p = rd["p"]
+		g.player.sync()
+		var goal: Vector2 = g.player.p + fwd * 55.0
+		g.set_target(goal, true)
+		g.cam_fixed = [MapData.at(g.player.p - fwd * 7.5, 4.2), MapData.at(g.player.p + fwd * 6.0, 1.6)]      # (behind you and above: the arrow over your head, the light further on)
+		g.phase = "play"                                    # (the guide arrow shows with a mission's target)
+		await _frames(40)
+		await _shot("objetivo_verde")
+		g.phase = "free"
+		g.cam_fixed = null
+		g.set_target(null, false)
+		print("ENTRADAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--conduccion"):    # just the driving on the vehicle physics, as the full run does it right after the cutscene
 		g.menu.close()
 		g.slot = 0
@@ -6673,6 +6919,67 @@ func _run() -> void:
 		print("TODOPIZZA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--kebabdeluxe"):      # just Kebab Deluxe: its front from the avenue, its boards, through its glass, at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var kd = g.world.kebabdeluxe
+		if kd == null:
+			print("KEBABDELUXE FAILED (the map has no castilla_17)")
+			get_tree().quit(1)
+			return
+		for n in g.npcs:                            # (nobody walking across the pictures)
+			n.visible = false
+		for moment in [["", 14.0], ["noche_", 22.0], ["cerrado_", 10.0], ["cerrado_noche_", 4.0]]:
+			g.weekday = 0
+			g.set_time(moment[1])
+			for v in [["frente", Vector2(2.9, 7.2), 1.7, Vector2(2.9, 0.0), 3.9, 72.0], ["desde_no", Vector2(-9.0, 5.0), 1.7, Vector2(2.9, 0.0), 3.8, 62.0], ["desde_se", Vector2(14.0, 5.0), 1.7, Vector2(2.9, 0.0), 3.8, 62.0],
+					["rotulo", Vector2(2.9, 3.4), 1.7, Vector2(2.9, 0.0), 3.0, 70.0], ["puerta", Vector2(2.1, 2.2), 1.6, Vector2(2.4, -3.0), 1.2, 75.0], ["arriba", Vector2(2.9, 5.5), 1.7, Vector2(2.9, 0.0), 6.5, 78.0]]:
+				if moment[0] != "" and not (v[0] in ["frente", "rotulo", "desde_se"]) and not (moment[0] == "cerrado_" and v[0] == "puerta"):
+					continue
+				var eye: Vector2 = kd.spot(v[1].x, v[1].y)
+				var at: Vector2 = kd.spot(v[3].x, v[3].y)
+				g.player.p = kd.spot(30.0, 30.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, kd.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("kebabdeluxe_%s%s" % [moment[0], v[0]])
+		g.set_time(12.5)
+		g.phase = "free"
+		await _kebabdeluxe_checks()
+		print("KEBABDELUXE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--toledano"):      # just the Plazuela del Toledano: from the streets round it, close to, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(12.5)
+		var to = g.world.toledano
+		if to == null:
+			print("TOLEDANO FAILED (the map has no pedestrian ring there)")
+			get_tree().quit(1)
+			return
+		for v in [["desde_no", Vector2(-372.5, -51.0), 1.7, Vector2(-367.0, -42.0), 1.0, 78.0], ["desde_e", Vector2(-357.2, -44.2), 1.7, Vector2(-368.0, -42.0), 1.2, 78.0], ["desde_so", Vector2(-379.5, -34.0), 1.7, Vector2(-366.0, -44.0), 1.6, 78.0],
+				["desde_s", Vector2(-364.0, -31.0), 1.7, Vector2(-367.0, -44.0), 1.4, 78.0], ["desde_n", Vector2(-357.0, -57.0), 1.7, Vector2(-368.0, -41.0), 1.4, 75.0], ["lapiz", Vector2(-368.6, -44.2), 1.6, Vector2(-365.65, -41.07), 1.6, 62.0],
+				["banco", Vector2(-369.3, -45.4), 1.3, Vector2(-371.8, -42.3), 0.6, 60.0], ["punta_o", Vector2(-382.5, -36.0), 1.7, Vector2(-374.0, -39.5), 1.6, 70.0], ["suelo", Vector2(-366.5, -39.0), 1.7, Vector2(-369.5, -42.5), 0.0, 70.0],
+				["aire", Vector2(-368.0, -24.0), 30.0, Vector2(-368.0, -42.0), 0.0, 50.0], ["aire_n", Vector2(-350.0, -64.0), 16.0, Vector2(-367.0, -43.0), 0.0, 60.0]]:
+			var eye: Vector2 = v[1]
+			var at: Vector2 = v[3]
+			g.player.p = Vector2(-420.0, -140.0)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("toledano_%s" % v[0])
+		g.phase = "free"
+		await _toledano_checks()
+		print("TOLEDANO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--comunal"):       # just the people's university of the Calle de los Arcos and the stationer's: the porch, the wall, the front behind it, the shop, the block behind, from the air
 		shots = true
 		g.menu.close()
@@ -6698,6 +7005,17 @@ func _run() -> void:
 			g.cam.fov = v[5]
 			await _frames(6)
 			await _shot("comunal_%s" % v[0])
+		var rocas_set = co.tienda
+		if rocas_set != null:                        # the stationer's inside, the set out in the fields
+			for v in [["entrada", Vector3(0.0, 1.6, 0.7), Vector3(0.0, 1.2, 8.0), 82.0], ["libros", Vector3(2.2, 1.6, 2.4), Vector3(-3.6, 1.2, 5.2), 75.0], ["papeleria", Vector3(-2.2, 1.6, 2.4), Vector3(3.6, 1.2, 5.2), 75.0],
+					["mostrador", Vector3(-1.6, 1.6, 6.6), Vector3(0.0, 1.25, 11.8), 78.0], ["puerta", Vector3(0.0, 1.6, 8.6), Vector3(0.0, 1.3, 0.0), 82.0], ["alto", Vector3(3.3, 2.95, 0.4), Vector3(-1.2, 0.4, 7.0), 88.0],
+					["prensa", Vector3(1.3, 1.6, 3.2), Vector3(2.5, 1.3, 0.0), 70.0], ["mochilas", Vector3(-1.6, 1.6, 3.0), Vector3(-2.5, 1.3, 0.0), 70.0]]:
+				var eye: Vector3 = rocas_set.transform * (v[1] as Vector3)
+				g.cam.position = eye
+				g.cam.look_at(rocas_set.transform * (v[2] as Vector3))
+				g.cam.fov = v[3]
+				await _frames(6)
+				await _shot("comunal_tienda_%s" % v[0])
 		for moment in [["cerrada", 0, 15.5], ["tarde", 0, 20.0], ["domingo", 6, 12.0]]:      # the stationer's hours: shut at midday, open in the evening, shut on Sunday
 			g.weekday = moment[1]
 			g.set_time(moment[2])
@@ -6758,7 +7076,7 @@ func _run() -> void:
 			return
 		for v in [["frente", Vector2(20.0, 31.0), 2.2, Vector2(20.0, 0.0), 6.5, 62.0], ["frente_cerca", Vector2(20.0, 17.0), 1.7, Vector2(20.0, 0.0), 6.0, 85.0], ["puerta", Vector2(20.07, 8.5), 1.7, Vector2(20.07, -1.9), 3.6, 60.0], ["placa", Vector2(20.07, 3.2), 1.7, Vector2(20.07, -1.9), 4.6, 42.0],
 				["torre_oeste", Vector2(-6.0, 15.0), 1.7, Vector2(3.5, 0.0), 8.5, 70.0], ["torre_este", Vector2(46.0, 16.0), 1.7, Vector2(36.5, 0.0), 8.5, 70.0], ["arcos", Vector2(-8.0, 7.0), 1.7, Vector2(2.6, -2.2), 13.2, 38.0],
-				["peso", Vector2(-7.0, -6.0), 1.7, Vector2(0.0, -6.5), 5.5, 95.0], ["santa_clara", Vector2(46.5, -13.0), 1.7, Vector2(40.35, -13.5), 4.5, 95.0], ["santa_clara_sur", Vector2(45.5, 6.0), 1.7, Vector2(40.0, -8.0), 5.5, 85.0],
+				["peso", Vector2(-7.0, -6.0), 1.7, Vector2(0.0, -6.5), 5.5, 95.0], ["santa_clara", Vector2(46.5, -13.0), 1.7, Vector2(40.35, -13.5), 4.5, 95.0], ["santa_clara_sur", Vector2(45.5, 6.0), 1.7, Vector2(40.0, -8.0), 5.5, 85.0], ["tapia", Vector2(45.2, -20.0), 1.7, Vector2(40.2, -26.0), 1.6, 75.0], ["tapia_cerca", Vector2(43.6, -24.0), 1.6, Vector2(40.2, -26.8), 1.6, 70.0],
 				["verja", Vector2(10.0, 26.5), 1.7, Vector2(22.0, 19.0), 0.6, 80.0], ["parada", Vector2(17.6, 29.6), 1.6, Vector2(15.8, 24.0), -0.4, 62.0], ["parada_lado", Vector2(8.2, 27.8), 1.6, Vector2(15.8, 24.6), 0.2, 60.0], ["focos", Vector2(20.0, 33.0), 2.0, Vector2(18.0, 19.5), 4.0, 75.0], ["esquina", Vector2(42.0, 27.0), 1.7, Vector2(28.0, 8.0), 4.0, 80.0], ["pista", Vector2(30.0, 10.0), 6.0, Vector2(22.0, 8.0), -1.0, 85.0],
 				["aire", Vector2(20.0, 52.0), 34.0, Vector2(20.0, 2.0), 4.0, 55.0], ["aire_norte", Vector2(20.0, -44.0), 30.0, Vector2(20.0, -6.0), 6.0, 55.0]]:
 			var eye: Vector2 = co.spot(v[1].x, v[1].y)
@@ -8548,6 +8866,8 @@ func _run() -> void:
 	await _colegio_checks()
 	await _cuartel_checks()
 	await _comunal_checks()
+	await _toledano_checks()
+	await _kebabdeluxe_checks()
 	await _gacha_checks()
 	await _sentido_checks(false)
 	await _cuartel_coche_checks()

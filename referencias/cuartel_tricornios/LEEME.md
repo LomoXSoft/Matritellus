@@ -2,12 +2,12 @@
 
 Pedido por Luis el 16-11-2026: «Vamos con el cuartel de la guardia civil (tricornios). En Av. de la Constitución, 116,
 45710 Madridejos, Toledo» (con una captura de Google Maps de su entrada). Primera versión enseñada el mismo día (hojas
-en `guion/fotos/cuartel_tricornios/`); pendiente de su veredicto.
+en `guion/fotos/cuartel_tricornios/`). Su veredicto: «Visto bueno a todo. Pensaba que ya lo había dado» (16/11).
 
 Sobre esa primera versión, con una foto de un coche oficial: «Podríamos invertir el logo que has hecho de los
 tricornios en la fachada (cambiar negro por dorado y viceversa) y usarlo como su logo. Así lo podríamos poner en el
 frontal y en los laterales del coche, además de una franja con la bandera de España, como los oficiales». Hecho y
-enseñado (hoja `04_logo_y_coche.jpg`); pendiente de su palabra.
+enseñado (hoja `04_logo_y_coche.jpg`); visto bueno con todo lo demás («Visto bueno a todo. Pensaba que ya lo había dado» (16/11)).
 
 El modelo es `godot/scripts/cuartel.gd` (sobre `obra.gd`). Herramientas: `tools/cuartel/`.
 

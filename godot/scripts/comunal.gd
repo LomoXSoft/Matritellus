@@ -56,12 +56,14 @@ const GATE := 0x8a5a50
 const RED := 0x8a1c2c
 const GREEN := 0x2f7a44
 const WOOD := 0x7a4a2a
+const RocasS = preload("res://scripts/rocas.gd")
 
 var len_front := 19.87
 var door: Vector2               # before the porch's gate, on the map
 var shop_door: Vector2          # before the stationer's arch, on the map
 var has_shop := false
 var is_open := false            # the stationer's
+var tienda                      # its inside, a set built apart (rocas.gd): what you go into from its door
 var _shut: Node3D               # what shows only while it is shut: the mesh of wire down over its arch
 var _open: Node3D               # what shows only while it is open: its lamp lit
 var _lights: Array = []
@@ -146,6 +148,12 @@ func build(world, hd: Dictionary, shop: Dictionary) -> void:
 	home()
 	_commit()
 	if has_shop:
+		var front: Transform3D = transform * (_arch["xf"] as Transform3D)      # the arch, on the map: its inside is a set apart
+		var cx: float = _arch["cx"]
+		var a: Vector3 = front * Vector3(cx, 0.0, 0.35)
+		var b: Vector3 = front * Vector3(cx, 0.0, 1.5)
+		tienda = RocasS.new()
+		tienda.build(world, SHOP_NAME, Vector2(a.x, a.z), Vector2(b.x, b.z), atan2(front.basis.z.x, front.basis.z.z))
 		_states()
 
 # ---------------- helpers ----------------
@@ -635,6 +643,8 @@ func _process(_delta: float) -> void:
 
 func set_open(on: bool) -> void:
 	is_open = on
+	if tienda != null:
+		tienda.open = on
 	if _shut != null:
 		_shut.visible = not on
 		_open.visible = on

@@ -1,0 +1,8 @@
+Muebles del interior de la Papeleria Rocas (godot/scripts/rocas.gd). Todo de Kenney (https://www.kenney.nl),
+licencia CC0 (dominio publico): no obliga a citar a nadie; se apunta de donde viene.
+
+mueble_*.glb  --  "Furniture Kit" de Kenney  --  CC0  --  https://opengameart.org/content/furniture-kit
+                  (los OBJ del kit, pasados a GLB con Blender: tools/rocas/muebles.py; originales en
+                  tools/descargas/kenney_furniture_kit/)
+
+La maceta y la papelera son del mismo kit y estan en assets/kebab/ (mueble_pottedPlant, mueble_trashcan).

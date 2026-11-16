@@ -96,7 +96,8 @@ func build(world, d: Dictionary) -> Node3D:
 		if key is String and key == "tela":
 			mi.extra_cull_margin = 1.5              # (it moves out of where its mesh says it is)
 		add_child(mi)
-	return self
+	_tools.clear()                                  # (the meshes are made: what they were made from goes. Kept, the town's houses held
+	return self                                     # 3.7 GB between them, and a phone closed the game while loading -- 16 Nov 2026)
 
 ## a place on the map, in the house's frame: x along the front, y out into the street
 func _local(p: Vector2) -> Vector2:

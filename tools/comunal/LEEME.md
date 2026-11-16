@@ -31,9 +31,17 @@ aproximado: `referencias/universidad_comunal/LEEME.md`.
 9. **Un horario partido**: `open_at(day, hour)` es una función pura (mañana y tarde; sábado solo mañana; domingo no);
    la prueba la consulta sin mover el reloj y pone cada estado con `set_open`.
 
+## El interior de la papelería (`rocas.gd`)
+Un decorado aparte sobre `obra.gd`, con el suelo como `deck` de `MapData` (una sola altura, haga lo que haga el campo
+debajo) y todas sus mallas en la capa 11, a la que no llega el sol (`_indoors`). Los muebles: `tools/rocas/muebles.py`
+(Blender) pasa a GLB los OBJ del Furniture Kit de Kenney. Para llenar una estantería del kit con libros hechos aquí,
+sus medidas salen de los vértices del OBJ (la librería: 4 × 2,5 × 8,8 unidades, baldas a 1,3, 3,7 y 6,1).
+Un `Label3D` mira a +z: girado PI mira a la puerta; lo que va a la derecha según se lee va en -x.
+
 ## Pruebas
-`python tools/run_tests.py comunal`: 20 fotos (`godot/shots/comunal_*.png`; las de la papelería a varias horas, porque
-este modo corre solo y puede mover el reloj) y cuatro comprobaciones (está construido; está sobre sus tres casas del
+`python tools/run_tests.py comunal`: 28 fotos (`godot/shots/comunal_*.png`; las de la papelería a varias horas, porque
+este modo corre solo y puede mover el reloj) y cinco comprobaciones (está construido; está sobre sus tres casas del
 mapa, que `casas.gd` ya no dibuja, y tapia, verja, tienda y bloque trasero paran; el tablón y la señal no pisan
-calzada y los nombres son los del juego; la papelería sigue su horario y se abre y se cierra). Y
+calzada y los nombres son los del juego; la papelería sigue su horario y se abre y se cierra; su interior aparte está lejos del pueblo, cerrado, a nivel,
+amueblado y abre con ella). Y
 `python tools/run_tests.py casas solo=arcos_`.

@@ -19,6 +19,8 @@ const SantaAnaS = preload("res://scripts/santaana.gd")
 const ColegioS = preload("res://scripts/colegio.gd")
 const CuartelS = preload("res://scripts/cuartel.gd")
 const ComunalS = preload("res://scripts/comunal.gd")
+const ToledanoS = preload("res://scripts/toledano.gd")
+const KebabDeluxeS = preload("res://scripts/kebabdeluxe.gd")
 const MercamonaS = preload("res://scripts/mercamona.gd")
 const TodopizzaS = preload("res://scripts/todopizza.gd")
 const TeleDurumS = preload("res://scripts/teledurum.gd")
@@ -92,6 +94,8 @@ var santaana                    # the convent of Santa Ana, built by hand (santa
 var colegio                     # the old school of the Avenida de Juan Carlos I, built by hand (colegio.gd)
 var cuartel                     # the Tricornios' barracks of the Avenida de la Constitución, built by hand (cuartel.gd)
 var comunal                     # the people's university of the Calle de los Arcos and the stationer's beside it, built by hand (comunal.gd)
+var kebabdeluxe                 # the kebab house of the Avenida de Castilla-La Mancha, "Kebab Deluxe", built by hand (kebabdeluxe.gd)
+var toledano                    # the Plazuela del Toledano: its islet, trees, benches and pencil, built by hand (toledano.gd)
 var mercamona                   # the supermarket and its car park, built by hand (mercamona.gd)
 var todopizza                   # the pizza house beside it, built by hand (todopizza.gd)
 var teledurum                   # the kebab house of the Calle de Santa Ana, built by hand (teledurum.gd)
@@ -108,7 +112,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["details", _build_details], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["details", _build_details], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -187,6 +191,19 @@ func _build_comunal() -> void:
 	if found.has(ComunalS.HOUSE):
 		comunal = ComunalS.new()
 		comunal.build(self, found[ComunalS.HOUSE], found.get(ComunalS.SHOP, {}))
+
+func _build_kebabdeluxe() -> void:
+	for hd in MapData.houses:        # (the kebab house of the Avenida de Castilla-La Mancha, "Kebab Deluxe": kebabdeluxe.gd, on its house of the map)
+		if String(hd["id"]) == KebabDeluxeS.HOUSE:
+			kebabdeluxe = KebabDeluxeS.new()
+			kebabdeluxe.build(self, hd)
+			return
+
+func _build_toledano() -> void:
+	toledano = ToledanoS.new()       # (the islet of the Plazuela del Toledano: toledano.gd, on the pedestrian ring the map has there)
+	if not toledano.build(self):
+		toledano.free()
+		toledano = null
 
 func _build_cuartel() -> void:
 	if MapData.cuartel.is_empty():    # (a map baked before it: Catastro's block stands there)

@@ -102,3 +102,12 @@ nudos, calles, árboles y casas, iguales.
 - **La calle de Santa Clara** del juego es más ancha que la real: la verja queda a medio metro de la calzada, y la
   acera en damero se corta antes de la esquina.
 - **Los árboles**: ocho, más pequeños que los reales para que se vea la fachada.
+
+## La tapia de la calle Santa Clara (16-11-2026)
+Luis la echó en falta (a través de Texturas): el tramo de unos 8 m entre el ala del colegio y la casa de al lado (la
+última de la acera par). Hecha en `colegio.gd` (`_tapia`) por la foto del Catastro de esa casa
+(`tools/casas/3891714VJ5639S/fachada.jpg`): tapia de ladrillo de 1,5 m con su albardilla, reja de forja encima hasta
+2,45 m (una fila de roleos abajo, anillos y barrotes con lanzas arriba), una puerta oscura junto al machón de ladrillo
+de la esquina de la casa. Detrás, el patio. El asfalto del juego llega hasta la esquina de esa casa, así que la
+comprobación de calzada solo mira el extremo del colegio. Hoja: `guion/fotos/colegio_viejo/07_tapia_santa_clara.jpg`.
+Su veredicto: «Ambos visto bueno» (16/11).

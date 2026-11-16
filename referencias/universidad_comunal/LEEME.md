@@ -7,7 +7,7 @@ Arcos 10 y 12 respectivamente» (con una captura panorámica de Google). Primera
 
 Al verla, el mismo día: «Cambiale el nombre a Papelería Rocas y ponle este horario comercial: [lunes a viernes 10-14 y
 17:30-21; sábado 10-14; domingo cerrado]. Además necesitamos que parezca que se puede pasar, ahora mismo hay una pared
-que bloquea y no da esa impresión». Hecho y enseñado (hoja `03_papeleria_rocas.jpg`); pendiente de su veredicto.
+que bloquea y no da esa impresión». Hecho y enseñado (hoja `03_papeleria_rocas.jpg`). Su veredicto, de todo (fachadas, papelería e interior): «Visto bueno a todo. Pensaba que ya lo había dado» (16/11).
 
 El modelo es `godot/scripts/comunal.gd` (sobre `obra.gd`): los dos edificios en un solo guion. Herramientas: `tools/comunal/`.
 
@@ -59,10 +59,22 @@ papelería se apoya en su propio suelo.
   a 21:00; sábados de 10:00 a 14:00; domingos cerrada. Cerrada, la malla bajada, como en las fotos, y a oscuras.
   Abierta, sin malla: el arco es un hueco y detrás está la tienda entera (6 m de fondo: suelo desde la acera, estantes
   en las dos paredes, mostrador y estantes al fondo, un expositor de postales, tres tubos de luz y un felpudo).
-- **Parece que se puede pasar, pero no se entra**: el frente sigue parando al jugador, como en las demás tiendas. Si
-  Luis quiere entrar de verdad, es quitar ese tope del arco cuando esté abierta y poner paredes a la sala.
+- **Se entra por una flecha, a un espacio aparte** (Luis, 16-11-2026: «En las tiendas como esta o la de VIP que sean
+  pequeñas deberíamos poner un arrow marker [...] low-poly animado [...] y pasar sobre él te mandará a la tienda, que
+  será un espacio aparte y ahí podremos trabajar sin límites de fachada o tamaño»; verde, «para que vaya a juego con
+  la flecha de personaje»). La flecha y el paso son de Sistemas (`entradas.gd`). El frente sigue parando al jugador y
+  la sala que se ve por el arco es decorado.
+- **El interior** es `godot/scripts/rocas.gd` (`world.comunal.tienda`), un decorado lejos del pueblo, en (-1800, -1800),
+  como el del V.I.P.: 7,6 × 12 m y 3,1 de alto. Lo primero que se ve al entrar es la tienda entera: las mesas
+  empiezan a 1,5 m del sitio donde apareces (Sistemas avisó de que la primera tapaba la vista). Junto a la puerta, la prensa (revistas en su expositor, los periódicos
+  del día en un banco) y las mochilas; a un lado, seis estanterías de libros; al otro, la papelería (archivadores,
+  cuadernos, paquetes de folios, botes de bolígrafos, globos terráqueos); en medio, dos mesas de novedades y ofertas
+  y el expositor de postales; al fondo, el mostrador verde con su trampilla, la caja, la pantalla, las baldas de
+  folios y la fotocopiadora. Todo inventado. Muebles del Furniture Kit de Kenney (CC0): `godot/assets/rocas/`.
+  Sin tendero (no se crean personajes): `keeper_spot` y `counter_front` dicen dónde irían. Hoja:
+  `guion/fotos/universidad_comunal/04_papeleria_rocas_por_dentro.jpg`. Enseñado el 16-11; visto bueno el mismo día.
 - La verja de la Universidad está cerrada. Sin personajes.
-- Pruebas: `python tools/run_tests.py comunal` (20 fotos y 4 comprobaciones) y `casas solo=arcos_` por las vecinas.
+- Pruebas: `python tools/run_tests.py comunal` (28 fotos y 5 comprobaciones) y `casas solo=arcos_` por las vecinas.
 
 ## Lo que es aproximado
 - **Porche, tablón y ventanas del norte**: medidos con las cámaras ajustadas a los extremos de la tapia y de la fachada

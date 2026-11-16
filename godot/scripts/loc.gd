@@ -1549,6 +1549,7 @@ const TX := {
 		"en": ["Ow, mother! Not with the bat!", "You animal! I’ve got a titanium hip!", "Curse your dead, and your bat!", "I’m telling your mother!", "Brute, you utter brute!"]},
 	"t_bat_kept": {"es": "Henry te deja quedarte el bate. Ahora los golpes son de bate (y los Pitufos lo notan).", "en": "Henry lets you keep the bat. Your hits are bat hits now (and Los Pitufos notice)."},
 	"paca_call": {"es": "¡{Chiquillo|Chiquilla}! ¡Ven p’acá!", "en": "¡{Niño|Niña}! Come here!"},
+	"p_salir": {"es": "<interact> Salir", "en": "<interact> Go out"},      # (on the green arrow by a set's door, inside: entradas.gd)
 	# the gumball machines and their figures (gacha.gd)
 	"p_gacha": {"es": "<interact> Echar %d € a la máquina de bolas", "en": "<interact> Put %d € in the gumball machine"},
 	"p_gacha_broke": {"es": "Máquina de bolas: %d € (no llevas ni uno)", "en": "Gumball machine: %d € (you haven’t got one)"},

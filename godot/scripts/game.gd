@@ -29,6 +29,7 @@ const TironesS = preload("res://scripts/tirones.gd")
 const LimiteS = preload("res://scripts/limite.gd")
 const LlamadasS = preload("res://scripts/llamadas.gd")
 const MarcasS = preload("res://scripts/marcas.gd")
+const EntradasS = preload("res://scripts/entradas.gd")
 const RecressS = preload("res://scripts/recress.gd")
 const TokkenS = preload("res://scripts/tokken.gd")
 const AjedrezS = preload("res://scripts/ajedrez_humano.gd")
@@ -175,7 +176,7 @@ var sabotaje                    # Don Luis's side mission: the delivery lorry an
 var pintadas                    # La Chiki's: the walls of the peñas (pintadas.gd)
 var gacha                       # the gumball machines and the figures that come out of them (gacha.gd)
 var cuartel_coche               # the Tricornios' car always parked at their barracks' door (cuartel_coche.gd)
-var first_person := false       # indoors (the shop, the kebab house) you see through your own eyes: there is no room in there for a camera behind you
+var first_person := false       # (no longer: indoors it was through your own eyes until 16 Nov 2026; now a fixed camera, entradas.gd)
 var cine_lock := false          # a scene of a side mission is playing: your hands are off, the town goes on
 var comida                      # eating, and what comes of eating too much (comida.gd)
 var home_spot := Vector2.ZERO   # the pavement in front of your own door
@@ -269,6 +270,7 @@ var tirones = null              # the hitch log: tirones.gd
 var limite                      # the edge of the map: limite.gd
 var llamadas                    # the switchboard: who rings you, and when they try again (llamadas.gd)
 var marcas                      # who has a mission for you: photo on the map, green arrow over the head (marcas.gd)
+var entradas                    # the green arrows into the small shops, and back out (entradas.gd)
 var recress                     # "Un torneo en los Galaxy Recress", the Civismo line's second mission (recress.gd)
 var tokken                      # Tokken 9, the fighting game on the Recress's machines (tokken.gd): the phase "tokken" is its own
 var ajedrez                     # (ajedrez) the mayor's chess mission and the game on the square's boards (ajedrez_humano.gd): the phase "ajedrez"
@@ -382,8 +384,9 @@ func _ready() -> void:
 		if done_n == 6 and OS.get_cmdline_user_args().has("--foto-carga"):     # (a picture of it, for whoever is checking)
 			await RenderingServer.frame_post_draw
 			get_viewport().get_texture().get_image().save_png("res://shots/carga.png")
-		if timing:
-			print("boot: %-14s %5d ms" % [st[0], Time.get_ticks_msec() - t0])
+		if timing:                                   # (with what memory it holds by then: a phone runs out where a PC does not)
+			print("boot: %-14s %5d ms   memory %5.0f MB   video %5.0f MB" % [st[0], Time.get_ticks_msec() - t0,
+				Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
 		await get_tree().process_frame
 	if timing:
 		print("boot: all of it     %5d ms" % (Time.get_ticks_msec() - t_all))
@@ -1374,6 +1377,9 @@ func _setup_places_and_actors() -> void:
 	marcas = MarcasS.new()
 	add_child(marcas)
 	marcas.setup(self)
+	entradas = EntradasS.new()
+	add_child(entradas)
+	entradas.setup(self)
 	recress = RecressS.new()
 	add_child(recress)
 	recress.setup(self)
@@ -1430,7 +1436,7 @@ func _setup_places_and_actors() -> void:
 func _setup_markers() -> void:
 	beacon = Node3D.new()
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(1.0, 0.76, 0.1, 0.3)
+	m.albedo_color = Color(0.32, 0.95, 0.16, 0.34)         # green: what you are after is always green (the user, 16 Nov 2026; against the sky a bluer one went teal)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -1470,7 +1476,7 @@ func _setup_markers() -> void:
 			st.add_vertex(Vector3((v[0] as Vector2).x, float(v[1]) * thick, (v[0] as Vector2).y))
 	var amesh := st.commit()
 	var ash := Shader.new()
-	ash.code = "shader_type spatial;\nrender_mode unshaded, cull_disabled;\nuniform vec3 hot : source_color = vec3(1.0, 0.86, 0.1);\nuniform vec3 cool : source_color = vec3(1.0, 0.42, 0.05);\nuniform float hurry = 0.0;\nuniform float see = 1.0;\nvoid fragment() {\n\tfloat run = fract(UV.y * 2.0 - TIME * (1.6 + hurry * 2.4));\n\tfloat band = smoothstep(0.0, 0.12, run) * smoothstep(0.55, 0.43, run);\n\tvec3 c = mix(cool, hot, UV.y);\n\tc = mix(c, vec3(1.0, 1.0, 0.82), band * 0.55);\n\tc *= 0.86 + 0.14 * abs(NORMAL.y);\n\tALBEDO = c;\n\tALPHA = see;\n}\n"
+	ash.code = "shader_type spatial;\nrender_mode unshaded, cull_disabled;\nuniform vec3 hot : source_color = vec3(0.62, 1.0, 0.42);\nuniform vec3 cool : source_color = vec3(0.08, 0.58, 0.2);\nuniform float hurry = 0.0;\nuniform float see = 1.0;\nvoid fragment() {\n\tfloat run = fract(UV.y * 2.0 - TIME * (1.6 + hurry * 2.4));\n\tfloat band = smoothstep(0.0, 0.12, run) * smoothstep(0.55, 0.43, run);\n\tvec3 c = mix(cool, hot, UV.y);\n\tc = mix(c, vec3(0.9, 1.0, 0.86), band * 0.55);\n\tc *= 0.86 + 0.14 * abs(NORMAL.y);\n\tALBEDO = c;\n\tALPHA = see;\n}\n"
 	arrow_mat = ShaderMaterial.new()
 	arrow_mat.shader = ash
 	arrow_mat.render_priority = 1                # (drawn after its black rim, always: both are see-through, and in the wrong order the arrow came out black)
@@ -2181,9 +2187,10 @@ func start_game(from_step := 0) -> void:
 		cam_yaw = paca_car.h
 	begin_step(from_step)
 
-## The yellow light is for where you have to get to with the car: something or somebody to drop, a run against the
+## The column of light is for where you have to get to with the car: something or somebody to drop, a run against the
 ## clock, a load to pick up. Going to see somebody, to be given something or hand it over is the green arrow over
-## their head (marcas.gd), and no light (the user, 15 November 2026).
+## their head (marcas.gd), and no light (the user, 15 November 2026). Both green, as the guide arrow and the target on
+## the map: green is what you are after (the user, 16 November 2026: "Así siempre el jugador sabrá que verde = objetivo").
 func _by_car(s: Dictionary) -> bool:
 	return s.get("type", "") == "deliver" or s.has("passenger") or s.get("by_car", false) or String(s.get("place", "")) == "coop_yard"
 
@@ -3705,6 +3712,8 @@ func interact() -> void:
 		recress.free_play(player.p)
 	elif gacha.near(player.p) != null:
 		gacha.play(gacha.near(player.p))
+	elif entradas.exit_here() != null:           # on the green arrow by a set's door, inside: out (entradas.gd)
+		entradas.leave()
 	elif ajedrez.on_board(player.p):             # (ajedrez) on one of the square's chessboards: a game
 		ajedrez.offer()
 	elif _can_unlock():
@@ -4164,21 +4173,11 @@ func _physics_process(delta: float) -> void:
 				_refresh_counts()
 				Sfx.jingle([880, 1175], 0.07)
 				hud.toast(Loc.t("t_saffron").pick_random(), 2.0)
-	# --- the shop door: it swings open as you walk up, and walking into it takes you in (or back out) ---
+	# --- the doors into a place with a set of its own (the V.I.P., the Recress, the Papelería Rocas): a green arrow
+	# before each, and stepping on it takes you in, or back out (entradas.gd). (The V.I.P.'s door still swings open.)
 	_door_cool -= dt
 	vip.tick(dt, in_car == null and not indoors and player.p.distance_to(vip.door_out) < 5.5)
-	if in_car == null and not frozen and _door_cool <= 0.0 and (phase == "play" or phase == "free"):
-		var places_in: Array = [vip]
-		if recress.sala.open:
-			places_in.append(recress.sala)
-		for place in places_in:
-			if indoors and place != (inside_of if inside_of != null else vip):
-				continue
-			var door: Vector2 = place.in_door if indoors else place.door_out
-			var to_door: Vector2 = door - player.p
-			if to_door.length() < (1.0 if indoors else 1.25) and Vector2(sin(player.h), cos(player.h)).dot(to_door.normalized()) > 0.35:
-				_use_door(not indoors, place)
-				break
+	entradas.tick(dt)
 	var pp: Vector2 = player.p
 	var map_p: Vector2 = ((inside_of if inside_of != null else vip).out_spawn) if indoors else pp      # where you are as far as the map is concerned
 	_mark("player and car")
@@ -4292,6 +4291,8 @@ func _physics_process(delta: float) -> void:
 			pr = Loc.t("p_rec_play")
 		elif gacha.near(pp) != null:
 			pr = gacha.prompt()
+		elif entradas.exit_here() != null:
+			pr = Loc.t("p_salir")
 		elif ajedrez.on_board(pp):               # (ajedrez) on the square's chessboard: a game
 			pr = Loc.t("p_aj_play")
 		elif near_npc != null:
@@ -4328,7 +4329,7 @@ func _physics_process(delta: float) -> void:
 		about = null
 	var hang = null
 	var under: bool = about == null
-	if pr != "" and not indoors:
+	if pr != "":                                 # (indoors too, now that you are seen in there: entradas.gd's camera)
 		var spot: Vector3
 		if about == null:
 			spot = in_car.global_position if in_car != null else player.global_position
@@ -4908,21 +4909,15 @@ func _update_camera(dt: float, pp: Vector2, speed: float, _cl: float) -> void:
 		cam.position = cam_pos + Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * shake
 		cam.look_at(cam_look)
 		return
-	# Indoors, on foot: through your own eyes (the user's idea, 13 November 2026). The mouse looks about as it always
-	# does, and you walk where you look.
-	var fp: bool = in_car == null and phase != "boxing" and (indoors or (kebab != null and kebab.inside(pp)))
-	if fp != first_person:
-		first_person = fp
-		player.vis.visible = not fp              # (nobody sees their own head from inside)
-	if fp:
-		var eye := Vector3(pp.x, player.global_position.y + 1.5 * player.size, pp.y)
-		var tip := clampf(cam_pitch - 0.45, -1.0, 1.1)       # (the same mouse: up to look up, down to look down)
-		var ahead := Vector3(sin(cam_yaw) * cos(tip), -sin(tip), cos(cam_yaw) * cos(tip))
-		cam_pos = cam_pos.lerp(eye, 1.0 - exp(-18.0 * dt)) if cam_pos.distance_to(eye) < 6.0 else eye
-		cam_look = cam_pos + ahead * 4.0
+	# Inside anywhere enclosed (a set of its own -- the V.I.P., the Recress, the Papelería Rocas -- or Kebab Luis's
+	# house): a fixed camera, high in a corner and at an angle, closer when you talk to somebody (entradas.gd; the user,
+	# 16 November 2026: better than seeing through your own eyes, which it was from 13 November: the whole place is in
+	# sight). `first_person` stays false.
+	if first_person:
+		first_person = false
+		player.vis.visible = true
+	if entradas.camera(dt, pp):
 		shake = maxf(0.0, shake - dt * 2.2)
-		cam.position = cam_pos + Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * shake
-		cam.look_at(cam_look)
 		comida.tilt(cam)
 		return
 	# The camera orbits the player at cam_yaw / cam_pitch (mouse) and cam_zoom (wheel).

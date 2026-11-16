@@ -161,6 +161,7 @@ func build(world) -> void:
 	_tower(TOWER_E, [0, 1])
 	_peso()
 	_santa_clara()
+	_tapia()
 	_back()
 	_roofs()
 	_court()
@@ -526,6 +527,83 @@ func _santa_clara() -> void:
 	home()
 	_plain(Vector2(X3, EAST_END), Vector2(X2, EAST_END), DOWN, HB + 0.3, "medianera")
 	_plain(Vector2(X2, EAST_END), Vector2(X2, BACK_END), DOWN, HB + 0.3, "medianera")
+
+## The stretch of the Calle de Santa Clara between the east wing and the house next to it (the user missed it, 16
+## November 2026, through Texturas; Catastro's photo of that house, tools/casas/3891714VJ5639S/fachada.jpg): a low
+## wall of brick under its coping, a railing of wrought iron on it -- bars, a row of scrolls, spear points --, a dark
+## door in the wall by the brick pier at the house's corner. Behind it, the school's back yard.
+func _tapia() -> void:
+	var p := Vector2(X3 - 0.12, EAST_END - 0.05)
+	var q := Vector2(40.05, -29.3)
+	var ln: float = p.distance_to(q)
+	var d: Vector2 = (q - p) / ln
+	var street := Vector2(d.y, -d.x)
+	if street.x < 0.0:
+		street = -street
+	var gate := Vector2(ln - 1.55, ln - 0.35)            # the door, by the pier
+	var gy := func(t: float) -> float:
+		var at: Vector2 = p + d * t + street * 0.5
+		return ground(at.x, at.y)
+	var n := int(ceil(ln / 0.6))
+	for i in range(n):
+		var t0: float = ln * i / n
+		var t1: float = ln * (i + 1) / n
+		var a: Vector2 = p + d * t0
+		var b: Vector2 = p + d * t1
+		var ya: float = gy.call(t0)
+		var yb: float = gy.call(t1)
+		var mid: float = (t0 + t1) / 2.0
+		if mid > gate.x and mid < gate.y:          # the door: dark iron sheet in its frame, up to the coping
+			_wall_piece(a, b, 0.08, ya - 0.6, ya + 1.58, yb + 1.58, 0x2a2624)
+		else:
+			_wall_piece(a, b, 0.3, ya - 0.6, ya + 1.5, yb + 1.5, "ladrillo")
+		_wall_piece(a, b, 0.36, ya + 1.5, ya + 1.58, yb + 1.58, 0xb98e68)
+	for t in [gate.x, gate.y]:                      # the door's frame
+		var g: Vector2 = p + d * t
+		cbox(Vector3(g.x, gy.call(t) + 0.79, g.y), Vector3(0.06, 1.58, 0.34), 0x1c1a18)
+	# the railing: two rails, bars every 12 cm with spear points, a row of scrolls between two bands
+	var y0 := 1.62
+	var y1 := 2.45
+	var a0: Vector2 = p
+	var b0: Vector2 = p + d * (ln - 0.3)
+	var ra: float = gy.call(0.0)
+	var rb: float = gy.call(ln - 0.3)
+	for y in [y0, 1.95, y1]:
+		bar(Vector3(a0.x, ra + y, a0.y), Vector3(b0.x, rb + y, b0.y), 0.035, 0.03, BARS)
+	var bars := int((ln - 0.3) / 0.12)
+	for j in range(bars + 1):
+		var t: float = (ln - 0.3) * j / bars
+		var g: Vector2 = p + d * t
+		var y: float = lerpf(ra, rb, t / (ln - 0.3))
+		cbox(Vector3(g.x, y + (1.95 + y1 + 0.06) / 2.0, g.y), Vector3(0.016, y1 - 1.95 + 0.06, 0.016), BARS)      # (below 1.95 the scrolls)
+		cbox(Vector3(g.x, y + y1 + 0.13, g.y), Vector3(0.012, 0.09, 0.05), BARS)
+	var k := 0
+	var t := 0.12
+	while t < ln - 0.5:                             # a pair of C-scrolls back to back in each bay, and a ring over them
+		var g: Vector2 = p + d * t
+		var y: float = lerpf(ra, rb, t / (ln - 0.3))
+		for side in [-1.0, 1.0]:
+			var c: Vector3 = Vector3(g.x, y + 1.785, g.y) + Vector3(d.x, 0, d.y) * side * 0.06
+			for m in range(7):
+				var u0: float = PI / 2.0 + side * (PI / 2.0) + (m - 3.5) * 0.42 * side
+				var u1: float = u0 + 0.42 * side
+				var e := Vector3(d.x, 0, d.y)
+				bar(c + e * cos(u0) * 0.06 + Vector3.UP * sin(u0) * 0.13, c + e * cos(u1) * 0.06 + Vector3.UP * sin(u1) * 0.13, 0.012, 0.012, BARS)
+		var r: Vector3 = Vector3(g.x, y + 2.2, g.y)
+		for m in range(8):
+			var u0: float = TAU * m / 8.0
+			var u1: float = TAU * (m + 1) / 8.0
+			bar(r + Vector3(d.x, 0, d.y) * cos(u0) * 0.06 + Vector3.UP * sin(u0) * 0.06, r + Vector3(d.x, 0, d.y) * cos(u1) * 0.06 + Vector3.UP * sin(u1) * 0.06, 0.012, 0.012, BARS)
+		t += 0.24
+		k += 1
+	# the pier of brick at the house's corner, its cap
+	var pq: Vector2 = q - d * 0.05
+	var py: float = gy.call(ln)
+	cbox(Vector3(pq.x, py + 1.1, pq.y), Vector3(0.5, 3.4, 0.5), "ladrillo")
+	cbox(Vector3(pq.x, py + 2.84, pq.y), Vector3(0.58, 0.08, 0.58), 0xb98e68)
+	var mid2: Vector2 = (p + q) / 2.0
+	solid(Vector3(mid2.x, gy.call(ln / 2.0) + 1.3, mid2.y), Vector3(ln, 2.6, 0.36), atan2(-d.y, d.x))
+	yard.append(spot(p.x, p.y))         # (its other end meets the house at the corner, which the game's asphalt reaches: not counted)
 
 # ---------------- what is behind ----------------
 ## What no street sees: the back of the body and what stands behind it, in plain render.

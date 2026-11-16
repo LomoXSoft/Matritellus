@@ -95,7 +95,7 @@ func _draw() -> void:
 		line.append((center - c) * k + half)
 		for q in pts:
 			line.append((q - c) * k + half)
-		draw_polyline(line, Color("f2a900"), 4.0)
+		draw_polyline(line, Color("2fb84a"), 4.0)          # (the way to what you are after: green, as everything that is: 16 Nov 2026)
 	for q in cars:
 		if not full and q.distance_squared_to(c) > reach:
 			continue
@@ -120,7 +120,7 @@ func _draw() -> void:
 		if not full and tp.length() > edge:
 			tp = tp.normalized() * edge
 		draw_circle(tp + half, 8.0, Color("4a3424"))
-		draw_circle(tp + half, 6.0, Color("f2a900"))
+		draw_circle(tp + half, 6.0, Color("38d64d"))
 	# who has a mission for you: their photo in a circle, kept upright however the map turns; at the edge if far off
 	if not givers.is_empty():
 		var turn := (spin - PI) if (round and not full) else 0.0

@@ -42,7 +42,7 @@ func givers() -> Array:
 		if G.sabotaje.stage in ["retry", "back"] or (G.sabotaje.stage == "" and free_hands):
 			out.append(G.named["luis"])
 	# whoever the errand under way has you go and see: to talk to, to be given something, to hand something over. The
-	# green arrow is for that, on foot; the yellow light is for what is done with the car (the user, 15 November 2026)
+	# green arrow is for that, on foot; the column of light (green too since 16 Nov 2026) for what is done with the car
 	if not s.is_empty() and s.get("type", "") == "talk" and G.named.has(s["npc"]) and not (G.named[s["npc"]] in out):
 		out.append(G.named[s["npc"]])
 	if G.side != null and G.side.get("id", "") in ["menu", "ham"]:
