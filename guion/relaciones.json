@@ -468,6 +468,18 @@
    "role": "Funcionario de Correa (nombre provisional). Mayor, curtido, malhablado, chulesco y vacilón: cuenta las mismas historias de la mili que el Diurno, pero como fueron de verdad, según él, y a base de tacos.",
    "where": "Detrás de la primera ventanilla de Correa, por dentro, de 14:00 a 20:00 entre semana.",
    "notes": "Se pidió el turno de tarde para no coincidir con el Diurno. Tampoco puede ver un melón."
+  },
+  {
+   "id": "feliciano",
+   "name": "Feliciano",
+   "foto": true,
+   "pos": [
+    2,
+    5
+   ],
+   "role": "Vecino obsesionado con el jamón asao de los jueves del Henry: se pasa la semana esperando a que llegue el jueves. Piel algo morena, cejas gruesas, pelo negro, ojos marrones, sin barba.",
+   "where": "Da vueltas por las calles del convento de las clarisas (Santa Ana). Los jueves de 8:00 a 21:00, a la puerta de la Cocina de Henry. Está siempre en la riña del jamón: es el primero que saca el arma (el cuchillo de carnicero).",
+   "notes": "Los jueves está eufórico; los demás días, triste, cuenta los días que faltan. Se queja de la campana del convento, que toca cada hora todos los días. Pedido por el usuario el 17/11/2026."
   }
  ],
  "links": [
@@ -726,6 +738,14 @@
    "label": "la mili y Correa",
    "detail": "Hicieron la mili juntos y llevan cuarenta y tres años en Correa, uno de mañana y otro de tarde. Cuentan las mismas historias, cada uno a su manera.",
    "source": "mili_0_diurno"
+  },
+  {
+   "a": "feliciano",
+   "b": "henry",
+   "kind": "trato",
+   "label": "cliente de los jueves",
+   "detail": "Todos los jueves a su puerta, por el jamón asao.",
+   "source": "feliciano_jueves"
   }
  ],
  "cabos": [

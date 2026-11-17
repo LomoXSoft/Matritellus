@@ -19,8 +19,10 @@ const TILE_BLUE := Color(0.12, 0.25, 0.58)
 ## the words people use to call you while they do not know your name (resolved for you already: "hija", not "{hijo|hija}")
 const CALLS := ["hijo", "hija", "hermoso", "hermosa", "majo", "maja", "galán", "reina", "bonico", "bonica", "guapo", "guapa",
 	"niño", "niña", "chiquillo", "chiquilla", "socio", "socia", "amigo", "amiga", "vecino", "vecina", "forastero", "forastera"]
-const LETTERS := ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "Ñ", "O", "P", "Q", "R", "S",
-	"T", "U", "V", "W", "X", "Y", "Z", "Á", "É", "Í", "Ó", "Ú", "Ü", "-", "'"]
+## the sheet's keys for a pad, laid out as a QWERTY keyboard (the user, 17 Nov 2026: "Cambiaría el teclado del juego por
+## distribución Qwerty"), the Ñ after the L as on a Spanish one; "<" is rub out
+const ROWS := [["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"], ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Ñ"],
+	["Z", "X", "C", "V", "B", "N", "M", "<"], ["Á", "É", "Í", "Ó", "Ú", "Ü", "-", "'"]]
 
 var G
 var active := false
@@ -29,6 +31,7 @@ var _then: Callable
 var _name: LineEdit
 var _warn: Label
 var _keys: Control
+var _first_key: Button        # Q: where a pad starts on the keys
 var _col: Control             # the sheet with its keys and Firmar under it (_fit)
 var _center: Control          # what holds it in the middle of the screen: made smaller as a whole by _fit
 var _lift := 0.0              # on a phone, how far the sheet goes up so its own keyboard does not cover the name
@@ -258,13 +261,16 @@ func _build() -> void:
 	under.add_theme_constant_override("separation", 8)
 	under.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_child(under)
-	_keys = GridContainer.new()
-	(_keys as GridContainer).columns = 12
-	_keys.add_theme_constant_override("h_separation", 6)
-	_keys.add_theme_constant_override("v_separation", 6)
-	for ch in LETTERS:                              # (35 letters and rub out: three rows of twelve, even)
-		_keys.add_child(_key(ch, _type.bind(ch)))
-	_keys.add_child(_key("⌫", rub_out))
+	_keys = VBoxContainer.new()                     # (a row under another, each in the middle: a keyboard's)
+	_keys.add_theme_constant_override("separation", 6)
+	for r in ROWS:
+		var row_k := HBoxContainer.new()
+		row_k.alignment = BoxContainer.ALIGNMENT_CENTER
+		row_k.add_theme_constant_override("separation", 6)
+		for ch in r:
+			row_k.add_child(_key("⌫", rub_out, 2) if ch == "<" else _key(ch, _type.bind(ch)))
+		_keys.add_child(row_k)
+	_first_key = (_keys.get_child(0) as Control).get_child(0)
 	var gh := CenterContainer.new()
 	gh.add_child(_keys)
 	under.add_child(gh)
@@ -422,7 +428,7 @@ func refresh() -> void:
 		_hint.text = Loc.t("pad_keys_hint") + (Loc.t("pad_keys_steam") if under_steam() else "")
 	_sign_btn.visible = not signed
 	if keys and not under_steam() and not (get_viewport().gui_get_focus_owner() is Button):
-		(_keys.get_child(0) as Button).grab_focus.call_deferred()
+		_first_key.grab_focus.call_deferred()
 	if not signed:                                     # (once signed it keeps its size while the stamp comes down)
 		_fit.call_deferred()
 
@@ -471,7 +477,7 @@ func input(e: InputEvent) -> void:
 		if under_steam():                              # (nothing chosen on the sheet yet: a pad's first touch picks something)
 			_name.grab_focus()
 		else:
-			(_keys.get_child(0) as Button).grab_focus()
+			_first_key.grab_focus()
 	if e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_A:
 		press_focused(self)                            # (Godot's own "accept" has no pad button: A would do nothing)
 	elif e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_START:

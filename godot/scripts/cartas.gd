@@ -39,8 +39,9 @@ const LOOKS := {
 	"nocturno": {"top": 6, "shirt": 0x5d6f8a, "hair": 0xa8a8ad, "hair_style": 3, "face": 4, "brows": 2, "eyes": 2, "glasses": 2,
 		"build": 0.92, "scale": 1.0, "skin": 0xe2b590},
 }
-const LETTERS := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "ñ", "o", "p", "q", "r", "s",
-	"t", "u", "v", "w", "x", "y", "z", "á", "é", "í", "ó", "ú", ",", ".", "¡", "!", "¿", "?"]
+## the keys for a pad, as a QWERTY keyboard like the Padrón's (padron.gd ROWS); "<" is rub out
+const ROWS := [["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"], ["a", "s", "d", "f", "g", "h", "j", "k", "l", "ñ"],
+	["z", "x", "c", "v", "b", "n", "m", ",", ".", "<"], ["á", "é", "í", "ó", "ú", "¡", "!", "¿", "?"]]
 
 # ---------------- kind words and nasty words ----------------
 # Matched on the letter with no accents, in small letters, "ñ" as "n" and any letter said three times or more said
@@ -99,7 +100,8 @@ var _to: Label
 var _text: TextEdit
 var _count: Label
 var _warn: Label
-var _keys: GridContainer
+var _keys: VBoxContainer
+var _first_key: Button             # q: where a pad starts on the keys
 var _space_btn: Button
 var _hint: Label                   # under the keys, for a pad: what each button does
 var _center: Control               # what holds the sheet in the middle of the screen, made smaller if need be (_fit)
@@ -419,13 +421,19 @@ func _build() -> void:
 	var under := VBoxContainer.new()
 	under.add_theme_constant_override("separation", 8)
 	col.add_child(under)
-	_keys = GridContainer.new()
-	_keys.columns = 13                              # (38 letters and signs and rub out: three rows of thirteen, even)
-	_keys.add_theme_constant_override("h_separation", 5)
-	_keys.add_theme_constant_override("v_separation", 5)
-	for ch in LETTERS:
-		_keys.add_child(_button(ch, _type.bind(ch)))
-	_keys.add_child(_button("⌫", rub_out))
+	_keys = VBoxContainer.new()                     # (a row under another, each in the middle: a keyboard's)
+	_keys.add_theme_constant_override("separation", 5)
+	for r in ROWS:
+		var row_k := HBoxContainer.new()
+		row_k.alignment = BoxContainer.ALIGNMENT_CENTER
+		row_k.add_theme_constant_override("separation", 5)
+		for ch in r:
+			var kb := _button("⌫", rub_out) if ch == "<" else _button(ch, _type.bind(ch))
+			if ch == "<":
+				kb.custom_minimum_size.x = 97
+			row_k.add_child(kb)
+		_keys.add_child(row_k)
+	_first_key = (_keys.get_child(0) as Control).get_child(0)
 	var gh := CenterContainer.new()
 	gh.add_child(_keys)
 	under.add_child(gh)
@@ -500,7 +508,7 @@ func refresh() -> void:
 	_hint.text = Loc.t("carta_keys_hint") + (Loc.t("pad_keys_steam") if Padron.under_steam() else "")
 	_text.focus_mode = _text_focus()
 	if keys and not Padron.under_steam() and not (get_viewport().gui_get_focus_owner() is Button):
-		(_keys.get_child(0) as Button).grab_focus.call_deferred()
+		_first_key.grab_focus.call_deferred()
 	if not _stamp.visible:
 		_fit.call_deferred()
 
@@ -545,7 +553,7 @@ func input(e: InputEvent) -> void:
 		if Padron.under_steam():                       # (nothing chosen on the sheet yet: a pad's first touch picks something)
 			_text.grab_focus()
 		else:
-			(_keys.get_child(0) as Button).grab_focus()
+			_first_key.grab_focus()
 	if e is InputEventJoypadButton and e.pressed:
 		match e.button_index:
 			JOY_BUTTON_A: Padron.press_focused(self)   # (Godot's own "accept" has no pad button)

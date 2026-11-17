@@ -501,6 +501,19 @@ cultura = {'o': [118.40, 109.21]}
 _cultura_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'cultura.gd')
 if not (os.path.exists(_cultura_gd) and 'const READY := true' in open(_cultura_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
     CULTURA_RC, cultura = None, {}
+# The hermitage of San Sebastián and the park round it, between the Calle del Santo, its loop and the Calle del
+# Descanso (godot/scripts/sebastian.gd; the user, 18 November 2026; referencias/sebastian/): Catastro's parcel of the
+# hermitage (three parts) is not raised -- sebastian.gd builds it, its porch, its little chapel and its terrace by the
+# street -- and the map plants no trees in the park or round the hermitage (sebastian.gd plants its own). The ground
+# is NOT levelled: the front is laid over it, the porch and the round square are level, with steps.
+SEBASTIAN_RC = '4297712VJ5649N'
+sebastian_built = Polygon([(-91.96, -460.6), (-95.63, -462.01), (-86.07, -486.7), (-66.51, -479.88), (-68.25, -477.37), (-69.93, -474.95), (-75.98, -477.64), (-84.8, -457.95)]).union(Polygon([(-91.96, -460.6), (-94.23, -454.75), (-89.95, -453.1), (-88.34, -457.24), (-87.69, -459.02)]))
+sebastian_chapel = Polygon([(-75.96, -464.82), (-79.61, -466.68), (-76.85, -472.09), (-76.13, -471.72), (-75.47, -472.98), (-73.26, -471.85), (-73.91, -470.59), (-73.2, -470.22)])
+sebastian_zone = Polygon([(-124.3, -475.3), (-126.7, -470.7), (-132.8, -459.3), (-138.2, -449.2), (-137.9, -447.2), (-137.0, -444.6), (-135.9, -443.1), (-124.9, -435.4), (-108.2, -423.9), (-106.3, -424.2), (-103.1, -424.4), (-101.4, -424.6), (-91.9, -439.0), (-90.0, -442.0), (-81.3, -456.7), (-87.7, -459.0), (-90.0, -453.1), (-94.2, -454.7), (-92.0, -460.6), (-95.7, -462.0), (-94.1, -465.9), (-122.8, -475.8)]).buffer(1.0).union(sebastian_built.buffer(7.0))
+sebastian = {'o': [-95.63, -462.01], 'u': [0.93637, 0.35102]}
+_sebastian_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'sebastian.gd')
+if not (os.path.exists(_sebastian_gd) and 'const READY := true' in open(_sebastian_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    SEBASTIAN_RC, sebastian, sebastian_zone = None, {}, Polygon()
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
 # the avenue and the compound lies to the east of it. Catastro parts and generic trees are kept out of that rectangle.
@@ -674,6 +687,7 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid in MERKOCARRY_RCS: return                             # ...and the supermarket of the Calle de Santa Ana, and the Mayordomía's nave
     if bid == CORREOS_RC: return                                 # ...and the post office of the Calle de Zaragoza
     if bid == CULTURA_RC: return                                 # ...and the block of the Casa Grande, the library and the music school
+    if bid == SEBASTIAN_RC: return                               # ...and the hermitage of San Sebastián
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
     elif church_u.contains(c): style, h = 5, max(12.0, floors_c * 4.0)
@@ -1118,6 +1132,7 @@ if noche: block_list.append(noche_built)            # (the Noche, likewise)
 if merkocarry: block_list.extend([merkocarry_built, merkocarry_park, merkocarry_nave])      # (the Merkocarry and its car park's walls, likewise)
 if correos: block_list.append(correos_built)        # (the post office, likewise)
 if cultura: block_list.append(cultura_built)        # (the block of the Casa Grande, likewise)
+if sebastian: block_list.extend([sebastian_built, sebastian_chapel])      # (the hermitage of San Sebastián and its little chapel, likewise)
 block_tree = STRtree(block_list)
 def building_dist(x, z):
     i = block_tree.nearest(Point(x, z)); return block_list[i].distance(Point(x, z))
@@ -1184,6 +1199,7 @@ trees = [t for t in trees if not mercamona_zone.contains(Point(t[0], t[1]))]    
 trees = [t for t in trees if not masahorro_zone.contains(Point(t[0], t[1]))]    # ...and the supermarket of the Calle de las Viñas and its car park
 trees = [t for t in trees if not merkocarry_zone.contains(Point(t[0], t[1]))]   # ...and the Merkocarry, its lane and its car park
 trees = [t for t in trees if not ferial_park.contains(Point(t[0], t[1]))]      # ...and the park of the fairground by the Paseo del Cristo (ferial.gd plants its own)
+trees = [t for t in trees if not sebastian_zone.contains(Point(t[0], t[1]))]   # ...and the park of San Sebastián and round its hermitage (sebastian.gd plants its own)
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
@@ -1196,7 +1212,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

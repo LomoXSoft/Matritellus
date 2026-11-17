@@ -36,11 +36,13 @@ const ChinosS = preload("res://scripts/chinos.gd")
 const TotiS = preload("res://scripts/toti.gd")
 const Salvador2S = preload("res://scripts/salvador2.gd")
 const CulturaS = preload("res://scripts/cultura.gd")
+const SebastianS = preload("res://scripts/sebastian.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
 const Fachadas = preload("res://scripts/fachadas.gd")
 const CasasS = preload("res://scripts/casas.gd")
+const LotesS = preload("res://scripts/lotes.gd")
 
 const L_WORLD := 1      # physics layers: 1 world, 2 cars, 4 characters
 const ROAD_Y := -0.18   # flat layers are stacked just below the ground you drive on, so the top of the asphalt is the physics ground
@@ -123,6 +125,7 @@ var chinos                      # the grocer's at the point between San José an
 var toti                        # the pizzeria of the Calle de Ramón y Cajal, "Pizzería Toti", with its terrace, built by hand (toti.gd)
 var salvador2                   # the house on the corner of the Salvador and Ramón y Cajal, beside the Toti, built by hand (salvador2.gd)
 var cultura                     # the block of the Casa Grande, the library and the music school, built by hand (cultura.gd)
+var sebastian                   # the hermitage of San Sebastián and its park, built by hand (sebastian.gd)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
@@ -136,7 +139,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["details", _build_details], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["details", _build_details], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -218,6 +221,12 @@ func _build_cultura() -> void:
 		return
 	cultura = CulturaS.new()         # (the Casa Grande, the library and the music school: cultura.gd)
 	cultura.build(self)
+
+func _build_sebastian() -> void:
+	if MapData.sebastian.is_empty(): # (a map baked before it: Catastro's parcel still stands there)
+		return
+	sebastian = SebastianS.new()     # (the hermitage of San Sebastián and its park: sebastian.gd)
+	sebastian.build(self)
 
 func _build_salvador2() -> void:
 	for hd in MapData.houses:        # (the house on the corner of the Salvador and Ramón y Cajal: salvador2.gd, on its house of the map)
@@ -1185,12 +1194,17 @@ func _buildings() -> void:
 	_t_built = Time.get_ticks_msec()
 	_house_i = 0
 	CasasS.slow = OS.get_cmdline_user_args().has("--casas-lento")
+	var args := OS.get_cmdline_user_args()
+	lotes = null if args.has("--casas-sueltas") or args.has("--casas-suma") or CasasS.slow else LotesS.new(self)
+	if lotes != null:                               # (the last house of each square: when it is built, its square is made)
+		lotes.plan(MapData.houses)
 
 ## The houses built by hand, one by one (casas.gd), a slice of about 30 ms at a time: true while there are more to
 ## come. Between one slice and the next the loading screen draws a frame and answers the keys (the user, 17 Nov 2026:
 ## a minigame while it loads; the houses had been 26 s in one go, the window frozen all that time).
 const HOUSES_SLICE_MS := 30
 var _house_i := 0
+var lotes                         # the houses' meshes, merged square by square (lotes.gd; null: each house its own)
 var _t_casas := 0
 var _t_built := 0
 func _houses() -> bool:
@@ -1199,9 +1213,18 @@ func _houses() -> bool:
 		var casa = CasasS.new()
 		casas.append(casa.build(self, MapData.houses[_house_i]))
 		add_child(casa)
+		if lotes != null:
+			lotes.built(_house_i, casa)
 		_house_i += 1
 		if Time.get_ticks_msec() - t0 >= HOUSES_SLICE_MS and _house_i < MapData.houses.size():
 			return true
+	if lotes != null:
+		lotes.flush_all()
+		if OS.get_cmdline_user_args().has("--timing"):
+			print("buildings: the houses' meshes merged square by square: %d meshes" % lotes.made)
+			var ks: Array = lotes.stats.keys()
+			ks.sort_custom(func(a2, b2): return lotes.stats[a2][1] > lotes.stats[b2][1])
+			print("buildings: by material: " + ", ".join(ks.map(func(k): return "%s %d meshes %dk tris" % [k, lotes.stats[k][0], lotes.stats[k][1] / 1000])))
 	var t_casas := _t_casas
 	var t_built := _t_built
 	if OS.get_cmdline_user_args().has("--timing"):      # (where the loading's longest step goes: the user, 17 Nov 2026)

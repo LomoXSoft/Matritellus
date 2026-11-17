@@ -283,6 +283,29 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
 - **`cig_b242`:** las piezas de piedra clara entre el ladrillo salen como un marco claro en cada ventana y una franja.
 - **`cig_b236`:** el ladrillo claro y rosado sale más anaranjado; el vuelo de los pisos sobre la planta baja sale como una franja.
 
+## Calle del Buen Suceso (tramo este)
+
+- **`bs_22`:** el cuerpo redondeado de arriba, con sus ventanas corridas de cristal oscuro, sale casi plano y con ventanas normales.
+- **`bs_26`:** falta la pérgola de la azotea.
+- **`bs_j61p`:** falta el farol de la pared.
+- **`bs_33`:** el arco de herradura de la puerta sale como un arco de medio punto.
+- **`bs_e85`:** en Street View una parte de arriba lleva aplacado de piedra clara; sale toda de ladrillo.
+- **Sin hacer:** Concordia 9 y la tapia de la esquina del 37.
+
+## Calle del Buen Suceso (tramo oeste)
+
+- **`bs_17`:** el zócalo de azulejos con círculos sale liso.
+- **`bs_b316`:** los pilares claros entre las terrazas salen poco; el rótulo de la tienda sale estrecho.
+- **`bs_8`:** la persiana de madera sale más anaranjada.
+- **Sin hacer:** Delicias 36 y 36 D.
+
+## Travesía de las Cruces
+
+- **`trc_3`:** la ventana tapiada con celosía de ladrillo casi no se distingue del resto del ladrillo.
+- **`trc_11`:** el ladrillo claro y rosado sale más pardo.
+- **`trc_b015`:** el cartel de venta con su teléfono no se pone.
+- **Sin hacer:** el costado del 14 de las Cruces.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

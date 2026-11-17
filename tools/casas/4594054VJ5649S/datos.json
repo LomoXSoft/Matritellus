@@ -1,0 +1,130 @@
+{
+ "rc": "4594054VJ5649S",
+ "record": {
+  "address": "CL BUEN SUCESO 14 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "174",
+  "year": "1991",
+  "units": [
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "01",
+    "m2": "13"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "00",
+    "door": "02",
+    "m2": "74"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "87"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4594054VJ5649S_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 91.6,
+   "ring": [
+    [
+     300.78,
+     -250.43
+    ],
+    [
+     299.37,
+     -243.97
+    ],
+    [
+     286.18,
+     -237.73
+    ],
+    [
+     283.48,
+     -242.7
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      300.78,
+      -250.43
+     ],
+     "b": [
+      299.37,
+      -243.97
+     ],
+     "len": 6.61,
+     "out": [
+      0.977,
+      0.213
+     ],
+     "street": "Calle del Buen Suceso",
+     "to_centre": 3.86
+    },
+    {
+     "a": [
+      299.37,
+      -243.97
+     ],
+     "b": [
+      286.18,
+      -237.73
+     ],
+     "len": 14.59,
+     "out": [
+      0.428,
+      0.904
+     ],
+     "street": "",
+     "to_centre": 6.72
+    },
+    {
+     "a": [
+      286.18,
+      -237.73
+     ],
+     "b": [
+      283.48,
+      -242.7
+     ],
+     "len": 5.66,
+     "out": [
+      -0.879,
+      0.477
+     ],
+     "street": "Calle del Buen Suceso",
+     "to_centre": 4.13
+    },
+    {
+     "a": [
+      283.48,
+      -242.7
+     ],
+     "b": [
+      300.78,
+      -250.43
+     ],
+     "len": 18.95,
+     "out": [
+      -0.408,
+      -0.913
+     ],
+     "street": "Calle del Buen Suceso",
+     "to_centre": 1.23
+    }
+   ],
+   "ground": [
+    10.77,
+    11.01
+   ]
+  }
+ ]
+}

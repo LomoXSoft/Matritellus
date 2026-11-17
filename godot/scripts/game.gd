@@ -29,6 +29,7 @@ const PadronS = preload("res://scripts/padron.gd")
 const CartasS = preload("res://scripts/cartas.gd")
 const RayaS = preload("res://scripts/raya.gd")
 const MotinS = preload("res://scripts/motin.gd")
+const FelicianoS = preload("res://scripts/feliciano.gd")
 const DerrapeS = preload("res://scripts/derrape.gd")
 const TironesS = preload("res://scripts/tirones.gd")
 const LimiteS = preload("res://scripts/limite.gd")
@@ -179,6 +180,7 @@ var clientes                    # whoever comes in off the street to eat there (
 var derrape                     # tyres squealing and the marks they leave (derrape.gd)
 var _arrow_beat := 0.0          # the phase of the guide arrow's bob, run on its own (see _physics_process)
 var motin                       # the roast ham riot outside La Cocina de Henry, and the minigame it is (motin.gd)
+var feliciano                   # Feliciano, at every roast ham riot, by the Poor Clares' convent the rest of the week (feliciano.gd)
 var sabotaje                    # Don Luis's side mission: the delivery lorry and the other three kebabs (sabotaje.gd)
 var pintadas                    # La Chiki's: the walls of the peñas (pintadas.gd)
 var gacha                       # the gumball machines and the figures that come out of them (gacha.gd)
@@ -428,11 +430,46 @@ func _ready() -> void:
 		bar.value = 100.0
 		if timing:
 			print("boot: shaders made  %5d ms" % (Time.get_ticks_msec() - t_warm))
+	if not Settings.testing and DisplayServer.get_name() != "headless":
+		await _settle_pipelines(func(line: String): doing.text = line)
 	_booted = true
 	_boot.queue_free()
 	_boot = null
 	raya = null
 	_boot_done()
+
+## Since Godot 4.4 the graphics card's pipelines for what is in the scene are made in the background as it comes in, and
+## the town comes in all at once at the end of the loading. Waited for here, behind the loading screen, until no more
+## are being made (a second without one, half a minute at most): the user, 17 Nov 2026, "la primera vez después de una
+## instalación va a tirones, las siguientes veces va algo mejor" -- they were being made in the first minutes of play.
+## The next times they come out of the disk cache, and this is over in a second or two.
+const PIPELINES := [RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_CANVAS, RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_MESH,
+	RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_SURFACE, RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_DRAW,
+	RenderingServer.RENDERING_INFO_PIPELINE_COMPILATIONS_SPECIALIZATION]
+static func pipelines_made() -> int:
+	var n := 0
+	for k in PIPELINES:
+		n += RenderingServer.get_rendering_info(k)
+	return n
+
+func _settle_pipelines(say: Callable) -> void:
+	var t0 := Time.get_ticks_msec()
+	var last := -1
+	var since := Time.get_ticks_msec()
+	var shown := false
+	while Time.get_ticks_msec() - t0 < 30000:
+		await get_tree().process_frame
+		var n := pipelines_made()
+		if n != last:
+			last = n
+			since = Time.get_ticks_msec()
+		elif Time.get_ticks_msec() - since > 1000:
+			break
+		if not shown and Time.get_ticks_msec() - t0 > 1500:     # (only if it is taking a while: the first time)
+			say.call(Loc.t("loading_warm"))
+			shown = true
+	if OS.get_cmdline_user_args().has("--timing"):
+		print("boot: pipelines     %5d ms (%d made by then)" % [Time.get_ticks_msec() - t0, last])
 
 ## The graphics options (settings.gd), put into effect: called when the game is up and each time one of them changes.
 func apply_graphics() -> void:
@@ -1383,6 +1420,8 @@ func _setup_places_and_actors() -> void:
 	ven.still = true
 	_add_dolores()
 	_add_nino_negro()
+	feliciano = FelicianoS.new()
+	feliciano.setup(self)
 	var genaro_look :={"face": 6, "top": 6, "brows": 1, "shirt": 0x8a6a48, "hair": 0xe0e0e0, "hat": "beret", "skin": 0xe2ab80}
 	if world != null and world.molino != null:      # (the mill built by hand: in its yard, where the curved path ends, facing the red door; Pretil)
 		var miller = _make_npc("genaro", genaro_look, "old_m", MILLER_AT)
@@ -3292,6 +3331,9 @@ func talk_to(n, chat_only := false) -> void:
 	if n.id in FOOD_SELLERS and eats and not chat_only and (phase == "play" or phase == "free"):
 		_food_offer(n)
 		return
+	if n.id == "feliciano" and feliciano != null:   # (his Thursday, how far off it is, or the convent's bell: feliciano.gd)
+		feliciano.talk(n)
+		return
 	var who: String = n.shown_name() if n.id != "" else Loc.t("generic_names")[int(n.display_name)]
 	var key: String = n.lines_key
 	match n.id:
@@ -4538,6 +4580,8 @@ func _physics_process(delta: float) -> void:
 	recress.tick(dt, pp)
 	sabotaje.tick(dt, pp)
 	motin.tick(dt, pp)
+	if feliciano != null:
+		feliciano.tick(dt)
 	derrape.tick(dt, pp)
 	limite.tick(dt, pp, frozen or indoors or not (phase == "play" or phase == "free"))
 	_mark("garages, missions")

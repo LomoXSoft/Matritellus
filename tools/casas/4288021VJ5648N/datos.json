@@ -1,0 +1,492 @@
+{
+ "rc": "4288021VJ5648N",
+ "record": {
+  "address": "TR CRUCES 9 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "1147",
+  "year": "2007",
+  "units": [
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "01",
+    "m2": "10"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "02",
+    "m2": "10"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "03",
+    "m2": "10"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "04",
+    "m2": "10"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "05",
+    "m2": "10"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "06",
+    "m2": "10"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "07",
+    "m2": "10"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "08",
+    "m2": "10"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "09",
+    "m2": "12"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "10",
+    "m2": "16"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "11",
+    "m2": "16"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "12",
+    "m2": "16"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "13",
+    "m2": "11"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "SM",
+    "door": "11",
+    "m2": "45"
+   },
+   {
+    "use": "ALMACEN",
+    "floor": "SM",
+    "door": "12",
+    "m2": "19"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "SM",
+    "door": "23",
+    "m2": "137"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "01",
+    "m2": "79"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "02",
+    "m2": "61"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "03",
+    "m2": "37"
+   },
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "04",
+    "m2": "5"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "11",
+    "m2": "55"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "50"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "02",
+    "m2": "49"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "03",
+    "m2": "42"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "04",
+    "m2": "37"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "05",
+    "m2": "57"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "1",
+    "m2": "44"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "02",
+    "door": "01",
+    "m2": "50"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "02",
+    "door": "02",
+    "m2": "49"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "02",
+    "door": "03",
+    "m2": "42"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "02",
+    "door": "04",
+    "m2": "37"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "02",
+    "door": "05",
+    "m2": "57"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "02",
+    "door": "11",
+    "m2": "44"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4288021VJ5648N_part1",
+   "floors": 4,
+   "below": 0,
+   "area": 234.6,
+   "ring": [
+    [
+     -90.99,
+     352.16
+    ],
+    [
+     -90.17,
+     348.53
+    ],
+    [
+     -98.1,
+     346.72
+    ],
+    [
+     -94.42,
+     330.61
+    ],
+    [
+     -94.27,
+     329.94
+    ],
+    [
+     -81.93,
+     332.92
+    ],
+    [
+     -86.56,
+     353.23
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      -90.99,
+      352.16
+     ],
+     "b": [
+      -90.17,
+      348.53
+     ],
+     "len": 3.72,
+     "out": [
+      -0.975,
+      -0.22
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 11.16
+    },
+    {
+     "a": [
+      -90.17,
+      348.53
+     ],
+     "b": [
+      -98.1,
+      346.72
+     ],
+     "len": 8.13,
+     "out": [
+      -0.223,
+      0.975
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 7.05
+    },
+    {
+     "a": [
+      -98.1,
+      346.72
+     ],
+     "b": [
+      -94.42,
+      330.61
+     ],
+     "len": 16.52,
+     "out": [
+      -0.975,
+      -0.223
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 2.79
+    },
+    {
+     "a": [
+      -94.42,
+      330.61
+     ],
+     "b": [
+      -94.27,
+      329.94
+     ],
+     "len": 0.69,
+     "out": [
+      -0.976,
+      -0.218
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 2.49
+    },
+    {
+     "a": [
+      -94.27,
+      329.94
+     ],
+     "b": [
+      -81.93,
+      332.92
+     ],
+     "len": 12.69,
+     "out": [
+      0.235,
+      -0.972
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 8.8
+    },
+    {
+     "a": [
+      -81.93,
+      332.92
+     ],
+     "b": [
+      -86.56,
+      353.23
+     ],
+     "len": 20.83,
+     "out": [
+      0.975,
+      0.222
+     ],
+     "street": "",
+     "to_centre": 15.52
+    },
+    {
+     "a": [
+      -86.56,
+      353.23
+     ],
+     "b": [
+      -90.99,
+      352.16
+     ],
+     "len": 4.56,
+     "out": [
+      -0.235,
+      0.972
+     ],
+     "street": "",
+     "to_centre": 13.5
+    }
+   ],
+   "ground": [
+    -9.23,
+    -8.87
+   ]
+  },
+  {
+   "id": "4288021VJ5648N_part2",
+   "floors": 2,
+   "below": 0,
+   "area": 13.6,
+   "ring": [
+    [
+     -98.75,
+     349.56
+    ],
+    [
+     -99.43,
+     349.4
+    ],
+    [
+     -95.11,
+     330.45
+    ],
+    [
+     -94.42,
+     330.61
+    ],
+    [
+     -98.1,
+     346.72
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      -98.75,
+      349.56
+     ],
+     "b": [
+      -99.43,
+      349.4
+     ],
+     "len": 0.7,
+     "out": [
+      -0.229,
+      0.973
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 2.7
+    },
+    {
+     "a": [
+      -99.43,
+      349.4
+     ],
+     "b": [
+      -95.11,
+      330.45
+     ],
+     "len": 19.44,
+     "out": [
+      -0.975,
+      -0.222
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 2.12
+    },
+    {
+     "a": [
+      -95.11,
+      330.45
+     ],
+     "b": [
+      -94.42,
+      330.61
+     ],
+     "len": 0.71,
+     "out": [
+      0.226,
+      -0.974
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 2.17
+    },
+    {
+     "a": [
+      -94.42,
+      330.61
+     ],
+     "b": [
+      -98.1,
+      346.72
+     ],
+     "len": 16.52,
+     "out": [
+      0.975,
+      0.223
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 2.79
+    },
+    {
+     "a": [
+      -98.1,
+      346.72
+     ],
+     "b": [
+      -98.75,
+      349.56
+     ],
+     "len": 2.91,
+     "out": [
+      0.975,
+      0.223
+     ],
+     "street": "Travesía de las Cruces",
+     "to_centre": 3.02
+    }
+   ],
+   "ground": [
+    -9.13,
+    -8.87
+   ]
+  }
+ ]
+}

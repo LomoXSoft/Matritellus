@@ -46,6 +46,7 @@ var _off := randf() * 6.0
 var size := 1.0
 var guard := false         # fists up in front of the face (boxing)
 var phone := false         # holding a phone to the ear
+var hand_at = null         # Vector3: where the right hand is held up, whatever else (motin.gd: a weapon shown off), null as usual
 var _phone: Node3D
 var punch := 0.0          # > 0 while throwing a punch (seconds left)
 var look: Dictionary = {}  # what they were last made to look like
@@ -1078,6 +1079,8 @@ func anim(moving: bool, dt: float, speed: float, bob := true) -> void:
 		hr = Vector3(0.2, 1.16, 0.44)
 	if phone:
 		hr = Vector3(0.5, 1.28, 0.12)
+	if hand_at != null:
+		hr = hand_at
 	if _phone.visible != phone:
 		_phone.visible = phone
 	if punch > 0.0:                    # right hand shoots forward and back

@@ -1,0 +1,8 @@
+Las armas de la riña del jamón asao (motin.gd), en armas.glb, hechas con tools/blender/armas.py
+desde tools/descargas/armas_motin/ (17/11/2026):
+
+- bate: "Baseball Bat" de CreativeTrio, CC0 1.0 (dominio público). https://poly.pizza/m/i2JCd3w8gh
+  Los clavos que lo atraviesan están hechos en el propio script.
+- cuchillo: "cooking-knife-chopping" (cuchillo de carnicero) del "Food Kit" de Kenney, CC0 1.0. https://kenney.nl
+- puno: "SCI-FI Brass-Knuckles" de Qubzy, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/).
+  https://poly.pizza/m/Ay1ru6N012 — cambiado: color de latón en lugar de azul, más grueso y a otra escala.

@@ -33,6 +33,10 @@ var base := 0.0
 var boxes := 0              # how many pieces it took (for the self-test)
 var pavement := 0           # how many lengths of pavement were laid in front of it
 var _tools := {}            # material key -> Acc (or a SurfaceTool, for the cloth: tela.gd)
+var _fine := {}             # plain colour -> Acc of its thin and small pieces (bars, rods, knobs), when merged (lotes.gd): drawn only near
+var _fine_on := false
+const FINE_THIN := 0.05     # a piece no thicker than this across both its narrow sides...
+const FINE_SMALL := 0.35    # ...or no bigger than this every way is "fine"
 ## What a house's pieces of one material are gathered in before they become a mesh: plain lists of corners, normals and
 ## texture places, the mesh made of them in one go. (The user, 17 Nov 2026: the loading took 45 s, 19 of them the
 ## houses drawing their pieces a corner at a time into a SurfaceTool. The same corners, in the same order: the same mesh.)
@@ -71,6 +75,7 @@ const MASONRY := {
 
 func build(world, d: Dictionary) -> Node3D:
 	W = world
+	_fine_on = W != null and W.get("lotes") != null
 	def = d
 	id = String(d["id"])
 	o = Vector2(d["o"][0], d["o"][1])
@@ -106,9 +111,16 @@ func build(world, d: Dictionary) -> Node3D:
 		_from_spec(_unpack(Short.HOUSES[id]))
 	var t1 := Time.get_ticks_usec()
 	t_geom += t1 - t0
+	var lotes = W.get("lotes") if W != null else null
+	for key in _fine:
+		lotes.add(self, key, _mats[key], _fine[key], true)
+	_fine.clear()
 	for key in _tools:
-		var mi := MeshInstance3D.new()
 		var tool = _tools[key]
+		if lotes != null and tool is Acc and lotes.takes(key):
+			lotes.add(self, key, _mats[key], tool)        # (into the meshes of its square of the town, with the houses round it: lotes.gd)
+			continue
+		var mi := MeshInstance3D.new()
 		if tool is Acc:
 			var arrays := []
 			arrays.resize(Mesh.ARRAY_MAX)
@@ -308,6 +320,12 @@ func box(x: float, y: float, z: float, w: float, h: float, d: float, key) -> voi
 	var a := Vector3(x, y, z)
 	var b := Vector3(x + w, y + h, z + d)
 	var st = _tool(key)
+	if _fine_on and key is int and st is Acc:    # (thin or small: into the pieces that are drawn only near. lotes.gd)
+		var big := maxf(w, maxf(h, d))
+		if big <= FINE_SMALL or w + h + d - big - minf(w, minf(h, d)) <= FINE_THIN:
+			if not _fine.has(key):
+				_fine[key] = Acc.new()
+			st = _fine[key]
 	if st is Acc:                                 # (its eight corners worked out once, not four times a face)
 		var p000 := _xf * Vector3(a.x, a.y, a.z); var p100 := _xf * Vector3(b.x, a.y, a.z)
 		var p010 := _xf * Vector3(a.x, b.y, a.z); var p110 := _xf * Vector3(b.x, b.y, a.z)

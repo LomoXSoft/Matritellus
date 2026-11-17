@@ -268,6 +268,175 @@ func _perfil(label: String) -> void:
 		", ".join(parts.slice(0, 6 if not label.begins_with("as the game is") else 30).map(func(k): return "%s %.2f" % [k, sums[k] / n]))])
 	g.prof = null
 
+## The user, 17 Nov 2026 (on a Steam Machine): "te pones en cualquier punto del pueblo y mueves las cámara 360°: habrá
+## zonas con muchos fps pero otras caerán a los 30 y pocos". At spots across the town, sixteen ways round, each
+## timed: frames a second, the GPU's and the render CPU's time, draw calls, triangles, objects. Then the worst way
+## round once more with one thing off at a time. Full screen at midday; the table goes to logs/giro.txt as well.
+const GIRO_DIRS := 16
+func _giro() -> void:
+	Engine.max_fps = 0
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	if not OS.get_cmdline_user_args().has("--window"):
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	var vp := get_viewport().get_viewport_rid()
+	RenderingServer.viewport_set_measure_render_time(vp, true)
+	g.menu.close()
+	g.phase = "free"
+	g.hud.play_ui.visible = true
+	g.set_time(13.0)
+	var th: Dictionary = MapData.townhall
+	var m := Vector2(th["m"][0], th["m"][1])
+	var nn := Vector2(-th["u"][1], th["u"][0])
+	var spots: Array = [["plaza", m + nn * 30.0]]
+	for k in ["home", "henry", "kiosk", "coop", "vip", "tanatorio", "kebab", "bridge"]:
+		if g.places.has(k):
+			spots.append([k, (g.places[k] as Dictionary)["p"]])
+	var out: Array = ["giro: %s · %s · %d x %d · scale %.2f · msaa %d" % [RenderingServer.get_video_adapter_name(), OS.get_processor_name(),
+		get_viewport().get_visible_rect().size.x, get_viewport().get_visible_rect().size.y, get_viewport().scaling_3d_scale, get_viewport().msaa_3d]]
+	var all: Array = []
+	for sp in spots:
+		g.player.p = sp[1]
+		g.player.global_position = MapData.at(sp[1], MapData.foot(sp[1]) - MapData.height(sp[1]))
+		g.player.sync()
+		g.cam_pitch = 0.25
+		g._keep_crowd_near(g.player.p, 200)
+		await _frames(120)
+		var row := "giro: %-10s" % sp[0]
+		for d in range(GIRO_DIRS):
+			g.cam_yaw = TAU * d / GIRO_DIRS
+			var r: Dictionary = await _giro_sample(vp)
+			r["spot"] = sp[0]
+			r["dir"] = d
+			all.append(r)
+			row += " %4.0f" % r["fps"]
+		out.append(row)
+		print(row)
+	all.sort_custom(func(a2, b2): return a2["fps"] < b2["fps"])
+	out.append("giro: the worst ways round (fps | gpu ms | render cpu ms | draw calls | triangles | objects):")
+	for r in all.slice(0, 10) + [all[all.size() / 2], all[all.size() - 1]]:
+		out.append("giro:   %-10s %2d  %5.0f fps | gpu %5.2f | cpu %5.2f | %5d calls | %7.0fk tris | %5d objects" % [r["spot"], r["dir"], r["fps"], r["gpu"], r["cpu"], r["calls"], r["tris"] / 1000.0, r["objs"]])
+	var mean := func(key: String) -> float:
+		var t := 0.0
+		for r in all:
+			t += float(r[key])
+		return t / all.size()
+	out.append("giro: on average %.0f fps, gpu %.2f ms, render cpu %.2f ms, %d calls, %.0fk tris" % [mean.call("fps"), mean.call("gpu"), mean.call("cpu"), int(mean.call("calls")), mean.call("tris") / 1000.0])
+	# the worst way round again, one thing off at a time
+	var w: Dictionary = all[0]
+	for sp in spots:
+		if sp[0] == w["spot"]:
+			g.player.p = sp[1]
+			g.player.sync()
+	g.cam_yaw = TAU * int(w["dir"]) / GIRO_DIRS
+	await _frames(60)
+	var base: Dictionary = await _giro_sample(vp)
+	out.append("giro: at the worst (%s %d) as it is: %.0f fps, gpu %.2f, cpu %.2f, %d calls" % [w["spot"], w["dir"], base["fps"], base["gpu"], base["cpu"], base["calls"]])
+	var view := get_viewport()
+	var env: Environment = g.env
+	var trials: Array = [
+		["no shadows", func(on): g.sun.shadow_enabled = on],
+		["no MSAA", func(on): view.msaa_3d = Viewport.MSAA_4X if on else Viewport.MSAA_DISABLED],
+		["3D at 75 %", func(on): view.scaling_3d_scale = 1.0 if on else 0.75],
+		["no SSAO", func(on): if env != null: env.ssao_enabled = on],
+		["no glow", func(on): if env != null: env.glow_enabled = on],
+		["no neighbours", func(on): for nb in g.npcs: nb.visible = on and not nb.away],
+		["no cars", func(on): for c in g.cars: c.visible = on],
+		["no MultiMesh", func(on): for mm in g.world.find_children("*", "MultiMeshInstance3D", true, false): mm.visible = on],
+	]
+	for tr in trials:
+		tr[1].call(false)
+		await _frames(20)
+		var r2: Dictionary = await _giro_sample(vp)
+		tr[1].call(true)
+		out.append("giro:   %-14s %5.0f fps (%+4.0f) | gpu %5.2f (%+5.2f) | cpu %5.2f | %5d calls" % [tr[0], r2["fps"], r2["fps"] - base["fps"], r2["gpu"], r2["gpu"] - base["gpu"], r2["cpu"], r2["calls"]])
+		await _frames(10)
+	for l in out.slice(spots.size() + 1):
+		print(l)
+	var f := FileAccess.open(ProjectSettings.globalize_path("res://../logs/giro.txt"), FileAccess.WRITE)
+	if f != null:
+		f.store_string("
+".join(out) + "
+")
+
+func _quien() -> void:
+	Engine.max_fps = 0
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	g.menu.close()
+	g.phase = "free"
+	g.set_time(13.0)
+	for sp in [["coop", 9], ["coop", 0], ["plaza", 3]]:
+		var th0: Dictionary = MapData.townhall
+		var at: Vector2 = (g.places[sp[0]] as Dictionary)["p"] if g.places.has(sp[0]) else Vector2(th0["m"][0], th0["m"][1]) + Vector2(-th0["u"][1], th0["u"][0]) * 30.0
+		g.player.p = at
+		g.player.sync()
+		g.cam_pitch = 0.25
+		g.cam_yaw = TAU * int(sp[1]) / GIRO_DIRS
+		await _frames(90)
+		var cam: Camera3D = get_viewport().get_camera_3d()
+		var groups := {}
+		var heavy: Array = []
+		var total := 0
+		var ranged := 0
+		for mi in g.find_children("*", "GeometryInstance3D", true, false):
+			var gi := mi as GeometryInstance3D
+			if not gi.is_visible_in_tree():
+				continue
+			var ab: AABB = gi.global_transform * gi.get_aabb()
+			var c: Vector3 = ab.get_center()
+			if not cam.is_position_in_frustum(c):
+				continue
+			var d: float = cam.global_position.distance_to(c)
+			if gi.visibility_range_end > 0.0 and d > gi.visibility_range_end:
+				continue
+			total += 1
+			if gi.visibility_range_end > 0.0:
+				ranged += 1
+			var path: String = str(g.get_path_to(gi))
+			var parts: PackedStringArray = path.split("/")
+			var key := "/".join(parts.slice(0, mini(2, parts.size() - 1)))
+			var scr = gi.get_parent().get_script() if gi.get_parent() != null else null
+			if not groups.has(key):
+				groups[key] = [0, 0.0, 0.0, ""]
+			groups[key][0] += 1
+			groups[key][1] += d
+			groups[key][2] += ab.size.length()
+			if gi is MeshInstance3D and (gi as MeshInstance3D).mesh is ArrayMesh:
+				var mesh: Mesh = (gi as MeshInstance3D).mesh
+				var nv := 0
+				for si in range(mesh.get_surface_count()):
+					var ni: int = mesh.surface_get_array_index_len(si)
+					nv += ni if ni > 0 else mesh.surface_get_array_len(si)
+				heavy.append([nv / 3, path, d])
+		var keys: Array = groups.keys()
+		keys.sort_custom(func(a2, b2): return groups[a2][0] > groups[b2][0])
+		print("quien: %s %d: %d meshes in the picture (%d with a visibility range)" % [sp[0], sp[1], total, ranged])
+		heavy.sort_custom(func(a3, b3): return a3[0] > b3[0])
+		var tsum := 0
+		for hv in heavy:
+			tsum += int(hv[0])
+		print("quien:   %dk triangles in meshes in the picture; the heaviest:" % (tsum / 1000))
+		for hv in heavy.slice(0, 12):
+			print("quien:     %6dk  %5.0f m  %s" % [int(hv[0]) / 1000, hv[2], hv[1]])
+
+func _giro_sample(vp: RID) -> Dictionary:
+	await _frames(12)
+	var t0 := Time.get_ticks_usec()
+	var gpu := 0.0
+	var cpu := 0.0
+	var calls := 0
+	var tris := 0
+	var objs := 0
+	var n := 24
+	for i in range(n):
+		await get_tree().process_frame
+		gpu += RenderingServer.viewport_get_measured_render_time_gpu(vp)
+		cpu += RenderingServer.viewport_get_measured_render_time_cpu(vp)
+		calls += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
+		tris += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
+		objs += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)
+	var secs := (Time.get_ticks_usec() - t0) / 1e6
+	return {"fps": n / secs, "gpu": gpu / n, "cpu": cpu / n, "calls": calls / n, "tris": float(tris) / n, "objs": objs / n}
+
 ## The decks people walk on, found through a grid (map_data.gd, foot): the same height as going through every one of
 ## them, in order, at spots on and round every deck and all over the town; and far quicker.
 func _suelos_checks() -> void:
@@ -1618,7 +1787,7 @@ func _cartas_checks(pictures := false) -> void:
 	await _frames(3)
 	var c_r: Rect2 = C._col.get_global_rect()
 	var c_fits: bool = C.get_global_rect().grow(1.0).encloses(c_r)
-	var c_on: bool = C.get_viewport().gui_get_focus_owner() == C._keys.get_child(0)
+	var c_on: bool = C.get_viewport().gui_get_focus_owner() == C._first_key
 	_check(C._keys.visible and c_fits and c_on and C._hint.visible, "with a pad the letter, its keys and Enviar/Volver fit on the screen (%s, x%.2f) and the key you are on is the yellow one" % [c_r, C._center.scale.x])
 	if pictures:
 		await _shot("cartas_teclas")
@@ -1875,12 +2044,12 @@ func _padron_checks(pictures := false) -> void:
 	var keys_shown: bool = P._keys.visible
 	var col_r: Rect2 = P._col.get_global_rect()
 	var fits: bool = P.get_global_rect().grow(1.0).encloses(col_r)
-	var on_key: bool = P.get_viewport().gui_get_focus_owner() == P._keys.get_child(0)
+	var on_key: bool = P.get_viewport().gui_get_focus_owner() == P._first_key
 	var a_ev := InputEventJoypadButton.new()          # (A presses the yellow key: Godot's own "accept" has no pad button)
 	a_ev.button_index = JOY_BUTTON_A
 	a_ev.pressed = true
 	P.input(a_ev)
-	on_key = on_key and P._name.text == "A"
+	on_key = on_key and P._name.text == "Q"            # (a QWERTY keyboard: Q first)
 	P.rub_out()
 	_check(fits and on_key and P._hint.visible, "with a pad the whole sheet, its keys and Firmar fit on the screen (%s in %s, x%.2f); the key you are on is the yellow one, and A types it" % [col_r, P.get_global_rect().size, P._center.scale.x])
 	if pictures:
@@ -2947,6 +3116,45 @@ func _kebabdeluxe_checks() -> void:
 	var rule: bool = not kd.open_at(0, 12.9) and kd.open_at(0, 13.0) and kd.open_at(0, 23.9) and kd.open_at(1, 1.4) and not kd.open_at(1, 1.5)
 	rule = rule and kd.open_at(5, 1.9) and not kd.open_at(5, 2.0) and kd.open_at(0, 1.9) and not kd.open_at(0, 2.0) and not kd.open_at(4, 1.6) and kd.open_at(6, 13.5)
 	_check(good and rule, "it opens from 13:00 every day until 1:30 in the night after Monday to Thursday and 2:00 after Friday to Sunday: open, its door ajar and its lights and boards on; shut, all of it dark")
+
+## The hermitage of San Sebastián and its park (sebastian.gd): built where Catastro's parcel was (no longer raised by
+## the bake); its walls stop you; the door is reachable from the front; the round square and the terrace carry whoever
+## walks on them; nothing of it on the asphalt.
+func _sebastian_checks() -> void:
+	if MapData.sebastian.is_empty():                # (a map baked before it: nothing to check yet)
+		print("  the hermitage of San Sebastián: not in this map yet")
+		return
+	var se = g.world.get("sebastian")
+	_check(se != null and se.pieces > 1000 and se.openings >= 15, "the hermitage of San Sebastián and its park are built by hand (%d pieces, %d windows and doors)" % [(se.pieces if se != null else 0), (se.openings if se != null else 0)])
+	if se == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var a: Vector2 = se.spot(-3.0, -12.0)
+	var b: Vector2 = se.spot(6.0, -12.0)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, se.level + 1.2, a.y), Vector3(b.x, se.level + 1.2, b.y), 1)).is_empty()
+	var q := PhysicsPointQueryParameters3D.new()
+	q.position = Vector3(se.door.x, MapData.foot(se.door) + 0.9, se.door.y)
+	q.collision_mask = 1
+	var door_free: bool = space.intersect_point(q).is_empty()
+	var probe: Vector2 = se.plaza + Vector2(4.0, 2.0)
+	var on_square: float = MapData.foot(probe) - se.square_y(probe)
+	var buried := 0                                 # (the user, 17 Nov: the grass came up through the square: nowhere on it is the ground over its floor)
+	for k in range(36):
+		var pr: Vector2 = se.plaza + Vector2(cos(TAU * k / 36.0), sin(TAU * k / 36.0)) * (1.5 + 7.8 * float(k % 4) / 3.0)
+		if MapData.height(pr) > se.square_y(pr) - 0.03:
+			buried += 1
+	on_square += 0.1 * buried
+	var nearest := 99.0
+	var worst := Vector2.ZERO
+	for p in se.yard:
+		var d: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		if d < nearest:
+			nearest = d
+			worst = p
+	_check(stops and door_free and absf(on_square) < 0.05 and nearest > 0.0,
+		"its walls stop you (%s), its door is free (%s), the round square carries you (%.2f m off), nothing of it on the asphalt (the nearest %.2f m, at %s)" % [stops, door_free, on_square, nearest, worst])
 
 ## The block of the Casa Grande, the library and the music school (cultura.gd): built where Catastro's parcel
 ## was (no longer raised by the bake); its fronts stop you; the way under the arch is clear; nothing of it on the asphalt.
@@ -6142,6 +6350,15 @@ func _riot_through() -> bool:
 	return M.stage == ""
 
 ## The whole of it. Begins with Josefa's errand on offer (the phone mission done, restaurants not yet known).
+## (the riot: someone kept in front of you while your bat goes round, `secs` of it)
+func _hold_in_front(f: Dictionary, secs: float) -> void:
+	var t := 0.0                                  # (the game's own time: headless at a fixed 60 it runs faster than the clock)
+	while t < secs:
+		if not f["down"]:
+			f["n"].p = g.player.p + Vector2(sin(g.player.h), cos(g.player.h)) * 1.1
+		await get_tree().process_frame
+		t += get_process_delta_time()
+
 func _motin_checks(pictures := false) -> void:
 	var M = g.motin
 	var henry = g.named["henry"]
@@ -6200,18 +6417,33 @@ func _motin_checks(pictures := false) -> void:
 		g.hud.dlg_text.visible_characters = -1
 		await _shot("motin_3_henry")
 	await _skip_dialog(false)
-	await _frames(20)
+	await _frames(10)
+	if pictures:                                   # (straight away: the first weapon is out for a second)
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://shots/motin_4_arma_0.png")
 	var armed: int = M.crowd.filter(func(f): return f["arm"] != null).size()
-	_check(armed >= 1 and armed <= 3 and g.cam.fov < 30.0, "close shots: the weapons come out, one hand at a time (%d so far, lens at %.0f degrees)" % [armed, g.cam.fov])
-	if pictures:
-		await _shot("motin_4_arma")
+	_check(armed >= 1 and armed <= 3 and g.cam.fov < 40.0, "close shots: the weapons come out, one hand at a time (%d so far, lens at %.0f degrees)" % [armed, g.cam.fov])
+	var fel = g.named.get("feliciano")
+	_check(fel != null and M.crowd.size() > 1 and M.crowd[1]["n"] == fel and M.crowd[1]["kind"] == "cuchillo" and M.crowd[1]["arm"] != null,
+		"Feliciano is in the crowd, always (the user, 17 Nov 2026), and the first to bring his weapon out: the cleaver")
+	var shown: Array = M.crowd.filter(func(f): return f["arm"] != null)
+	var models: Array = shown.map(func(f): return String(f["arm"].get_child(0).name) if f["arm"].get_child_count() > 0 else "")
+	_check(shown.all(func(f): return f["n"].hand_at == M.SHOW_HAND) and models.all(func(nm): return nm in ["bate", "cuchillo", "puno"]),
+		"each weapon a free model (%s), held up by the face to be seen (the user, 17 Nov 2026: \"no se entiende lo que hacen\")" % ", ".join(models))
 	n = 0
 	var tightest := 99.0
 	var eyes_shot := false
+	var drawn_shot := {0: true}
 	while g.dlg == null and n < 60 * 10:
 		await get_tree().physics_frame
 		n += 1
 		tightest = minf(tightest, g.cam.fov)
+		var drawn: int = M.crowd.filter(func(f): return f["arm"] != null).size()
+		if pictures and M._beat >= 0 and M._beat < M._beats.size() and M._beats[M._beat][0] == "draw" and not drawn_shot.has(drawn - 1):
+			drawn_shot[drawn - 1] = true
+			await _frames(6)
+			await RenderingServer.frame_post_draw          # (straight away: the shot lasts less than _shot waits)
+			get_viewport().get_texture().get_image().save_png("res://shots/motin_4_arma_%d.png" % (drawn - 1))
 		if pictures and not eyes_shot and g.cam.fov < 10.0:
 			eyes_shot = true
 			await _shot("motin_5_ojos")
@@ -6252,12 +6484,18 @@ func _motin_checks(pictures := false) -> void:
 	g._punch_cool = 0.0
 	var before: int = M.score
 	g._punch()
-	_check(mark["hp"] == 75 and M.score >= before + M.HIT and g.player.punch > 0.0, "a blow that lands takes 25 off them and is worth %d points" % M.HIT)
+	await _hold_in_front(mark, 0.1)
+	var swung: bool = g.player.bat_t > 0.0 and not M._bat.visible       # (the bat goes round: the one held up is the swinging one meanwhile)
+	await _hold_in_front(mark, g.BAT_LANDS)
+	if not swung or mark["hp"] != 75 or M.score < before + M.HIT or g._punch_cool <= 0.0:
+		print("motin: swung %s (bat_t %.2f, held bat shown %s), hp %d, score %d -> %d, cool %.2f" % [swung, g.player.bat_t, M._bat.visible, mark["hp"], before, M.score, g._punch_cool])
+	_check(swung and mark["hp"] == 75 and M.score >= before + M.HIT and g._punch_cool > 0.0, "your blow is the bat's swing, as after the mission (the user, 17 Nov 2026); landing, it takes 25 off them and is worth %d points" % M.HIT)
+	await _frames(30)
 	mark["hp"] = 25
-	mark["n"].p = g.player.p + Vector2(sin(g.player.h), cos(g.player.h)) * 1.1
 	g._punch_cool = 0.0
 	before = M.score
 	g._punch()
+	await _hold_in_front(mark, g.BAT_LANDS + 0.1)
 	_check(mark["down"] and mark["hp"] <= 0 and M.score >= before + M.KO and M.kos >= 1 and not mark["bar"].visible and absf(mark["n"].inner.rotation.x + PI / 2.0) < 0.01, "the one that takes them to nought lays them out, and is worth %d" % M.KO)
 	# they fight one another too, and more come from the corners
 	var total: int = M.crowd.size()
@@ -6366,8 +6604,62 @@ func _motin_checks(pictures := false) -> void:
 	await _skip_dialog(false)
 	await _frames(5)
 	_check(M.stage == "" and g.pc == pc_was and g.player.p.distance_to(home) < 1.0, "played from the Agenda it gives no Puntos Cívicos, and you are put back where you were")
+	var fel2 = g.named.get("feliciano")
+	for i in range(10):
+		M.tick(1.0, g.player.p)
+	_check(fel2 != null and is_instance_valid(fel2) and g.npcs.has(fel2) and not M.has(fel2) and fel2.state != "busy" and fel2.hand_at == null,
+		"after the riots Feliciano goes back to his life (not away with the rest of the crowd)")
 	g.traffic._spawn_t = 2.0
 	g.police.reset()
+
+## Feliciano (feliciano.gd; the user, 17 Nov 2026): his looks, where he is on a Thursday and on any other day, and what he
+## says on each, the days to go in words.
+func _feliciano_checks(pictures := false) -> void:
+	var F = g.feliciano
+	var fe = g.named.get("feliciano")
+	_check(F != null and fe != null and int(fe.look_data["brows"]) == 1 and int(fe.look_data.get("face", 0)) == 0 and Color.hex(int(fe.look_data["hair"]) << 8 | 0xff).v < 0.15
+		and Color.hex(int(fe.look_data["skin"]) << 8 | 0xff).v < 0.85 and fe.shown_name() == "Feliciano",
+		"Feliciano: skin on the dark side, thick eyebrows, black hair, brown eyes, no beard")
+	var was := [g.weekday, g.clock, g.stats.get("jamon_day", -1)]
+	var spots: Array = F.roams()
+	var convent: Vector2 = g.world.santaana.spot(36.0, 0.0) if g.world.santaana != null else spots[0]
+	g.weekday = 0
+	g.set_time(11.0)
+	F.place(spots[1], false, true)
+	_check(not F.waiting() and spots.all(func(s): return s.distance_to(convent) < 60.0) and fe.p.distance_to(convent) < 60.0 and not fe.still,
+		"on a Monday he goes up and down by the Poor Clares' convent (%.0f m from it), between %d spots" % [fe.p.distance_to(convent), spots.size()])
+	var counts := []
+	for wd in [0, 2, 4, 6]:
+		g.weekday = wd
+		counts.append(F.days_left())
+	_check(counts == ["3 días", "un día", "6 días", "4 días"], "the days he has still to wait, in words: %s" % str(counts))
+	g.weekday = 1
+	g.dlg = null
+	F.talk(fe)
+	var said: String = " ".join(g.dlg["lines"]) if g.dlg != null else ""
+	var sad: bool = Loc.t("feliciano_semana").any(func(d): return said.contains(String(d[0]).replace("{dias}", "2 días").left(12))) \
+		or Loc.t("feliciano_campana").any(func(d): return said == " ".join(d))
+	await _skip_dialog(false)
+	g.weekday = 3
+	g.set_time(10.0)
+	g.stats["jamon_day"] = -1
+	g.dlg = null
+	F.talk(fe)
+	var glad: String = " ".join(g.dlg["lines"]) if g.dlg != null else ""
+	await _skip_dialog(false)
+	_check(sad and not said.contains("{dias}") and (Loc.t("feliciano_jueves").any(func(d): return glad == " ".join(d)) or Loc.t("feliciano_campana").any(func(d): return glad == " ".join(d))),
+		"what he says: downcast on a Tuesday («%s…»), beside himself on a Thursday («%s…»), the bell now and then" % [said.left(40), glad.left(40)])
+	var door: Vector2 = g.motin._spot(1)
+	F.place(door, true, true)
+	_check(F.waiting() and fe.p.distance_to(door) < 0.5 and fe.still, "on a Thursday morning, with no ham had yet, he waits at Henry's door")
+	if pictures:
+		var face := Vector2(sin(fe.h), cos(fe.h))
+		var eye: Vector2 = fe.p + face * 2.2
+		await _view_at(MapData.at(eye, 1.5), MapData.at(fe.p, 1.3), "feliciano", 45.0)
+	g.weekday = int(was[0])
+	g.set_time(float(was[1]))
+	g.stats["jamon_day"] = was[2]
+	F.place(spots[0], false, true)
 
 ## The radio stations are on the air whether you listen or not: tune in and the song is under way; get out of the car
 ## and back in and it has gone on meanwhile.
@@ -7888,6 +8180,14 @@ func _run() -> void:
 		print("SUELOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--quien"):         # what is drawn in the worst ways round of --giro: the meshes in the picture, by the place they belong to
+		await _quien()
+		get_tree().quit(0)
+		return
+	if OS.get_cmdline_user_args().has("--giro"):          # the camera turned all the way round at spots across town: what each direction costs (full screen, no --fixed-fps)
+		await _giro()
+		get_tree().quit(0)
+		return
 	if OS.get_cmdline_user_args().has("--perfil"):        # where the physics tick goes: the bench's view, one thing switched off at a time (full screen, no --fixed-fps)
 		Engine.max_fps = 0
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -8121,6 +8421,15 @@ func _run() -> void:
 			print("ruta %d -> %s: %.0f m por %s" % [k + 1, S.stop(k)["name"], far, " > ".join(streets)])
 			from = to
 		get_tree().quit(0)
+		return
+	if OS.get_cmdline_user_args().has("--feliciano"):     # just Feliciano: where he is on each day, what he says, the riot (with --window for his picture)
+		g.menu.close()
+		g.phase = "free"
+		await _frames(20)
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _feliciano_checks(shots)
+		print("FELICIANO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--motin"):         # just the roast ham riot (add --shots for the pictures)
 		g.menu.close()
@@ -8755,6 +9064,41 @@ func _run() -> void:
 		g.phase = "free"
 		await _cultura_checks()
 		print("CULTURA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--sebastian"):      # just the hermitage of San Sebastián and its park: its front, its porch, its side and terrace on the Calle del Santo, from the north, the round square, the park, at night, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var se = g.world.get("sebastian")
+		if se == null:
+			print("SEBASTIAN FAILED (not built: the map was baked without it)")
+			get_tree().quit(1)
+			return
+		for moment in [["", 12.0], ["_noche", 22.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["frente", Vector2(-81.1, -446.9), 1.7, Vector2(-89.5, -459.0), 3.0, 75.0], ["portico", Vector2(-91.0, -452.0), 1.7, Vector2(-89.8, -460.0), 2.6, 70.0],
+					["costado", Vector2(-69.75, -463.8), 1.7, Vector2(-80.0, -468.0), 2.8, 80.0], ["terraza", Vector2(-75.4, -455.4), 1.7, Vector2(-80.0, -469.0), 3.0, 80.0],
+					["norte", Vector2(-89.55, -490.7), 1.7, Vector2(-89.0, -462.0), 3.0, 80.0], ["plaza", Vector2(-99.5, -447.5), 1.7, Vector2(-112.0, -451.0), 1.0, 80.0],
+					["parque", Vector2(-138.8, -440.3), 1.7, Vector2(-112.0, -451.0), 2.0, 80.0], ["pergola", Vector2(-113.7, -423.4), 1.7, Vector2(-95.0, -460.0), 3.0, 72.0],
+					["esquina", Vector2(-83.2, -436.3), 1.7, Vector2(-100.0, -455.0), 2.5, 80.0], ["aire", Vector2(-160.0, -395.0), 40.0, Vector2(-100.0, -455.0), 0.0, 60.0],
+					["aire_ne", Vector2(-40.0, -510.0), 35.0, Vector2(-100.0, -455.0), 0.0, 60.0]]:
+				if moment[0] != "" and not (v[0] in ["frente", "plaza"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = Vector2(240.0, 60.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, se.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("sebastian_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.phase = "free"
+		await _sebastian_checks()
+		print("SEBASTIAN %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--salvador2"):      # just the house on the corner of the Salvador and Ramón y Cajal: from the crossroads, up both streets, its bay, its doors, at night, from the air
@@ -11849,6 +12193,7 @@ func _run() -> void:
 	await _toti_checks()
 	await _salvador2_checks()
 	await _cultura_checks()
+	await _sebastian_checks()
 	await _gacha_checks()
 	await _sentido_checks(false)
 	await _cuartel_coche_checks()
@@ -12514,6 +12859,7 @@ func _run() -> void:
 	g.stats.erase("menu_done")
 	g.begin_step(g._idx("alberto"))
 	await _motin_checks()
+	await _feliciano_checks()
 	g.begin_step(run_si)
 	g.phase = "free"
 	Loc.toggle()

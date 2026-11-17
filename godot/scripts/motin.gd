@@ -109,19 +109,60 @@ func _fighter(at: Vector2) -> Dictionary:
 	crowd.append(f)
 	return f
 
+## a neighbour with a name of his own into the crowd (feliciano.gd): where it stands, and the riot has him until he is up again
+func _fighter_named(n, at: Vector2) -> Dictionary:
+	n.p = at
+	n.global_position = MapData.at(at, MapData.foot(at) - MapData.height(at))
+	n.home = at
+	n.still = true
+	n.state = "busy"
+	var f := {"n": n, "hp": HP, "target": null, "cool": randf_range(0.6, 1.6), "stun": 0.0, "down": false, "bar": null, "fill": null, "arm": null, "kind": WEAPONS[crowd.size() % WEAPONS.size()]}
+	crowd.append(f)
+	return f
+
+## is he in the riot, or still getting up after it? (feliciano.gd leaves him alone till then)
+func has(n) -> bool:
+	return crowd.any(func(f): return f["n"] == n) or _left.any(func(e): return e[0] == n and e[0].state == "busy")
+
 func _gather() -> void:
 	var door: Vector2 = G.named["henry"].home
+	var fel = G.feliciano.n if G.get("feliciano") != null and G.feliciano.n != null and is_instance_valid(G.feliciano.n) and not G.feliciano.n.away else null
 	for k in range(CROWD):
-		var f := _fighter(_spot(k))
+		# Feliciano is always there (the user, 17 Nov 2026), second in the crowd: the first to bring his weapon out
+		var f := _fighter_named(fel, _spot(k)) if k == 1 and fel != null else _fighter(_spot(k))
 		var to: Vector2 = door - f["n"].p
 		f["n"].h = atan2(to.x, to.y)
 		f["n"].sync()
 	stage = "wait"
 
-## a weapon in their right hand (the hand is a ball a tenth the size of anything: what hangs from it is scaled back up)
+## a weapon in their right hand (the hand is a ball a tenth the size of anything: what hangs from it is scaled back up).
+## Free models since 17 Nov 2026 (the user: the weapons' "diseños son muy pobres y no se entiende lo que hacen"):
+## a baseball bat with nails through it, a butcher's cleaver, a brass knuckle-duster -- tools/blender/armas.py, the
+## authors in assets/motin/CREDITOS.txt. Each comes held: the grip at the hand, pointing up, the broad side forward.
+const ARMAS := "res://assets/motin/armas.glb"
+const SHOW_HAND := Vector3(0.72, 1.35, 0.42)       # where a weapon is held up to be shown, in the close shot of it coming out
+static var _armas: PackedScene
 func _weapon(kind: String) -> Node3D:
 	var w := Node3D.new()
 	w.scale = Vector3.ONE / 0.12
+	if _armas == null and ResourceLoader.exists(ARMAS):
+		_armas = load(ARMAS)
+	if _armas != null:
+		var all := _armas.instantiate()
+		var piece: Node3D = all.find_child(kind, true, false) as Node3D
+		if piece != null:
+			var mine := piece.duplicate() as Node3D
+			mine.transform = Transform3D.IDENTITY
+			if kind == "puno":
+				# on the front of the fist, not through it: the hands are balls, and a small thing in one is lost (the user,
+				# 17 Nov 2026: "Debería sujetarlo más por la punta... los alargados quedan bien que clippeen las manos")
+				mine.position = Vector3(0.0, 0.0, 0.15)
+			else:
+				mine.rotation = Vector3(0.25, 0.0, -0.2)     # (leaning out and forward a little: its whole shape against the sky)
+			w.add_child(mine)
+			all.free()
+			return w
+		all.free()
 	match kind:
 		"bate":                                  # a bat with nails through it
 			w.add_child(Parts.part("cyl", 0x8a6a48, Vector3(0, 0.36, 0), Vector3(0.05, 0.82, 0.05)))
@@ -175,6 +216,8 @@ func _give_bat() -> void:
 
 ## laid over whatever your arms and legs were doing (called after the player's own anim)
 func pose(pl) -> void:
+	if _bat != null and is_instance_valid(_bat) and _bat.visible != (pl.bat_t <= 0.0):
+		_bat.visible = pl.bat_t <= 0.0               # (while the swing's bat goes round, the one you hold is that one)
 	if raising:
 		pl._hr.position = Vector3(0.42, 1.72, 0.12)
 	if stage == "fight" and floor_t > 0.0:
@@ -242,7 +285,27 @@ func _begin() -> void:
 	_beat = -1
 	_next_beat()
 
+## (the camera's rule for close shots: whoever stands between it and who it is on, or right by the lens, is not drawn for that shot)
+var _hidden: Array = []
+func _unhide() -> void:
+	for n in _hidden:
+		if is_instance_valid(n):
+			n.vis.visible = true
+	_hidden.clear()
+
+func _hide_between(from: Vector3, subject) -> void:
+	var a := Vector2(from.x, from.z)
+	for f2 in crowd:
+		var o = f2["n"]
+		if o == subject or not is_instance_valid(o) or not o.vis.visible:
+			continue
+		var q: Vector2 = Geometry2D.get_closest_point_to_segment(o.p, a, subject.p)
+		if (q.distance_to(o.p) < 0.9 * o.size and o.p.distance_to(a) < subject.p.distance_to(a)) or o.p.distance_to(a) < 1.6 * o.size:
+			o.vis.visible = false                  # (its figure: the game puts back `visible` on whoever is near, every frame)
+			_hidden.append(o)
+
 func _next_beat() -> void:
+	_unhide()
 	_beat += 1
 	if _beat >= _beats.size():
 		_fight()
@@ -258,13 +321,17 @@ func _next_beat() -> void:
 			_cut(b[2], b[3], b[4])
 			G.say(henry.shown_name(), b[1], henry.voice, _next_beat)
 		"draw":
+			# out it comes and up, held by the face, and the camera close on both: who it is and what they hold
 			var f: Dictionary = b[2]
 			var n = f["n"]
 			_arm(f)
-			n.punch = 0.28
+			n.hand_at = SHOW_HAND
 			var face := Vector2(sin(n.h), cos(n.h))
 			var right := Vector2(face.y, -face.x)
-			_cut(_eye(n.p + right * 0.55 + face * 1.25, 0.72 * n.size), _eye(n.p + right * 0.45, 0.72 * n.size), 26.0)
+			var hand: Vector2 = n.p + right * SHOW_HAND.x * n.size + face * SHOW_HAND.z * n.size
+			var eye := _eye(n.p + right * 1.25 + face * 3.0, 1.6 * n.size)
+			_cut(eye, _eye(hand - right * 0.35, 1.8 * n.size), 38.0)
+			_hide_between(eye, n)
 			Sfx.beep(1400.0, 0.06, 1, -12.0)
 			Sfx.noise(0.12, -16.0)
 		"eyes":
@@ -283,7 +350,11 @@ func _next_beat() -> void:
 
 ## ...and they are off
 func _fight() -> void:
+	_unhide()
 	raising = false
+	for f0 in crowd:
+		if is_instance_valid(f0["n"]):
+			f0["n"].hand_at = null
 	G.cam.fov = _fov
 	G.cam_fixed = null
 	G.cine_lock = false
@@ -346,11 +417,21 @@ func _hurt(f: Dictionary, from: Vector2, yours: bool) -> bool:
 	return out
 
 ## your swing: whoever is within reach in front of you gets it (two of them at most)
+## your blow: the bat goes round, as it does after the mission (game.gd _bat_swing; the user, 17 Nov 2026: "el bate de
+## beisbol ya no tiene swing, creo que me gustaba más cuando lo tenía aunque fuese un poco más lento") -- it was a jab
+## of the fist with the bat in it. It lands a moment into the swing, on whoever is in front of you then.
+const SWING_COOL := 0.7
 func swing() -> void:
 	if stage != "fight" or floor_t > 0.0 or G._punch_cool > 0.0:
 		return
-	G._punch_cool = 0.38
-	G.player.punch = 0.28
+	G._punch_cool = SWING_COOL
+	G.player.swing_bat()                         # (the player's own bat swings: the one held up hides meanwhile, in pose())
+	Sfx.noise(0.2, -15.0)                        # (the whoosh)
+	G.get_tree().create_timer(G.BAT_LANDS).timeout.connect(_swing_lands)
+
+func _swing_lands() -> void:
+	if stage != "fight" or floor_t > 0.0:
+		return
 	Sfx.beep(190.0, 0.07, 4, -14.0)
 	var dir := Vector2(sin(G.player.h), cos(G.player.h))
 	var near: Array = []
@@ -494,6 +575,7 @@ func _finish() -> void:
 		for key in ["arm", "bar"]:
 			if f[key] != null and is_instance_valid(f[key]):
 				f[key].queue_free()
+		f["n"].hand_at = null
 		_left.append([f["n"], randf_range(3.0, 7.0) if f["down"] else 0.0])
 	crowd.clear()
 	if agenda:
@@ -518,8 +600,10 @@ func replay() -> void:
 	_begin()
 
 func _scatter() -> void:
+	_unhide()
 	for f in crowd:
 		if is_instance_valid(f["n"]):
+			f["n"].hand_at = null
 			_left.append([f["n"], 0.0])
 	crowd.clear()
 	stage = ""
@@ -537,6 +621,10 @@ func tick(dt: float, pp: Vector2) -> void:
 			n.still = false
 			n.home = n.p
 			n.t = 1.0
+		if n.id != "":                           # (one with a name of his own goes back to his life, not away: feliciano.gd)
+			if n.state != "busy":
+				_left.erase(e)
+			continue
 		if n.p.distance_to(pp) > 110.0 or (e[1] < -40.0 and not G.sees(n.p, 200.0)):
 			G.npcs.erase(n)
 			n.queue_free()
