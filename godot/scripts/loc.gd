@@ -38,7 +38,66 @@ func speaker(v, fem_speaker: bool):
 	return v
 
 ## dialogue text as BBCode with the names of people (and the police) picked out in red
-const NAMES := ["Paca", "Loli", "Eusebio", "Maruja", "Venancio", "Gerardo", "Anselmo", "Torrezón", "Kevin-José", "Eufrasia", "Julián", "Josefa", "Fonsi", "Alberto", "Henry", "Chiki", "Diurno", "Nocturno"]
+## The user, 17 Nov 2026: "en todos los diálogos debe aparecer el nombre de NPCs únicos (Chiki, Josefa) cuando se les
+## menciona en rojo, de lugares (recreativos, puente...) en azul y de objetos de misión (carteles, firmas...) en verde".
+## So every unique neighbour's name (and the mayor's office) in red; PLACES in blue; OBJECTS in green, as a line's
+## own *mission object* marks are -- each as a whole word, and never inside something already marked.
+const NAMES := ["Niño Negro Gordo de Pueblo", "Dolores Fuertes D'Varriga", "Don Luis", "Paca", "Loli", "Eusebio", "Maruja", "Venancio", "Gerardo", "Anselmo", "Torrezón",
+	"Kevin-José", "Eufrasia", "Julián", "Josefa", "Fonsi", "Alberto", "Henry", "Chiki", "Diurno", "Nocturno", "Dolores", "Feliciano", "Katakumba69",
+	"Luis", "alcalde", "Alcalde"]
+const PLACES := {
+	"es": ["Galaxy Recress", "recreativos", "Recreativos", "Cocina de Henry", "Cocina del Henry", "V.I.P.", "Correa", "Mercamona", "Todopizza", "Tele Dürum",
+		"Kebab Deluxe", "Kebab Luis", "ShawarMadridejos", "Merkocarry", "MasAhorro", "Petril", "Plaza del Ayuntamiento", "Ayuntamiento", "ayuntamiento",
+		"Cooperativa", "cooperativa", "kiosco", "tanatorio", "funeraria", "Casa Grande", "Pizzería Toti", "Toti", "Universidad Comunal", "Papelería Rocas",
+		"Banco Cantabria", "Copistería Sancho Panza", "copistería", "IES Valdeacero", "recinto ferial", "mercadillo", "plaza de toros", "molino", "convento",
+		"ermita", "iglesia", "cuartel de la Guardia Civil", "cuartel de los Tricornios", "puente", "piscina", "Ahorros Rurales",
+		"mercao", "centro de salud", "ruta del colesterol", "Recress", "Cocina"],
+	"en": ["Galaxy Recress", "arcade", "Cocina de Henry", "Henry's kitchen", "V.I.P.", "Correa", "Mercamona", "Todopizza", "Tele Dürum", "Kebab Deluxe",
+		"Kebab Luis", "ShawarMadridejos", "Merkocarry", "MasAhorro", "Petril", "town hall", "Town Hall", "Cooperativa", "cooperative", "kiosk", "funeral home",
+		"Casa Grande", "Pizzería Toti", "Toti", "Universidad Comunal", "Papelería Rocas", "Banco Cantabria", "Copistería Sancho Panza", "copy shop",
+		"IES Valdeacero", "fairground", "market", "bullring", "windmill", "convent", "hermitage", "chapel", "church", "Civil Guard barracks",
+		"bridge", "pool", "Ahorros Rurales", "Plaza del Ayuntamiento", "health centre", "cholesterol route", "Recress", "Cocina"]}
+const OBJECTS := {
+	"es": ["jamón asao", "jamón", "firmas", "firma", "carteles", "cartel", "menú", "palé del aceite", "aceite", "cajas", "móvil de la Josefa",
+		"teléfono de la Josefa", "teléfono a la Josefa", "móvil arreglao", "azafrán", "spray", "espray"],
+	"en": ["roast ham", "ham", "signatures", "signature", "posters", "poster", "menu", "pallet of oil", "oil", "boxes", "Josefa’s phone",
+		"Josefa's phone", "fixed phone", "saffron", "spray can", "spray"]}
+## Where a word of PLACES or OBJECTS means something else, that bit is left without colour (Worldbuilding, 17 Nov 2026):
+## the boxer's dental bridge, the mayor's dog's pool, the ham of Paca's will, oil in a recipe, the town hall as the
+## council and not the building, «¿me la firmas?» (to sign), Consuegra's market. The exact words of the texts, es and en.
+const SIN_COLOR := ["que tiene puente", "perro tiene piscina", "jamón de la herencia", "hueso del jamón", "es un jamón", "estrujao, aceite", "sagrás: el aceite", "el aceite empape", "Me la firmas", "Start: firma", "perdío las cajas", "mercadillo de Consuegra", "cinta y carteles", "imán del ayuntamiento", "centralita del ayuntamiento", "que el ayuntamiento entero", "joder al ayuntamiento", "los del ayuntamiento", "cosas del ayuntamiento", "contra el Ayuntamiento", "una vez el Ayuntamiento", "cinta del Ayuntamiento", "Cosas del Ayuntamiento rotas",
+	"got a bridge", "dog has a pool", "ham in my will", "ham bone", "It’s a ham", "squashed in, oil", "here: olive oil", "lost the boxes", "market in Consuegra", "town hall magnet", "town hall switchboard", "whole town hall", "screw the town hall", "against the town hall"]
+
+## SIN_COLOR as more alternatives for the bits that _outside_marks leaves alone
+static func _sin_color_alts() -> String:
+	var out := ""
+	for p in SIN_COLOR:
+		out += "|"
+		for c in String(p):
+			out += ("\\" + c) if "\\^$.|?*+()[]{}".contains(c) else c
+	return out
+var _places := {}
+var _objects := {}
+const PLACE_A := "{{p"
+const PLACE_B := "p}}"
+
+## a list of words as a RegEx: whole words, the longest first (so "Cocina de Henry" before "Henry"), none next to a mark
+static func _words_rx(words: Array) -> RegEx:
+	var sorted := words.duplicate()
+	sorted.sort_custom(func(a, b): return String(a).length() > String(b).length())
+	var alts: Array = sorted.map(func(w): return String(w).replace(".", "\\.").replace("'", "'"))
+	return RegEx.create_from_string("(?<![\\p{L}*#])(" + "|".join(alts) + ")(?![\\p{L}*#])")
+
+## `t` with `rx`'s words put through `put` -- but only outside what is marked already (*...*, #...#)
+static func _outside_marks(t: String, rx: RegEx, put: Callable) -> String:
+	var marked := RegEx.create_from_string("[*][^*]+[*]|#[^#]+#" + _sin_color_alts())
+	var out := ""
+	var at := 0
+	for m in marked.search_all(t):
+		out += put.call(rx, t.substr(at, m.get_start() - at))
+		out += m.get_string()
+		at = m.get_end()
+	return out + put.call(rx, t.substr(at))
 var _marks = null
 const OBJ_A := "{{o:"                # (placeholders for the marks, while the other colours go in)
 const OBJ_B := ":o}}"
@@ -57,6 +116,20 @@ func rich(text: String) -> String:
 	if _marks == null:
 		_marks = [RegEx.create_from_string("[*]([^*]+)[*]"), RegEx.create_from_string("#([^#]+)#")]
 	text = text.replace("((", ASIDE_A).replace("))", ASIDE_B)        # (ajedrez) ((said under one's breath)): in grey
+	# mission objects marked as if by hand; places put aside, so that no name inside one ("Cocina de Henry") goes red
+	if not _objects.has(lang):
+		_objects[lang] = _words_rx(OBJECTS.get(lang, OBJECTS["es"]))
+		_places[lang] = _words_rx(PLACES.get(lang, PLACES["es"]))
+	text = _outside_marks(text, _objects[lang], func(rx: RegEx, s: String): return rx.sub(s, "*$1*", true))
+	var put_aside: Array = []
+	text = _outside_marks(text, _places[lang], func(rx: RegEx, s: String) -> String:
+		var o := ""
+		var a := 0
+		for m in rx.search_all(s):
+			o += s.substr(a, m.get_start() - a) + PLACE_A + str(put_aside.size()) + PLACE_B
+			put_aside.append(m.get_string())
+			a = m.get_end()
+		return o + s.substr(a))
 	var t: String = _marks[0].sub(text, OBJ_A + "$1" + OBJ_B, true)
 	t = _marks[1].sub(t, AIM_A + "$1" + AIM_B, true)
 	if _names == null:
@@ -68,6 +141,8 @@ func rich(text: String) -> String:
 	out = _forces[1].sub(out, "[color=#2f8f55]$1[/color]", true)
 	out = out.replace(OBJ_A, "[outline_size=7][outline_color=#14301a][color=#3fd25a]").replace(OBJ_B, "[/color][/outline_color][/outline_size]")
 	out = out.replace(ASIDE_A, "[font_size=21][color=#8f8478](").replace(ASIDE_B, ")[/color][/font_size]")
+	for i in range(put_aside.size()):             # the places, in blue
+		out = out.replace(PLACE_A + str(i) + PLACE_B, "[color=#1f6fc8]" + String(put_aside[i]).replace("[", "[lb]") + "[/color]")
 	return out.replace(AIM_A, "[outline_size=7][outline_color=#101010][color=#e8402e]").replace(AIM_B, "[/color][/outline_color][/outline_size]")
 
 func _gender(v):
@@ -227,6 +302,7 @@ const TX := {
 	"s_shadow_v": {"es": ["No", "Bajas", "Medias", "Altas"], "en": ["Off", "Low", "Medium", "High"]},
 	"s_textures": {"es": "Texturas", "en": "Textures"},
 	"s_low_high": {"es": ["Bajas", "Medias", "Altas"], "en": ["Low", "Medium", "High"]},
+	"s_bright": {"es": "Brillo", "en": "Brightness"},
 	"s_draw": {"es": "Distancia de dibujado", "en": "Draw distance"},
 	"s_draw_v": {"es": ["Corta", "Normal", "Larga", "Sin límite"], "en": ["Short", "Normal", "Long", "Unlimited"]},
 	"s_fov": {"es": "Campo de visión", "en": "Field of view"},
@@ -572,9 +648,11 @@ const TX := {
 			["This jacket’s from London. Well, from the market in Consuegra, but the stall was called “London”."]]},
 	"alberto_again": {
 		"es": ["¿Y las firmas? ¿Que se t'á hecho tarde? A mí también se me hace tarde y aquí estoy, desde las siete.",
-			"Enga, otra vez. Cinco firmas, de gente de fuera de la manifestación, antes de que cambie la luz."],
+			"Enga, otra vez. Cinco firmas, de gente de fuera de la manifestación, {plazo}."],
 		"en": ["And the signatures? You ran out of time? I run out of time too, and here I am, since seven.",
-			"Enga, again. Five signatures, from people outside the demonstration, before the light changes."]},
+			"Enga, again. Five signatures, from people outside the demonstration, {plazo}."]},
+	"firmas_plazo_dusk": {"es": "antes de que anochezca", "en": "before nightfall"},
+	"firmas_plazo_dawn": {"es": "antes de que amanezca", "en": "before dawn"},
 	"alberto_firmas": {
 		"es": ["¿Las cinco? A ver… Una, dos… esta es una pezuña. Vale. Vale también.",
 			"Con estas ya son cuarenta y ocho. De veinticuatro personas. ¡Hemos doblao la plataforma!",
@@ -691,14 +769,14 @@ const TX := {
 			"Así que he fundao la Plataforma Vecinal «El Puente No Se Toca». Semos catorce. Nueve son familia mía y dos no saben que están.",
 			"Llevamos cuarenta y tres firmas. Bueno, cuarenta y tres firmas de diecinueve personas. En el Ayuntamiento dicen que así no vale.",
 			"Me hacen falta cinco de gente que no esté aquí, en la manifestación. Cinco. Y tú tiés cara de no saber decir que no.",
-			"Pregúntale a quien pilles por la calle. Y las quiero antes de que cambie la luz: si es de día, antes de la noche; si es de noche, antes de que amanezca. ¡Arreando!"],
+			"Pregúntale a quien pilles por la calle. Y las quiero {plazo}. ¡Arreando!"],
 		"en": ["Josefa sent you? Just in time: they want to pull it down. The bridge. That one. There it is, minding its own business.",
 			"Over a hundred years old. Nineteen eleven. And when the flood comes, the water goes under and the people go over. Not a crack in it.",
 			"And now they say it’s in the way. That it has to go, for “a wide street for the cars”. With Matías Pérez right there, just as wide!",
 			"So I founded the Plataforma Vecinal «El Puente No Se Toca». There are fourteen of us. Nine are my family and two don’t know they’re in it.",
 			"We’ve got forty-three signatures. Well. Forty-three signatures from nineteen people. The town hall says that doesn’t count.",
 			"I need five from people who aren’t here at the demonstration. Five. And you’ve got the face of someone who can’t say no.",
-			"Ask whoever you find in the street. And I want them before the light changes: by nightfall if it’s day, by dawn if it’s night. ¡Arreando!"]},
+			"Ask whoever you find in the street. And I want them {plazo}. ¡Arreando!"]},
 	"t_turbo_hint": {"es": "%s — nitro. Si lo apuras se quema; se recarga corriendo. Ojo a los Pitufos.", "en": "%s — nitro. Empty it and it burns out; speed fills it. Mind the Pitufos."},
 	"t_turbo_seen": {"es": "¡Te ha visto un Pitufo con el turbo! Ahora corre de verdad.", "en": "A Pitufo saw you on the turbo! Now you really need it."},
 	"log_page": {"es": "Página %d de %d", "en": "Page %d of %d"},
@@ -796,7 +874,7 @@ const TX := {
 			["Estamos estudiando una batería de medidas transversales.", "En próximas fechas se informará puntualmente a la ciudadanía."]],
 		"en": [["Good morning. Here we are, working by and for the municipality.", "My door is always open. The town hall's door, I mean."],
 			["We are studying a raft of cross-cutting measures.", "Citizens will be duly informed in due course."]]},
-	"alcalde_rec_born": {"es": ["¿Qué? Yo nací siendo alcalde.", "Llevo matando bichos desde antes de que nacierais la mayoría."], "en": ["What? I was born mayor.", "I've been killing monsters since before most of you were born."]},
+	"alcalde_rec_born": {"es": ["¿Qué? Yo no nací alcalde.", "Llevo matando bichos desde antes de que nacierais la mayoría."], "en": ["What? I wasn't born mayor.", "I've been killing monsters since before most of you were born."]},
 	"alcalde_rec_thanks": {"es": ["Gracias, gracias. A todos. Al pueblo. Esto demuestra que, cuando remamos todos en la misma dirección…"],
 		"en": ["Thank you, thank you. All of you. The town. This goes to show that, when we all row in the same direction…"]},
 	"alcalde_rec_more": {"es": ["…esto me ha sabido a poco."], "en": ["…that wasn't nearly enough for me."]},
@@ -877,7 +955,7 @@ const TX := {
 	"aj_greys": {"es": "grises", "en": "grey"},
 	"aj_check": {"es": "¡Jaque!", "en": "Check!"},
 	"aj_no_moves": {"es": "Aún no se ha movío nadie.", "en": "Nobody has moved yet."},
-	"aj_keys": {"es": "Ratón o <interact>: coger y mover · <radio> Vista · <pause> Menú", "en": "Mouse or <interact>: pick up and move · <radio> View · <pause> Menu"},
+	"aj_keys": {"es": "Ratón o <interact>: coger y mover · <horn> Vista · <pause> Menú", "en": "Mouse or <interact>: pick up and move · <horn> View · <pause> Menu"},
 	"aj_keys_end": {"es": "<interact> Salir", "en": "<interact> Leave"},
 	"aj_c_hello_0": {"es": ["Venga, una rapidita, que tengo pleno a las doce.", "Juego con desgana, ¿eh? Que conste."], "en": ["Go on, a quick one, I've got a council meeting at twelve.", "I'm playing half-heartedly, mind. Let it be noted."]},
 	"aj_c_hello_1": {"es": ["Juego entre dientes, que estoy con los presupuestos."], "en": ["I'm playing under my breath, I'm in the middle of the budget."]},
@@ -1689,7 +1767,9 @@ const TX := {
 			["El pueblo tiene dos marchas: siesta y entierro.", "En las dos dan de merendar, eso sí."],
 			["Una vez dejé de beber por Cuaresma.", "Los peores cuarenta minutos de mi vida."],
 			["Mi nieto es «inflúencer».", "En mis tiempos a eso se le decía estar parao, pero con un flexo."],
-			["Si ves a mi [[mujer|marido]], dile que se cena a las nueve.", "Si ves [[al querido|a la querida]], dile que a las ocho. Por ver qué pasa."]],
+			["Si ves a mi [[mujer|marido]], dile que se cena a las nueve.", "Si ves [[al querido|a la querida]], dile que a las ocho. Por ver qué pasa."],
+			["Esta tarde, a la ruta del colesterol, que el médico me ha dicho que ande.", "Una hora pa'llá, una hora pa'cá, y a la vuelta, un bocadillo de panceta. Pa recuperar."],
+			["En cuanto sale el sol, la ruta del colesterol se pone como la Gran Vía.", "Tos en chándal, tos con el perro, y tos hablando de lo que han comío."]],
 		"en": [["Lovely morning. Statistically somebody dies today. Not it!"],
 			["My doctor said to cut out salt, wine and my [[wife|husband]].", "I’m starting with the [[wife|husband]]."],
 			["They say money can’t buy happiness.", "Then explain saffron. Checkmate."],
@@ -1699,7 +1779,9 @@ const TX := {
 			["The village has two speeds: siesta and funeral.", "Both have snacks, to be fair."],
 			["I gave up drinking for Lent once.", "Worst forty minutes of my life."],
 			["My grandson is an “influencer”.", "In my day we called that unemployed with a ring light."],
-			["If you see my [[wife|husband]], tell [[her|him]] dinner’s at nine.", "If you see [[her boyfriend|his girlfriend]], tell [[him|her]] it’s at eight. I’m curious."]]},
+			["If you see my [[wife|husband]], tell [[her|him]] dinner’s at nine.", "If you see [[her boyfriend|his girlfriend]], tell [[him|her]] it’s at eight. I’m curious."],
+			["This afternoon, off to the cholesterol route, the doctor says I’ve got to walk.", "An hour out, an hour back, and on the way home a bacon sandwich. To get my strength back."],
+			["As soon as the sun’s out, the cholesterol route’s busier than the Gran Vía.", "Everyone in tracksuits, everyone with the dog, and everyone talking about what they’ve eaten."]]},
 	"generic_kid": {
 		"es": [["Mi madre dice que no hable con desconocíos.", "Pero tú eres desconocío del to, así que no cuentas."],
 			["¿Me das un euro? Es pa una cosa.", "La cosa es otro euro."],
@@ -1720,7 +1802,8 @@ const TX := {
 			["En mi casa hay un fantasma.", "Mi padre dice que es la humedad, pero la humedad no se come las galletas."],
 			["He meao en la piscina.", "Dicen que se pone el agua roja. Mentira: lé hecho mil veces y na."],
 			["Mi tío estuvo en la cárcel.", "Dice que se come mejor que en casa y que te dejan ver la tele. Yo de mayor quiero ir."],
-			["¿Tú tiés novio o novia?", "Mi tita tiene dos, pero uno no lo sabe."]],
+			["¿Tú tiés novio o novia?", "Mi tita tiene dos, pero uno no lo sabe."],
+			["Mi abuela va por la ruta del colesterol con pesas en las manos.", "Son dos botellas de agua. Dice que pesan lo mismo y no hay que comprarlas."]],
 		"en": [["My mum says not to talk to strangers.", "But you’re so strange you don’t count."],
 			["Can I have a euro? It’s for a thing.", "The thing is another euro."],
 			["When I grow up I’m having a Z15 with a spoiler."],
@@ -1738,7 +1821,8 @@ const TX := {
 			["There’s a ghost in my house.", "My dad says it’s the damp, but damp doesn’t eat biscuits."],
 			["I’ve peed in the swimming pool.", "They say the water goes red. Lies: I’ve done it a thousand times and nothing."],
 			["My uncle was in prison.", "He says the food’s better than at home and they let you watch telly. I want to go when I grow up."],
-			["Have you got a boyfriend or a girlfriend?", "My auntie’s got two, but one of them doesn’t know."]]},
+			["Have you got a boyfriend or a girlfriend?", "My auntie’s got two, but one of them doesn’t know."],
+			["My gran walks the cholesterol route with weights in her hands.", "They’re two bottles of water. She says they weigh the same and you don’t have to buy them."]]},
 	# What the town says about a mission you have finished (chismes.gd; the user, 16 Nov 2026): each neighbour as they
 	# are -- glad of it (bien), against it (mal), or not caring either way (igual). Keys chisme_<mission>_<character>.
 	"chisme_aceite_bien": {
@@ -1937,6 +2021,25 @@ const TX := {
 			"¡Tonto el último!", "¡Pídola!", "¡Que me empujas!", "¡Pa ti la perra gorda!", "¡Más alto, empuja más alto!", "¡Ya no juego!", "¡Chivato!", "¡Mi padre le pega al tuyo!"],
 		"en": ["You’re it!", "Home! I’m home!", "That doesn’t count, cheat!", "I’m telling my mum!", "My turn!", "Look at me, look at me!",
 			"Last one’s an idiot!", "Leapfrog!", "Stop pushing!", "Fine, have it your way!", "Higher, push higher!", "I’m not playing any more!", "Snitch!", "My dad could beat up your dad!"]},
+	# The walkers of the ruta del colesterol, the old Madrid-Cádiz road, where the town goes for a walk when the weather
+	# is good (the user, 17 Nov 2026; guion/palabros.md, «El pueblo por dentro»): what they say when you stop them.
+	"ruta_colesterol": {
+		"es": [["¡No me pares, que se me enfría el músculo!", "Llevo tres kilómetros. Bueno, uno. Pero mu bien andao."],
+			["Hasta el cruce y vuelta. Eso dice el médico.", "Lo que no dice el médico es que a la vuelta pasas por la panadería."],
+			["Aquí se viene a andar y a ponerse al día.", "Yo ya sé quién se ha separao, quién se ha comprao coche y quién ha engordao. Y eso que solo llevo media hora."],
+			["[[Mi mujer|Mi marido]] va delante. Siempre va delante.", "Cuarenta años casaos y entoavía no me ha esperao ni una vez."],
+			["El chándal es de cuando hice la mili.", "Me sigue estando bien. Bueno, la chaqueta no cierra. Bueno, el pantalón tampoco."],
+			["¡Ojooo, que viene un coche! Que esto es carretera, que parece mentira.", "Antes pasaban por aquí los camiones pa Andalucía. Ahora pasamos nosotros, en chándal."],
+			["El perro ya ha hecho la ruta tres veces hoy.", "Yo una. Él tiene el colesterol de maravilla. Yo no."],
+			["¿Ande va uno mejor que aquí? Llano, con acera y sin cuestas.", "Lo único malo es el aire de cara a la vuelta. Que a la ida también es de cara. No sé cómo lo hace."]],
+		"en": [["Don’t stop me, my muscles will go cold!", "I’ve done three kilometres. Well, one. But well walked."],
+			["To the junction and back. Doctor’s orders.", "What the doctor doesn’t say is that on the way back you pass the bakery."],
+			["You come here to walk and to catch up.", "I already know who’s split up, who’s bought a car and who’s put on weight. And I’ve only been out half an hour."],
+			["[[My wife|My husband]]’s up ahead. Always up ahead.", "Forty years married and [[she|he]]’s never once waited for me."],
+			["The tracksuit’s from my military service.", "Still fits. Well, the jacket won’t zip. Well, nor will the trousers."],
+			["Look out, a car! This is a road, believe it or not.", "The lorries used to come through here on their way to Andalusia. Now it’s us, in tracksuits."],
+			["The dog’s done the route three times today.", "I’ve done it once. His cholesterol’s marvellous. Mine isn’t."],
+			["Where better to walk than here? Flat, with a pavement and no hills.", "Only bad thing is the wind in your face on the way back. It’s in your face on the way out too. Don’t know how it does it."]]},
 	# The old neighbours' own sayings, in the Manchego of their day (guion/palabros.md, «Cómo hablan los mayores»: the
 	# words are from José-María Moreno García's glossary). They say these as well as the "generic" ones (game.gd talk_to).
 	"generic_old": {
@@ -1956,7 +2059,8 @@ const TX := {
 			["Esa ventana me la puso uno a la medía del tío Sergio.", "Por eso no cierra. Ni abre."],
 			["¡Ñalo! Ahí va otro con el amoto a toa mecha.", "Poque llegue. Poque no. Velaí."],
 			["Pa merendar, una poza: el cantero hueco, tomate estrujao, aceite, pimentón y sal.", "Lo demás son cosas de capital."],
-			["¡No apretes tanto el paso, criatura!", "Que a mi edad, el que corre es porque se l'á olvidao algo."]],
+			["¡No apretes tanto el paso, criatura!", "Que a mi edad, el que corre es porque se l'á olvidao algo."],
+			["¿Ande vas tú con esa prisa? Ni que fueras a la ruta del colesterol.", "Yo voy tos los días, a cagaíto, hasta la última farola y vuelta. El colesterol no me baja, pero me entero de tos los chismes."]],
 		"en": [["My back’s killing me from bending over the vegetable patch all morning.", "At my age you don’t stand up after bending down: you unfold."],
 			["¡Adius!, what a scorcher! How that sun bears down!", "This afternoon I’m squatting in the shade and nobody talks to me."],
 			["Come here, let me see that face.", "No, you don’t ring a bell. Whose are you?"],
@@ -1973,7 +2077,8 @@ const TX := {
 			["The fellow who fitted that window measured it with his hands.", "That’s why it won’t shut. Or open."],
 			["Look at that! Another one on a motorbike, full tilt.", "Maybe he’ll get there. Maybe he won’t. There you go."],
 			["For tea, a poza: the bread crust hollowed out, a tomato squashed in, oil, paprika and salt.", "Anything else is for city folk."],
-			["Don’t walk so fast, child!", "At my age, if you hurry it’s because you’ve forgotten something."]]},
+			["Don’t walk so fast, child!", "At my age, if you hurry it’s because you’ve forgotten something."],
+			["Where are you off to in such a hurry? Anyone would think you were on the cholesterol route.", "I go every day, nice and slow, to the last lamp post and back. My cholesterol won’t come down, but I hear all the gossip."]]},
 	"whisper_old": {
 		"es": ["¡Papo! ¿Y {ese|esa} de quién es?", "Ñalo, {ese|esa} tiene el carácter de la Eufrasia.", "¡Qué {espirituao|espirituá}! En mi casa le ponían gachas tos los días.", "{Ese|Esa} va con afilotos. Algo ha hecho.", "¡No te amuela! Ni dice vis con Dios.", "¿Ande irá {ese|esa} a estas horas?", "Velaí que sea {forastero|forastera}. Tiene andares de capital.", "Mira qué {jaro|jara}. Por lo menos es de Consuegra."],
 		"en": ["Well I never! And whose is that one?", "Look, that one’s got Eufrasia’s face.", "So skinny! In my house they’d have fed that one gachas every day.", "That one’s in a hurry. Up to something.", "The nerve! Doesn’t even say good day.", "Where’s that one off to at this hour?", "Maybe from out of town. Walks like the capital.", "Look at that red hair. From Consuegra at least."]},

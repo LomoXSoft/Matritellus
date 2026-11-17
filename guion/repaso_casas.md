@@ -306,6 +306,37 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
 - **`trc_b015`:** el cartel de venta con su teléfono no se pone.
 - **Sin hacer:** el costado del 14 de las Cruces.
 
+## Calle del Molino (tramo oeste)
+
+- **`mol_b301`:** faltan las franjas azules en diagonal de la planta baja blanca.
+- **`mol_g7`:** la trasera de Granada 7 casi no se ve en Street View; va descrita por lo poco que se ve (revoco gris).
+- **`mol_g21`:** el marco verde de la ventana sale sin color.
+- **`mol_21`:** el dibujo de rombos blancos del revoco sale como una sola franja.
+
+## Calle del Molino (tramo este)
+
+- **`mol_31`:** el zócalo de guijarros sale como una franja marrón lisa.
+- **`mol_37`:** los toldos de los balcones salen poco.
+- **`mol_24c`:** el ladrillo que asoma bajo el revoco sale como unos parches rectos.
+- **Sin hacer:** Cristo 24 y la trasera de Granada 39; entre Granada 29 y 33 queda un tramo de tapia con puerta verde como casa genérica.
+
+## Travesía de las Viñas
+
+- **`tvi_v10a`:** los toldos de la tienda casi no se ven debajo del rótulo.
+- **`tvi_3` y `tvi_5`:** el Catastro da la misma foto para los dos almacenes; van casi iguales.
+
+## Travesía de Portugal
+
+- **`tpo_7`:** el zócalo de guijarros y la cresta de ladrillo calado del pretil salen lisos.
+- **`tpo_2`:** el naranja salmón de la foto sale más pardo.
+- **`tpo_14`:** el solar es un hueco con tapias medio caídas; sale como una tapia entera con remiendos.
+
+## Calle del Comisario (tramo oeste)
+
+- **`com_42`:** la casa está detrás de un patio con verja y escalera; sale a la calle sin el patio, y más estrecha (4,9 m de frente).
+- **`com_40` y `com_38`:** el dibujo de líneas claras del revoco sale como una franja.
+- **`com_28`:** faltan las macetas de las ventanas.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

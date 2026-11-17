@@ -330,9 +330,9 @@ func input(e: InputEvent) -> void:
 		_pressed["special"] = true
 	if e.is_action_pressed("m_accept"):
 		_pressed["ok"] = true
-	if e.is_action_pressed("left") or e.is_action_pressed("m_left"):
+	if (e is InputEventKey and e.is_action_pressed("left")) or e.is_action_pressed("m_left"):        # (the stick as m_* steps: controls.gd)
 		_pressed["left"] = true
-	if e.is_action_pressed("right") or e.is_action_pressed("m_right"):
+	if (e is InputEventKey and e.is_action_pressed("right")) or e.is_action_pressed("m_right"):
 		_pressed["right"] = true
 
 func tick(dt: float) -> void:

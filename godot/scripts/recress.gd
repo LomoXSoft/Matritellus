@@ -157,6 +157,8 @@ func givers(free_hands: bool) -> Array:
 		out.append(G.named["alberto"])
 	if stage() == "dinero" and free_hands:
 		out.append(G.named["alcalde"])
+	if stage() == "reto" and _inside_people.get("alcalde") != null:       # waiting for you at the machine (the user, 17 Nov 2026)
+		out.append(_inside_people["alcalde"])
 	return out
 
 # ---------------- the shops the posters can go on ----------------
@@ -448,6 +450,7 @@ func tick(dt: float, pp: Vector2) -> void:
 	if cine:
 		_tick_beats(dt)
 	_keep_hours()
+	sala.hold_in = stage() == "reto"             # no way out while the mayor waits for you at the machine (entradas.gd)
 	if G.phase != "play" and G.phase != "free":
 		return
 	# twelve hours after the bridge, if you have not been to see him, Alberto rings
@@ -985,9 +988,13 @@ func _accept_bet() -> void:
 	G.hud.set_objective(G._tag(), Loc.t("obj_rec_play"))
 	G.set_target(sala.seat_you, false)
 
-## (game.gd) can you sit down at the machine now?
+## (game.gd) can you sit down at the machine now? Near it, or near him: there the action button is "Jugar", before
+## "Hablar" with anybody (the user, 17 November 2026: "le he dado a «hablar» varias veces hasta que lo he conseguido")
 func can_play(p: Vector2) -> bool:
-	return stage() == "reto" and G.indoors and G.inside_of == sala and p.distance_to(sala.seat_you) < 1.6
+	if stage() != "reto" or not G.indoors or G.inside_of != sala:
+		return false
+	var mayor = _inside_people.get("alcalde")
+	return p.distance_to(sala.seat_you) < 2.2 or (mayor != null and p.distance_to(mayor.p) < 3.2)      # (3.2: as far off as you can talk to him)
 
 ## E at the machine: Tokken 9 (tokken.gd), against the mayor. He is DoomAssasin78 and plays the Monster, as in the
 ## final; you choose yours.

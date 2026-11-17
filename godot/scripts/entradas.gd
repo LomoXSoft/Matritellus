@@ -98,6 +98,11 @@ static func open(place) -> bool:
 	var o = place.get("open")
 	return not (o is bool) or bool(o)
 
+## a set that keeps you in for now (its `hold_in`, if it has one): no arrow out, no "Salir" -- the Recress while the
+## mayor waits for you at the machine (the user, 17 November 2026: "Quitaría la flecha de salida hasta que termine la misión")
+static func held(place) -> bool:
+	return place.get("hold_in") == true
+
 ## where the arrow stands: on the pavement a step before the door, outside; a step inside the door, in
 static func spot(place, inside: bool) -> Vector2:
 	var door: Vector2 = place.in_door if inside else place.door_out
@@ -157,7 +162,7 @@ func tick(dt: float) -> void:
 			var m := _mark(key)
 			var at: Vector2 = spot(place, inside)
 			var here: bool = G.indoors == inside and (not inside or G.inside_of == place or _same_set(G.inside_of, place))
-			var show: bool = here and (inside or (open(place) and pp.distance_to(at) < FAR))      # (shut while you are in: you can still get out)
+			var show: bool = here and ((inside and not held(place)) or (not inside and open(place) and pp.distance_to(at) < FAR))      # (shut while you are in: you can still get out)
 			m.visible = show and not scene
 			if not show:
 				_armed[key] = true

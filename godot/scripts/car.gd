@@ -19,6 +19,11 @@ const Chara = preload("res://scripts/chara.gd")
 const Modelos = preload("res://scripts/modelos.gd")
 const GROUND := 0.04            # where the road is under a car standing on its springs, from the car's own origin
 static var old_look := false    # build the cars of boxes that these were before their models (for telling them apart)
+## The world held still (the pause, the big map: game.gd _hold_world). The physics does not move then, but a force
+## given to a body waits for the next step -- and the parked cars' spring and every car's anti-roll bar were given
+## theirs every tick all the same: after a minute's pause they all went off at once, "todos los coches explotan
+## contra una pared" (the user, 17 Nov 2026). Held, a car gives itself nothing.
+static var held := false
 
 const SPECS := {
 	"panda": {"name": "Zeat Panda", "max": 25.0, "acc": 6.5, "turn": 0.55, "mass": 850.0, "hp": 100.0, "len": 3.5, "wid": 1.75, "body": 0.8, "cab": 0.72, "cab_len": 2.3, "cab_z": -0.4, "wheel": 0.36,
@@ -837,6 +842,8 @@ func airborne() -> bool:
 
 ## thr: -1..1 (forward/back), steer: -1..1 (positive = left), hand: handbrake. Call every physics tick.
 func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> void:
+	if held:
+		return
 	var vf := forward_speed()
 	# off the road most cars drop to 55 % of their top speed; "offroad" in the spec overrides that
 	# (the Z15 barely notices, the tractors do not notice at all)
@@ -893,6 +900,8 @@ func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> vo
 	steering = move_toward(steering, steer * lock, 2.6 * dt)
 
 func _physics_process(dt: float) -> void:
+	if held:
+		return
 	crash_cool -= dt
 	var dv := (linear_velocity - _prev_v)
 	dv.y = 0.0

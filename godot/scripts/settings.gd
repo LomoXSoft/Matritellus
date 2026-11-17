@@ -10,7 +10,7 @@ var intro_seen := false                          # so going back to the main men
 var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8, "music": 7, "sfx": 8, "lang": "es", "keys": {},
 	"window": 0, "shadows": 2, "textures": 2, "draw": 1, "fov": 55, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1,
 	"dynres": false, "upscale": 1, "lod": true, "occlusion": true, "silent": false, "dev": false,
-	"warm": ""}         # (warm: which version of the game has had its shaders made on this graphics card: calentar.gd)
+	"bright": 6, "warm": ""}         # (warm: which version of the game has had its shaders made on this graphics card: calentar.gd)
 
 ## The graphics options (game.gd, apply_graphics, does what they say). The defaults are the game as it always was.
 ##   window     0 in a window · 1 full screen (borderless) · 2 full screen, exclusive
@@ -26,6 +26,13 @@ var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8
 ##   lod        far things simplified: the engine's levels of detail, and small details drawn less far
 ##   occlusion  what is hidden behind the houses is not drawn (the walls of the town stand in front of it)
 ##   silent     "Modo Silent Hill": a street or two drawn, in a thick fog -- for the humblest machines
+## (and, the user, 17 Nov 2026, the title by morning "un poco quemada" on the Steam Machine's television, where the same
+## picture is fine on a computer's screen -- a television, or SteamOS stretching the picture for HDR, can push the
+## bright colours over the top:)
+##   bright     the whole picture, as it goes to the screen, times BRIGHT[bright] (6, 100 %, as it always was): after
+##              the tone curve, so that 80 % is 80 % (before it, as the exposure, the curve swallowed most of it). Not
+##              part of the presets: it is for the screen, not the machine.
+const BRIGHT := [0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1]
 const SCALES := [50, 67, 75, 85, 100]
 const DRAW := [0.6, 1.0, 1.6, 0.0]               # (0: no limit)
 const FOV := [45, 90]

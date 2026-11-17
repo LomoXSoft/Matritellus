@@ -66,6 +66,11 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
   del mercao».
 - **Martes y domingos hay pollos asaos en Pollos Javi** (el de verdad se llama de otra manera). El martes coincide
   con el mercado; el domingo es el pollo de no cocinar. Quien llega tarde se queda sin pollo.
+- **La ruta del colesterol** es la Carretera Antigua de Madrid a Cádiz («Ctra. Antigua Madrid Cádiz» en los letreros).
+  Tiene acera a lo largo, entre la carretera y el campo, y es donde la gente sale a andar un poco cuando hace bueno.
+  En el juego es la carretera que cruza el mapa de norte a sur por el este; los vecinos la nombran así (en los dichos
+  de mayores, de los demás y de los críos), y los que andan por ella tienen sus frases (`ruta_colesterol` en loc.gd).
+  Foto: `referencias/ruta_colesterol/`.
 
 - **Las peñas** (en el juego, los grafitis de cada una salen por las paredes del pueblo; Luis hizo sus logos):
   - **Nietos de Marzo**: azul y naranja, un sol sobre un tejado en triángulo. (Hasta el 13/11/2026 se llamaban «Nietos de

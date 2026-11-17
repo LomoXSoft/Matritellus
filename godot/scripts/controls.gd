@@ -17,7 +17,63 @@ const PAD_NAMES := {"interact": "(A)", "punch": "(X)", "run": "RB", "handbrake":
 	"forward": "stick ↑", "back": "stick ↓", "left": "stick ←", "right": "stick →", "ok": "(A)", "esc": "(B)"}
 var _token: RegEx
 
+## The left stick in menus, boards and lists, as steps: one when it is pushed, then, held, one after STICK_FIRST and
+## every STICK_EVERY after that, like a key held down. (The user, 17 Nov 2026, with a Steam Controller: "no puede mover
+## el joystick un poco, en menús y en ajedrez se mueve a toda velocidad sin parar" -- every movement of the stick was
+## taken for another press.) It comes as the actions m_* and ui_* (the stick is bound to neither); walking and driving
+## read the stick as it is, as before.
+const STICK_ON := 0.55          # pushed this far it is a step...
+const STICK_OFF := 0.35         # ...and it is let go below this
+const STICK_FIRST := 0.4
+const STICK_EVERY := 0.13
+var _stick_dir := ""
+var _stick_t := 0.0
+var _stick_dev := 0
+
+func _stick(e: InputEventJoypadMotion) -> void:
+	if e.axis != JOY_AXIS_LEFT_X and e.axis != JOY_AXIS_LEFT_Y:
+		return
+	_stick_dev = e.device
+	var v := Vector2(Input.get_joy_axis(e.device, JOY_AXIS_LEFT_X), Input.get_joy_axis(e.device, JOY_AXIS_LEFT_Y))
+	if e.axis == JOY_AXIS_LEFT_X:
+		v.x = e.axis_value
+	else:
+		v.y = e.axis_value
+	var dir := _stick_dir
+	if v.length() < STICK_OFF:
+		dir = ""
+	elif v.length() > STICK_ON or _stick_dir == "":
+		if v.length() > STICK_ON:
+			dir = ("right" if v.x > 0.0 else "left") if absf(v.x) > absf(v.y) else ("down" if v.y > 0.0 else "up")
+	if dir == _stick_dir:
+		return
+	if _stick_dir != "":
+		_send(_stick_dir, false)
+	_stick_dir = dir
+	if dir != "":
+		_send(dir, true)
+		_stick_t = STICK_FIRST
+
+func _send(dir: String, on: bool) -> void:
+	for prefix in ["m_", "ui_"]:
+		var a := InputEventAction.new()
+		a.action = prefix + dir
+		a.pressed = on
+		a.strength = 1.0 if on else 0.0
+		a.device = _stick_dev
+		Input.parse_input_event(a)
+
+func _process(delta: float) -> void:
+	if _stick_dir == "":
+		return
+	_stick_t -= delta
+	if _stick_t <= 0.0:
+		_stick_t = STICK_EVERY
+		_send(_stick_dir, true)                  # (another step, as a key held down repeats)
+
 func _input(e: InputEvent) -> void:
+	if e is InputEventJoypadMotion:
+		_stick(e)
 	var now := pad
 	if (e is InputEventJoypadButton and e.pressed) or (e is InputEventJoypadMotion and absf(e.axis_value) > 0.5) or e is InputEventScreenTouch or e is InputEventAction:
 		now = true                          # (the buttons drawn on a touch screen are named as a pad's)
@@ -175,10 +231,16 @@ func build() -> void:
 	_bind("map", [_key(keys["map"]), _key(KEY_TAB), _pad(JOY_BUTTON_BACK)])
 	_bind("pause", [_key(keys["pause"]), _key(KEY_ESCAPE), _pad(JOY_BUTTON_START)])
 	# --- in menus (fixed) ---
-	_bind("m_up", [_key(KEY_UP), _key(KEY_W), _pad(JOY_BUTTON_DPAD_UP), _axis(JOY_AXIS_LEFT_Y, -1.0)])
-	_bind("m_down", [_key(KEY_DOWN), _key(KEY_S), _pad(JOY_BUTTON_DPAD_DOWN), _axis(JOY_AXIS_LEFT_Y, 1.0)])
-	_bind("m_left", [_key(KEY_LEFT), _pad(JOY_BUTTON_DPAD_LEFT), _axis(JOY_AXIS_LEFT_X, -1.0)])
-	_bind("m_right", [_key(KEY_RIGHT), _pad(JOY_BUTTON_DPAD_RIGHT), _axis(JOY_AXIS_LEFT_X, 1.0)])
+	# (the stick is not bound to these: it comes as steps, see _stick below)
+	_bind("m_up", [_key(KEY_UP), _key(KEY_W), _pad(JOY_BUTTON_DPAD_UP)])
+	_bind("m_down", [_key(KEY_DOWN), _key(KEY_S), _pad(JOY_BUTTON_DPAD_DOWN)])
+	_bind("m_left", [_key(KEY_LEFT), _pad(JOY_BUTTON_DPAD_LEFT)])
+	_bind("m_right", [_key(KEY_RIGHT), _pad(JOY_BUTTON_DPAD_RIGHT)])
+	for ui in ["ui_up", "ui_down", "ui_left", "ui_right"]:       # (nor to Godot's own, which move the focus of buttons)
+		if InputMap.has_action(ui):
+			for ev in InputMap.action_get_events(ui):
+				if ev is InputEventJoypadMotion:
+					InputMap.action_erase_event(ui, ev)
 	_bind("m_accept", [_key(KEY_ENTER), _key(KEY_KP_ENTER), _key(KEY_SPACE), _pad(JOY_BUTTON_A)])
 	_bind("m_back", [_key(KEY_ESCAPE), _key(KEY_BACKSPACE), _pad(JOY_BUTTON_B)])
 

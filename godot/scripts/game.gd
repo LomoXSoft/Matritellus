@@ -30,6 +30,8 @@ const CartasS = preload("res://scripts/cartas.gd")
 const RayaS = preload("res://scripts/raya.gd")
 const MotinS = preload("res://scripts/motin.gd")
 const FelicianoS = preload("res://scripts/feliciano.gd")
+const RutaS = preload("res://scripts/ruta.gd")
+const RondasS = preload("res://scripts/rondas.gd")
 const DerrapeS = preload("res://scripts/derrape.gd")
 const TironesS = preload("res://scripts/tirones.gd")
 const LimiteS = preload("res://scripts/limite.gd")
@@ -181,6 +183,8 @@ var derrape                     # tyres squealing and the marks they leave (derr
 var _arrow_beat := 0.0          # the phase of the guide arrow's bob, run on its own (see _physics_process)
 var motin                       # the roast ham riot outside La Cocina de Henry, and the minigame it is (motin.gd)
 var feliciano                   # Feliciano, at every roast ham riot, by the Poor Clares' convent the rest of the week (feliciano.gd)
+var ruta                        # the walkers in tracksuits along the «ruta del colesterol», the old Madrid–Cádiz road (ruta.gd)
+var rondas                      # the rounds of the neighbours with a name of their own, when they have no mission for you (rondas.gd)
 var sabotaje                    # Don Luis's side mission: the delivery lorry and the other three kebabs (sabotaje.gd)
 var pintadas                    # La Chiki's: the walls of the peñas (pintadas.gd)
 var gacha                       # the gumball machines and the figures that come out of them (gacha.gd)
@@ -497,6 +501,7 @@ func apply_graphics() -> void:
 	vp.texture_mipmap_bias = [1.5, 0.5, 0.0][int(d["textures"])]
 	env.ssao_enabled = bool(d["ssao"])
 	env.glow_enabled = bool(d["glow"])
+	env.adjustment_brightness = Settings.BRIGHT[clampi(int(d.get("bright", 6)), 0, Settings.BRIGHT.size() - 1)]      # (the screen's own: settings.gd)
 	var sh := int(d["shadows"])
 	sun.shadow_enabled = sh > 0
 	if sh > 0:
@@ -1000,6 +1005,8 @@ func _neighbour_look(voice: String) -> Dictionary:
 ## a look for somebody driving a car: a neighbour's, with the voice they would have if they got out
 func driver_look() -> Dictionary:
 	var kind := randi() % NEIGHBOUR_VOICES.size()
+	while NEIGHBOUR_VOICES[kind] == "kid":         # (children do not drive: the user, 17 Nov 2026)
+		kind = randi() % NEIGHBOUR_VOICES.size()
 	var o := _neighbour_look(NEIGHBOUR_VOICES[kind])
 	o["voice_i"] = kind
 	return o
@@ -1200,13 +1207,24 @@ func _firmas_begin(s: Dictionary) -> void:
 		plan.append(false)
 	plan.shuffle()
 	plan.append(true)
+	var when: Array = firmas_deadline()
+	firmas = {"got": 0, "need": need, "asked": {}, "plan": plan, "until": when[1], "dawn": when[0]}
+	_firmas_show()
+
+## [before dawn?, until when] if the signatures were asked for now: the same for Alberto's words and the errand itself
+func firmas_deadline() -> Array:
 	var dawn: bool = moment_of(clock) == "night"
 	var until := _next_time(DAWN_AT if dawn else NIGHT_AT, _now_h())
 	if until - _now_h() < 5.0:
 		dawn = not dawn
 		until = _next_time(DAWN_AT if dawn else NIGHT_AT, until)
-	firmas = {"got": 0, "need": need, "asked": {}, "plan": plan, "until": until, "dawn": dawn}
-	_firmas_show()
+	return [dawn, until]
+
+## Alberto says only the one that holds now -- "antes de que anochezca" or "antes de que amanezca" -- not the rule for
+## both (the user, 17 Nov 2026: "Esto es una mecánica del juego, no debería ser un diálogo")
+func firmas_plazo(lines: Array) -> Array:
+	var said: String = Loc.t("firmas_plazo_dawn" if firmas_deadline()[0] else "firmas_plazo_dusk")
+	return lines.map(func(l): return String(l).replace("{plazo}", said))
 
 func _firmas_show() -> void:
 	if firmas != null:
@@ -1422,6 +1440,8 @@ func _setup_places_and_actors() -> void:
 	_add_nino_negro()
 	feliciano = FelicianoS.new()
 	feliciano.setup(self)
+	ruta = RutaS.new()
+	ruta.setup(self)
 	var genaro_look :={"face": 6, "top": 6, "brows": 1, "shirt": 0x8a6a48, "hair": 0xe0e0e0, "hat": "beret", "skin": 0xe2ab80}
 	if world != null and world.molino != null:      # (the mill built by hand: in its yard, where the curved path ends, facing the red door; Pretil)
 		var miller = _make_npc("genaro", genaro_look, "old_m", MILLER_AT)
@@ -1490,6 +1510,8 @@ func _setup_places_and_actors() -> void:
 	motin = MotinS.new()
 	add_child(motin)
 	motin.setup(self)
+	rondas = RondasS.new()                       # (once everybody with a name is in place, and the places they go to are built)
+	rondas.setup(self)
 	derrape = DerrapeS.new()
 	add_child(derrape)
 	derrape.setup(self)
@@ -1714,6 +1736,7 @@ func _menu_page(id: String) -> Dictionary:
 				"left": Settings.step_preset.bind(-1), "right": Settings.step_preset.bind(1)})
 			items.append(row.call("s_res", "%d × %d" % [res.x, res.y], "res", Settings.RESOLUTIONS.size()))
 			items.append(row.call("s_screen", pick.call("window", "s_windows"), "window", 3))
+			items.append(row.call("s_bright", "%d %%" % roundi(Settings.BRIGHT[int(d.get("bright", 6))] * 100.0), "bright", Settings.BRIGHT.size()))
 			items.append(flip.call("s_vsync", "vsync"))
 			items.append(row.call("s_fps", Loc.t("s_nolimit") if cap == 0 else str(cap), "fps", Settings.FPS_CAPS.size()))
 			items.append(row.call("s_shadows", pick.call("shadows", "s_shadow_v"), "shadows", 4))
@@ -1907,6 +1930,7 @@ func _close_pause() -> void:
 ## had) and every sound of it, the radio and the engine included (the user, 14 November 2026). The menu's beeps sound.
 func _hold_world(on: bool) -> void:
 	PhysicsServer3D.set_active(not on)
+	CarS.held = on                             # (nor do the cars push themselves meanwhile: car.gd held)
 	Sfx.hold(on)
 	Ambience.hold(on)
 
@@ -3292,6 +3316,8 @@ func talk_to(n, chat_only := false) -> void:
 			if s["id"] == "alberto" and int(stats.get("firmas_fail", 0)) > 0:
 				lines_key = "alberto_again"      # (not the whole speech again)
 			var pitch = Loc.t(lines_key)
+			if s["id"] == "alberto" and pitch is Array:
+				pitch = firmas_plazo(pitch)
 			if _step_flag == "declined":             # you said no before: no speech this time, only the question
 				pitch = [Loc.t("offer_again").pick_random()]
 				_step_flag = ""
@@ -4582,6 +4608,10 @@ func _physics_process(delta: float) -> void:
 	motin.tick(dt, pp)
 	if feliciano != null:
 		feliciano.tick(dt)
+	if ruta != null:
+		ruta.tick(dt)
+	if rondas != null:
+		rondas.tick(dt)
 	derrape.tick(dt, pp)
 	limite.tick(dt, pp, frozen or indoors or not (phase == "play" or phase == "free"))
 	_mark("garages, missions")
@@ -5051,8 +5081,8 @@ func _pavement(pos: Vector2) -> Vector2:
 func _keep_crowd_near(pp: Vector2, at_most := 1) -> int:
 	var moved := 0
 	for n in npcs:
-		if n.id != "" or not n.walker or n.away or n.still or (n.state != "idle" and n.state != "walk"):
-			continue
+		if n.id != "" or not n.walker or n.away or n.still or (n.state != "idle" and n.state != "walk") or not n.beat.is_empty():
+			continue                             # (one who keeps to a street keeps to it: the walkers of the ruta del colesterol, ruta.gd)
 		if n.p.distance_squared_to(pp) < 210.0 * 210.0:
 			continue
 		var spot = MapData.random_node_near(pp, 95.0, 180.0)

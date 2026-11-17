@@ -26,6 +26,14 @@ const FAR := 90.0                     # beyond this nobody is about to see them:
 const SOUND := "res://assets/audio/ninos_jugando.ogg"
 const SOUND_DB := -3.0                # how loud, a few metres from them
 const HEARD := 55.0                   # metres: beyond this they are not heard
+## Children in the street (the user, 17 Nov 2026): "los niños no pueden estar en la calle en horario lectivo ni en
+## horario de madrugada", and "Niño Negro Gordo de Pueblo solo puede spawnear a la misma hora que el resto de los
+## niños". The children out walking (the town's anonymous ones with a child's voice) and the Niño Negro go home in
+## school hours, Monday to Friday, and at night; like the yards', only while nobody sees them go or come. (The square's
+## playground keeps its own hours, which already leave out both: plaza.gd _play_time.)
+const SCHOOL := [9.0, 14.0]           # school hours, Monday to Friday
+const KIDS_FROM := 8.0                # out in the street from...
+const KIDS_TO := 23.0                 # ...until
 
 var G
 var yards: Array = []                 # {name, place, spots: [map points], c: map middle, r, kids: [{n, do, t, goal, speed, stuck}], out}
@@ -113,6 +121,34 @@ func _add_yard(yard_name: String, place, local: Array, floor_y: float, outline: 
 	for k in y["kids"]:
 		_send(y, k, out)
 
+## may a child be out in the street now?
+func street_time() -> bool:
+	if G.clock < KIDS_FROM or G.clock >= KIDS_TO:
+		return false
+	return int(G.weekday) >= 5 or G.clock < SCHOOL[0] or G.clock >= SCHOOL[1]
+
+## the children of the street: the anonymous ones with a child's voice, out and about, and the Niño Negro
+func _street_kids() -> Array:
+	var out: Array = []
+	for n in G.npcs:
+		if n.voice != "kid" or n.has_meta("crio") or not (n.id == "" or n.id == "nino_negro") or n.state == "fly" or n.state == "down":
+			continue
+		if n.id == "" and n.still:                # (one of a crowd standing somewhere: not out and about)
+			continue
+		out.append(n)
+	return out
+
+func _street(out: bool) -> void:
+	for n in _street_kids():
+		if n.away == (not out) or G.sees(n.p):
+			continue
+		if G.dlg != null and G.dlg.get("from") == n:
+			continue
+		n.away = not out
+		n.visible = out
+		if not out:
+			n.state = "idle"
+
 ## school days, in the middle of the morning; never in the rain
 func play_time() -> bool:
 	if G.rain > 0.3 or int(G.weekday) >= 5:
@@ -128,6 +164,7 @@ func _process(dt: float) -> void:
 	_t -= dt
 	if _t <= 0.0:
 		_t = LOOK_T
+		_street(street_time())
 		var want := play_time()
 		for y in yards:
 			if want != bool(y["out"]) and not _watched(y):

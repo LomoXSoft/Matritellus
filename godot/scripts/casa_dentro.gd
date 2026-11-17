@@ -299,6 +299,8 @@ func _graffiti() -> void:
 ## (padron.gd) and the eaves.
 const HOME_HOUSE := "alemania_5"
 const FRONT_MAX_W := 1.6                        # how wide it may be painted
+const FRONT_OFF := 0.04                         # how far in front of the wall it is painted (enough for the wall never to show through)
+var _front_out := 0.0
 var _front_room := Vector2(1.2, 0.68)           # how much wall there is for it (across, up)
 func _front_tag() -> void:
 	var hd = null
@@ -322,13 +324,21 @@ func _front_tag() -> void:
 	var y1 := base + float(hd.get("h", 3.5)) - 0.14                  # (under the eaves)
 	_front_room = Vector2(FRONT_MAX_W, maxf(0.4, y1 - y0))
 	var mid_y := (y0 + y1) / 2.0
-	var at := Vector3(door.x, mid_y, door.y)
+	# How far out from the map's front line: in front of the wall AS DRAWN, whose face is the floor's "fly" out from that
+	# line (casas.gd), and in front of what is solid. Until 17 Nov 2026 it went a hand's breadth out from the solid
+	# wall, and once the houses' meshes were merged that was the drawn face itself: the wall hid it (the user: "el
+	# grafiti de la peña no sale durante el creador de personajes").
+	var out3 := Vector3(out.x, 0.0, out.y)
+	var on_line := Vector3(door.x, mid_y, door.y)
+	var fly := float((Casas.SPECS.get(HOME_HOUSE, {}).get("floors", [{}])[0] as Dictionary).get("fly", 0.0))
+	_front_out = fly + FRONT_OFF
 	var space: PhysicsDirectSpaceState3D = G.get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(Vector3(door.x + out.x * 3.0, mid_y, door.y + out.y * 3.0), Vector3(door.x - out.x * 3.0, mid_y, door.y - out.y * 3.0), 1)
+	var q := PhysicsRayQueryParameters3D.create(on_line + out3 * 3.0, on_line - out3 * 3.0, 1)
 	var hit := space.intersect_ray(q)
 	if not hit.is_empty():
-		at = Vector3((hit["position"] as Vector3).x, mid_y, (hit["position"] as Vector3).z)
-	at += Vector3(out.x, 0.0, out.y) * 0.1                          # (the wall drawn stands a little in front of what is solid: padron.gd)
+		_front_out = maxf(_front_out, ((hit["position"] as Vector3) - on_line).dot(out3) + FRONT_OFF)
+	_front_out -= fly                                               # (kept as how far it stands off the drawn face: the self-test)
+	var at := on_line + out3 * (fly + _front_out)
 	var m := ShaderMaterial.new()
 	m.shader = _tag_mat.shader
 	m.set_shader_parameter("wear_tex", load("res://assets/penas/desgaste.png"))
@@ -353,6 +363,10 @@ func _front_size() -> void:
 ## (the self-test) the graffiti on the front: null until it is painted
 func front_tag() -> MeshInstance3D:
 	return _front
+
+## (the self-test) how far it stands in front of the wall as drawn (m)
+func front_clear() -> float:
+	return _front_out
 
 # ---------------- the kit's models ----------------
 func _bounds(n: Node, xf: Transform3D, bx: Array) -> void:

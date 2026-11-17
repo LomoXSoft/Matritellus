@@ -20,7 +20,7 @@
 > 3. Pegado el último cartel, Alberto te llama: hay muchísima gente. Fundido, gente en las puertas y un cartel del
 >    torneo a cada lado. Alberto te saluda; el alcalde ha llamado a gente y pegado carteles. Dentro (transporte como la
 >    trastienda de V.I.P.): máquinas, gente jugando y picándose; paneos de las pantallas. Final: Katakumba69 contra
->    DoomAssasin78, «más conocido como el alcalde». «¿Qué? Yo nací siendo alcalde…». Gana el alcalde, confeti. «Esto
+>    DoomAssasin78, «más conocido como el alcalde». «¿Qué? Yo no nací alcalde…» (así lo corrigió el usuario el 17/11). Gana el alcalde, confeti. «Esto
 >    me ha sabido a poco»: te reta a doble o nada; puedes negarte pero todos te vacilan (Alberto, y una señora: «¡¡Revientale
 >    la puta cara!!» — «Mamá, por favor, aquí no») hasta que aceptas. La partida de Tokken 9 se queda de momento en
 >    «te acercas, pulsas Acción y ganas». Final: el alcalde no se lo cree; campeón; confeti; suena Traktor FM bajito.

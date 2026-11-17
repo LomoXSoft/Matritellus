@@ -128,7 +128,9 @@ func tick(dt: float, pp: Vector2) -> void:
 		G.hud.minimap.givers = marks
 		G.hud.bigmap.givers = marks
 	_spin += dt * 2.2
-	var hide_all: bool = G.dlg != null or G.cine_lock or G.indoors or G.phase != "play" and G.phase != "free"
+	# (indoors too: the sets stand 250 m or more from the town and from each other, so whoever is within FAR of you in
+	# there is in there with you -- the mayor waiting at the machine, in the Recress: the user, 17 November 2026)
+	var hide_all: bool = G.dlg != null or G.cine_lock or G.phase != "play" and G.phase != "free"
 	for n in _arrows:
 		var a: MeshInstance3D = _arrows[n]
 		if not is_instance_valid(n) or not is_instance_valid(a):
@@ -151,7 +153,7 @@ func _new_arrow() -> MeshInstance3D:
 	m.albedo_color = Color(0.22, 0.84, 0.3, 0.0)
 	m.emission_enabled = true
 	m.emission = Color(0.1, 0.5, 0.15)
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS      # (fading in, it is still drawn in the right order)
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 	m.roughness = 0.5
 	a.material_override = m
@@ -166,10 +168,10 @@ func _make_arrow() -> Mesh:
 	var depth := 0.08
 	var outline: Array = [Vector2(0.0, 0.0), Vector2(0.26, 0.28), Vector2(0.095, 0.28), Vector2(0.095, 0.58), Vector2(-0.095, 0.58), Vector2(-0.095, 0.28), Vector2(-0.26, 0.28)]
 	var tris: Array = [[0, 1, 6], [2, 3, 4], [2, 4, 5]]
-	for side in [-1.0, 1.0]:                         # the two faces
-		st.set_normal(Vector3(0, 0, side))
-		for t in tris:
-			var idx: Array = t if side > 0.0 else [t[0], t[2], t[1]]
+	for side in [-1.0, 1.0]:                         # the two faces (wound clockwise seen from outside, as Godot draws a front:
+		st.set_normal(Vector3(0, 0, side))          # they were the other way round, and from outside one saw through the near face to
+		for t in tris:                              # the back of the far one -- "transparente por los laterales", the user, 17 Nov 2026)
+			var idx: Array = [t[0], t[2], t[1]] if side > 0.0 else t
 			for i in idx:
 				var v: Vector2 = outline[i]
 				st.add_vertex(Vector3(v.x, v.y, side * depth))

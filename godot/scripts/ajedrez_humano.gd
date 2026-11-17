@@ -61,7 +61,12 @@ var moves_said: Array = []       # the game in notation
 var said := ""                   # the last thing the mayor said, for the panel
 var cursor := Vector2i(4, 1)     # in your view: x from your left, y from your side
 var sel := -1                    # the square of the piece you have picked up
-var view := 0                    # 0 from your side, 1 from overhead
+var view := 0                    # 0 from your side, 1 from overhead, 2 the cinema's: round and round from a helicopter
+const VIEWS := 3
+const CINE_R := 15.0             # (the cinema's view: how far out it goes round the board, how high, how fast)
+const CINE_UP := 12.5
+const CINE_TURN := 0.1           # radians a second
+var _cine_a := 0.0
 var result := ""                 # "" | "won" | "lost" | "draw"
 var thinking := false
 var test_hold := false           # (the tests: the mayor does not move on his own)
@@ -680,8 +685,10 @@ func input(e: InputEvent) -> void:
 	if e.is_action_pressed("pause") or (e.is_action_pressed("m_back") and sel < 0 and not (e is InputEventMouseButton)):
 		_menu()
 		return
-	if e.is_action_pressed("radio"):
-		_set_view(1 - view)
+	# the next view: Y on a pad (the d-pad is for moving now; its right was the radio's button), H or R on a keyboard
+	# (the user, 17 Nov 2026: "el ajedrez debería usar la cruceta para moverse, para cambiar de vista podríamos usar Y")
+	if e.is_action_pressed("horn") or (e is InputEventKey and e.is_action_pressed("radio")):
+		_set_view((view + 1) % VIEWS)
 		return
 	if e.is_action_pressed("m_back"):
 		sel = -1
@@ -709,13 +716,14 @@ func input(e: InputEvent) -> void:
 			pick(_view_sq(v))
 		return
 	var step := Vector2i.ZERO
-	if e.is_action_pressed("forward", true) or e.is_action_pressed("m_up", true):
+	var keyed: bool = e is InputEventKey               # (W A S D as well as the arrows; the stick comes as m_* steps: controls.gd)
+	if (keyed and e.is_action_pressed("forward", true)) or e.is_action_pressed("m_up", true):
 		step.y = 1
-	elif e.is_action_pressed("back", true) or e.is_action_pressed("m_down", true):
+	elif (keyed and e.is_action_pressed("back", true)) or e.is_action_pressed("m_down", true):
 		step.y = -1
-	elif e.is_action_pressed("left", true) or e.is_action_pressed("m_left", true):
+	elif (keyed and e.is_action_pressed("left", true)) or e.is_action_pressed("m_left", true):
 		step.x = -1
-	elif e.is_action_pressed("right", true) or e.is_action_pressed("m_right", true):
+	elif (keyed and e.is_action_pressed("right", true)) or e.is_action_pressed("m_right", true):
 		step.x = 1
 	if step != Vector2i.ZERO:
 		cursor = Vector2i(clampi(cursor.x + step.x, 0, 7), clampi(cursor.y + step.y, 0, 7))
@@ -728,7 +736,7 @@ func input(e: InputEvent) -> void:
 func touch_buttons() -> Array:
 	if result != "":
 		return [[Loc.t("aj_b_out"), "interact", "big"]]
-	return [[Loc.t("aj_b_view"), "radio", ""], [Loc.t("aj_b_drop"), "m_back", ""], ["II", "pause", "top"]]
+	return [[Loc.t("aj_b_view"), "horn", ""], [Loc.t("aj_b_drop"), "m_back", ""], ["II", "pause", "top"]]
 
 ## the square under a spot of the screen (in your view), or null
 func _cell_at(at: Vector2):
@@ -925,7 +933,11 @@ func _physics_process(delta: float) -> void:
 		_idle(_dream, dt)
 	if not active:
 		return
-	# the camera, gliding to the view asked for
+	# the camera, gliding to the view asked for (in the cinema's, the place it glides to goes round the board)
+	if view == 2:
+		_cine_a += CINE_TURN * dt
+		var c2 := _centre()
+		_cam_from = _world(c2 + Vector2(cos(_cine_a), sin(_cine_a)) * CINE_R, CINE_UP)
 	G.cam.global_position = G.cam.global_position.lerp(_cam_from, 1.0 - exp(-4.0 * dt))
 	_cam_at_now = _cam_at_now.lerp(_cam_at, 1.0 - exp(-4.0 * dt))
 	G.cam.look_at(_cam_at_now)
@@ -1056,9 +1068,13 @@ func _set_view(v: int, now := false) -> void:
 	if view == 0:                                # from behind your side
 		_cam_from = _world(Vector2(c.x, c.y + 11.0), 12.5)
 		_cam_at = _world(Vector2(c.x, c.y + 0.3), 0.0)
-	else:                                        # nearly overhead
+	elif view == 1:                              # nearly overhead
 		_cam_from = _world(Vector2(c.x, c.y + 4.0), 17.5)
 		_cam_at = _world(Vector2(c.x, c.y + 0.2), 0.0)
+	else:                                        # the cinema's: going round from high up, slowly (on in _process)
+		_cine_a = PI / 2.0                       # (it sets off from behind your side, where the first view was)
+		_cam_from = _world(c + Vector2(cos(_cine_a), sin(_cine_a)) * CINE_R, CINE_UP)
+		_cam_at = _world(Vector2(c.x, c.y), 0.0)
 	G.cam.fov = 46.0
 	if now:
 		G.cam_fixed = null

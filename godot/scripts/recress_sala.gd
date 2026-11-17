@@ -119,6 +119,7 @@ var in_spawn: Vector2
 var machine: Vector2             # the Tokken 9 of the final: where the two players sit...
 var seat_you: Vector2
 var seat_other: Vector2
+var hold_in := false             # (recress.gd) no way out for now: the mayor's challenge, until you have beaten him (entradas.gd)
 var mic: Vector2                 # ...where the commentator stands (on the left of them, facing the middle)
 var duel_you: Vector2            # the mayor's challenge is made out in the open, between the door and the audience
 var duel_him: Vector2

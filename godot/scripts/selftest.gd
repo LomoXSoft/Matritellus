@@ -1037,7 +1037,20 @@ func _firmas_checks() -> void:
 	var late: bool = _at("alberto") and g.firmas == null and int(g.stats.get("firmas_fail", 0)) == 1
 	g.talk_to(g.named["alberto"])
 	var short: bool = g.dlg != null and g.dlg["lines"].size() == Loc.t("alberto_again").size()
+	var again_said: String = " ".join(g.dlg["lines"]) if g.dlg != null else ""
+	var plazo_now: String = Loc.t("firmas_plazo_dawn" if g.firmas_deadline()[0] else "firmas_plazo_dusk")
 	await _skip_dialog()
+	# he says only the deadline that holds now, not the rule for both (the user, 17 Nov 2026: "Esto es una mecánica del
+	# juego, no debería ser un diálogo")
+	var was_clock: float = g.clock
+	var plazos := []
+	for h in [10.0, 18.0, 23.0, 3.0]:
+		g.clock = h
+		plazos.append(String(g.firmas_plazo(["{plazo}"])[0]))
+	g.clock = was_clock
+	_check(again_said.contains(plazo_now) and not again_said.contains("{plazo}") and not again_said.contains("cambie la luz")
+		and plazos == [Loc.t("firmas_plazo_dusk"), Loc.t("firmas_plazo_dawn"), Loc.t("firmas_plazo_dawn"), Loc.t("firmas_plazo_dusk")],
+		"Alberto says when he wants them, as it is now: %s" % str(plazos))
 	_check(late and short and _at("firmas") and g.firmas != null and g.firmas["got"] == 0, "let the light change without them and they are void: back to Alberto, who sends you out again in two sentences")
 	# those at the demonstration have signed already, each in their own way
 	var were: bool = not g.folk.knows("chiki") and not g.folk.knows("alberto")
@@ -2236,6 +2249,42 @@ func _chismes_checks() -> void:
 		else:
 			g.stats[key] = was[i]
 
+## Children in the street (ninos.gd street_time; the user, 17 Nov 2026): not in school hours nor at night, the Niño Negro
+## with them; and no child at the wheel.
+func _ninos_calle_checks() -> void:
+	var N = g.ninos
+	var was := [g.weekday, g.clock]
+	var hours := []
+	for t in [[0, 10.0], [0, 16.0], [5, 10.0], [2, 2.0], [3, 23.5], [4, 8.5]]:
+		g.weekday = t[0]
+		g.clock = t[1]
+		hours.append(N.street_time())
+	var away_ok := true
+	var back_ok := true
+	var kids: Array = N._street_kids()
+	g.weekday = 0
+	g.set_time(10.0)
+	N._street(N.street_time())
+	for n in kids:
+		if not g.sees(n.p) and not n.away:
+			away_ok = false
+	var nino = g.named.get("nino_negro")
+	var nino_home: bool = nino == null or g.sees(nino.p) or nino.away
+	g.set_time(17.0)
+	N._street(N.street_time())
+	for n in kids:
+		if not g.sees(n.p) and n.away:
+			back_ok = false
+	var drivers := 0
+	for i in range(300):
+		if g.NEIGHBOUR_VOICES[int(g.driver_look()["voice_i"])] == "kid":
+			drivers += 1
+	_check(hours == [false, true, true, false, false, true] and kids.size() >= 5 and away_ok and back_ok and nino_home and drivers == 0,
+		"children in the street: home on school mornings and at night, out in the afternoon and at weekends (%d of them, the Niño Negro too); none at the wheel of the traffic (%d of 300)" % [kids.size(), drivers])
+	g.weekday = int(was[0])
+	g.set_time(float(was[1]))
+	N._street(N.street_time())
+
 ## Children at play (the user, 16 Nov 2026): the little ones out in the two nursery yards on school mornings and home
 ## otherwise, every child at play shouting to the others while you are near, what they say when you talk to them; and
 ## Niño Negro Gordo de Pueblo by the square's playground, who talks of the pool, his bike and his sandwiches.
@@ -3117,6 +3166,35 @@ func _kebabdeluxe_checks() -> void:
 	rule = rule and kd.open_at(5, 1.9) and not kd.open_at(5, 2.0) and kd.open_at(0, 1.9) and not kd.open_at(0, 2.0) and not kd.open_at(4, 1.6) and kd.open_at(6, 13.5)
 	_check(good and rule, "it opens from 13:00 every day until 1:30 in the night after Monday to Thursday and 2:00 after Friday to Sunday: open, its door ajar and its lights and boards on; shut, all of it dark")
 
+## The little hermitage of San Cristóbal (cristobal.gd): built where Catastro's building was (no longer raised by the
+## bake); its walls stop you; the ground before its yard is free; nothing of it on the asphalt.
+func _cristobal_checks() -> void:
+	if MapData.cristobal.is_empty():                # (a map baked before it: nothing to check yet)
+		print("  the hermitage of San Cristóbal: not in this map yet")
+		return
+	var cr = g.world.get("cristobal")
+	_check(cr != null and cr.pieces > 150 and cr.openings >= 1, "the little hermitage of San Cristóbal is built by hand (%d pieces, %d doors)" % [(cr.pieces if cr != null else 0), (cr.openings if cr != null else 0)])
+	if cr == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var a: Vector2 = cr.spot(-1.0, -1.9)
+	var b: Vector2 = cr.spot(4.5, -1.9)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, cr.level + 1.2, a.y), Vector3(b.x, cr.level + 1.2, b.y), 1)).is_empty()
+	var q := PhysicsPointQueryParameters3D.new()
+	q.position = Vector3(cr.door.x, MapData.foot(cr.door) + 0.9, cr.door.y)
+	q.collision_mask = 1
+	var free_: bool = space.intersect_point(q).is_empty()
+	var nearest := 99.0
+	var worst := Vector2.ZERO
+	for p in cr.yard:
+		var d: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		if d < nearest:
+			nearest = d
+			worst = p
+	_check(stops and free_ and nearest > 0.0, "its walls stop you (%s), the ground before its yard is free (%s), nothing of it on the asphalt (the nearest %.2f m, at %s)" % [stops, free_, nearest, worst])
+
 ## The hermitage of San Sebastián and its park (sebastian.gd): built where Catastro's parcel was (no longer raised by
 ## the bake); its walls stop you; the door is reachable from the front; the round square and the terrace carry whoever
 ## walks on them; nothing of it on the asphalt.
@@ -3616,19 +3694,30 @@ func _ajedrez_checks() -> void:
 	await _shot("aj_responde")
 	var cur: Vector2i = AJ.cursor
 	var ev := InputEventAction.new()
-	ev.action = "left" if cur.x > 0 else "right"
+	ev.action = "m_left" if cur.x > 0 else "m_right"        # (the d-pad, or the stick as steps: controls.gd)
 	ev.pressed = true
 	AJ.input(ev)
 	var keys_ok: bool = absi(AJ.cursor.x - cur.x) == 1
 	var ev2 := InputEventAction.new()
-	ev2.action = "radio"
+	ev2.action = "horn"                                    # (Y on a pad: the next view)
 	ev2.pressed = true
 	AJ.input(ev2)
 	await _frames(50 if shots else 2)
 	await _shot("aj_cenital")
 	var top_view: bool = AJ.view == 1
+	AJ.input(ev2)                                          # the cinema's view: round the board from high up, slowly
+	await _frames(60)
+	var cine0: Vector3 = g.cam.global_position
+	await _frames(90)
+	var cine1: Vector3 = g.cam.global_position
+	if shots:
+		await _shot("aj_cine")
+	var board_y: float = AJ._world(AJ._centre(), 0.0).y
+	var cine: bool = AJ.view == 2 and cine0.distance_to(cine1) > 0.3 and cine1.y - board_y > 8.0
+	_check(cine, "Y again: the cinema's view, going round the board from a helicopter's height (%.1f m round in a second and a half, %.0f m up)" % [cine0.distance_to(cine1), cine1.y - board_y])
 	AJ.input(ev2)
 	await _frames(10)
+	top_view = top_view and AJ.view == 0
 	var ev3 := InputEventAction.new()
 	ev3.action = "pause"
 	ev3.pressed = true
@@ -5543,7 +5632,16 @@ func _reglas_checks(pictures := false) -> void:
 	# the graphics options: each row does something, and the defaults are the game as it always was
 	_check(Settings.preset() == 2 and g.get_viewport().msaa_3d == Viewport.MSAA_4X and g.env.ssao_enabled and g.sun.shadow_enabled and is_equal_approx(g.cam.fov, 55.0) and PartsS.draw == 1.0,
 		"the graphics options start at High: the game as it always was")
-	_check(g._menu_page("graphics")["items"].size() == 20, "(twenty rows on the graphics page)")
+	_check(g._menu_page("graphics")["items"].size() == 21 and is_equal_approx(g.env.adjustment_brightness, 1.0), "(twenty-one rows on the graphics page; Brillo at 100 %, as it always was)")
+	var bright_row: Array = g._menu_page("graphics")["items"].filter(func(it): return String(it["text"]) == Loc.t("s_bright"))
+	if bright_row.size() == 1:
+		bright_row[0]["left"].call()
+		bright_row[0]["left"].call()
+	var dimmer: float = g.env.adjustment_brightness
+	Settings.data["bright"] = 6
+	g.apply_graphics()
+	_check(bright_row.size() == 1 and is_equal_approx(dimmer, 0.9) and is_equal_approx(g.env.adjustment_brightness, 1.0) and not Settings.GRAPHICS.has("bright"),
+		"Brillo, for a television that burns the picture (the user, 17 Nov 2026): two steps down is 90 %%; not part of the presets")
 	_check(g.get_viewport().use_occlusion_culling and g.occluders != null and (g.occluders.occluder as ArrayOccluder3D).vertices.size() > 20000 and is_equal_approx(g.get_viewport().mesh_lod_threshold, 2.5) and is_equal_approx(PartsS.detail, PartsS.LOD_NEAR),
 		"High has occlusion culling (the town's walls hide what is behind them: %d corners) and automatic LOD on" % ((g.occluders.occluder as ArrayOccluder3D).vertices.size() if g.occluders != null else 0))
 	Settings.data["lod"] = false
@@ -6086,8 +6184,8 @@ func _mirada_checks(pictures := false) -> void:
 	g.hud.dlg_slot.visible = false
 	await _frames(60)
 	_check(w.p.distance_to(at_talk) > 0.5, "and walk on when you have finished")
-	# somebody with a place to keep: body and head both, as before
-	var paca = g.named["paca"]
+	# somebody with a place to keep: body and head both, as before (Eusebio at his kiosk: Tía Paca goes her rounds now, rondas.gd)
+	var paca = g.named["eusebio"]
 	g.player.p = paca.p + Vector2(sin(paca.h + 2.0), cos(paca.h + 2.0)) * 3.0
 	await _frames(90)
 	var facing: float = absf(angle_difference(paca.h + paca.neck.rotation.y, atan2(g.player.p.x - paca.p.x, g.player.p.y - paca.p.y)))
@@ -6612,6 +6710,189 @@ func _motin_checks(pictures := false) -> void:
 	g.traffic._spawn_t = 2.0
 	g.police.reset()
 
+## The ruta del colesterol (ruta.gd; the user, 17 Nov 2026, through Worldbuilding): walkers in tracksuits along the old
+## Madrid–Cádiz road, early and late in the day, keeping to it, with their own lines.
+func _ruta_checks(pictures := false) -> void:
+	var R = g.ruta
+	_check(R != null and R.beat.size() > 10, "the ruta del colesterol: the old Madrid–Cádiz road (%d points)" % (R.beat.size() if R != null else 0))
+	if R == null or R.points.is_empty():
+		return
+	var th: Dictionary = MapData.townhall
+	var town := Vector2(th["m"][0], th["m"][1])
+	var near: Vector2 = R.points[0]
+	for q in R.points:
+		if q.distance_to(town) < near.distance_to(town):
+			near = q
+	var was := [g.clock, g.raining, g.player.p]
+	g.raining = false
+	g.set_time(8.0)
+	g.player.p = g._pavement(near)
+	g.player.sync()
+	await _frames(20)
+	for i in range(40):
+		R.tick(1.0)
+	var off_road := []
+	for p in R.people:
+		var n = p["n"]
+		var d := 1e9
+		for q in R.points:
+			d = minf(d, q.distance_to(n.p))
+		if d > 40.0:
+			off_road.append(d)
+	var dogs: int = R.people.filter(func(p): return p["dog"] != null).size()
+	_check(R.people.size() >= 8 and R.people.all(func(p): return int(p["n"].look_data["top"]) == 4 and p["n"].lines_key == "ruta_colesterol" and p["n"].walker and not p["n"].beat.is_empty() and p["n"].voice != "kid")
+		and off_road.is_empty(),
+		"at eight in the morning, walkers come out along it: %d of them, in tracksuits, keeping to the road (%d with a dog)" % [R.people.size(), dogs])
+	await _frames(300)
+	var strayed := 0
+	for p in R.people:
+		var n = p["n"]
+		var d := 1e9
+		for q in R.points:
+			d = minf(d, q.distance_to(n.p))
+		if d > 60.0:
+			strayed += 1
+	var walker = null
+	for p in R.people:
+		if walker == null or p["n"].p.distance_to(g.player.p) < walker.p.distance_to(g.player.p):
+			walker = p["n"]
+	var moved: bool = walker != null and walker.state != "idle"
+	_check(strayed == 0, "five seconds on they are still on it (the crowd that is moved about near you leaves them be)")
+	if walker != null:
+		g.player.p = walker.p + Vector2(1.2, 0.0)
+		g.player.sync()
+		g.talk_to(walker)
+		var said: String = " ".join(g.dlg["lines"]) if g.dlg != null else ""
+		var pool: Array = Loc.t("ruta_colesterol")
+		var theirs: bool = pool.any(func(dlg): return said.length() > 0 and String(Loc.speaker([dlg], walker.voice.ends_with("_f"))[0][0]).left(10) == said.left(10))
+		await _skip_dialog(false)
+		_check(theirs, "talked to, a walker says one of their own (ruta_colesterol): «%s…»" % said.left(50))
+	if pictures and walker != null:
+		var ahead: Vector2 = walker.p + Vector2(sin(walker.h), cos(walker.h)) * 7.0
+		await _view_at(MapData.at(ahead, 1.6), MapData.at(walker.p, 1.0), "ruta_colesterol", 50.0)
+	g.set_time(13.0)
+	for i in range(3):
+		R.tick(1.0)
+	_check(R.people.all(func(p): return g.sees(p["n"].p)), "at one o'clock they go home, all but whoever you are looking at (%d left)" % R.people.size())
+	g.raining = bool(was[1])
+	g.set_time(float(was[0]))
+	g.player.p = was[2]
+	g.player.sync()
+	for p in R.people.duplicate():
+		R._drop(p)
+
+## The rounds of the neighbours with a name of their own (rondas.gd; the user, 17 Nov 2026): with no mission for you, the
+## old go to church, the grown-ups to the bars, the children to the parks, by the clock; wanted, back to their spot.
+func _rondas_checks() -> void:
+	var R = g.rondas
+	var near := func(n, kind: String) -> bool:
+		return (R.zones.get(kind, []) as Array).any(func(q): return n.p.distance_to(q) < 12.0)
+	var was := [g.phase, g.weekday, g.clock, g.player.p, g._protest_over]
+	g.phase = "free"
+	g.player.p = Vector2(1500.0, 1500.0)              # (far out in the fields: nobody in the town sees anybody come or go)
+	g.player.sync()
+	await _frames(10)
+	var paca = g.named["paca"]
+	var maruja = g.named["maruja"]
+	var kevin = g.named["kevin"]
+	var alberto = g.named["alberto"]
+	g.marcas._list = []
+	g._protest_over = false
+	g.weekday = 0
+	g.set_time(10.0)
+	R._at.clear()
+	R.tick(99.0)
+	var morning: bool = near.call(paca, "church") and near.call(maruja, "square") and kevin.p.distance_to(R.base["kevin"][0]) < 1.0 and alberto.p.distance_to(R.base["alberto"][0]) < 1.0
+	g.set_time(14.0)
+	for k in ["paca", "maruja"]:
+		if R._at.has(k):
+			R._at[k]["until"] = 0.0
+	R.tick(99.0)
+	var lunch: bool = near.call(maruja, "bar") and paca.p.distance_to(R.base["paca"][0]) < 1.0
+	g.set_time(18.0)
+	R.tick(99.0)
+	var park: bool = near.call(kevin, "park")
+	g.set_time(10.0)
+	R.tick(99.0)
+	g.marcas._list = [paca]                         # (now she has a mission for you)
+	R.tick(99.0)
+	var back: bool = paca.p.distance_to(R.base["paca"][0]) < 1.0 and paca.still == bool(R.base["paca"][1])
+	_check(R.zones["church"].size() >= 3 and R.zones["bar"].size() >= 4 and R.zones["park"].size() >= 3 and morning and lunch and park and back,
+		"with no mission for you, they go their rounds: Tía Paca to church in the morning, home at lunchtime; La Maruja in the square, then a bar; Kevin-José at home in school hours, in a park at six; Alberto at the bridge until the protest is over; and with a mission for you, back at their spot")
+	g.marcas._list = []
+	for id in R.base:                               # (everybody back where they were)
+		R._move(g.named[id], R.base[id][0], bool(R.base[id][1]))
+	R._at.clear()
+	g.phase = was[0]
+	g.weekday = int(was[1])
+	g.set_time(float(was[2]))
+	g.player.p = was[3]
+	g.player.sync()
+	g._protest_over = bool(was[4])
+
+## Names, places and mission objects in colour in every dialogue (loc.gd rich; the user, 17 Nov 2026)
+func _colores_checks() -> void:
+	var red := "[color=#c0392b]"
+	var blue := "[color=#1f6fc8]"
+	var green := "[color=#3fd25a]"
+	var line: String = Loc.rich("La Chiki dice que lleves las firmas y los carteles al puente, y luego a la Cocina de Henry a por el jamón asao.")
+	var marked: String = Loc.rich("Pega los *carteles* en la copistería, que lo dice Don Luis.")
+	var ok_es: bool = line.contains(red + "Chiki") and line.contains(blue + "puente") and line.contains(blue + "Cocina de Henry")
+	ok_es = ok_es and not line.contains(red + "Henry") and line.contains(green + "firmas") and line.contains(green + "carteles")
+	ok_es = ok_es and line.contains(green + "jamón asao") and marked.count(green + "carteles") == 1 and marked.contains(blue + "copistería")
+	ok_es = ok_es and marked.contains(red + "Don Luis") and not Loc.rich("Esta noche hay feria.").contains("[color")
+	var was: String = Loc.lang
+	Loc.lang = "en"
+	var en: String = Loc.rich("Take the signatures to Alberto, at the bridge.")
+	Loc.lang = was
+	_check(ok_es and en.contains(green + "signatures") and en.contains(red + "Alberto") and en.contains(blue + "bridge"),
+		"in every dialogue, people in red, places in blue and mission objects in green: %s" % line.left(160))
+	# ...but not where the word means something else (SIN_COLOR), and with the places and objects the texts name
+	var plain := ["¡A la boca no, que tiene puente!", "Digo que su perro tiene piscina.", "De la herencia, ni el hueso del jamón.",
+		"Te está sonando el móvil. Cógelo.", "Hasta los perros del cuartel se arrimaron a escucharme.", "Con el imán del ayuntamiento."]
+	var plain_ok: bool = plain.all(func(p: String) -> bool: return not Loc.rich(p).contains("[color"))
+	var named_ok: bool = Loc.rich("Esta tarde, a la ruta del colesterol.").contains(blue + "ruta del colesterol") \
+		and Loc.rich("Lleva el móvil de la Josefa al V.I.P.").contains(green + "móvil de la ") \
+		and Loc.rich("Te han traío al centro de salud.").contains(blue + "centro de salud") \
+		and Loc.rich("¿Tú tiés spray?").contains(green + "spray")
+	Loc.lang = "en"
+	plain_ok = plain_ok and not Loc.rich("Not the mouth, he’s got a bridge!").contains("[color") and not Loc.rich("Your phone is ringing.").contains("[color")
+	named_ok = named_ok and Loc.rich("Take Josefa’s phone to V.I.P.").contains(green) and Loc.rich("They brought you to the health centre.").contains(blue + "health centre")
+	Loc.lang = was
+	_check(plain_ok and named_ok, "no colour where the word means something else (the boxer's bridge, anybody's phone, the mili's barracks...), and the places and objects the texts name have theirs (plain %s, named %s)" % [plain_ok, named_ok])
+
+## The left stick in menus, as steps (controls.gd; the user, 17 Nov 2026, with a Steam Controller: in menus and at chess
+## "se mueve a toda velocidad sin parar"): a stick pushed and wobbling about is one step; held, it repeats like a key.
+func _mando_checks() -> void:
+	g.menu.open("graphics")
+	await _frames(5)
+	var rows: int = g._menu_page("graphics")["items"].size()
+	g.menu.sel = 0
+	var stick := func(v: float) -> void:
+		var m := InputEventJoypadMotion.new()
+		m.axis = JOY_AXIS_LEFT_Y
+		m.axis_value = v
+		Input.parse_input_event(m)
+	var t0 := Time.get_ticks_msec()
+	for v in [0.6, 0.72, 0.85, 0.93, 0.88, 0.95, 0.9, 0.97, 0.92]:      # (pushed, and wobbling: every one of these used to be a step)
+		stick.call(v)
+		await get_tree().process_frame
+	var once: int = g.menu.sel
+	var t1 := Time.get_ticks_msec()
+	var held := 0.0
+	while held < 1.0:                              # (held down a second: steps at the pace of a key held down)
+		stick.call(0.9)
+		await get_tree().process_frame
+		held += get_process_delta_time()
+	var after_second: int = g.menu.sel
+	stick.call(0.0)
+	await _frames(3)
+	var resting: bool = not Input.is_action_pressed("m_down") and Controls._stick_dir == ""
+	g.menu.close()
+	var steps_held: int = posmod(after_second - once, rows)
+	_check(once == 1 and steps_held >= 3 and steps_held <= 7 and resting,
+		"the stick in a menu: pushed and wobbling, one row (%d); held a second, a row every so often (%d more); let go, it stops" % [once, steps_held])
+
 ## Feliciano (feliciano.gd; the user, 17 Nov 2026): his looks, where he is on a Thursday and on any other day, and what he
 ## says on each, the days to go in words.
 func _feliciano_checks(pictures := false) -> void:
@@ -6720,7 +7001,7 @@ func _radio_live_checks() -> void:
 ## their day; «apretar» is said without its diphthong; and the man whose web the words come from is in the credits.
 func _palabros_checks() -> void:
 	var pools_ok := true
-	for k in ["generic_old", "whisper_old", "ouch_old"]:
+	for k in ["generic_old", "whisper_old", "ouch_old", "ruta_colesterol"]:
 		var e = Loc.TX.get(k)
 		pools_ok = pools_ok and e != null and e["es"].size() >= 8 and e["es"].size() == e["en"].size()
 	var old_lines: Array = []
@@ -6729,6 +7010,7 @@ func _palabros_checks() -> void:
 	var old_look: Dictionary = g._neighbour_look("old_m")
 	old_look["voice_i"] = 2                                       # (NEIGHBOUR_VOICES[2]: an old man)
 	var n = g.spawn_neighbour(g.player.p + Vector2(2, 0), true, old_look)
+	n.line_i = 0                                  # (from the first of what they say: the old ones' sayings go first, the town's gossip about finished missions after them, and by now that is a long list)
 	var heard := false
 	for i in range(30):
 		g.dlg = null
@@ -7172,6 +7454,22 @@ func _llamadas_checks() -> void:
 ## from thirty metres off and comes in as you get closer.
 func _marcas_checks() -> void:
 	var M = g.marcas
+	if g.rondas != null:                          # (everybody at their usual spot: on her rounds Josefa would be taken back to hers halfway through)
+		g.rondas.home_all()
+	# the arrow over the head is solid from every side: each face wound to be seen from outside (the user, 17 Nov 2026:
+	# "sale a veces transparente por los laterales")
+	var am: Array = M._arrow_mesh.surface_get_arrays(0)
+	var av: PackedVector3Array = am[Mesh.ARRAY_VERTEX]
+	var an: PackedVector3Array = am[Mesh.ARRAY_NORMAL]
+	var inward := 0
+	for t in range(0, av.size(), 3):
+		if (av[t + 1] - av[t]).cross(av[t + 2] - av[t]).dot(an[t]) > 0.0:
+			inward += 1
+	var spare: MeshInstance3D = M._new_arrow()
+	var ordered: bool = (spare.material_override as StandardMaterial3D).transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+	spare.queue_free()
+	_check(inward == 0 and ordered,
+		"the green arrow over the head has every face turned outwards (%d of %d the wrong way), drawn in order as it fades" % [inward, av.size() / 3])
 	if g.in_car != null:
 		g.in_car.set_speed(Vector2.ZERO)
 		g._exit_car()
@@ -7394,6 +7692,26 @@ func _recress_checks() -> void:
 	await _frames(5)
 	_check(asked_again and R.stage() == "reto" and not R.cine and R.can_play(S.seat_you),
 		"say no to his double or nothing and they will not let you: then yes, and the machine is yours to sit at")
+	# where to go is marked, and nothing sends you off (the user, 17 November 2026): the green arrow over the mayor,
+	# none on the way out; and beside him the button plays, though Katakumba is nearer still
+	var EN = g.entradas
+	var MK = g.marcas
+	var mayor_in = R._inside_people["alcalde"]
+	g.player.p = S.seat_other + Vector2(1.6, -0.8)
+	MK._t = 0.0
+	await _frames(20)
+	var by_him: bool = R.can_play(g.player.p) and g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_rec_play"))
+	g.player.p = EN.spot(S, true)
+	await _frames(20)
+	var way_out = EN.mark_of(S, true)
+	var no_way_out: bool = (way_out == null or not way_out.visible) and EN.exit_here() == null
+	var his_arrow = MK.arrow_of(mayor_in)
+	var him_marked: bool = mayor_in in MK.givers() and his_arrow != null and his_arrow.visible
+	if shots:
+		await _shot("recress_11b_al_alcalde")
+	print("  recress reto: play by him %s, no way out %s, green arrow over him %s" % [by_him, no_way_out, him_marked])
+	_check(by_him and no_way_out and him_marked,
+		"while he waits at the machine: a green arrow over the mayor, no arrow out at the door, and beside him the button is \"Jugar\" (before \"Hablar\")")
 	g.player.p = S.seat_you + Vector2(0.0, -0.6)
 	await _frames(5)
 	var play_prompt: bool = g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_rec_play"))
@@ -7415,6 +7733,8 @@ func _recress_checks() -> void:
 	print("  recress end: prompt %s done %s open %s money %d (want %d) indoors %s at door %.1f night %s (%.1f h) side %s" % [play_prompt, R.done(), S.open, g.money, money0 + R.COST * R.PRIZE * R.BET, g.indoors, g.player.p.distance_to(S.out_spawn), night, g.clock, str(g.side)])
 	_check(play_prompt and R.done() and S.open and g.money == money0 + R.COST * R.PRIZE * R.BET and not g.indoors and g.player.p.distance_to(S.out_spawn) < 1.0 and night and g.side == null,
 		"E at the machine, and you beat him (the game itself is still to come); that night his wife outside; then you at the door, the mission done: +%d €, and the Recress open" % (R.COST * R.PRIZE * R.BET))
+	_check(not S.hold_in and not (R._inside_people.get("alcalde") in MK.givers()),
+		"the mission done, the way out of the Recress is back and the arrow over the mayor gone")
 	if shots:
 		g.set_time(21.0)
 		g.cam_fixed = [MapData.at(S.shutter(11.0) + S.u * 3.0, 2.0), Vector3(S.shutter(0.0).x, S.base + 2.2, S.shutter(0.0).y)]
@@ -8422,6 +8742,34 @@ func _run() -> void:
 			from = to
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--rondas"):        # just the rounds of the neighbours with a name of their own
+		g.menu.close()
+		await _frames(20)
+		await _rondas_checks()
+		print("RONDAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--colores"):       # just the colours of names, places and mission objects in dialogue
+		_colores_checks()
+		print("COLORES %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--mando"):         # just the left stick in menus, as steps
+		g.phase = "free"
+		await _frames(20)
+		await _mando_checks()
+		print("MANDO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--colesterol"):    # just the ruta del colesterol: its walkers (with --window for a picture)
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _ruta_checks(shots)
+		print("COLESTEROL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--feliciano"):     # just Feliciano: where he is on each day, what he says, the riot (with --window for his picture)
 		g.menu.close()
 		g.phase = "free"
@@ -8670,6 +9018,7 @@ func _run() -> void:
 		g.set_time(11.0)
 		await _frames(20)
 		await _ninos_checks(true)
+		await _ninos_calle_checks()
 		print("NINOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
@@ -9064,6 +9413,39 @@ func _run() -> void:
 		g.phase = "free"
 		await _cultura_checks()
 		print("CULTURA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--cristobal"):      # just the little hermitage of San Cristóbal: from the old road, from Ortega y Gasset, its door and yard, at night, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var cr = g.world.get("cristobal")
+		if cr == null:
+			print("CRISTOBAL FAILED (not built: the map was baked without it)")
+			get_tree().quit(1)
+			return
+		for moment in [["", 12.0], ["_noche", 22.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["carretera", Vector2(461.2, -982.6), 1.7, Vector2(431.0, -984.0), 1.6, 55.0], ["puerta", Vector2(438.5, -993.5), 1.7, Vector2(431.5, -985.0), 1.4, 65.0],
+					["ortega", Vector2(431.0, -973.2), 1.7, Vector2(430.3, -984.0), 1.8, 70.0], ["ortega_este", Vector2(442.5, -979.0), 1.7, Vector2(430.3, -984.0), 1.6, 65.0],
+					["ortega_oeste", Vector2(414.5, -964.3), 1.7, Vector2(430.3, -984.0), 1.8, 55.0], ["norte", Vector2(453.0, -1001.5), 1.7, Vector2(431.0, -984.0), 1.6, 55.0],
+					["aire", Vector2(465.0, -1010.0), 22.0, Vector2(430.3, -984.0), 0.0, 55.0]]:
+				if moment[0] != "" and not (v[0] in ["carretera", "puerta"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = Vector2(240.0, 60.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, cr.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("cristobal_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.phase = "free"
+		await _cristobal_checks()
+		print("CRISTOBAL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--sebastian"):      # just the hermitage of San Sebastián and its park: its front, its porch, its side and terrace on the Calle del Santo, from the north, the round square, the park, at night, from the air
@@ -11678,6 +12060,9 @@ func _run() -> void:
 		# the easel by you with your peña's graffiti, following your choice (the user, 16 Nov 2026)
 		var front = g.casa.front_tag() if g.casa != null else null      # (the peña's logo on the front of your house, over the door, in sight)
 		var easel_ok: bool = front != null and front.visible and g.casa.pena == int(g.look_sel[11]) and not g.cam.is_position_behind(front.global_position) 			and Rect2(Vector2.ZERO, g.get_viewport().get_visible_rect().size).has_point(g.cam.unproject_position(front.global_position))
+		# ...and not hidden: in front of the wall as drawn (17 Nov 2026: once the houses' meshes were merged the wall
+		# hid it), and clear of the creator's panel
+		easel_ok = easel_ok and g.casa.front_clear() > 0.02 and g.cam.unproject_position(front.global_position).x < g.hud.creator_panel.global_position.x
 		g.look_sel[11] = 3
 		g._refresh_creator()
 		await _frames(6)
@@ -11930,8 +12315,12 @@ func _run() -> void:
 		print("PINTADAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
-	if OS.get_cmdline_user_args().has("--titulo"):        # the title screen, as after the loading screen (add --shots, with --window)
+	if OS.get_cmdline_user_args().has("--titulo"):        # the title screen, as after the loading screen (add --shots, with --window; --brillo=N: Settings.BRIGHT[N])
 		shots = OS.get_cmdline_user_args().has("--shots")
+		for a2 in OS.get_cmdline_user_args():
+			if String(a2).begins_with("--brillo="):
+				Settings.data["bright"] = String(a2).trim_prefix("--brillo=").to_int()
+				g.apply_graphics()
 		await _titulo_checks(shots)
 		print("TITULO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
@@ -11954,6 +12343,26 @@ func _run() -> void:
 		g._close_pause()
 		await _frames(10)
 		_check(pc.global_position.distance_to(at0) > 0.2 and not Sfx.held() and Ambience._players.any(func(p): return p.playing and not p.stream_paused), "resumed: the car rolls on (%.1f m) and the radio plays on" % pc.global_position.distance_to(at0))
+		# a long pause, and the parked cars round about stay where they were (the user, 17 Nov 2026: the longer the pause,
+		# the harder the cars flew afterwards; after a minute they all went into a wall)
+		pc.set_speed(Vector2.ZERO)
+		for k in range(4):                         # (some parked round about for certain, awake: not dozing)
+			g._park_near(pc.p + Vector2(18.0 * (k + 1), 9.0 * k), 3.0, "edison", 0)
+		await _frames(90)
+		var parked: Array = g.cars.filter(func(c): return c != pc and not c.running and not c.freeze and c.p.distance_to(pc.p) < 120.0)
+		var were: Array = parked.map(func(c): return c.global_position)
+		g._open_pause()
+		for i in range(60 * 70):                   # (seventy seconds of ticks)
+			await get_tree().physics_frame
+		g._close_pause()
+		await _frames(30)
+		var worst := 0.0
+		var fastest := 0.0
+		for i in range(parked.size()):
+			if is_instance_valid(parked[i]):
+				worst = maxf(worst, parked[i].global_position.distance_to(were[i]))
+				fastest = maxf(fastest, parked[i].linear_velocity.length())
+		_check(parked.size() > 0 and worst < 0.5 and fastest < 1.0, "after seventy seconds paused, the %d parked cars round about stay put (at most %.2f m, %.1f m/s)" % [parked.size(), worst, fastest])
 		# the big map stops the world as the pause does, and is zoomed and moved about
 		pc.set_speed(Vector2(sin(pc.h), cos(pc.h)) * 6.0)
 		var at1: Vector3 = pc.global_position
@@ -12194,12 +12603,14 @@ func _run() -> void:
 	await _salvador2_checks()
 	await _cultura_checks()
 	await _sebastian_checks()
+	await _cristobal_checks()
 	await _gacha_checks()
 	await _sentido_checks(false)
 	await _cuartel_coche_checks()
 	await _dolores_checks(false)
 	await _salto_checks()
 	await _ninos_checks()
+	await _ninos_calle_checks()
 	await _chismes_checks()
 	await _cartas_checks()
 	await _raya_checks()
@@ -12235,7 +12646,7 @@ func _run() -> void:
 	g._menu_page("graphics")["items"][1]["right"].call()
 	var set_items: Array = g._menu_page("settings")["items"].map(func(it): return it["text"])
 	_check(Settings.data["res"] == (before_res + 1) % Settings.RESOLUTIONS.size() and set_items == [Loc.t("s_graphics"), Loc.t("s_sound"), Loc.t("s_gameplay"), Loc.t("m_back")]
-		and g._menu_page("graphics")["items"].size() == 20 and g._menu_page("sound")["items"].size() == 4 and g._menu_page("gameplay")["items"].size() == 5,
+		and g._menu_page("graphics")["items"].size() == 21 and g._menu_page("sound")["items"].size() == 4 and g._menu_page("gameplay")["items"].size() == 5,
 		"settings in three: Gráficos (resolution, display... occlusion), Sonido (three volumes), Gameplay (language, field of view, controls)")
 	Settings.data["res"] = before_res
 	await _frames(5)
@@ -12860,6 +13271,10 @@ func _run() -> void:
 	g.begin_step(g._idx("alberto"))
 	await _motin_checks()
 	await _feliciano_checks()
+	await _ruta_checks()
+	await _mando_checks()
+	_colores_checks()
+	await _rondas_checks()
 	g.begin_step(run_si)
 	g.phase = "free"
 	Loc.toggle()
