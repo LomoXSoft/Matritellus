@@ -6,7 +6,14 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
-Nada todavía: todo lo anterior salió en la 0.0.14.
+- **Sistemas — escribir con mando, en el móvil y bajo Steam** (17/11; el usuario: en el móvil y con mando en el game mode de Linux no se podía pasar del Padrón, «el teclado queda fuera de pantalla y no se sabe que tecla se usa», y el tres en raya no iba con mando):
+  - La causa con mando: el «aceptar» de Godot (`ui_accept`) es solo Intro y Espacio, sin botón del mando, así que la A no pulsaba la tecla elegida. Ahora la A la pulsa en el Padrón, en la carta de Correa y en el tres en raya (`padron.gd press_focused`).
+  - En el móvil sale su propio teclado al abrir la hoja (y su Intro firma); las teclas de la hoja ya no salen (un toque en la pantalla contaba como mando). La hoja sube si el teclado tapa el nombre o la carta.
+  - En Linux bajo Steam (variables SteamDeck/SteamGameId/SteamAppId) con mando se abre el teclado de Steam (`steam://open/keyboard`) sobre el nombre o la carta; Y lo vuelve a abrir, y A sobre el nombre también. Sin probar en una Steam Machine de verdad.
+  - Las teclas de la hoja, para el mando, siempre caben: la hoja entera se encoge (×0,72 a 720 px de alto), la tecla elegida va en amarillo y una línea dice qué hace cada botón. Tres filas iguales, con el Espacio junto a Firmar / Enviar.
+  - En el PC, el teclado de siempre, e Intro firma.
+  - El tres en raya: el primer toque del mando te pone en una casilla libre y la A juega ahí.
+  - Pruebas `padron`, `cartas` y `raya` con su comprobación nueva (cabe en pantalla, tecla en amarillo, la A escribe / juega).
 
 ## Versión
 

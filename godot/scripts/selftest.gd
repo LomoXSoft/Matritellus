@@ -1612,6 +1612,18 @@ func _cartas_checks(pictures := false) -> void:
 	if pictures:
 		await _frames(20)
 		await _shot("cartas_carta")
+	var was_pad_c: bool = Controls.pad
+	Controls.pad = true
+	C.refresh()
+	await _frames(3)
+	var c_r: Rect2 = C._col.get_global_rect()
+	var c_fits: bool = C.get_global_rect().grow(1.0).encloses(c_r)
+	var c_on: bool = C.get_viewport().gui_get_focus_owner() == C._keys.get_child(0)
+	_check(C._keys.visible and c_fits and c_on and C._hint.visible, "with a pad the letter, its keys and Enviar/Volver fit on the screen (%s, x%.2f) and the key you are on is the yellow one" % [c_r, C._center.scale.x])
+	if pictures:
+		await _shot("cartas_teclas")
+	Controls.pad = was_pad_c
+	C.refresh()
 	var p0: Vector2 = g.player.p
 	Input.action_press("forward")
 	await _frames(20)
@@ -1786,6 +1798,18 @@ func _raya_checks(pictures := false) -> void:
 	var still: bool = raya.board.count("X") == 1
 	_check(said.begins_with(Loc.t("n_alcalde")) and crossed and noughts == 1 and still and raya.turn == "X",
 		"on the loading screen: he says hello, your cross goes in, he answers with a nought in a moment, a taken cell takes nothing")
+	var vp: Viewport = raya.get_viewport()                # with a pad (the user, 17 Nov 2026: in game mode it could not be played)
+	if vp.gui_get_focus_owner() != null:
+		vp.gui_get_focus_owner().release_focus()
+	var a_btn := InputEventJoypadButton.new()
+	a_btn.button_index = JOY_BUTTON_A
+	a_btn.pressed = true
+	raya._input(a_btn)
+	var cell: int = raya._cells.find(vp.gui_get_focus_owner())
+	var on_free: bool = cell >= 0 and raya.board[cell] == ""
+	raya._input(a_btn)
+	_check(on_free and raya.board[cell] == "X" and raya.turn == "O", "with a pad: its first button puts you on a free cell (%d) and A plays there" % cell)
+	await get_tree().create_timer(raya.THINK + 0.2).timeout
 	if pictures:
 		var free_cells: Array = []
 		for i in range(9):
@@ -1847,7 +1871,20 @@ func _padron_checks(pictures := false) -> void:
 	var refused: bool = not P.signed and P._warn.modulate.a > 0.5
 	Controls.pad = true
 	P.refresh()
+	await _frames(3)
 	var keys_shown: bool = P._keys.visible
+	var col_r: Rect2 = P._col.get_global_rect()
+	var fits: bool = P.get_global_rect().grow(1.0).encloses(col_r)
+	var on_key: bool = P.get_viewport().gui_get_focus_owner() == P._keys.get_child(0)
+	var a_ev := InputEventJoypadButton.new()          # (A presses the yellow key: Godot's own "accept" has no pad button)
+	a_ev.button_index = JOY_BUTTON_A
+	a_ev.pressed = true
+	P.input(a_ev)
+	on_key = on_key and P._name.text == "A"
+	P.rub_out()
+	_check(fits and on_key and P._hint.visible, "with a pad the whole sheet, its keys and Firmar fit on the screen (%s in %s, x%.2f); the key you are on is the yellow one, and A types it" % [col_r, P.get_global_rect().size, P._center.scale.x])
+	if pictures:
+		await _shot("padron_teclas")
 	for k in ["J", "U", "A", "N"]:
 		P._type(k)
 	P._type(" ")

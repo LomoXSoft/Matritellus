@@ -18,6 +18,7 @@ extends Control
 ## Kept in stats: "cartas" (every letter: to, good, due -- game hours since the start --, k: which of their two calls,
 ## day, text, done), "carta_dia" (the day the last one went), "mili_<clerk>" (the next story each will tell).
 
+const Padron = preload("res://scripts/padron.gd")
 const CLERKS := ["diurno", "nocturno"]
 const SWAP := 14.0                  # Diurno Correa from opening (8:00) to here, Nocturno Correa from here to closing (20:00)
 const UP := 5                       # trust, a kind letter
@@ -99,6 +100,11 @@ var _text: TextEdit
 var _count: Label
 var _warn: Label
 var _keys: GridContainer
+var _space_btn: Button
+var _hint: Label                   # under the keys, for a pad: what each button does
+var _center: Control               # what holds the sheet in the middle of the screen, made smaller if need be (_fit)
+var _col: Control
+var _lift := 0.0                   # on a phone, how far the sheet goes up so its keyboard does not cover the letter
 var _send_btn: Button
 var _back_btn: Button
 var _stamp: Label
@@ -111,6 +117,7 @@ func setup(game) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
+	resized.connect(_fit)
 
 # ---------------- the two clerks ----------------
 ## behind Correa's first window (on the left from the door: correos_dentro.gd windows), one on duty at a time
@@ -274,10 +281,46 @@ func open_sheet(n) -> void:
 		c.queue_free()
 	_build()
 	visible = true
+	_lift = 0.0
 	_show_to()
 	refresh()
-	if not Controls.pad:
-		_text.grab_focus()
+	_fit()
+	if not Controls.pad or Padron.on_phone() or Padron.under_steam():
+		_focus_text.call_deferred()
+
+## Writing on every device, as on the Padrón's sheet (padron.gd; the user, 17 Nov 2026): on a phone its own keyboard,
+## under Steam Steam's, on a computer its keyboard; the sheet's keys for a pad, shrunk to fit, the one you are on in yellow
+func _focus_text() -> void:
+	if not writing or _text == null or not is_inside_tree():
+		return
+	_text.grab_focus()
+	if Padron.on_phone():
+		DisplayServer.virtual_keyboard_show(_text.text, Rect2(), DisplayServer.KEYBOARD_TYPE_MULTILINE, MAX_LEN)
+	elif Padron.under_steam() and Controls.pad:
+		OS.shell_open("steam://open/keyboard")
+
+func _fit() -> void:
+	if _center == null or not is_inside_tree():
+		return
+	var room: Vector2 = size if size.x > 0.0 else get_viewport_rect().size
+	var need: Vector2 = _col.get_combined_minimum_size()
+	var k: float = minf(1.0, minf(room.x * 0.96 / maxf(1.0, need.x), room.y * 0.96 / maxf(1.0, need.y)))
+	_center.scale = Vector2(k, k)
+	_center.size = room / k
+	_center.position = Vector2(0.0, -_lift)
+
+func _process(delta: float) -> void:
+	if not writing or _center == null or not Padron.on_phone():
+		return
+	var want := 0.0
+	var kb: float = float(DisplayServer.virtual_keyboard_get_height())
+	if kb > 0.0 and _text.has_focus():
+		var win: float = maxf(1.0, float(DisplayServer.window_get_size().y))
+		var top: float = size.y - kb * size.y / win
+		want = maxf(0.0, _text.get_global_rect().end.y + _lift + 12.0 - top)
+	if absf(want - _lift) > 0.5:
+		_lift = lerpf(_lift, want, minf(1.0, delta * 12.0))
+		_center.position.y = -_lift
 
 func _box(bg: Color, border: Color, width: int, radius: int) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
@@ -301,11 +344,11 @@ func _button(t: String, on: Callable, size := 22) -> Button:
 	b.add_theme_font_size_override("font_size", size)
 	b.add_theme_color_override("font_color", INK)
 	b.add_theme_color_override("font_hover_color", INK)
-	b.add_theme_color_override("font_focus_color", PAPER)
+	b.add_theme_color_override("font_focus_color", INK)
 	b.add_theme_color_override("font_pressed_color", PAPER)
 	b.add_theme_stylebox_override("normal", _box(PAPER, INK, 3, 8))
 	b.add_theme_stylebox_override("hover", _box(PAPER.darkened(0.08), INK, 3, 8))
-	b.add_theme_stylebox_override("focus", _box(INK, INK, 3, 8))
+	b.add_theme_stylebox_override("focus", _box(Color("f2b632"), INK, 5, 8))      # (the key you are on: yellow)
 	b.add_theme_stylebox_override("pressed", _box(INK, INK, 3, 8))
 	b.custom_minimum_size = Vector2(46, 44)
 	b.pressed.connect(on)
@@ -316,10 +359,11 @@ func _build() -> void:
 	dim.color = Color(0, 0, 0, 0.55)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var center := CenterContainer.new()            # (no anchors: _fit gives it the screen's size, and shrinks it if need be)
+	_center = center
 	add_child(center)
 	var col := VBoxContainer.new()
+	_col = col
 	col.add_theme_constant_override("separation", 12)
 	center.add_child(col)
 	var sheet := PanelContainer.new()
@@ -359,8 +403,7 @@ func _build() -> void:
 	_text.add_theme_stylebox_override("normal", field)
 	_text.add_theme_stylebox_override("focus", field)
 	_text.text_changed.connect(_on_typed)
-	if Controls.pad:
-		_text.focus_mode = Control.FOCUS_NONE         # (with a pad the keys below type: its sticks move between them)
+	_text.focus_mode = _text_focus()
 	v.add_child(_text)
 	var foot := HBoxContainer.new()
 	_warn = _label(Loc.t("carta_vacia"), 18, STAMP_RED)
@@ -377,17 +420,21 @@ func _build() -> void:
 	under.add_theme_constant_override("separation", 8)
 	col.add_child(under)
 	_keys = GridContainer.new()
-	_keys.columns = 14
+	_keys.columns = 13                              # (38 letters and signs and rub out: three rows of thirteen, even)
 	_keys.add_theme_constant_override("h_separation", 5)
 	_keys.add_theme_constant_override("v_separation", 5)
 	for ch in LETTERS:
 		_keys.add_child(_button(ch, _type.bind(ch)))
-	_keys.add_child(_button(Loc.t("pad_space"), _type.bind(" ")))
 	_keys.add_child(_button("⌫", rub_out))
-	under.add_child(_keys)
+	var gh := CenterContainer.new()
+	gh.add_child(_keys)
+	under.add_child(gh)
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 24)
+	_space_btn = _button(Loc.t("pad_space"), _type.bind(" "), 26)   # (the space bar beside Enviar and Volver)
+	_space_btn.custom_minimum_size = Vector2(200, 58)
+	buttons.add_child(_space_btn)
 	_send_btn = _button(Loc.t("carta_enviar"), send, 28)
 	_send_btn.custom_minimum_size = Vector2(240, 58)
 	_back_btn = _button(Loc.t("carta_volver"), close_sheet, 28)
@@ -395,6 +442,8 @@ func _build() -> void:
 	buttons.add_child(_send_btn)
 	buttons.add_child(_back_btn)
 	under.add_child(buttons)
+	_hint = _label("", 17, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	under.add_child(_hint)
 	# the post's stamp, coming down on it when it goes
 	var over := CenterContainer.new()
 	over.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -434,14 +483,26 @@ func next_to(by: int) -> void:
 	_show_to()
 	Sfx.beep(520.0, 0.03, 1, -20.0)
 
-## a pad, a keyboard or a finger: the letter keys only for a pad
+## the letter itself: with a pad's keys the stick moves between them only (Steam's keyboard, or a touch, still gets it)
+func _text_focus() -> Control.FocusMode:
+	if Controls.pad and not Padron.on_phone():
+		return Control.FOCUS_CLICK if Padron.under_steam() else Control.FOCUS_NONE
+	return Control.FOCUS_ALL
+
+## a pad, a keyboard or a finger: the letter keys only for a pad, and never on a phone (its own keyboard)
 func refresh() -> void:
 	if _keys == null or not is_inside_tree():
 		return
-	_keys.visible = Controls.pad
-	_text.focus_mode = Control.FOCUS_NONE if Controls.pad else Control.FOCUS_ALL
-	if Controls.pad and not (get_viewport().gui_get_focus_owner() is Button):
-		(_keys.get_child(0) as Button).grab_focus()
+	var keys: bool = Controls.pad and not Padron.on_phone()
+	_keys.visible = keys
+	_space_btn.visible = keys
+	_hint.visible = keys
+	_hint.text = Loc.t("carta_keys_hint") + (Loc.t("pad_keys_steam") if Padron.under_steam() else "")
+	_text.focus_mode = _text_focus()
+	if keys and not Padron.under_steam() and not (get_viewport().gui_get_focus_owner() is Button):
+		(_keys.get_child(0) as Button).grab_focus.call_deferred()
+	if not _stamp.visible:
+		_fit.call_deferred()
 
 func _on_typed() -> void:
 	if _text.text.length() > MAX_LEN:
@@ -480,10 +541,17 @@ func type_text(t: String) -> void:
 func input(e: InputEvent) -> void:
 	if not writing:
 		return
+	if (e is InputEventJoypadButton or e is InputEventJoypadMotion) and not Padron.on_phone() and get_viewport().gui_get_focus_owner() == null:
+		if Padron.under_steam():                       # (nothing chosen on the sheet yet: a pad's first touch picks something)
+			_text.grab_focus()
+		else:
+			(_keys.get_child(0) as Button).grab_focus()
 	if e is InputEventJoypadButton and e.pressed:
 		match e.button_index:
+			JOY_BUTTON_A: Padron.press_focused(self)   # (Godot's own "accept" has no pad button)
 			JOY_BUTTON_START: send()
 			JOY_BUTTON_B: rub_out()
+			JOY_BUTTON_Y: _focus_text()                # (Steam's keyboard again, under Steam)
 			JOY_BUTTON_LEFT_SHOULDER: next_to(-1)
 			JOY_BUTTON_RIGHT_SHOULDER: next_to(1)
 	elif e is InputEventKey and e.pressed and not e.echo and e.keycode == KEY_ESCAPE:

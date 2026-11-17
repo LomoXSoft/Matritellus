@@ -77,6 +77,33 @@ func _ready() -> void:
 	add_child(_timer)
 	new_game(true)
 
+## a pad (the user, 17 Nov 2026: "con mando en game mode no se puede usar el tres en raya"): the first touch of it puts
+## you on a free cell, and A plays there -- Godot's own "accept" is Enter and Space only, no pad button
+func _input(e: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	var pad_btn: bool = e is InputEventJoypadButton and e.pressed
+	var pad_move: bool = e is InputEventJoypadMotion and absf(e.axis_value) > 0.5
+	if not (pad_btn or pad_move):
+		return
+	var f := get_viewport().gui_get_focus_owner()
+	var at: int = _cells.find(f)
+	if at < 0:
+		_focus_free()
+		get_viewport().set_input_as_handled()
+	elif pad_btn and e.button_index == JOY_BUTTON_A:
+		play(at)
+		get_viewport().set_input_as_handled()
+
+func _focus_free() -> void:
+	var at := 4
+	if board[at] != "":
+		for i in range(9):
+			if board[i] == "":
+				at = i
+				break
+	(_cells[at] as Button).grab_focus()
+
 func _box(bg: Color, edge: Color) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
@@ -99,7 +126,7 @@ func new_game(first := false) -> void:
 	if turn == "O":
 		_timer.start(THINK + 0.4)
 	elif Controls.pad and is_inside_tree():
-		(_cells[4] as Button).grab_focus()
+		_focus_free()
 
 ## you put a cross in cell `i` (a click, a finger, a pad's button on it)
 func play(i: int) -> void:
@@ -137,8 +164,10 @@ func mayor_move() -> void:
 	if _settle():
 		return
 	turn = "X"
-	if Controls.pad and is_inside_tree():
-		(_cells[free.filter(func(c): return c != at)[0] if free.size() > 1 else 4] as Button).grab_focus()
+	if is_inside_tree() and _cells.has(get_viewport().gui_get_focus_owner()) and board[_cells.find(get_viewport().gui_get_focus_owner())] != "":
+		_focus_free()                                  # (his nought went where you were: on to a free cell)
+	elif Controls.pad and is_inside_tree() and not _cells.has(get_viewport().gui_get_focus_owner()):
+		_focus_free()
 
 ## who has three in a row ("X", "O"), "-" for a full board with nobody, "" while it goes on
 static func winner(b: Array) -> String:

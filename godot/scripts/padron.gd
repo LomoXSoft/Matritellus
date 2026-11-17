@@ -29,7 +29,12 @@ var _then: Callable
 var _name: LineEdit
 var _warn: Label
 var _keys: Control
+var _col: Control             # the sheet with its keys and Firmar under it (_fit)
+var _center: Control          # what holds it in the middle of the screen: made smaller as a whole by _fit
+var _lift := 0.0              # on a phone, how far the sheet goes up so its own keyboard does not cover the name
+var _hint: Label              # under the keys, for a pad: what each button does
 var _sign_btn: Button
+var _space_btn: Button
 var _signature                  # yours (a Firma)
 var _mayor                      # the mayor's, there from the start
 var _stamp: Label
@@ -43,6 +48,7 @@ func setup(game) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
+	resized.connect(_fit)
 
 func player_name() -> String:
 	return String(G.stats.get("nombre", ""))
@@ -60,9 +66,64 @@ func open(then: Callable) -> void:
 		c.queue_free()
 	_build()
 	visible = true
+	_lift = 0.0
 	refresh()
-	if not Controls.pad:
-		_name.grab_focus()
+	_fit()
+	if not Controls.pad or on_phone() or under_steam():
+		_focus_name.call_deferred()
+
+## Typing the name on every device (the user, 17 Nov 2026: on a phone, and with a pad in Linux's game mode, "el teclado
+## queda fuera de pantalla y no se sabe que tecla se usa", and you could not get past the sheet): on a phone, the
+## phone's own keyboard; under Steam, Steam's (and its Intro signs); on a computer, its keyboard. The sheet's own keys,
+## for a pad, are a last resort: shrunk to fit the screen, the key you are on in yellow.
+static func on_phone() -> bool:
+	return OS.has_feature("android") or OS.has_feature("ios")
+
+static func under_steam() -> bool:
+	return OS.get_name() == "Linux" and (OS.has_environment("SteamDeck") or OS.has_environment("SteamGameId") or OS.has_environment("SteamAppId"))
+
+func _focus_name() -> void:
+	if signed or _name == null or not is_inside_tree():
+		return
+	_name.grab_focus()
+	if on_phone():
+		DisplayServer.virtual_keyboard_show(_name.text, Rect2(), DisplayServer.KEYBOARD_TYPE_DEFAULT, MAX_LEN)
+	elif under_steam() and Controls.pad:
+		OS.shell_open("steam://open/keyboard")         # (Steam's own keyboard, over the game: what it types goes in the name)
+
+## A on a pad presses the key it is on (Godot's ui_accept is Enter and Space only: with a pad, the user's softlock)
+static func press_focused(under: Control) -> bool:
+	var f := under.get_viewport().gui_get_focus_owner()
+	if f is BaseButton and under.is_ancestor_of(f) and f.is_visible_in_tree() and not (f as BaseButton).disabled:
+		(f as BaseButton).pressed.emit()
+		return true
+	return false
+
+## the whole sheet, its keys and Firmar made smaller if they do not fit on the screen as they are (a container would
+## put its child's scale back to 1, so it is the holder in the middle that shrinks, given the screen's size over k)
+func _fit() -> void:
+	if _center == null or not is_inside_tree():
+		return
+	var room: Vector2 = size if size.x > 0.0 else get_viewport_rect().size
+	var need: Vector2 = _col.get_combined_minimum_size()
+	var k: float = minf(1.0, minf(room.x * 0.96 / maxf(1.0, need.x), room.y * 0.96 / maxf(1.0, need.y)))
+	_center.scale = Vector2(k, k)
+	_center.size = room / k
+	_center.position = Vector2(0.0, -_lift)
+
+## on a phone, up goes the sheet while its keyboard is out, so that the name you are writing shows above it
+func _process(delta: float) -> void:
+	if not active or _center == null or not on_phone():
+		return
+	var want := 0.0
+	var kb: float = float(DisplayServer.virtual_keyboard_get_height())
+	if kb > 0.0 and _name.has_focus():
+		var win: float = maxf(1.0, float(DisplayServer.window_get_size().y))
+		var top: float = size.y - kb * size.y / win              # (where the keyboard begins, in the game's own measure)
+		want = maxf(0.0, _name.get_global_rect().end.y + _lift + 16.0 - top)
+	if absf(want - _lift) > 0.5:
+		_lift = lerpf(_lift, want, minf(1.0, delta * 12.0))
+		_center.position.y = -_lift
 
 func _box(bg: Color, border: Color, width: int, radius: int) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
@@ -85,10 +146,11 @@ func _build() -> void:
 	dim.color = Color(0, 0, 0, 0.55)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var center := CenterContainer.new()            # (no anchors: _fit gives it the screen's size, and shrinks it if need be)
+	_center = center
 	add_child(center)
 	var col := VBoxContainer.new()
+	_col = col
 	col.add_theme_constant_override("separation", 14)
 	center.add_child(col)
 	var sheet := PanelContainer.new()
@@ -132,6 +194,9 @@ func _build() -> void:
 	_name.add_theme_color_override("font_uneditable_color", INK)
 	_name.text_changed.connect(_on_typed)
 	_name.text_submitted.connect(func(_t): sign_up())
+	_name.gui_input.connect(func(e: InputEvent):     # (A on the name, with a pad: Steam's keyboard, under Steam)
+		if e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_A:
+			_focus_name())
 	row.add_child(_name)
 	v.add_child(row)
 	# what the town hall already knows (and no street: the user)
@@ -197,17 +262,25 @@ func _build() -> void:
 	(_keys as GridContainer).columns = 12
 	_keys.add_theme_constant_override("h_separation", 6)
 	_keys.add_theme_constant_override("v_separation", 6)
-	for ch in LETTERS:
+	for ch in LETTERS:                              # (35 letters and rub out: three rows of twelve, even)
 		_keys.add_child(_key(ch, _type.bind(ch)))
-	_keys.add_child(_key(Loc.t("pad_space"), _type.bind(" "), 2))
 	_keys.add_child(_key("⌫", rub_out))
-	under.add_child(_keys)
+	var gh := CenterContainer.new()
+	gh.add_child(_keys)
+	under.add_child(gh)
+	var last := HBoxContainer.new()                 # (the space bar beside Firmar, on one row)
+	last.alignment = BoxContainer.ALIGNMENT_CENTER
+	last.add_theme_constant_override("separation", 14)
+	_space_btn = _key(Loc.t("pad_space"), _type.bind(" "), 4)
+	_space_btn.custom_minimum_size.y = 58
+	last.add_child(_space_btn)
 	_sign_btn = _key(Loc.t("pad_sign"), sign_up, 0)
 	_sign_btn.custom_minimum_size = Vector2(280, 58)
 	_sign_btn.add_theme_font_size_override("font_size", 28)
-	var hold := CenterContainer.new()
-	hold.add_child(_sign_btn)
-	under.add_child(hold)
+	last.add_child(_sign_btn)
+	under.add_child(last)
+	_hint = _text("", 17, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	under.add_child(_hint)
 	var over := CenterContainer.new()               # (the stamp over the sheet, in the middle of the screen)
 	over.set_anchors_preset(Control.PRESET_FULL_RECT)
 	over.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -328,23 +401,30 @@ func _key(t: String, on: Callable, wide := 1) -> Button:
 	b.add_theme_font_size_override("font_size", 24)
 	b.add_theme_color_override("font_color", INK)
 	b.add_theme_color_override("font_hover_color", INK)
-	b.add_theme_color_override("font_focus_color", Color.WHITE)
+	b.add_theme_color_override("font_focus_color", INK)
 	b.add_theme_color_override("font_pressed_color", Color.WHITE)
 	b.add_theme_stylebox_override("normal", _box(Color.WHITE, Color.BLACK, 3, 8))
 	b.add_theme_stylebox_override("hover", _box(Color(0.92, 0.92, 0.92), Color.BLACK, 3, 8))
-	b.add_theme_stylebox_override("focus", _box(Color.BLACK, Color.BLACK, 3, 8))
+	b.add_theme_stylebox_override("focus", _box(Color("f2b632"), Color.BLACK, 5, 8))      # (the key you are on: yellow, not to be missed)
 	b.add_theme_stylebox_override("pressed", _box(Color.BLACK, Color.BLACK, 3, 8))
 	b.pressed.connect(on)
 	return b
 
-## a pad, a keyboard or a finger: the letter keys are there only for a pad
+## a pad, a keyboard or a finger: the letter keys are there only for a pad, and never on a phone (its own keyboard)
 func refresh() -> void:
 	if _keys == null or not is_inside_tree():
 		return
-	_keys.visible = Controls.pad and not signed
+	var keys: bool = Controls.pad and not signed and not on_phone()
+	_keys.visible = keys
+	_space_btn.visible = keys
+	if _hint != null:
+		_hint.visible = keys
+		_hint.text = Loc.t("pad_keys_hint") + (Loc.t("pad_keys_steam") if under_steam() else "")
 	_sign_btn.visible = not signed
-	if Controls.pad and not signed and not (get_viewport().gui_get_focus_owner() is Button):
-		(_keys.get_child(0) as Button).grab_focus()
+	if keys and not under_steam() and not (get_viewport().gui_get_focus_owner() is Button):
+		(_keys.get_child(0) as Button).grab_focus.call_deferred()
+	if not signed:                                     # (once signed it keeps its size while the stamp comes down)
+		_fit.call_deferred()
 
 ## what is typed: letters (with their accents), spaces, a hyphen, an apostrophe; capital at the start of each word
 func _on_typed(t: String) -> void:
@@ -387,10 +467,19 @@ func type_text(t: String) -> void:
 func input(e: InputEvent) -> void:
 	if not active or signed:
 		return
-	if e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_START:
+	if (e is InputEventJoypadButton or e is InputEventJoypadMotion) and not on_phone() and get_viewport().gui_get_focus_owner() == null:
+		if under_steam():                              # (nothing chosen on the sheet yet: a pad's first touch picks something)
+			_name.grab_focus()
+		else:
+			(_keys.get_child(0) as Button).grab_focus()
+	if e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_A:
+		press_focused(self)                            # (Godot's own "accept" has no pad button: A would do nothing)
+	elif e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_START:
 		sign_up()
 	elif e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_B:
 		rub_out()
+	elif e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_Y:
+		_focus_name()                                  # (Steam's keyboard again, under Steam)
 
 ## signed: the name goes in, the stamp comes down, and on
 func sign_up() -> void:
