@@ -105,6 +105,7 @@ Versiones:
 | 0.0.12 | 16/11/2026 | Android vuelve a arrancar (la 0.0.11 se cerraba en la pantalla de carga: el pueblo se dibujaba mientras se construía; ahora no se dibuja hasta acabar, y la carga es algo más rápida en el PC); calles de Jesús y María y del Romero. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.12 |
 | 0.0.13 | 17/11/2026 | Cartas desde Correa (Diurno y Nocturno Correa, una al día, y te llaman al día siguiente); las respuestas de las charlas en una burbuja; el recinto ferial con su parque, el Auditorio y los aseos; el Merkocarry; Correa con su interior; peinados nuevos; muchas calles nuevas. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.13 |
 | 0.0.14 | 17/11/2026 | La carga, de 45 a 32 s, con un tres en raya contra el alcalde; tras cada actualización se preparan los gráficos en la carga; tráfico y noches más ligeros; subirse de un salto a coches y muretes; la Pizzería Toti, la Casa Grande y muchas calles nuevas. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.14 |
+| 0.0.15 | 17/11/2026 | Escribir con mando, en el móvil y bajo Steam: ya se puede pasar del Padrón (el teclado del móvil, el de Steam, o el del juego, que ahora cabe y marca la tecla en amarillo); la A del mando pulsa; el tres en raya se juega con mando. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.15 |
 
 ## Varias sesiones en la misma carpeta
 

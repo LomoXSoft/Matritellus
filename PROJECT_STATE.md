@@ -6,31 +6,19 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
-- **Sistemas — escribir con mando, en el móvil y bajo Steam** (17/11; el usuario: en el móvil y con mando en el game mode de Linux no se podía pasar del Padrón, «el teclado queda fuera de pantalla y no se sabe que tecla se usa», y el tres en raya no iba con mando):
-  - La causa con mando: el «aceptar» de Godot (`ui_accept`) es solo Intro y Espacio, sin botón del mando, así que la A no pulsaba la tecla elegida. Ahora la A la pulsa en el Padrón, en la carta de Correa y en el tres en raya (`padron.gd press_focused`).
-  - En el móvil sale su propio teclado al abrir la hoja (y su Intro firma); las teclas de la hoja ya no salen (un toque en la pantalla contaba como mando). La hoja sube si el teclado tapa el nombre o la carta.
-  - En Linux bajo Steam (variables SteamDeck/SteamGameId/SteamAppId) con mando se abre el teclado de Steam (`steam://open/keyboard`) sobre el nombre o la carta; Y lo vuelve a abrir, y A sobre el nombre también. Sin probar en una Steam Machine de verdad.
-  - Las teclas de la hoja, para el mando, siempre caben: la hoja entera se encoge (×0,72 a 720 px de alto), la tecla elegida va en amarillo y una línea dice qué hace cada botón. Tres filas iguales, con el Espacio junto a Firmar / Enviar.
-  - En el PC, el teclado de siempre, e Intro firma.
-  - El tres en raya: el primer toque del mando te pone en una casilla libre y la A juega ahí.
-  - Pruebas `padron`, `cartas` y `raya` con su comprobación nueva (cabe en pantalla, tecla en amarillo, la A escribe / juega).
+Nada todavía: todo lo anterior salió en la 0.0.15.
 
 ## Versión
 
-- **Publicada:** 0.0.14 (17/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.14 — completa: 786 ok, 0 fallos. La primera completa dio 4 fallos, todos de las pruebas, no del juego: dos textos que Worldbuilding pasó a «to»/«tos», la terraza n.º 4 (la de la Toti va delante y descuadró la cuenta) y el coche que da la vuelta, que se probaba ya por su carril.
-  - **Sistemas:**
-    - La carga, de 45 a 32 s: las casas a mano (31 → 14 s, la misma geometría) y el suelo, por tandas.
-    - En la pantalla de carga, el tres en raya con el alcalde en vez del logo.
-    - Tras cada actualización se preparan otra vez los gráficos detrás de la barra (`calentar.gd`), por el amigo del usuario que venía de la 0.0.11 y se quedaba en el 100 %.
-    - Tráfico: 10 coches como mucho; los lejanos, por su carril sin física; los de reserva, patrullas y grúa construidos al cargar.
-    - De noche, 16 luces reales en vez de 32.
-    - Subirse de un salto a capós, techos, el pretil del Petril y muretes. Los coches tienen su forma, y el que se mueve te lleva.
-    - Las vallas amarillas, con su forma y el golpe solo de cerca.
-  - **Pretil:** la Pizzería Toti, Salvador 2 y la manzana de la Casa Grande (con su escudo, la biblioteca y la escuela de música).
-  - **Texturas:** la Travesía de San Francisco, lo que quedaba de la Amargura, Argentina y Extremadura, la Reina Sofía, las Delicias, la Virgen de Gracia, las Cruces, Fray Benito Romero, los Huertos y las Cigueras.
-  - **Worldbuilding:** el habla del pueblo en todos los personajes (lé, la'é, -ao/-ío, pa, to, vía, semos, entoavía, mu…), con su comprobación; el alcalde sigue hablando fino.
-  - El detalle de cada pieza está en el historial de git (este archivo, antes de la 0.0.14), en los LEEME de `referencias/` y `tools/` y en `guion/`.
-- **Publicada antes:** 0.0.13 (17/11/2026): las cartas desde Correa, las respuestas en burbuja, el recinto ferial, el Merkocarry, Correa, los peinados y muchas calles.
+- **Publicada:** 0.0.15 (17/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.15 — completa: 788 ok, 0 fallos.
+  - **Sistemas — escribir con mando, en el móvil y bajo Steam** (el usuario: en el móvil y con mando en el game mode de Linux no se podía pasar del Padrón, «el teclado queda fuera de pantalla y no se sabe que tecla se usa», y el tres en raya no iba con mando):
+    - La causa con mando: el «aceptar» de Godot (`ui_accept`) es solo Intro y Espacio, sin botón del mando, así que la A no pulsaba la tecla elegida. Ahora la A la pulsa en el Padrón, en la carta de Correa y en el tres en raya (`padron.gd press_focused`).
+    - En el móvil sale su propio teclado al abrir la hoja (y su Intro firma); las teclas de la hoja ya no salen (un toque en la pantalla contaba como mando). La hoja sube si el teclado tapa el nombre o la carta.
+    - En Linux bajo Steam (variables SteamDeck/SteamGameId/SteamAppId) con mando se abre el teclado de Steam (`steam://open/keyboard`) sobre el nombre o la carta; Y lo vuelve a abrir, y A sobre el nombre también. Sin probar en una Steam Machine de verdad.
+    - Las teclas de la hoja, para el mando, siempre caben: la hoja entera se encoge (×0,72 a 720 px de alto), la tecla elegida va en amarillo y una línea dice qué hace cada botón.
+    - El tres en raya: el primer toque del mando te pone en una casilla libre y la A juega ahí.
+  - El detalle está en el historial de git (este archivo, antes de la 0.0.15).
+- **Publicada antes:** 0.0.14 (17/11/2026): la carga de 45 a 32 s con el tres en raya, los gráficos preparados tras cada actualización, tráfico y noches más ligeros, subirse de un salto a coches y muretes, la Pizzería Toti, la Casa Grande y muchas calles.
 - **Pendiente:**
   - Texturas:
     - **La calle de la Cruz (`cruz_*`) salió en la 0.0.13 con 31 casas.** Después, ya en X:, quité `cruz_13` y `cruz_17`, cuyo frente quedaba metido en la manzana, y quedaron 29. A `cruz_vg9` y `cruz_21` les puse alero de teja. Rehorneado sin más cambios, y `casas` OK. Las hojas `guion/fotos/tanda34/cruz_1..5.jpg` se mandaron al usuario el 17/11, que dio su «Visto bueno».
