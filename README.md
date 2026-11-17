@@ -107,6 +107,7 @@ Versiones:
 | 0.0.14 | 17/11/2026 | La carga, de 45 a 32 s, con un tres en raya contra el alcalde; tras cada actualización se preparan los gráficos en la carga; tráfico y noches más ligeros; subirse de un salto a coches y muretes; la Pizzería Toti, la Casa Grande y muchas calles nuevas. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.14 |
 | 0.0.15 | 17/11/2026 | Escribir con mando, en el móvil y bajo Steam: ya se puede pasar del Padrón (el teclado del móvil, el de Steam, o el del juego, que ahora cabe y marca la tecla en amarillo); la A del mando pulsa; el tres en raya se juega con mando. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.15 |
 | 0.0.16 | 17/11/2026 | Mucho más fluido al girar la cámara (las casas fundidas por zonas: la peor dirección de 10 a 53 fps); Feliciano y su jamón de los jueves; armas nuevas y el swing del bate en la riña; teclado QWERTY; la ermita de San Sebastián y su parque; el Buen Suceso y la Travesía de las Cruces. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.16 |
+| 0.0.17 | 17/11/2026 | Coches que ya no salen volando tras la pausa, el stick del mando por pasos, niños con horario, colores en los diálogos, rondas de los vecinos con nombre, la ruta del colesterol, el ajedrez con vista de cine, Brillo, la ermita de San Cristóbal y calles nuevas. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.17 |
 
 ## Varias sesiones en la misma carpeta
 
