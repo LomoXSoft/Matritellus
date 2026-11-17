@@ -41,6 +41,19 @@ Y más (Luis, 15-11-2026). Estas dos van en boca de todos, como «apreta», no s
   «allí donde vive Julián» → **«allí ande Julián»**.
 - La prueba `palabros` avisa si algún texto en castellano dice «aprieta», «tienes», «dónde» o «por ande».
 
+Y la prueba `palabros` vigila también las reglas de la casa (Luis, 17-11-2026: el Niño Negro Gordo de Pueblo se las
+saltaba): «lé», «la'é», «l'á», el participio en -ao / -ío detrás de «haber» («he leío», «ha ganao»), «pa», «to / toa /
+tos / toas», «na», «vía», «cá», «semos», «entoavía», «enga» y «mu» (por «muy»,
+Luis, 17-11-2026: «mu bien», «el mu jeta»). No las vigila en:
+
+- **Lo que va entre «»:** son palabras de otro (el traductor del repartidor, el GPS, el título de la película).
+- **Quien habla fino a propósito:** el alcalde, que habla como un político, sin manchego.
+- **Lo que no es habla:** los menús, los objetivos, las pantallas de la recreativa, la placa, el «Para:» de la carta.
+- **Dos frases que solo lo parecen:** «Igual para el coche» (de parar) y «la casa de al lao».
+- **Lo que Luis escribió tal cual:** «Noooo, que vaaa, muy normal todo» (la respuesta al alcalde, `guion/ajedrez.md`).
+
+Esa lista es `HABLA_FINA`, en `selftest.gd`: un personaje nuevo que hable fino a propósito se apunta ahí.
+
 ---
 
 ## El pueblo por dentro (para ambientar)

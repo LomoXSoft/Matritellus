@@ -190,6 +190,99 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
 - **`pando_25`:** los paños de azulejo azul verdoso salen como cuadros lisos.
 - **`pando_2`:** la mampostería con verdugadas de ladrillo sale como un enfoscado tostado liso.
 
+## Calle de la Cruz
+
+- **Sin hacer:**
+  - El 13 (ladrillo viejo con reja) y el 17 (portón verde): su frente quedaba metido en la manzana.
+  - La nave del 6: el bake no la construía.
+- **`cruz_1`:** el adobe desconchado sale como un enfoscado ocre liso.
+- **`cruz_vg9`:** los paneles de piedra entre el ladrillo salen como cuadros lisos.
+- **`cruz_16`, `cruz_21` y `cruz_10`:** la mampostería con verdugadas sale lisa.
+- **`cruz_31`:** el dibujo de triángulos del revoco sale liso.
+- **Al pie de la calle se ven aleros sueltos sobre los tejados.** Parecen de casas de la calle de detrás, que queda más alta; no están comprobados.
+- **Las vistas sesgadas de esta calle** se toman desde dentro de las casas vecinas, porque es muy estrecha, y salen con paredes cortadas.
+
+## Travesía de San Francisco
+
+- **`trsf_9`:** el revoco desconchado sale liso.
+- **`trsf_6`:** la mampostería con verdugadas de ladrillo sale lisa.
+- **`trsf_3`:** el ladrillo calado en celosía sale como ladrillo corrido con un paño.
+
+## Calle de la Amargura (lo que quedaba)
+
+- **`amargura_t1`:** la barandilla de balaustres roja de la terraza sale como una franja roja lisa.
+- **`amargura_b743`:** no tiene foto del Catastro, porque allí figura como solar. Va por Street View: ladrillo, una puerta de reja y un portón gris.
+
+## Calle de Argentina (lo que quedaba)
+
+- **`argentina_b029`:** el zócalo de granito gris y el recercado de piedra de la puerta salen lisos.
+- **`argentina_b020`:** faltan los rótulos de las tiendas de la planta baja (no se leen) y el ladrillo de las esquinas en resalte.
+
+## Calle de Extremadura (lo que quedaba)
+
+- **`extremadura_b425`:** en la foto es de tres plantas, con un ático blanco encima; sale de dos.
+- **`extremadura_b441`:** las vistas tienen un tejado volado enorme encima. Sale de la casa de enfrente o de que la cámara cae dentro de otra; está sin comprobar.
+- **`extremadura_b217`** (Travesía de Portugal 7): no está hecha, porque salía debajo de la fachada de otra casa.
+
+## Avenida de la Reina Sofía
+
+- **`rsof_3`:** la mampostería rosada con verdugadas sale como un enfoscado gris-beige.
+- **`rsof_22`:** el zócalo de azulejo en rombos con su cenefa sale como una franja terracota lisa.
+- **`rsof_49b`:** la piedra verdosa en franjas sale lisa.
+- **El 1** (esquina con chaflán de 2,3 m): sin hacer.
+
+## Calle de las Delicias (primer tramo)
+
+- **`delicias_p10`:** el zócalo de azulejo en rombos sale como una franja terracota lisa.
+- **`delicias_18`, `delicias_20` y `delicias_22`:** el despiece blanco en cuadros del revoco y la cenefa de puntos salen lisos.
+- **`delicias_22`:** el revoco desconchado sale liso.
+- **El 12:** sin hacer, porque su frente es de 2,4 m.
+
+## Calle de las Delicias (segundo tramo)
+
+- **`delicias_53`:** el zócalo de baldosa con dibujo de círculos sale liso.
+- **`delicias_27`:** el ocre sale más amarillo que en la foto, y los arcos del porche de la esquina salen como un solo arco.
+- **`delicias_39`:** la casa nueva blanca y negra tiene en la foto una tapia baja con barandilla delante; sale sin ella.
+
+## Calle de la Virgen de Gracia
+
+- **`vgracia_16` y `vgracia_16d`:** el ladrillo con bandas de celosía en rombos sale como ladrillo liso.
+- **`vgracia_38`, `vgracia_34` y `vgracia_32`:** los zócalos de azulejo con dibujo salen como franjas lisas.
+- **`vgracia_9b`:** el revoco desconchado sale liso.
+- **Sin hacer:** el 36 y el 20, con frentes de 2,4 m.
+
+## Calle de las Cruces
+
+- **`cruces_12`:** rehecha el 17/11 tras «Estas no se parecen en nada», con Street View 2024 y la pieza nueva `esc` (escalera de fuera). Sigue sin las vigas de madera oscura y el poste bajo el balcón del primero, y el primer piso de la izquierda (en el Catastro, de 2 plantas) sale con 3 como el resto.
+- **`cruces_b419`:** el piso amarillo que vuela sobre la acera sale a plomo con la planta baja.
+- **`cruces_22`:** el mirador redondeado de arriba sale plano.
+- **`cruces_b431`:** falta la terraza con balaustrada de arriba.
+- **`cruces_23`:** el portón con cortina sale como una puerta de chapa.
+- **Sin hacer:** el 21 y el 6, con frentes a la calle de 2,6 y 2,2 m.
+
+## Calle de Fray Benito Romero
+
+- **`fbr_12`:** el ladrillo claro, casi rosado, de la foto sale más pardo y oscuro.
+- **`fbr_10` y `fbr_4`:** faltan las ventanitas redondas de debajo del alero.
+- **`fbr_l15`:** el barro y los ladrillos que asoman en la tapia vieja salen como unos pocos parches lisos.
+- **`fbr_l12`:** falta la chimenea; el portón de arco sale con un aro más claro que en la foto.
+- **`fbr_l4` y `fbr_l3`:** son de la calle de la Luna; lo que da a esta calle se ha sacado de la foto de la esquina y de Street View, con menos detalle.
+- **Sin hacer:** el 6, Flor 1 y Luna 13.
+
+## Calle de los Huertos
+
+- **`huertos_3`:** el ladrillo pardo oscuro de la foto sale más rojo, y faltan las celosías de ladrillo de arriba.
+- **`huertos_15`:** el cuerpo blanco de la cochera es de una planta en la foto; sale con dos, como el resto.
+- **`huertos_5b`:** falta la ventanita redonda del hastial.
+- **`huertos_c1`:** en la foto la casa queda detrás de un patio con tapia baja; sale a la calle.
+- **`huertos_12`:** el amarillo sale más vivo que el de Street View.
+- **Sin hacer:** Tembleque 103 (solo roza la calle).
+
+## Calle de las Cigueras
+
+- **`cig_b242`:** las piezas de piedra clara entre el ladrillo salen como un marco claro en cada ventana y una franja.
+- **`cig_b236`:** el ladrillo claro y rosado sale más anaranjado; el vuelo de los pisos sobre la planta baja sale como una franja.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

@@ -1021,12 +1021,40 @@ func _pena_print(pena: int) -> void:
 ## In a jump they are carried as high as their feet are, over a kerb or a pavement's wall (see hop).
 func walk(dir: Vector2, speed: float) -> void:
 	var air := _hop_air()
-	global_position.y = MapData.foot(p) + CLEAR
+	var was := global_position.y
+	global_position.y = _stand(p, was, air, false) + CLEAR
 	velocity = Vector3(dir.x * speed, 0.0, dir.y * speed)
-	if air > 0.0 and not _car_ahead(velocity * get_physics_process_delta_time() + Vector3(dir.x, 0.0, dir.y) * 0.1):
+	# (the player can jump on to a car: its shape stops a jump that does not clear it, car.gd. Nobody else jumps at one)
+	if air > 0.0 and (car_floor.is_valid() or not _car_ahead(velocity * get_physics_process_delta_time() + Vector3(dir.x, 0.0, dir.y) * 0.1)):
 		global_position.y += air
 	move_and_slide()
-	global_position.y = MapData.foot(p)
+	global_position.y = _stand(p, was, air, true)
+
+## On a car (the user, 17 Nov 2026: "Me gustaría poder subirme a un capó de un salto"): the player stands on the roof, the
+## bonnet or the boot of a car under them if their feet are up there already -- a jump that has cleared it, or standing on
+## it -- and comes off it walking over its edge (the rest of the way down a fall). `car_floor`: game.gd car_floor_at,
+## [the car, the height of its top there] or null; only the player has one.
+var car_floor := Callable()
+var on_car = null                          # the car stood on, if it is one (it carries you: game.gd _ride_car)
+var _raised := false                       # standing on something over the ground (a car, a parapet, a low wall)
+const CAR_STEP := 0.35                     # how far under a car's top the feet may be and still go up on to it
+func _stand(q: Vector2, was: float, air: float, final: bool) -> float:
+	var ground := MapData.foot(q)
+	if not car_floor.is_valid():
+		return ground
+	var top = car_floor.call(q, was + air)
+	if top != null and float(top[1]) > ground + 0.05 and was + air >= float(top[1]) - CAR_STEP:
+		if final:
+			on_car = top[0]
+			_raised = true
+		return float(top[1])
+	if final:
+		if _raised and _hop <= 0.0 and was - ground > 0.3:      # walked off it: the rest of the way down is a fall
+			_drop = maxf(_drop, was - ground)
+			_drop_v = 0.0
+		on_car = null
+		_raised = false
+	return ground
 
 ## move without sliding (thrown through the air). Returns true if it hit something.
 func shove(delta_pos: Vector2) -> bool:

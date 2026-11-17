@@ -6,8 +6,9 @@ import json, math, os, re, sys, zipfile, urllib.request
 import numpy as np
 from shapely.geometry import Polygon
 from shapely.geometry.polygon import orient
-sys.path.insert(0, 'C:/Users/luis_/Matritellus/tools')
-ROOT = 'C:/Users/luis_/Matritellus/'
+_TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))      # (the project's folder, wherever it is: X:/Matritellus since 17 Nov 2026)
+sys.path.insert(0, _TOOLS)
+ROOT = os.path.dirname(_TOOLS).replace(os.sep, '/') + '/'
 LAT0, LON0 = 39.4690, -3.5335
 KX = math.cos(math.radians(LAT0)) * 111320.0
 KZ = 110574.0

@@ -33,6 +33,9 @@ const MercamonaS = preload("res://scripts/mercamona.gd")
 const TodopizzaS = preload("res://scripts/todopizza.gd")
 const TeleDurumS = preload("res://scripts/teledurum.gd")
 const ChinosS = preload("res://scripts/chinos.gd")
+const TotiS = preload("res://scripts/toti.gd")
+const Salvador2S = preload("res://scripts/salvador2.gd")
+const CulturaS = preload("res://scripts/cultura.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
@@ -117,19 +120,23 @@ var mercamona                   # the supermarket and its car park, built by han
 var todopizza                   # the pizza house beside it, built by hand (todopizza.gd)
 var teledurum                   # the kebab house of the Calle de Santa Ana, built by hand (teledurum.gd)
 var chinos                      # the grocer's at the point between San José and Santo Domingo, built by hand (chinos.gd)
+var toti                        # the pizzeria of the Calle de Ramón y Cajal, "Pizzería Toti", with its terrace, built by hand (toti.gd)
+var salvador2                   # the house on the corner of the Salvador and Ramón y Cajal, beside the Toti, built by hand (salvador2.gd)
+var cultura                     # the block of the Casa Grande, the library and the music school, built by hand (cultura.gd)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
 
 func build() -> void:
 	for step in build_steps():
-		step[1].call()
+		while step[1].call() == true:            # (a step that does its work a slice at a time says true until it is done)
+			pass
 
 ## The same, a piece at a time: [what it is, the call]. The game draws a frame between one and the next when it
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
-	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["details", _build_details], ["bounds", _bounds]]
+	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["details", _build_details], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -142,11 +149,29 @@ func _build_begin() -> void:
 	tree_body.collision_mask = 0
 	add_child(tree_body)
 
-func _ground_timed() -> void:
+## The ground, a job at a time (the user, 17 Nov 2026: "Solo el suelo"): true while there are jobs left, a frame for the
+## loading screen between them. The jobs go in the order they always went: the ground cache keeps the sheets by it.
+var _ground_jobs: Array = []
+var _ground_t0 := 0
+var _ground_begun := false
+func _ground_timed() -> bool:
+	if not _ground_begun:
+		_ground_begun = true
+		_ground_t0 = Time.get_ticks_msec()
+		_ground_jobs = _ground_list()
 	var t0 := Time.get_ticks_msec()
-	_ground()
-	if OS.get_cmdline_user_args().has("--timing"):
-		print("ground built in %d ms (%s)" % [Time.get_ticks_msec() - t0, "cut afresh" if _sheets_new else "from the cache"])
+	var timing := OS.get_cmdline_user_args().has("--timing")
+	while not _ground_jobs.is_empty():
+		var job: Array = _ground_jobs.pop_front()
+		var tj := Time.get_ticks_msec()
+		(job[1] as Callable).call()
+		if timing and Time.get_ticks_msec() - tj > 150:
+			print("ground: %-16s %5d ms" % [job[0], Time.get_ticks_msec() - tj])
+		if Time.get_ticks_msec() - t0 >= HOUSES_SLICE_MS and not _ground_jobs.is_empty():
+			return true
+	if timing:
+		print("ground built in %d ms (%s)" % [Time.get_ticks_msec() - _ground_t0, "cut afresh" if _sheets_new else "from the cache"])
+	return false
 
 func _build_coop() -> void:
 	coop = CoopS.new()              # the cooperative on the Avenida de la Constitución, hand-built too
@@ -179,6 +204,26 @@ func _build_chinos() -> void:
 		if String(hd["id"]) == ChinosS.HOUSE:
 			chinos = ChinosS.new()
 			chinos.build(self, hd)
+			return
+
+func _build_toti() -> void:
+	for hd in MapData.houses:        # (the pizzeria of the Calle de Ramón y Cajal, "Pizzería Toti": toti.gd, on its house of the map)
+		if String(hd["id"]) == TotiS.HOUSE:
+			toti = TotiS.new()
+			toti.build(self, hd)
+			return
+
+func _build_cultura() -> void:
+	if MapData.cultura.is_empty():   # (a map baked before it: Catastro's parcel still stands there)
+		return
+	cultura = CulturaS.new()         # (the Casa Grande, the library and the music school: cultura.gd)
+	cultura.build(self)
+
+func _build_salvador2() -> void:
+	for hd in MapData.houses:        # (the house on the corner of the Salvador and Ramón y Cajal: salvador2.gd, on its house of the map)
+		if String(hd["id"]) == Salvador2S.HOUSE:
+			salvador2 = Salvador2S.new()
+			salvador2.build(self, hd)
 			return
 
 func _build_teledurum() -> void:
@@ -496,6 +541,9 @@ func _laid_sheet(verts: PackedVector3Array, idx: PackedInt32Array, lift: float) 
 		var s: Array = _sheets[k]
 		if s[0] == idx.size() and s[1] == verts.size() and is_equal_approx(s[2], lift):
 			return [s[3], s[4]]
+	if k < _sheets.size() and not _sheets_new and OS.get_cmdline_user_args().has("--timing"):
+		var s0: Array = _sheets[k]
+		print("ground: sheet %d of %d differs from the cache: indices %d/%d, vertices %d/%d, lift %f/%f" % [k, _sheets.size(), idx.size(), s0[0], verts.size(), s0[1], lift, s0[2]])
 	var laid := _drape(verts, idx, lift)
 	_sheets.resize(k)                            # (anything kept from here on belonged to another map)
 	_sheets.append([idx.size(), verts.size(), lift, laid[0], laid[1]])
@@ -632,10 +680,25 @@ func _ribbon(kind: int, extra: float, hex: int, y: float, fit := false, tex := "
 	_flat(v, idx, hex, y, null, tex, metres)
 
 func _ground() -> void:
-	_terrain()
-	_load_sheets()
-	var area_col := [0x9ccf6e, 0x74b98c, 0xb3bd62, 0xd3c486, 0xecd9a0, 0x6fc3e0]
+	for job in _ground_list():
+		(job[1] as Callable).call()
+
+## what laying the ground is, in order: [what it is, the call]
+func _ground_list() -> Array:
+	var jobs: Array = [["terrain", _terrain], ["cache", _load_sheets]]
 	for k in range(6):
+		jobs.append(["fields %d" % k, _ground_areas.bind(k)])
+	jobs.append_array([["dirt tracks", _ribbon.bind(1, 0.0, 0xc9a66b, ROAD_Y + 0.09, false, "earth", 4.0)],
+		["pavements", _ribbon.bind(0, 3.2, 0xdcd5c8, ROAD_Y + 0.12, false, "pavement", 2.0)],              # (run under the buildings where streets are tight)
+		["footpaths", _ribbon.bind(2, 0.0, 0xe8dcc0, ROAD_Y + 0.15, false, "pavement", 2.4)],             # footpaths / plazas
+		["asphalt", _ribbon.bind(0, 0.0, 0x77727a, ROAD_Y + 0.18, true, "asphalt", 3.0)],                # fitted between the real facades
+		["lane marks", _lane_marks], ["zebras", _zebras], ["cache saved", _save_sheets]])
+	return jobs
+
+## the fields of one kind (grass, park, vineyard, earth, furrows, water), in one sheet
+func _ground_areas(k: int) -> void:
+	var area_col := [0x9ccf6e, 0x74b98c, 0xb3bd62, 0xd3c486, 0xecd9a0, 0x6fc3e0]
+	if true:
 		var v := PackedVector3Array()
 		var idx := PackedInt32Array()
 		for a in MapData.areas:
@@ -654,13 +717,6 @@ func _ground() -> void:
 		var area_tex: String = ["grass", "grass", "rows", "earth", "furrow", ""][k]
 		var tint: int = 0xffffff if k == 2 else area_col[k]            # the vineyard texture brings its own colours
 		_flat(v, idx, tint, ROAD_Y + (0.06 if (k < 2 or k == 5) else 0.03), null, area_tex, [3.0, 3.0, 7.0, 8.0, 5.0, 2.0][k])
-	_ribbon(1, 0.0, 0xc9a66b, ROAD_Y + 0.09, false, "earth", 4.0)            # dirt tracks
-	_ribbon(0, 3.2, 0xdcd5c8, ROAD_Y + 0.12, false, "pavement", 2.0)         # pavements (run under the buildings where streets are tight)
-	_ribbon(2, 0.0, 0xe8dcc0, ROAD_Y + 0.15, false, "pavement", 2.4)         # footpaths / plazas
-	_ribbon(0, 0.0, 0x77727a, ROAD_Y + 0.18, true, "asphalt", 3.0)           # asphalt, fitted between the real facades
-	_lane_marks()
-	_zebras()
-	_save_sheets()
 
 ## The ground itself: the relief as one sheet of earth, and the same triangles as the thing everybody stands on.
 func _terrain() -> void:
@@ -972,7 +1028,9 @@ func _roof_mesh() -> ArrayMesh:      # gable roof, ridge along x, base at y=0, 1
 			st.add_vertex(q)
 	return st.commit()
 
+var _t_buildings := 0
 func _buildings() -> void:
+	_t_buildings = Time.get_ticks_msec()
 	var tints := [0xfffaf0, 0xfffaf0, 0xfff3dc, 0xf7ead0, 0xffe9d6, 0xfdf0c8, 0xeaf2f5, 0xf9e0c0, 0xf3f3ee]
 	var roof_cols := [0xc9603a, 0xb9552f, 0xd4744a, 0xa84e2e, 0xbe6a45, 0x9aa3a8]
 	var tint_c := tints.map(func(h): return Parts.col(h))
@@ -1121,13 +1179,64 @@ func _buildings() -> void:
 		var ty: float = MapData.height(Vector2(t[0], t[1]))
 		add_child(Parts.part("box", 0xe6cf9f, Vector3(t[0], ty + 12, t[1]), Vector3(6, 28, 6)))
 		add_child(Parts.part("cone", 0x5d6470, Vector3(t[0], ty + 29, t[1]), Vector3(4.6, 6, 4.6)))
+	_t_casas = Time.get_ticks_msec()
 	_brick_blocks()
 	_look_extras()
-	for hd in MapData.houses:        # the houses built by hand, one by one
+	_t_built = Time.get_ticks_msec()
+	_house_i = 0
+	CasasS.slow = OS.get_cmdline_user_args().has("--casas-lento")
+
+## The houses built by hand, one by one (casas.gd), a slice of about 30 ms at a time: true while there are more to
+## come. Between one slice and the next the loading screen draws a frame and answers the keys (the user, 17 Nov 2026:
+## a minigame while it loads; the houses had been 26 s in one go, the window frozen all that time).
+const HOUSES_SLICE_MS := 30
+var _house_i := 0
+var _t_casas := 0
+var _t_built := 0
+func _houses() -> bool:
+	var t0 := Time.get_ticks_msec()
+	while _house_i < MapData.houses.size():
 		var casa = CasasS.new()
-		casas.append(casa.build(self, hd))
+		casas.append(casa.build(self, MapData.houses[_house_i]))
 		add_child(casa)
+		_house_i += 1
+		if Time.get_ticks_msec() - t0 >= HOUSES_SLICE_MS and _house_i < MapData.houses.size():
+			return true
+	var t_casas := _t_casas
+	var t_built := _t_built
+	if OS.get_cmdline_user_args().has("--timing"):      # (where the loading's longest step goes: the user, 17 Nov 2026)
+		var inside := 0
+		var meshes := 0
+		for c in casas:
+			if c is Node:
+				inside += (c as Node).find_children("*", "", true, false).size()
+				meshes += (c as Node).find_children("*", "MeshInstance3D", true, false).size()
+		if OS.get_cmdline_user_args().has("--casas-suma"):      # (the same houses, to the vertex? a sum of all their geometry)
+			var nv := 0
+			var sum := Vector3.ZERO
+			var nuv := 0
+			var keys := {}
+			for c in casas:
+				for mi in (c as Node).get_children():
+					if mi is MeshInstance3D and (mi as MeshInstance3D).mesh != null:
+						var mesh: Mesh = (mi as MeshInstance3D).mesh
+						for si in range(mesh.get_surface_count()):
+							var arr: Array = mesh.surface_get_arrays(si)
+							var vv: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+							nv += vv.size()
+							for q in vv:
+								sum += q
+							if arr[Mesh.ARRAY_TEX_UV] != null:
+								nuv += (arr[Mesh.ARRAY_TEX_UV] as PackedVector2Array).size()
+							var nn = arr[Mesh.ARRAY_NORMAL]
+							if nn != null:
+								for q in (nn as PackedVector3Array):
+									sum += q * 0.001
+			print("buildings: geometry sum: %d vertices, %d with uv, sum %s" % [nv, nuv, str(sum)])
+		print("buildings: bake's walls and roofs %d ms, bricks and looks %d ms, %d houses by hand %d ms (%.1f ms each; %d nodes in them, %d of them meshes; in them: pieces %d ms, meshes %d ms, of which materials %d ms)" % [t_casas - _t_buildings,
+			t_built - t_casas, MapData.houses.size(), Time.get_ticks_msec() - t_built, float(Time.get_ticks_msec() - t_built) / maxi(1, MapData.houses.size()), inside, meshes, CasasS.t_geom / 1000, CasasS.t_commit / 1000, CasasS.t_mats / 1000])
 	add_child(Tela.new())           # (it tells the cloth of the town -- curtains, flags -- where the player is)
+	return false
 
 ## What paint cannot give the houses drawn after the real ones (fachadas.gd): the bay that hangs over the pavement, the
 ## balcony you see from the side. Each repeat of a look along a front that gives on to a street gets a node at its

@@ -15,7 +15,15 @@ extends Node
 ##                          turned and try again; a target behind them is reached with a three-point turn
 
 const CarS = preload("res://scripts/car.gd")
-const MAX_CARS := 14
+## Far off, a neighbour's car goes along its lane on its own, without the physics (the user, 17 Nov 2026: "Si, coches
+## lejanos sin física completa"; a car driving cost the engine about half a millisecond a tick wherever it was): this far
+## from you, or this far when it is out of the picture; and back to a real car nearer than RAILS_BACK, or than
+## RAILS_FROM - 20 in the picture. Never the tow truck on a job, one with somewhere to be, or yours on autopilot.
+const RAILS_FROM := 110.0
+const RAILS_HIDDEN := 70.0
+const RAILS_BACK := 60.0
+var rails := true               # (the self-test's --perfil turns it off to compare)
+const MAX_CARS := 10            # (14 until 17 Nov 2026: each car driving costs about half a millisecond a frame; the user, measured: "Baja y vuelve a medir")
 const CRUISE := 9.0
 const STUCK_FOR := 30.0        # seconds getting nowhere before the driver gives up and rings for the tow truck
 const PERSON := 1
@@ -28,6 +36,7 @@ var _spawn_t := 2.0
 var _pool: Array = []         # cars left far behind, put away to be used again (building one from nothing takes several
                               # milliseconds -- a hitch every time a neighbour drove into view)
 const POOL := 10
+var _warm: Array = []         # one of each kind never pooled (patrol cars, the tow truck), built while loading and kept hidden (prewarm)
 var max_cars := MAX_CARS        # (the graphics option "traffic": fewer when it is light)
 var _obs: Array = []          # what there is to run into this tick: [position, radius, velocity, kind, owner]
 var _still: Array = []        # ...of which what stands still (asleep parked cars, the trailers): made again twice a second
@@ -41,16 +50,115 @@ func setup(game_) -> void:
 ## While the game loads: a car of each of the commoner makes, built and put away, so that the first ones to drive into
 ## view do not have to be built there and then (that was a hitch each time).
 func prewarm() -> void:
-	for kind in ["panda", "panda", "z15", "z15", "tractor", "yondir", "tunero", "edison", "julietta"]:
+	for kind in ["panda", "panda", "panda", "z15", "z15", "z15", "tractor", "yondir", "tunero", "edison", "julietta"]:
 		var c = CarS.new()
 		game.add_child(c)
 		c.setup(kind, 0, Vector2(0, -5000), 0.0)
 		c.seat(game.driver_look())
 		_put_away(c)
+	# One each of those never put back in the pool (Los Pitufos on their beat, three spawns in ten; the Tricornios; the
+	# tow truck): built once here, kept out of sight, so that the first of each out on the road is not built from
+	# nothing in the middle of the game -- a hitch of about 22 ms (measured 17 Nov 2026, "--tirones": traffic 22.5).
+	for kind in ["pitufo", "tricornio", "grua"]:
+		var c = CarS.new()
+		game.add_child(c)
+		c.setup(kind, 0, Vector2(0, -5000), 0.0)
+		c.seat(game.driver_look())
+		c.visible = false
+		c.set_speed(Vector2.ZERO)
+		c.place(Vector2(-6000.0 - (_pool.size() + _warm.size()) * 12.0, -6100.0), 0.0)
+		c.doze(true)
+		_warm.append(c)
+
+## Whether this car goes along its lane on its own this tick (and if so, it is moved): far off, or out of the picture a
+## little nearer. Coming back near, it is a real car again with the speed it had -- once it is clear of every other car.
+func _rails(e: Dictionary, c, cp: Vector2, far: float, dt: float) -> bool:
+	var on: bool = e.has("rail")
+	if not rails or e.get("auto", false) or e.has("job") or not (e.get("route", []) as Array).is_empty():
+		if on:
+			_off_rails(e, c)
+		return false
+	var seen: bool = game.cam != null and game.cam.is_position_in_frustum(Vector3(cp.x, c.global_position.y + 1.0, cp.y))
+	var want: bool
+	if on:
+		want = not (far < RAILS_BACK or (seen and far < RAILS_FROM - 20.0))
+		if not want and not _clear_of_cars(c, cp):
+			want = true                               # (it would land on top of another: one more tick along the lane)
+	else:
+		want = far > RAILS_FROM or (far > RAILS_HIDDEN and not seen)
+	if not want:
+		if on:
+			_off_rails(e, c)
+		return false
+	if not on:
+		e["rail"] = maxf(4.0, c.forward_speed())
+		c.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+		c.freeze = true
+		c.set_physics_process(false)
+	_rail_move(e, c, cp, dt)
+	return true
+
+func _off_rails(e: Dictionary, c) -> void:
+	var v: float = float(e.get("rail", 0.0))
+	e.erase("rail")
+	c.freeze = false
+	c.set_physics_process(true)
+	var f := Vector3(sin(c.h), 0.0, cos(c.h))
+	c.linear_velocity = f * v
+	c.angular_velocity = Vector3.ZERO
+
+func _clear_of_cars(c, cp: Vector2) -> bool:
+	var room: float = float(c.spec["len"]) * 0.5 + 2.2
+	for o in game.cars:
+		if is_instance_valid(o) and o != c and o.visible and (o.p as Vector2).distance_squared_to(cp) < room * room:
+			return false
+	for o in list:
+		var oc = o["car"]
+		if oc != c and is_instance_valid(oc) and (oc.p as Vector2).distance_squared_to(cp) < room * room:
+			return false
+	return true
+
+## how many are going along their lane just now (the self-test)
+func on_rails() -> int:
+	return list.filter(func(e): return e.has("rail")).size()
+
+## along its lane at its own pace, slowing for one going the same way just ahead; at the junction the usual choice of
+## the way on is made (tick), and it carries on from there
+func _rail_move(e: Dictionary, c, cp: Vector2, dt: float) -> void:
+	var from: Vector2 = MapData.nodes[e["a"]]
+	var to: Vector2 = MapData.nodes[e["b"]]
+	var d := to - from
+	var length := d.length()
+	if length < 0.01:
+		return
+	var u := d / length
+	var rightv := Vector2(-u.y, u.x)
+	var s = MapData.seg_between(e["a"], e["b"])
+	var hw: float = MapData.fitted_hw(s) if s != null else 3.0
+	var lane := clampf(hw * 0.3, 0.6, 1.25)
+	var along := (cp - from).dot(u)
+	var want: float = CRUISE * float(e.get("pace", 1.0)) * (0.7 if c.spec.get("tractor", false) else 1.0)
+	for o in list:
+		if o == e or o["a"] != e["a"] or o["b"] != e["b"] or not is_instance_valid(o["car"]):
+			continue
+		var oa: float = ((o["car"].p as Vector2) - from).dot(u)
+		if oa > along and oa - along < 9.0:
+			want = 0.0
+	var v: float = move_toward(float(e["rail"]), want, 4.0 * dt)
+	e["rail"] = v
+	along = minf(length, along + v * dt)
+	var pos := from + u * along + rightv * lane
+	var up := MapData.normal(pos)
+	var fwd := Vector3(u.x, 0.0, u.y)
+	fwd = (fwd - up * fwd.dot(up)).normalized()
+	c.global_transform = Transform3D(Basis(up.cross(fwd), up, fwd), MapData.at(pos, 0.12))
 
 ## A car out of use: invisible, out of the physics, and out of the town altogether (left where it was, it was an
 ## invisible wall in the street)
 func _put_away(c) -> void:
+	if c.freeze and c.freeze_mode == RigidBody3D.FREEZE_MODE_KINEMATIC and not c.dozing:
+		c.freeze = false                          # (it was going along its lane: _rails)
+		c.set_physics_process(true)
 	c.visible = false
 	c.set_speed(Vector2.ZERO)
 	c.place(Vector2(-6000.0 - _pool.size() * 12.0, -6000.0), 0.0)
@@ -344,7 +452,7 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 			e["idle"] = 0.0
 		else:
 			e["idle"] = float(e["idle"]) + dt
-		if e["idle"] > STUCK_FOR and not working and not auto and c.kind != "pitufo" and c.kind != "grua":
+		if e["idle"] > STUCK_FOR and not working and not auto and c.kind != "pitufo" and c.kind != "grua" and not e.has("rail"):
 			list.erase(e)
 			game.tow.breakdown(c)
 			continue
@@ -382,6 +490,8 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 				best = e["a"]
 			e["a"] = e["b"]
 			e["b"] = best
+			continue
+		if _rails(e, c, cp, far, dt):
 			continue
 		var s = MapData.seg_between(e["a"], e["b"])
 		var hw: float = MapData.fitted_hw(s)

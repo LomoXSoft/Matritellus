@@ -86,6 +86,8 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := f
 	var half := 0.0        # a long thing (a fence): this far either way along its heading, and rad is then from that line
 	var heat := 5.0        # how much the police mind
 	var lift := 0.0        # collider height, when it is not sitting on the ground
+	var shapes: Array = []  # [size, position] of each box it is made of, when one box round it all would be too much
+	var thin := -1.0       # how thick it is where a fist lands, when that is much less than `rad` (a fence: punch)
 	match kind:
 		"sign":
 			size = Vector3(0.3, 2.6, 0.3)
@@ -201,6 +203,12 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := f
 			heat = 3.0
 			rad = 0.25
 			half = 1.25                          # (along its length: a car brushing past a metre off went through it)
+			# Its shape, as it is: the panel of bars, a few centimetres thick, and the two feet that stick out at the bottom.
+			# One box round it all was as deep as the feet all the way up, and a punch counted from far off (the user,
+			# 17 Nov 2026: "Las hit-boxes de la vallas amarillas son enormes, puedes golpearlas desde muy lejos").
+			shapes = [[Vector3(2.5, 1.0, 0.07), Vector3(0.0, 0.55, 0.0)], [Vector3(0.07, 0.07, 0.6), Vector3(-1.05, 0.035, 0.0)],
+				[Vector3(0.07, 0.07, 0.6), Vector3(1.05, 0.035, 0.0)]]
+			thin = 0.06
 			for y in [0.25, 1.0]:
 				b.add_child(Parts.part("box", 0xe9b21c, Vector3(0, y, 0), Vector3(2.5, 0.05, 0.05)))
 			for k in range(11):
@@ -336,12 +344,23 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := f
 				for px in [-3.8, 3.8]:
 					for pz in [-1.5, 1.5]:
 						b.add_child(Parts.part("cyl", 0x8a8f94, Vector3(px, 1.2, pz), Vector3(0.05, 2.4, 0.05)))
-	var cs := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = size
-	cs.shape = box
-	cs.position.y = lift if lift > 0.0 else size.y / 2.0
-	b.add_child(cs)
+	if shapes.is_empty():
+		var cs := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = size
+		cs.shape = box
+		cs.position.y = lift if lift > 0.0 else size.y / 2.0
+		b.add_child(cs)
+	else:
+		for sh in shapes:
+			var cs := CollisionShape3D.new()
+			var box := BoxShape3D.new()
+			box.size = sh[0]
+			cs.shape = box
+			cs.position = sh[1]
+			b.add_child(cs)
+	if thin >= 0.0:
+		b.set_meta("thin", thin)
 	b.set_meta("rad", rad)
 	b.set_meta("half", half)
 	b.set_meta("along", Vector2(cos(heading), -sin(heading)))
@@ -445,7 +464,13 @@ func punch(at: Vector2, dir: Vector2) -> Array:
 			if list == null:
 				continue
 			for b in list.duplicate():
-				if _reach(b, at) < 0.75 + float(b.get_meta("rad")) and b.get_meta("kind") != "toldo":
+				var hit := false
+				if b.has_meta("thin"):                # (a thin thing, a fence: the fist's path, from a little in front of you to
+					for back in [0.0, 0.3, 0.55]:     # where it lands, has to come close to the thing itself)
+						hit = hit or _reach(b, at - dir * back) < 0.3 + float(b.get_meta("thin"))
+				else:
+					hit = _reach(b, at) < 0.75 + float(b.get_meta("rad"))
+				if hit and b.get_meta("kind") != "toldo":
 					heat += float(b.get_meta("heat"))
 					_knock(b, Vector3(dir.x, 0, dir.y) * 5.0)
 					count += 1

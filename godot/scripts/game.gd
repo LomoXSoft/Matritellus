@@ -27,6 +27,7 @@ const NinosS = preload("res://scripts/ninos.gd")
 const ChismesS = preload("res://scripts/chismes.gd")
 const PadronS = preload("res://scripts/padron.gd")
 const CartasS = preload("res://scripts/cartas.gd")
+const RayaS = preload("res://scripts/raya.gd")
 const MotinS = preload("res://scripts/motin.gd")
 const DerrapeS = preload("res://scripts/derrape.gd")
 const TironesS = preload("res://scripts/tirones.gd")
@@ -303,7 +304,8 @@ func _mark(part: String) -> void:
 
 var _booted := false            # everything is built and the game can run
 var _warming := false           # the shaders are being made behind the loading screen (calentar.gd)
-var _boot: CanvasLayer          # what is on the screen meanwhile: the studio's logo on black
+var _boot: CanvasLayer          # what is on the screen meanwhile: noughts and crosses with the mayor, on black (raya.gd)
+var raya                        # (that game, while it is up)
 
 ## Building the town takes a good many seconds. It is done a piece at a time with a frame drawn between pieces, so
 ## that the window answers from the first moment and shows the studio's logo instead of freezing white.
@@ -316,12 +318,10 @@ func _ready() -> void:
 	black.color = Color.BLACK
 	black.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_boot.add_child(black)
-	var logo := TextureRect.new()
-	logo.texture = Parts.texture(IntroS.LOGO)
-	logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	logo.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
-	logo.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_boot.add_child(logo)
+	# (the studio's logo is no longer here: it comes up after, in the intro, all the same -- the user, 17 Nov 2026. In
+	# its place, noughts and crosses with the mayor to pass the time: raya.gd)
+	raya = RayaS.new()
+	_boot.add_child(raya)
 	var bar := ProgressBar.new()                 # how far along it is, small, under the logo
 	bar.show_percentage = false
 	bar.custom_minimum_size = Vector2(260, 6)
@@ -378,7 +378,7 @@ func _ready() -> void:
 	var names: Array = worker.build_steps().map(func(st): return st[0])
 	worker.free()
 	for k in range(names.size()):
-		steps_todo.append([names[k], func(): world.build_steps()[k][1].call()])
+		steps_todo.append([names[k], func(): return world.build_steps()[k][1].call()])
 	steps_todo.append_array([["actors", _setup_places_and_actors], ["markers", _setup_markers], ["props", func():
 		checkpoint = _start
 		props = PropsS.new()
@@ -395,7 +395,8 @@ func _ready() -> void:
 	var done_n := 0
 	for st in steps_todo:
 		var t0 := Time.get_ticks_msec()
-		st[1].call()
+		while st[1].call() == true:              # (a step done a slice at a time -- the houses -- says true until it is done:
+			await get_tree().process_frame       # a frame between slices, so that the loading screen goes on answering)
 		done_n += 1
 		bar.value = 100.0 * done_n / steps_todo.size()
 		if Time.get_ticks_msec() - chore_t > 1400:          # (no faster than a line can be read)
@@ -430,6 +431,7 @@ func _ready() -> void:
 	_booted = true
 	_boot.queue_free()
 	_boot = null
+	raya = null
 	_boot_done()
 
 ## The graphics options (settings.gd), put into effect: called when the game is up and each time one of them changes.
@@ -483,7 +485,7 @@ func apply_graphics() -> void:
 		Parts.detail = near_k
 		Parts.retune(self)
 	if traffic != null:
-		traffic.max_cars = TrafficS.MAX_CARS if int(d["traffic"]) == 1 else 8
+		traffic.max_cars = TrafficS.MAX_CARS if int(d["traffic"]) == 1 else 6      # (light: 6; it was 8 of 14 until 17 Nov 2026)
 
 ## Dynamic resolution (the user, 14 November 2026): once a second, if the frames are falling short of what they
 ## should be (the cap, or the screen's own rate with vsync, or 60), the 3D is drawn a step smaller; with room to
@@ -1320,6 +1322,7 @@ func _setup_places_and_actors() -> void:
 	player.setup(Creator.look(look_sel))
 	player.collision_layer = 4
 	player.collision_mask = ON_FOOT_MASK
+	player.car_floor = car_floor_at              # (the player can stand on a car: chara.gd _stand)
 	var home_side := -1.0 if (HOME_DOOR - (_start["p"] as Vector2)).dot(_perp(su)) < 0.0 else 1.0       # on the pavement in front of your own door
 	player.p = _start["p"] + _perp(su) * home_side * minf(_start["seg"].hw + 1.0, maxf(1.0, MapData.side_room(_start) - 0.7))
 	home_spot = player.p
@@ -4294,9 +4297,12 @@ func _physics_process(delta: float) -> void:
 		if lights != null:
 			lights.tick(dt, Vector2(cam.global_position.x, cam.global_position.z).lerp(player.p, 0.7))
 		return
+	_mark("audio")
 	sky_fx.tick(dt, cam.global_position, player.p)
+	_mark("sky")
 	if lights != null:
 		lights.tick(dt, Vector2(cam.global_position.x, cam.global_position.z).lerp(player.p, 0.7))
+	_mark("lights")
 	_input_lock = maxf(0.0, _input_lock - dt)
 	_dynres()
 	if map_open:
@@ -4385,9 +4391,11 @@ func _physics_process(delta: float) -> void:
 		cam_yaw = atan2(bd.x, bd.y)
 		return
 	var frozen: bool = dlg != null or _ask != null or (cartas != null and cartas.writing) or (padron != null and padron.active) or phase == "failed" or phase == "ending" or phase == "end" or menu.visible or comida.blackout or cine_lock
+	_mark("start of the tick")
 	comida.tick(dt)
 	if phase == "play" or phase == "free" or phase == "talking":
 		_advance_clock(dt)
+	_mark("food and clock")
 	world.coop.gate_open = (phase == "play" or phase == "talking" or phase == "failed") and steps[si].get("gate", false)
 	world.coop.tick(dt)
 	if phone_call != null and not phone_call["on"] and not frozen:      # how long they will put up with you not answering
@@ -4473,7 +4481,9 @@ func _physics_process(delta: float) -> void:
 			moving = false
 		if moving:
 			player.h = lerp_angle(player.h, atan2(mv.x, mv.y), 1.0 - exp(-14.0 * dt))
+		_ride_car()                              # standing on a car that moves: it carries you
 		player.walk(mv, speed)             # real collisions: slides along walls, cars and trees
+		_ride_keep()
 		if Input.is_action_pressed("handbrake") and not frozen:
 			player.hop_more(dt)                  # (held: the jump goes higher)
 		for n in npcs:
@@ -4499,12 +4509,13 @@ func _physics_process(delta: float) -> void:
 				hud.toast(Loc.t("t_saffron").pick_random(), 2.0)
 	# --- the doors into a place with a set of its own (the V.I.P., the Recress, the Papelería Rocas): a green arrow
 	# before each, and stepping on it takes you in, or back out (entradas.gd). (The V.I.P.'s door still swings open.)
+	_mark("player and car")
 	_door_cool -= dt
 	vip.tick(dt, in_car == null and not indoors and player.p.distance_to(vip.door_out) < 5.5)
 	entradas.tick(dt)
+	_mark("doors and arrows")
 	var pp: Vector2 = player.p
 	var map_p: Vector2 = ((inside_of if inside_of != null else vip).out_spawn) if indoors else pp      # where you are as far as the map is concerned
-	_mark("player and car")
 	_update_npcs(dt, pp)
 	_mark("neighbours")
 	if (phase == "play" or phase == "talking" or phase == "free") and not indoors:
@@ -4599,6 +4610,7 @@ func _physics_process(delta: float) -> void:
 
 	# --- HUD ---
 	_find_interaction()
+	_mark("what is near")
 	var pr := ""
 	if not frozen:
 		if in_car != null:
@@ -4707,6 +4719,44 @@ func _physics_process(delta: float) -> void:
 	_mark("dozing cars, engine")
 	_punch_cool -= dt
 	_horn_cool -= dt
+
+## Standing on something (chara.gd _stand): the first solid thing under a spot of the map, looking down from a little
+## over the feet -- a car's roof, bonnet or boot (car.gd _stepped), the stone parapet of the Petril, a low wall, a step
+## (the user, 17 Nov 2026: "subirme a un capó de un salto", "saltar ... en la barandilla de piedra del pretil. Pero el
+## personaje siempre se cae"). [the car, if it is one (or null), the height of its top there], or null.
+## (Looked for under the middle of the feet and four spots round it: on the edge of a narrow wall, or half over it, the
+## body is still held up by it.)
+const UNDER_FOOT := [Vector2.ZERO, Vector2(0.25, 0.0), Vector2(-0.25, 0.0), Vector2(0.0, 0.25), Vector2(0.0, -0.25)]
+func car_floor_at(q: Vector2, feet: float):
+	var space := get_world_3d().direct_space_state
+	var best = null
+	for off in UNDER_FOOT:
+		var at: Vector2 = q + off
+		var rq := PhysicsRayQueryParameters3D.create(Vector3(at.x, feet + Chara.CAR_STEP + 0.05, at.y), Vector3(at.x, feet - 6.0, at.y), 1 | 2)
+		rq.exclude = [player.get_rid()]
+		var hit := space.intersect_ray(rq)
+		if hit.is_empty():
+			continue
+		var y: float = float((hit["position"] as Vector3).y)
+		if best == null or y > float(best[1]):
+			var col = hit["collider"]
+			best = [col if col != null and col.has_method("top_at") else null, y]
+	return best
+
+## while you stand on a car, it carries you: however far it has moved and turned since the last tick, so do you
+var _ride = null                 # [the car, where it was, its heading] while you stand on one
+func _ride_car() -> void:
+	var c = player.on_car
+	if _ride == null or c == null or not is_instance_valid(c) or _ride[0] != c:
+		return
+	var moved: Transform3D = c.global_transform * (_ride[1] as Transform3D).affine_inverse()
+	var to: Vector3 = moved * player.global_position
+	player.global_position = Vector3(to.x, player.global_position.y, to.z)
+	player.h += angle_difference(float(_ride[2]), c.h)
+
+func _ride_keep() -> void:
+	var c = player.on_car
+	_ride = [c, c.global_transform, c.h] if c != null and is_instance_valid(c) else null
 
 ## keyboard swapped for a pad, or back: everything on screen that names a button is written again
 func _on_device() -> void:

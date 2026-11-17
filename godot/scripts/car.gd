@@ -196,6 +196,81 @@ func _hull(pts: PackedVector3Array, foot: float, ceiling: float) -> ConvexPolygo
 	_hulls[kind] = shape
 	return shape
 
+## The make's shape to bump into and to stand on (the user, 17 Nov 2026: "Se podría dar la hitbox de los coches un poco
+## menos cúbica. Me gustaría poder subirme a un capó de un salto"): boxes one after another along its length, each as
+## high and as wide as the bodywork is there -- the bonnet low, the cabin high, the boot -- the mirrors left out, between
+## the floor and the ceiling the one box had. Worked out once for each make. `profile` is the same, to stand on (top_at).
+static var _steps := {}
+const STEP_SLICE := 0.2
+const STEP_MERGE := 0.18             # slices within this of each other in height are one box
+const STEP_MAX := 6
+var profile: Array = []              # [z from, z to, top, half width] in its own frame: what top_at reads
+func _stepped(pts: PackedVector3Array, foot: float, ceiling: float) -> Array:
+	if _steps.has(kind):
+		return _steps[kind]
+	var xs: Array = []
+	for q in pts:
+		xs.append(absf(q.x))
+	xs.sort()
+	var half: float = xs[int(xs.size() * 0.95)] if not xs.is_empty() else float(spec["wid"]) / 2.0      # (the mirrors are the last few)
+	var slices := {}                            # slice -> [highest, widest]
+	for q in pts:
+		var k := int(floor(q.z / STEP_SLICE))
+		var y := clampf(q.y + GROUND, foot, ceiling)
+		var w := minf(absf(q.x), half)
+		if not slices.has(k):
+			slices[k] = [y, w]
+		else:
+			slices[k][0] = maxf(slices[k][0], y)
+			slices[k][1] = maxf(slices[k][1], w)
+	var keys: Array = slices.keys()
+	keys.sort()
+	var secs: Array = []                        # [z from, z to, top, half width]
+	for k in keys:
+		var z0: float = k * STEP_SLICE
+		var top: float = slices[k][0]
+		var w: float = slices[k][1]
+		if not secs.is_empty() and absf(float(secs[-1][2]) - top) < STEP_MERGE:
+			var sc: Array = secs[-1]
+			sc[1] = z0 + STEP_SLICE
+			sc[2] = maxf(sc[2], top)
+			sc[3] = maxf(sc[3], w)
+		else:
+			if not secs.is_empty():
+				secs[-1][1] = z0                    # (no gap between one box and the next)
+			secs.append([z0, z0 + STEP_SLICE, top, w])
+	while secs.size() > STEP_MAX:                 # too many: the two neighbours nearest in height become one
+		var at := 0
+		var nearest := 1e9
+		for i in range(secs.size() - 1):
+			var dh := absf(float(secs[i][2]) - float(secs[i + 1][2]))
+			if dh < nearest:
+				nearest = dh
+				at = i
+		var a: Array = secs[at]
+		var b: Array = secs[at + 1]
+		secs[at] = [a[0], b[1], maxf(a[2], b[2]), maxf(a[3], b[3])]
+		secs.remove_at(at + 1)
+	var shapes: Array = []
+	for sc in secs:
+		var bx := BoxShape3D.new()
+		bx.size = Vector3(2.0 * float(sc[3]), maxf(0.3, float(sc[2]) - foot), float(sc[1]) - float(sc[0]))
+		shapes.append([bx, Vector3(0.0, foot + bx.size.y / 2.0, (float(sc[0]) + float(sc[1])) / 2.0)])
+	var out := [shapes, secs]
+	_steps[kind] = out
+	return out
+
+## how high its roof, its bonnet or its boot is over this spot of the map (the height in the world), or -INF if the spot
+## is not over it (game.gd car_floor_at: somebody standing on a car)
+func top_at(q: Vector2) -> float:
+	if profile.is_empty():
+		return -INF
+	var local := global_transform.affine_inverse() * Vector3(q.x, global_position.y, q.y)
+	for sc in profile:
+		if local.z >= float(sc[0]) and local.z <= float(sc[1]) and absf(local.x) <= float(sc[3]):
+			return (global_transform * Vector3(local.x, float(sc[2]), local.z)).y
+	return -INF
+
 func setup(kind_: String, hex: int, pos: Vector2, heading: float) -> void:
 	kind = kind_
 	spec = SPECS[kind]
@@ -238,10 +313,16 @@ func setup(kind_: String, hex: int, pos: Vector2, heading: float) -> void:
 		box.size.y = box_top - box_foot
 		cs.position.y = (box_top + box_foot) / 2.0
 		top = GROUND + msize.y
-		if Modelos.SK[kind].get("hull", false):
-			cs.shape = _hull(Modelos.cloud(kind, model), box_foot, box_top)
-			cs.position = Vector3.ZERO
-	add_child(cs)
+		var st: Array = _stepped(Modelos.cloud(kind, model), box_foot, box_top)
+		profile = st[1]
+		for sh in st[0]:
+			var part := CollisionShape3D.new()
+			part.shape = sh[0]
+			part.position = sh[1]
+			add_child(part)
+	else:
+		profile = [[-length / 2.0, length / 2.0, cs.position.y + box.size.y / 2.0, wid / 2.0]]
+		add_child(cs)
 	if model == null:
 		top = _box_body(hex, by, top)
 	else:

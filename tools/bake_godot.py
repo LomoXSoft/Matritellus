@@ -490,6 +490,17 @@ correos = {'o': [-126.15, -74.7]}
 _correos_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'correos.gd')
 if not (os.path.exists(_correos_gd) and 'const READY := true' in open(_correos_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
     CORREOS_RC, correos = None, {}
+# The block of the Casa Grande, the public library and the school of music and dance, between the Calle de los
+# Arcos, the Calle de Argentina and the Callejón Pando (godot/scripts/cultura.gd; the user, 17 November 2026;
+# referencias/cultura/): Catastro's parcel of it (nine parts) is not raised -- cultura.gd builds the three of them, and
+# the music school where Catastro has nothing, as the photographs show it -- and Texturas's house of its front on the
+# Arcos (arcos_7) goes with it.
+CULTURA_RC = '4590001VJ5649S'
+cultura_built = Polygon([(118.4, 109.21), (142.44, 113.95), (147.93, 115.54), (160.62, 119.22), (168.34, 121.45), (174.23, 123.16), (175.76, 123.6), (175.24, 136.64), (174.13, 136.91), (174.53, 138.74), (174.66, 139.58), (174.84, 141.12), (174.95, 142.51), (174.95, 144.23), (174.88, 145.6), (174.65, 147.35), (174.29, 149.2), (173.84, 150.82), (173.46, 152.05), (167.22, 150.1), (159.48, 147.68), (157.7, 147.13), (147.46, 145.08), (117.22, 139.04)])
+cultura = {'o': [118.40, 109.21]}
+_cultura_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'cultura.gd')
+if not (os.path.exists(_cultura_gd) and 'const READY := true' in open(_cultura_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    CULTURA_RC, cultura = None, {}
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
 # the avenue and the compound lies to the east of it. Catastro parts and generic trees are kept out of that rectangle.
@@ -662,6 +673,7 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid == NOCHE_RC: return                                   # ...and the little supermarket of the Calle del Teniente Infante
     if bid in MERKOCARRY_RCS: return                             # ...and the supermarket of the Calle de Santa Ana, and the Mayordomía's nave
     if bid == CORREOS_RC: return                                 # ...and the post office of the Calle de Zaragoza
+    if bid == CULTURA_RC: return                                 # ...and the block of the Casa Grande, the library and the music school
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
     elif church_u.contains(c): style, h = 5, max(12.0, floors_c * 4.0)
@@ -1105,6 +1117,7 @@ if masahorro: block_list.append(masahorro_built)    # (the supermarket of the Ca
 if noche: block_list.append(noche_built)            # (the Noche, likewise)
 if merkocarry: block_list.extend([merkocarry_built, merkocarry_park, merkocarry_nave])      # (the Merkocarry and its car park's walls, likewise)
 if correos: block_list.append(correos_built)        # (the post office, likewise)
+if cultura: block_list.append(cultura_built)        # (the block of the Casa Grande, likewise)
 block_tree = STRtree(block_list)
 def building_dist(x, z):
     i = block_tree.nearest(Point(x, z)); return block_list[i].distance(Point(x, z))
@@ -1183,7 +1196,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

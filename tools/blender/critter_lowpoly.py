@@ -30,7 +30,7 @@ CONFIG = {
     "tail": True,
     "faceted": False,         # True = look low-poly duro (caras planas); False = suave tipo juguete
     "segments": 12,           # resolución base de las esferas (8-16)
-    "export_dir": r"C:\Users\luis_\Matritellus\godot\assets\modelos3d",
+    "export_dir": r"X:\Matritellus\godot\assets\modelos3d",
     "colors": {
         "fur":     (0.93, 0.66, 0.38),
         "muzzle":  (1.00, 0.92, 0.80),

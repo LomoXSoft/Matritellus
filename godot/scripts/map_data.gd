@@ -42,6 +42,7 @@ var calasanz: Dictionary = {}    # the nursery school of the Calle del Palo's (c
 var caridad: Dictionary = {}     # the hermitage of the Caridad's island (caridad.gd): {o: the hermitage's south-west corner, u: along its south side}; empty on a map baked without it
 var mercamona: Dictionary = {}   # the supermarket's (mercamona.gd): {o: the shop's north-west corner, u: along its west side, low: its car park's level}; empty on a map baked without it
 var correos: Dictionary = {}     # the post office of the Calle de Zaragoza's (correos.gd): {o: its front's middle}; empty on a map baked without it
+var cultura: Dictionary = {}     # the block of the Casa Grande, the library and the music school (cultura.gd): {o: its north-west corner}; empty on a map baked without it
 var merkocarry: Dictionary = {}  # the supermarket of the Calle de Santa Ana's (merkocarry.gd): {o: the middle of its front}; empty on a map baked without it
 var masahorro: Dictionary = {}   # the supermarket of the Calle de las Viñas's (masahorro.gd): {o: the corner of its front on the Noria, u: along the front}; empty on a map baked without it
 var noche: Dictionary = {}       # the Noche of the Calle del Teniente Infante's (noche.gd): {o: the east end of its front, u: along the front}; empty on a map baked without it
@@ -111,6 +112,7 @@ func _ready() -> void:
 	masahorro = data.get("masahorro", {})
 	merkocarry = data.get("merkocarry", {})
 	correos = data.get("correos", {})
+	cultura = data.get("cultura", {})
 	noche = data.get("noche", {})
 	wall_y = data.get("wall_y", [])
 	looks = data.get("looks", [])

@@ -30,15 +30,21 @@ def place(e):
     return round((lo - LON0) * KX, 2), round(-(la - LAT0) * KZ, 2), (round(e[2][0], 1) if len(e) > 2 and e[2] else None), (round(e[1][0], 2) if len(e) > 1 and e[1] else None)
 
 
+def when(d):
+    """[year, month] (Google sometimes gives the year alone, or more) -> '2024-11'"""
+    d = list(d) if isinstance(d, (list, tuple)) else [d]
+    return '%d-%02d' % (int(d[0]), int(d[1])) if len(d) >= 2 else '%d' % int(d[0])
+
+
 def info(pid):
     url = 'https://www.google.com/maps/photometa/v1?authuser=0&hl=en&gl=us&pb=' + PB % pid
     t = urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=40).read().decode('utf8', 'replace')
     p = json.loads(t[t.index('['):])[1][0]
     loc = p[5][0]
-    here = {'id': pid, 'date': '%d-%02d' % tuple(p[6][7]), 'at': place(loc[1])}
+    here = {'id': pid, 'date': when(p[6][7]), 'at': place(loc[1])}
     others = []
     named = loc[3][0] if len(loc) > 3 and loc[3] else []
-    old = {h[0]: '%d-%02d' % tuple(h[1]) for h in (loc[8] if len(loc) > 8 and loc[8] else [])}
+    old = {h[0]: when(h[1]) for h in (loc[8] if len(loc) > 8 and loc[8] else [])}
     for i, e in enumerate(named):
         if e[0][1] == pid:
             continue

@@ -1,0 +1,124 @@
+{
+ "rc": "4589015VJ5648N",
+ "record": {
+  "address": "CL VIRGEN GRACIA 28 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "30",
+  "year": "1900",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "01",
+    "m2": "15"
+   },
+   {
+    "use": "ALMACEN",
+    "floor": "01",
+    "door": "01",
+    "m2": "15"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4589015VJ5648N_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 14.5,
+   "ring": [
+    [
+     272.74,
+     229.83
+    ],
+    [
+     276.08,
+     230.88
+    ],
+    [
+     275.2,
+     234.75
+    ],
+    [
+     271.6,
+     233.71
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      272.74,
+      229.83
+     ],
+     "b": [
+      276.08,
+      230.88
+     ],
+     "len": 3.5,
+     "out": [
+      0.3,
+      -0.954
+     ],
+     "street": "Calle de la Virgen de Gracia",
+     "to_centre": 2.29
+    },
+    {
+     "a": [
+      276.08,
+      230.88
+     ],
+     "b": [
+      275.2,
+      234.75
+     ],
+     "len": 3.97,
+     "out": [
+      0.975,
+      0.222
+     ],
+     "street": "Calle de la Virgen de Gracia",
+     "to_centre": 4.28
+    },
+    {
+     "a": [
+      275.2,
+      234.75
+     ],
+     "b": [
+      271.6,
+      233.71
+     ],
+     "len": 3.75,
+     "out": [
+      -0.278,
+      0.961
+     ],
+     "street": "",
+     "to_centre": 6.29
+    },
+    {
+     "a": [
+      271.6,
+      233.71
+     ],
+     "b": [
+      272.74,
+      229.83
+     ],
+     "len": 4.04,
+     "out": [
+      -0.959,
+      -0.282
+     ],
+     "street": "Calle de la Virgen de Gracia",
+     "to_centre": 4.3
+    }
+   ],
+   "ground": [
+    -0.36,
+    -0.05
+   ]
+  }
+ ]
+}

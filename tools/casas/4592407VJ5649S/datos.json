@@ -1,0 +1,118 @@
+{
+ "rc": "4592407VJ5649S",
+ "record": {
+  "address": "CL LUNA 16 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "29",
+  "year": "1930",
+  "units": [
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "",
+    "m2": "29"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4592407VJ5649S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 21.2,
+   "ring": [
+    [
+     346.74,
+     -14.23
+    ],
+    [
+     352.36,
+     -12.73
+    ],
+    [
+     351.52,
+     -9.21
+    ],
+    [
+     345.81,
+     -10.74
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      346.74,
+      -14.23
+     ],
+     "b": [
+      352.36,
+      -12.73
+     ],
+     "len": 5.82,
+     "out": [
+      0.258,
+      -0.966
+     ],
+     "street": "Calle de Fray Benito Romero",
+     "to_centre": 1.36
+    },
+    {
+     "a": [
+      352.36,
+      -12.73
+     ],
+     "b": [
+      351.52,
+      -9.21
+     ],
+     "len": 3.62,
+     "out": [
+      0.973,
+      0.232
+     ],
+     "street": "Calle de Fray Benito Romero",
+     "to_centre": 3.15
+    },
+    {
+     "a": [
+      351.52,
+      -9.21
+     ],
+     "b": [
+      345.81,
+      -10.74
+     ],
+     "len": 5.91,
+     "out": [
+      -0.259,
+      0.966
+     ],
+     "street": "Calle de Fray Benito Romero",
+     "to_centre": 4.98
+    },
+    {
+     "a": [
+      345.81,
+      -10.74
+     ],
+     "b": [
+      346.74,
+      -14.23
+     ],
+     "len": 3.61,
+     "out": [
+      -0.966,
+      -0.257
+     ],
+     "street": "Calle de Fray Benito Romero",
+     "to_centre": 3.19
+    }
+   ],
+   "ground": [
+    4.21,
+    4.48
+   ]
+  }
+ ]
+}

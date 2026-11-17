@@ -1,4 +1,5 @@
-R = 'C:/Users/luis_/Matritellus/'
+import os
+R = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))).replace(os.sep, '/') + '/'      # (the project's folder, wherever it is: X:/Matritellus since 17 Nov 2026)
 
 
 def patch(path, pairs):

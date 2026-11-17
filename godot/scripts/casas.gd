@@ -32,7 +32,21 @@ var length := 0.0
 var base := 0.0
 var boxes := 0              # how many pieces it took (for the self-test)
 var pavement := 0           # how many lengths of pavement were laid in front of it
-var _tools := {}            # material key -> SurfaceTool
+var _tools := {}            # material key -> Acc (or a SurfaceTool, for the cloth: tela.gd)
+## What a house's pieces of one material are gathered in before they become a mesh: plain lists of corners, normals and
+## texture places, the mesh made of them in one go. (The user, 17 Nov 2026: the loading took 45 s, 19 of them the
+## houses drawing their pieces a corner at a time into a SurfaceTool. The same corners, in the same order: the same mesh.)
+class Acc:
+	var v := PackedVector3Array()
+	var n := PackedVector3Array()
+	var uv := PackedVector2Array()
+	var first := true           # (as a SurfaceTool: whether there are texture places is settled by the first corner;
+	var has_uv := false         # a corner given none after that takes the last one given)
+	var last_uv := Vector2.ZERO
+static var t_geom := 0      # (--timing: microseconds the town's houses spent drawing their pieces, making their meshes, making their materials)
+static var t_commit := 0
+static var t_mats := 0
+static var slow := false    # (--casas-lento: the old way, a SurfaceTool a corner at a time, to check the new one makes the same houses)
 var _mats := {}             # material key -> Material
 var _xf := Transform3D.IDENTITY     # where what is being built stands in the house's own frame (a side front has its own)
 var pieces: Array = []      # the plot's outline(s), in the house's frame: {ring: PackedVector2Array (x, z), edges: [[a, b, hidden, street], ...]}
@@ -79,6 +93,7 @@ func build(world, d: Dictionary) -> Node3D:
 	if Short.HOUSES.has(id) and (Short.HOUSES[id] as Array).size() == 1 and String(Short.HOUSES[id][0]) == "obra":
 		boxes = 99                                    # built by hand elsewhere, walls and roof and all (farmacia.gd): nothing of it is drawn here
 		return self
+	var t0 := Time.get_ticks_usec()
 	if has_method("_" + id):
 		call("_" + id)
 	elif Short.ADOSADOS.has(id):
@@ -89,15 +104,35 @@ func build(world, d: Dictionary) -> Node3D:
 		_from_spec(SPECS[id])
 	elif Short.HOUSES.has(id):
 		_from_spec(_unpack(Short.HOUSES[id]))
+	var t1 := Time.get_ticks_usec()
+	t_geom += t1 - t0
 	for key in _tools:
 		var mi := MeshInstance3D.new()
-		if key is String and key == "tiles" and Tex.pick("tiles") != "":
-			(_tools[key] as SurfaceTool).generate_tangents()          # (a normal map on its own UVs needs them)
-		mi.mesh = (_tools[key] as SurfaceTool).commit()
+		var tool = _tools[key]
+		if tool is Acc:
+			var arrays := []
+			arrays.resize(Mesh.ARRAY_MAX)
+			arrays[Mesh.ARRAY_VERTEX] = tool.v
+			arrays[Mesh.ARRAY_NORMAL] = tool.n
+			if tool.has_uv:
+				arrays[Mesh.ARRAY_TEX_UV] = tool.uv
+			if key is String and key == "tiles" and Tex.pick("tiles") != "":
+				var st := SurfaceTool.new()                   # (a normal map on its own UVs needs tangents)
+				st.create_from_arrays(arrays)
+				st.generate_tangents()
+				mi.mesh = st.commit()
+			else:
+				var am := ArrayMesh.new()
+				if not tool.v.is_empty():
+					am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+				mi.mesh = am
+		else:
+			mi.mesh = (tool as SurfaceTool).commit()
 		mi.material_override = _mats[key]
 		if key is String and key == "tela":
 			mi.extra_cull_margin = 1.5              # (it moves out of where its mesh says it is)
 		add_child(mi)
+	t_commit += Time.get_ticks_usec() - t1
 	_tools.clear()                                  # (the meshes are made: what they were made from goes. Kept, the town's houses held
 	return self                                     # 3.7 GB between them, and a phone closed the game while loading -- 16 Nov 2026)
 
@@ -110,11 +145,15 @@ func spot(x: float, z: float) -> Vector2:
 	return o + u * x + out * z
 
 # ---------------- materials ----------------
-func _tool(key) -> SurfaceTool:
+func _tool(key):
 	if not _tools.has(key):
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		_tools[key] = st
+		if slow:
+			var old_st := SurfaceTool.new()
+			old_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			_tools[key] = old_st
+		else:
+			_tools[key] = Acc.new()
+		var tm0 := Time.get_ticks_usec()
 		var m: Material
 		var name := String(key) if key is String else ""
 		if name == "render" or (name.begins_with("r") and name.substr(1).is_valid_int()):       # painted render (white, or "r" + its colour)
@@ -176,9 +215,42 @@ func _tool(key) -> SurfaceTool:
 		else:
 			m = Parts.mat(int(key))
 		_mats[key] = m
+		t_mats += Time.get_ticks_usec() - tm0
 	return _tools[key]
 
-func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, n: Vector3, uvs = null) -> void:
+func _tri(st, a: Vector3, b: Vector3, c: Vector3, n: Vector3, uvs = null) -> void:
+	if st is Acc:                                 # (the usual way: straight into the lists, no list made per triangle)
+		var acc: Acc = st
+		var flip := (b - a).cross(c - a).dot(n) > 0.0          # Godot wants clockwise front faces
+		if acc.first:
+			acc.first = false
+			acc.has_uv = uvs != null
+		acc.v.append(a)
+		if flip:
+			acc.v.append(c)
+			acc.v.append(b)
+		else:
+			acc.v.append(b)
+			acc.v.append(c)
+		acc.n.append(n)
+		acc.n.append(n)
+		acc.n.append(n)
+		if acc.has_uv:
+			if uvs != null:
+				acc.uv.append(uvs[0])
+				if flip:
+					acc.uv.append(uvs[2])
+					acc.uv.append(uvs[1])
+					acc.last_uv = uvs[1]
+				else:
+					acc.uv.append(uvs[1])
+					acc.uv.append(uvs[2])
+					acc.last_uv = uvs[2]
+			else:
+				acc.uv.append(acc.last_uv)
+				acc.uv.append(acc.last_uv)
+				acc.uv.append(acc.last_uv)
+		return
 	var pts := [a, b, c]
 	var tex = uvs
 	if (b - a).cross(c - a).dot(n) > 0.0:         # Godot wants clockwise front faces
@@ -193,11 +265,40 @@ func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, n: Vector3, uvs =
 
 ## a flat four-sided piece, facing `n`
 func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, key, n: Vector3, uvs = null) -> void:
-	var st := _tool(key)
+	var st = _tool(key)
 	n = (_xf.basis * n).normalized()
 	a = _xf * a; b = _xf * b; c = _xf * c; d = _xf * d
+	if uvs == null and st is Acc:
+		_quad_acc(st, a, b, c, d, n)
+		return
 	_tri(st, a, b, c, n, [uvs[0], uvs[1], uvs[2]] if uvs != null else null)
 	_tri(st, a, c, d, n, [uvs[0], uvs[2], uvs[3]] if uvs != null else null)
+
+## two triangles, a b c and a c d, already in the town's frame, straight into the lists: the same as two _tri()
+## without texture places, without the calls and the lists in between (the loading, 17 Nov 2026)
+func _quad_acc(acc: Acc, a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3) -> void:
+	if acc.first:
+		acc.first = false
+		acc.has_uv = false
+	acc.v.append(a)
+	if (b - a).cross(c - a).dot(n) > 0.0:          # Godot wants clockwise front faces
+		acc.v.append(c)
+		acc.v.append(b)
+	else:
+		acc.v.append(b)
+		acc.v.append(c)
+	acc.v.append(a)
+	if (c - a).cross(d - a).dot(n) > 0.0:
+		acc.v.append(d)
+		acc.v.append(c)
+	else:
+		acc.v.append(c)
+		acc.v.append(d)
+	for k in range(6):
+		acc.n.append(n)
+	if acc.has_uv:
+		for k in range(6):
+			acc.uv.append(acc.last_uv)
 
 ## a box: its left, bottom, back corner, then how wide, high and deep (towards the street) it is
 func box(x: float, y: float, z: float, w: float, h: float, d: float, key) -> void:
@@ -206,6 +307,20 @@ func box(x: float, y: float, z: float, w: float, h: float, d: float, key) -> voi
 	boxes += 1
 	var a := Vector3(x, y, z)
 	var b := Vector3(x + w, y + h, z + d)
+	var st = _tool(key)
+	if st is Acc:                                 # (its eight corners worked out once, not four times a face)
+		var p000 := _xf * Vector3(a.x, a.y, a.z); var p100 := _xf * Vector3(b.x, a.y, a.z)
+		var p010 := _xf * Vector3(a.x, b.y, a.z); var p110 := _xf * Vector3(b.x, b.y, a.z)
+		var p001 := _xf * Vector3(a.x, a.y, b.z); var p101 := _xf * Vector3(b.x, a.y, b.z)
+		var p011 := _xf * Vector3(a.x, b.y, b.z); var p111 := _xf * Vector3(b.x, b.y, b.z)
+		var bs: Basis = _xf.basis
+		_quad_acc(st, p001, p101, p111, p011, (bs * Vector3(0, 0, 1)).normalized())
+		_quad_acc(st, p000, p100, p110, p010, (bs * Vector3(0, 0, -1)).normalized())
+		_quad_acc(st, p000, p001, p011, p010, (bs * Vector3(-1, 0, 0)).normalized())
+		_quad_acc(st, p100, p101, p111, p110, (bs * Vector3(1, 0, 0)).normalized())
+		_quad_acc(st, p010, p110, p111, p011, (bs * Vector3(0, 1, 0)).normalized())
+		_quad_acc(st, p000, p100, p101, p001, (bs * Vector3(0, -1, 0)).normalized())
+		return
 	quad(Vector3(a.x, a.y, b.z), Vector3(b.x, a.y, b.z), Vector3(b.x, b.y, b.z), Vector3(a.x, b.y, b.z), key, Vector3(0, 0, 1))
 	quad(Vector3(a.x, a.y, a.z), Vector3(b.x, a.y, a.z), Vector3(b.x, b.y, a.z), Vector3(a.x, b.y, a.z), key, Vector3(0, 0, -1))
 	quad(Vector3(a.x, a.y, a.z), Vector3(a.x, a.y, b.z), Vector3(a.x, b.y, b.z), Vector3(a.x, b.y, a.z), key, Vector3(-1, 0, 0))
@@ -398,6 +513,32 @@ func lintel(xc: float, y: float, w: float, face: float) -> void:
 		box(sx, y - 0.13, face - 0.02, 0.13, 0.13, 0.06, "brick")
 
 ## a little balcony of iron: its slab, the railing round three sides, a band of curls at its foot
+## An outside stair climbing along the front from x0 at the floor's level to x1 a floor higher (x1 < x0: it climbs to
+## the left), `w` out from the wall: solid steps of grey stone on a slab of the wall's own render (its edge a band up the
+## side you see), and an iron rail along its open side.
+func _stair(x0: float, x1: float, y: float, rise: float, face: float, w: float, iron: int, key) -> void:
+	if absf(x1 - x0) < 0.5 or rise <= 0.0:
+		return
+	var n := maxi(3, int(ceil(rise / 0.19)))
+	var run := (x1 - x0) / float(n)
+	var st := rise / float(n)
+	for k in range(n):
+		var sx := minf(x0 + run * k, x0 + run * (k + 1))
+		box(sx, y + st * k - 0.05, face, absf(run) + 0.01, st + 0.05 - 0.04, w, key)
+		box(sx - 0.01, y + st * (k + 1) - 0.04, face, absf(run) + 0.03, 0.04, w + 0.02, 0x9a958c)     # the tread
+	_bar(Vector2(x0, y - 0.12), Vector2(x1, y + rise - 0.12), face + w + 0.006, 0.3, key)       # the slab's edge
+	var rz := face + w - 0.04
+	var posts := maxi(4, int(absf(x1 - x0) / 0.12))
+	for i in range(posts + 1):
+		var t := float(i) / float(posts)
+		var px := lerpf(x0, x1, t)
+		var k := clampi(int(t * n), 0, n - 1)
+		var base := y + st * (k + 1)
+		var top_y := y + rise * t + 0.95
+		box(px - 0.01, base, rz, 0.02, maxf(0.1, top_y - base), 0.02, iron)
+	for by in [0.95, 0.2]:
+		_bar(Vector2(x0, y + by), Vector2(x1, y + rise + by), rz + 0.025, 0.04 if by > 0.5 else 0.03, iron)
+
 func balcony(xc: float, y: float, w: float, face: float, deep := 0.38, iron := 0x24221f) -> void:
 	var x := xc - w / 2.0
 	box(x, y - 0.09, face, w, 0.09, deep, 0xd9d2c2)
@@ -543,7 +684,7 @@ func _alemania_7() -> void:
 	var slope_f := (ry - ey) / (eave - rz)
 	var top0 := ey + eave * slope_f - 0.06                    # the roof over the front wall
 	var inl := 0.06
-	var st := _tool("render")
+	var st = _tool("render")
 	var l0 := Vector3(inl, -1.4, 0.0); var l2 := Vector3(3.12 + inl, -1.4, -14.87 + inl)
 	var lt0 := Vector3(inl, top0, 0.0); var lt1 := Vector3(1.37 + inl, ry - 0.06, rz); var lt2 := Vector3(3.12 + inl, T + 0.14, -14.87 + inl)
 	var ln := Vector3(-1.0, 0.0, -0.21)
@@ -708,6 +849,10 @@ static func _unpack(a: Array) -> Dictionary:
 					if not f.has("tejas"):
 						f["tejas"] = []
 					f["tejas"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]).to_float() if words.size() > 2 else 0.6, float(o.get("y", -1.0))])
+				"esc":                            # an outside stair up the front to the floor above: esc <from> <to> [w=how far out] [c=its rail]
+					if not f.has("stairs"):
+						f["stairs"] = []
+					f["stairs"].append([String(words[0]).to_float(), String(words[1]).to_float(), float(o.get("w", 0.9)), int(o.get("c", 0x24221f))])
 				"ter":
 					var tr: Array = [String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]).to_float(), -1 if String(words[3]) == "-1" else String(words[3]).hex_to_int()]
 					if words.size() > 4:
@@ -1126,6 +1271,8 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 					[Vector2(tx0 / 1.6, td / 1.6), Vector2(tx1 / 1.6, td / 1.6), Vector2(tx1 / 1.6, 0), Vector2(tx0 / 1.6, 0)])
 				box(tx0, ty - drop - 0.1, fly + td - 0.06, tx1 - tx0, 0.1, 0.08, 0x9c5236)       # the row of tile ends along its edge
 				box(tx0, ty - drop - 0.04, fly, tx1 - tx0, 0.03, td - 0.04, 0x8a4a32)             # its underside, seen from the pavement
+			for es in deco.get("stairs", []):          # an outside stair, from this floor up to the one above
+				_stair(float(es[0]) * L, float(es[1]) * L, y, h, fly, float(es[2]), int(es[3]), key)
 		if not side or _flank:
 			for nt in f.get("plates", []):           # the notices people put up: for sale, a garage way, no parking
 				if (nt.size() > 6 and int(nt[6]) == 1) == side:     # (lado=1: on the long side to another street, not on the front)
@@ -1348,9 +1495,12 @@ func _step(x0: float, x1: float, z: float, gh: float, spec: Dictionary) -> void:
 ## of kerb stones where it meets the road.
 func _acera(L: float) -> void:
 	if not _mats.has("acera"):
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		_tools["acera"] = st
+		if slow:
+			var old_st := SurfaceTool.new()
+			old_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			_tools["acera"] = old_st
+		else:
+			_tools["acera"] = Acc.new()
 		_mats["acera"] = W._tmat(0xdcd5c8, "pavement", 2.0)
 	var n := maxi(1, int(ceil(L / 2.0)))
 	var xs: Array = []

@@ -17,9 +17,13 @@ var _made: Array = []           # what the museum put up (to be taken away)
 var _npcs: Array = []
 var _night := false             # (the lanterns are lit round wherever the camera is: lights.gd)
 
-## has this version of the game run on this graphics card before?
+## has this version of the game run on this graphics card before? (The game's own version is in it too since 0.0.14: a
+## friend of the user's, updating from 0.0.11 to 0.0.13, saw the loading reach 100 % and the game not come up -- with the
+## same mark as before, nothing was made behind the loading screen, and everything the new version draws for the first
+## time was made all at once on the title's first frame. Now each new version makes them again, behind the bar.)
 static func key() -> String:
-	return "%s|%s|%s" % [VERSION, Engine.get_version_info().get("string", ""), RenderingServer.get_video_adapter_name()]
+	return "%s|%s|%s|%s" % [VERSION, Engine.get_version_info().get("string", ""), RenderingServer.get_video_adapter_name(),
+		String(ProjectSettings.get_setting("application/config/version", ""))]
 
 static func needed() -> bool:
 	if OS.get_cmdline_user_args().has("--calentar"):

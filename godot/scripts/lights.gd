@@ -7,7 +7,7 @@ extends Node3D
 
 const Parts = preload("res://scripts/parts.gd")
 
-const POOL := 32               # real lights shared out among the nearest lanterns
+const POOL := 16               # real lights shared out among the nearest lanterns (32 until 17 Nov 2026: the night cost 8 ms more than the day)
 const CELL := 48.0
 const WARM := Color(1.0, 0.8, 0.5)
 
