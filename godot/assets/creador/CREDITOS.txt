@@ -29,6 +29,9 @@ pelo/*.glb  --  peinados, barbas y cejas de modelos libres, adaptados a nuestras
       botas de faena, botas de agua, sandalias, bailarinas, camperas, zapatillas de casa, tacones).
       (Descalzo, las dos bolas, es de chara.gd.)
 
+  pelo_tupe.glb  --  dibujo propio, hecho desde cero con Blender por tools/creador/tupe.py (17/11/2026): ningun
+      modelo libre tenia un tupe como la foto del usuario.
+
   De "Low Poly Male And Female Models", de The-Wild-Dodo  --  CC0  --
       https://damindudesilva1gmailcom.itch.io/low-poly-male-and-female-models-free-low-poly-3d-model
       barba_poblada, barba_candao, bigote_morsa

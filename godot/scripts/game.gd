@@ -26,6 +26,7 @@ const CuartelCocheS = preload("res://scripts/cuartel_coche.gd")
 const NinosS = preload("res://scripts/ninos.gd")
 const ChismesS = preload("res://scripts/chismes.gd")
 const PadronS = preload("res://scripts/padron.gd")
+const CartasS = preload("res://scripts/cartas.gd")
 const MotinS = preload("res://scripts/motin.gd")
 const DerrapeS = preload("res://scripts/derrape.gd")
 const TironesS = preload("res://scripts/tirones.gd")
@@ -183,6 +184,7 @@ var gacha                       # the gumball machines and the figures that come
 var cuartel_coche               # the Tricornios' car always parked at their barracks' door (cuartel_coche.gd)
 var ninos                       # the little ones in the nursery yards, and every child at play shouting (ninos.gd)
 var chismes                     # what the town says about the missions you finish (chismes.gd)
+var cartas                      # letters sent from Correa, its two clerks, and the calls the day after (cartas.gd)
 var padron                      # the Padrón Municipal after the creator: your name, the tile on your house, who calls you by it (padron.gd)
 var first_person := false       # (no longer: indoors it was through your own eyes until 16 Nov 2026; now a fixed camera, entradas.gd)
 var cine_lock := false          # a scene of a side mission is playing: your hands are off, the town goes on
@@ -1440,6 +1442,9 @@ func _setup_places_and_actors() -> void:
 	chismes.setup(self)
 	padron = PadronS.new()                       # (it goes into the HUD when its sheet comes up: padron.open)
 	padron.setup(self)
+	cartas = CartasS.new()                       # (the same: into the HUD when a letter's sheet comes up)
+	cartas.setup(self)
+	cartas.add_clerks()                          # Diurno and Nocturno Correa behind the post office's first window
 	motin = MotinS.new()
 	add_child(motin)
 	motin.setup(self)
@@ -2531,8 +2536,71 @@ func heat_scale() -> float:
 
 # ---------- day 1 hooks ----------
 func _choose(i: int) -> void:
+	if _ask != null:                             # (an answer in a talk's bubble, not the card: ask)
+		_ask_pick(i)
+		return
 	var opt: Array = _choice["options"][i]
 	menu.close()
+	(opt[1] as Callable).call()
+
+# ---------------- answers in a talk (the user, 16 Nov 2026) ----------------
+## Somebody asks you something in a talk and you answer: what they say stays in the dialogue box and the answers come
+## up in a small bubble over its right-hand corner, a hand at the one picked (the user, 16 November 2026, with a
+## picture of Animal Crossing: "Las opciones de diálogo (no las de misión, sino como las del alcalde que sirven para
+## distintos resultados según lo que escojas) no necesitan poner todo el zócalo para sacarlas. Basta con una burbuja
+## encima del diálogo"). Up and down move the hand, accept takes the answer; a finger or the mouse on one takes it. An
+## answer with no Callable is there but cannot be taken (not enough money for it). Mission offers keep the card
+## (_offer: menu "choice"). `n`: whoever asks (the bubble's tail points at them), or null.
+var _ask = null                  # {"options": [[text, Callable], ...], "sel": the one the hand is at}
+func ask(n, who: String, line: String, options: Array) -> void:
+	dlg = null
+	var head = null
+	if n != null and is_instance_valid(n) and n.visible:
+		var h: Vector3 = n.global_position + Vector3(0, 1.55 * float(n.look_data.get("scale", 1.0)), 0)
+		head = null if cam.is_position_behind(h) else cam.unproject_position(h)
+	hud.set_dlg_point(head)
+	hud.dlg_name.text = who
+	hud.dlg_text.text = Loc.rich(line)
+	hud.dlg_text.visible_characters = -1
+	hud.dlg_slot.visible = true
+	hud.dlg_ready = false
+	hud.set_prompt("")
+	var first := 0
+	while first < options.size() - 1 and not (options[first][1] as Callable).is_valid():
+		first += 1
+	_ask = {"options": options, "sel": first, "from": n, "mouse": Input.mouse_mode}
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE      # (the answers can be clicked; back as it was after)
+	phase = "talking"
+	hud.show_answers(options.map(func(o): return String(o[0])), options.map(func(o): return (o[1] as Callable).is_valid()), first, _ask_pick,
+		func(k: int):
+			if _ask != null:
+				_ask["sel"] = k
+				hud.set_answer(k))
+
+func _ask_move(by: int) -> void:
+	var opts: Array = _ask["options"]
+	var k: int = _ask["sel"]
+	for i in range(opts.size()):
+		k = (k + by + opts.size()) % opts.size()
+		if (opts[k][1] as Callable).is_valid():
+			break
+	_ask["sel"] = k
+	hud.set_answer(k)
+	Sfx.beep(520.0, 0.03, 1, -20.0)
+
+func _ask_pick(k: int) -> void:
+	if _ask == null:
+		return
+	var opt: Array = _ask["options"][k]
+	if not (opt[1] as Callable).is_valid():
+		Sfx.beep(196.0, 0.12, 1, -16.0)
+		return
+	if not paused:
+		Input.mouse_mode = _ask["mouse"]
+	_ask = null
+	hud.hide_answers()
+	hud.dlg_slot.visible = false
+	Sfx.beep(660.0, 0.05, 1, -16.0)
 	(opt[1] as Callable).call()
 
 ## Fonsi has named his price
@@ -2545,9 +2613,8 @@ func _vip_choice(again: bool) -> void:
 		[Loc.t("vip_rematch") if again else Loc.t("vip_fight"), _vip_fight.bind(again)]]
 	if again:
 		options.append([Loc.t("vip_leave"), func(): phase = "play"])
-	_choice = {"title": Loc.t("vip_q_again") if again else Loc.t("vip_q"), "options": options}
-	phase = "talking"
-	menu.open("choice")
+	var fonsi = named.get("vip")
+	ask(fonsi, fonsi.shown_name() if fonsi != null else "", Loc.t("ask_vip_again" if again else "ask_vip"), options)
 
 func _vip_pay() -> void:
 	money -= VIP_PRICE
@@ -2638,9 +2705,8 @@ func _unlock(id: String) -> void:
 
 ## Fonsi, once the phone business is settled: fancy a fight? (this is also how you open the minigame if you paid him)
 func _vip_spar() -> void:
-	_choice = {"title": Loc.t("vip_spar_q"), "options": [[Loc.t("vip_spar"), func(): _vip_spar_go()], [Loc.t("vip_spar_no"), func(): phase = "play" if steps[si]["type"] != "tbc" else "free"]]}
-	phase = "talking"
-	menu.open("choice")
+	var fonsi = named.get("vip")
+	ask(fonsi, fonsi.shown_name() if fonsi != null else "", Loc.t("ask_vip_spar"), [[Loc.t("vip_spar"), func(): _vip_spar_go()], [Loc.t("vip_spar_no"), func(): phase = "play" if steps[si]["type"] != "tbc" else "free"]])
 
 func _vip_spar_go() -> void:
 	_mg = {"p": vip.counter_front, "indoors": true, "phase": "free" if steps[si]["type"] == "tbc" else "play"}
@@ -3207,6 +3273,8 @@ func talk_to(n, chat_only := false) -> void:
 	if n.id == "repartidor":
 		sabotaje.spoken(n)
 		return
+	if n.id in CartasS.CLERKS and not chat_only and (phase == "play" or phase == "free") and cartas.talk(n):      # Correa's clerks: talk, send a letter, leave
+		return
 	if n.id == "dolores" and folk.trust("dolores") >= 100 and not stats.has("dolores_delanno") and (phase == "play" or phase == "free"):
 		stats["dolores_delanno"] = int(day_n)    # at a hundred of trust, once: where her surname came from (the user, 16 Nov 2026)
 		say(n.shown_name(), Loc.t("dolores_delanno"), n.voice)
@@ -3354,9 +3422,7 @@ func _food_offer(n) -> void:
 			phase = back
 			sabotaje.talk(n, true)])
 	options.append([Loc.t("food_talk"), _food_chat.bind(n, back)])
-	_choice = {"title": Loc.t("food_q_" + n.id), "options": options}
-	phase = "talking"
-	menu.open("choice")
+	ask(n, n.shown_name(), Loc.t("ask_food_" + n.id) if Loc.TX.has("ask_food_" + n.id) else Loc.t("food_q_" + n.id), options)
 
 func _food_buy(n, back: String) -> void:
 	phase = back
@@ -3810,6 +3876,20 @@ func _unhandled_input(e: InputEvent) -> void:
 			_title_go()
 		return
 	if phase == "title_out":
+		return
+	if padron != null and padron.active and phase != "creator":      # the Padrón's sheet over a game (a letter's signature: cartas.gd)
+		padron.input(e)
+		return
+	if cartas != null and cartas.writing:        # writing a letter at Correa: the sheet's keys (cartas.gd)
+		cartas.input(e)
+		return
+	if _ask != null:                             # answering somebody in a talk: the bubble's keys (ask)
+		if e.is_action_pressed("m_up", true):
+			_ask_move(-1)
+		elif e.is_action_pressed("m_down", true):
+			_ask_move(1)
+		elif e.is_action_pressed("m_accept") or e.is_action_pressed("interact"):
+			_ask_pick(int(_ask["sel"]))
 		return
 	if phase == "ajedrez":                       # (ajedrez) a game of chess on the square: its own keys, mouse and fingers
 		ajedrez.input(e)
@@ -4304,7 +4384,7 @@ func _physics_process(delta: float) -> void:
 		cam.look_at(cam_look)
 		cam_yaw = atan2(bd.x, bd.y)
 		return
-	var frozen: bool = dlg != null or phase == "failed" or phase == "ending" or phase == "end" or menu.visible or comida.blackout or cine_lock
+	var frozen: bool = dlg != null or _ask != null or (cartas != null and cartas.writing) or (padron != null and padron.active) or phase == "failed" or phase == "ending" or phase == "end" or menu.visible or comida.blackout or cine_lock
 	comida.tick(dt)
 	if phase == "play" or phase == "free" or phase == "talking":
 		_advance_clock(dt)
@@ -4441,6 +4521,8 @@ func _physics_process(delta: float) -> void:
 	_protest_tick(dt, pp)
 	_recall_tick(dt)
 	llamadas.tick(dlg == null and not menu.visible and (not indoors or (casa != null and inside_of == casa)) and not cine_lock and (phase == "play" or phase == "free") and comida.faint == null and not motin.busy())      # (at home the phone rings too: you wake up in your room, and Tía Paca rings)
+	if cartas != null:
+		cartas.tick(dt)                          # (letters: the clerks' shifts, and the calls of the ones that have arrived)
 	marcas.tick(dt, pp)
 	recress.tick(dt, pp)
 	sabotaje.tick(dt, pp)
@@ -4633,6 +4715,11 @@ func _on_device() -> void:
 	match phase:
 		"prologue":
 			hud.rt(hud.story_hint, Loc.t("story_next"))
+		"talking":
+			if cartas != null and cartas.writing:
+				cartas.refresh()
+			if padron.active:
+				padron.refresh()
 		"creator":
 			if padron.active:
 				padron.refresh()

@@ -186,11 +186,10 @@ func _ask(n, two: Array) -> void:
 		_tween.kill()
 	_cut(two[0], two[1], 42.0)
 	_dream_clear()
-	_say(n, "aj_m_ask", func():
+	var said: Array = Loc.t("aj_m_ask")                  # (all but his last line said; that one stays in the box with the answers in a bubble over it: game.gd ask)
+	G.say(n.shown_name(), said.slice(0, said.size() - 1), n.voice, func():
 		_before = G.phase
-		G._choice = {"title": Loc.t("aj_q"), "options": [[Loc.t("aj_q_no"), _answer.bind(n, false)], [Loc.t("aj_q_yes"), _answer.bind(n, true)]]}
-		G.phase = "talking"
-		G.menu.open("choice"))
+		G.ask(n, n.shown_name(), String(said[said.size() - 1]), [[Loc.t("aj_q_no"), _answer.bind(n, false)], [Loc.t("aj_q_yes"), _answer.bind(n, true)]]))
 
 func _answer(n, honest: bool) -> void:
 	G.phase = _before if _before != "talking" else "play"

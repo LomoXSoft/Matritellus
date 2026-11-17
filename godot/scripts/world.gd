@@ -25,6 +25,9 @@ const RotondaS = preload("res://scripts/rotonda.gd")
 const IesS = preload("res://scripts/ies.gd")
 const MasAhorroS = preload("res://scripts/masahorro.gd")
 const NocheS = preload("res://scripts/noche.gd")
+const MerkocarryS = preload("res://scripts/merkocarry.gd")
+const CorreosS = preload("res://scripts/correos.gd")
+const FerialS = preload("res://scripts/ferial.gd")
 const BancoSanchoS = preload("res://scripts/bancosancho.gd")
 const MercamonaS = preload("res://scripts/mercamona.gd")
 const TodopizzaS = preload("res://scripts/todopizza.gd")
@@ -104,6 +107,9 @@ var rotonda                     # the roundabout before the Tricornios' barracks
 var ies                         # the secondary school by the Camino Viejo de Tembleque, "IES Valdeacero", built by hand (ies.gd)
 var masahorro                   # the supermarket of the Calle de las Viñas, "MasAhorro", built by hand (masahorro.gd)
 var noche                       # the little supermarket of the Calle del Teniente Infante, "Noche", built by hand (noche.gd), and its inside (noche_dentro.gd)
+var merkocarry                  # the supermarket of the Calle de Santa Ana, "Merkocarry", built by hand (merkocarry.gd), with its car park
+var correos                     # the post office of the Calle de Zaragoza, by the plaza, built by hand (correos.gd)
+var ferial                      # the fairground and market, its fountain, its pergola of ivy, its market's square (ferial.gd)
 var bancosancho                 # the corner house of the bank and the copy shop, "Banco Cantabria" and "Copistería Sancho Panza", built by hand (bancosancho.gd), and the copy shop's inside (copisteria_dentro.gd)
 var kebabdeluxe                 # the kebab house of the Avenida de Castilla-La Mancha, "Kebab Deluxe", built by hand (kebabdeluxe.gd)
 var toledano                    # the Plazuela del Toledano: its islet, trees, benches and pencil, built by hand (toledano.gd)
@@ -123,7 +129,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["details", _build_details], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["details", _build_details], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -215,6 +221,22 @@ func _build_noche() -> void:
 		return
 	noche = NocheS.new()             # the little supermarket of the Calle del Teniente Infante, and its inside apart
 	noche.build(self)
+
+func _build_ferial() -> void:
+	ferial = FerialS.new()           # (the fairground and market: on the paths, roundabout and ground the map has; no rebake)
+	ferial.build(self)
+
+func _build_correos() -> void:
+	if MapData.correos.is_empty():     # (a map baked before it: Catastro's block, or Texturas's house, stands there)
+		return
+	correos = CorreosS.new()         # the post office of the Calle de Zaragoza, by the plaza
+	correos.build(self)
+
+func _build_merkocarry() -> void:
+	if MapData.merkocarry.is_empty():  # (a map baked before it: Catastro's block stands there)
+		return
+	merkocarry = MerkocarryS.new()   # the supermarket of the Calle de Santa Ana, its car park down to Magallanes
+	merkocarry.build(self)
 
 func _build_masahorro() -> void:
 	if MapData.masahorro.is_empty():  # (a map baked before it: Catastro's block stands there)

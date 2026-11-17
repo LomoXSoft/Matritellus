@@ -73,9 +73,23 @@ func shops() -> Array:
 	var bs = G.world.get("bancosancho") if G.world != null else null
 	if bs != null and bs.get("tienda") != null:   # the Copistería Sancho Panza, the girl of the posters inside (its set: copisteria_dentro.gd)
 		out.append(bs.tienda)
+	var co = G.world.get("correos") if G.world != null else null
+	if co != null and co.get("tienda") != null:   # Correa, the post office of the Calle de Zaragoza (its set: correos_dentro.gd)
+		out.append(co.tienda)
+	var mk = G.world.get("merkocarry") if G.world != null else null
+	if mk != null and mk.get("tienda") != null:   # the Merkocarry: one set, two doors, its front and its back (merkocarry_dentro.gd)
+		out.append(mk.tienda)
+		out.append(mk.trasera)
+	var fe = G.world.get("ferial") if G.world != null else null
+	if fe != null and fe.get("aseos") != null:      # the public toilets by the fairground's Auditorio (their set: aseos_dentro.gd)
+		out.append(fe.aseos)
 	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
 		out.append(G.casa)
 	return out
+
+## two doors of one set (the Merkocarry's, its front and its back): inside, either of them is a way out
+static func _same_set(a, b) -> bool:
+	return a != null and b != null and a.get("set_id") != null and a.get("set_id") == b.get("set_id")
 
 func is_shop(place) -> bool:
 	return place != null and place in shops()
@@ -142,7 +156,7 @@ func tick(dt: float) -> void:
 			var key: Array = [place, inside]
 			var m := _mark(key)
 			var at: Vector2 = spot(place, inside)
-			var here: bool = G.indoors == inside and (not inside or G.inside_of == place)
+			var here: bool = G.indoors == inside and (not inside or G.inside_of == place or _same_set(G.inside_of, place))
 			var show: bool = here and (inside or (open(place) and pp.distance_to(at) < FAR))      # (shut while you are in: you can still get out)
 			m.visible = show and not scene
 			if not show:
@@ -273,10 +287,10 @@ func camera(dt: float, pp: Vector2) -> bool:
 
 ## whoever you are talking to in here (a dialogue, or a choice of theirs open), if anybody
 func _talking_to(pp: Vector2):
-	var busy: bool = G.dlg != null or (G.menu.visible and G.menu.page == "choice")
+	var busy: bool = G.dlg != null or G._ask != null or (G.menu.visible and G.menu.page == "choice")
 	if not busy:
 		return null
-	var from = G.dlg.get("from") if G.dlg != null else null
+	var from = G.dlg.get("from") if G.dlg != null else (G._ask.get("from") if G._ask != null else null)
 	if from != null and is_instance_valid(from) and from.get("p") != null and (from.p as Vector2).distance_to(pp) < 6.0:
 		return from
 	var best = null

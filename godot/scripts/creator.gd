@@ -50,9 +50,12 @@ static func wardrobe_only(option: int, index: int) -> bool:
 ## values kept for old saves that the creator no longer offers: the three days' beard as a beard (the user, 16 November
 ## 2026: "quitaría la barba de 3 días como barba y la pondría como un check aparte de si o no, y que sea del mismo color
 ## que la barba, así la gente podrá elegir si quiere solo bigote o bigote y barba"). It is option 23 now; clean() turns
-## an old one into it.
-const RETIRED := {8: [5]}
+## an old one into it. And hair_style 3, the old "cropped" that cuts through the head: the creator offers the shaved head
+## (33) instead (the user, 17 November 2026), and a save with it gets that. Neighbours who wear 3 keep it as it was.
+const RETIRED := {8: [5], 10: [3]}
 const STUBBLE_FACE := 5
+const CROPPED := 3
+const SHAVED := 33
 static func skipped(option: int, index: int) -> bool:
 	return wardrobe_only(option, index) or (RETIRED.has(option) and OPTIONS[option]["values"][index] in RETIRED[option])
 
@@ -159,6 +162,8 @@ static func clean(sel) -> Array:
 	if OPTIONS[8]["values"][out[8]] == STUBBLE_FACE:   # (a three days' beard saved as a beard: no beard, and the three days')
 		out[8] = 0
 		out[23] = 1
+	if OPTIONS[10]["values"][out[10]] == CROPPED:     # (the old cropped hair: the shaved head it looks like now)
+		out[10] = OPTIONS[10]["values"].find(SHAVED)
 	return out
 
 static func look(sel: Array) -> Dictionary:

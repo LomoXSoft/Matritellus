@@ -940,7 +940,7 @@ func _firmas_checks() -> void:
 	g.stats["chiki_tags"] = g.day_n                  # (the first talk after the protest is the peñas' walls: pintadas.gd, its own test)
 	g.talk_to(chiki)
 	await _frames(3)
-	if g.menu.visible:
+	if g._ask != null:
 		g._choose(1)                                 # (a chat, not a wall)
 		await _frames(3)
 	var after: bool = g.dlg != null and g.dlg["lines"][0] == Loc.t("chiki_after")[0][0]
@@ -1505,6 +1505,237 @@ func _dolores_checks(wait: bool) -> void:
 ## it, where you write your name; a pad gets letter keys; the name goes on a tile over your door ("Casa de ..."); and
 ## people call you by it instead of "hijo" or "hermosa" -- a neighbour with a name from 50 of trust, anybody else once
 ## half the story's missions are done -- and stop muttering that you are Eufrasia's.
+## Letters from Correa (cartas.gd; the user, 16 Nov 2026): its hours 8 to 20, Diurno Correa till 14 and Nocturno
+## Correa after, their bubble (Hablar / Enviar una carta / Salir), a story of the mili from each, the letter's sheet,
+## one a day, what is kind and what is nasty, and the call the day after with its +5 or -3. Everything put back.
+func _cartas_checks(pictures := false) -> void:
+	var C = g.cartas
+	if g.menu.visible:                                # (a menu some check before left open: calls do not ring under one)
+		print("  (cartas: a menu was open: %s)" % g.menu.page)
+		g.menu.close()
+	if g.paused:
+		g._close_pause()
+	var co = g.world.get("correos") if g.world != null else null
+	if co == null or co.get("tienda") == null:
+		_check(C.clerks.is_empty(), "(no Correa on this map: no clerks, and nothing to check)")
+		return
+	var ti = co.tienda
+	var was_stats: Dictionary = g.stats.duplicate(true)
+	var was_folk: Dictionary = g.folk.data.duplicate(true)
+	var was_day: int = g.day_n
+	var was_wd: int = g.weekday
+	var was_clock: float = g.clock
+	_check(is_equal_approx(co.OPENS, 8.0) and is_equal_approx(co.SHUTS, 20.0) and co.open_at(1, 8.5) and co.open_at(1, 19.5) and not co.open_at(1, 20.5) and not co.open_at(5, 12.0),
+		"Correa opens from 8:00 to 20:00, Monday to Friday")
+	var di = C.clerks.get("diurno")
+	var no = C.clerks.get("nocturno")
+	var win1: Dictionary = {}
+	for w in ti.windows:
+		if int(w["n"]) == 1:
+			win1 = w
+	_check(di != null and no != null and not win1.is_empty() and di.home.distance_to(win1["keeper"]) < 0.3 and no.home.distance_to(win1["keeper"]) < 0.3 and g.named.get("diurno") == di,
+		"Diurno and Nocturno Correa, behind its first window (on the left from the door)")
+	_check(C.on_duty(9.0, true) == "diurno" and C.on_duty(13.9, true) == "diurno" and C.on_duty(14.0, true) == "nocturno" and C.on_duty(19.9, true) == "nocturno" and C.on_duty(10.0, false) == "",
+		"Diurno the first six hours, Nocturno the other six, nobody while it is shut")
+	# what is kind and what is nasty
+	var kind := ["Eres un sol, muchas gracias por todo.", "GUAPAAAA", "Te echo de menos, un abrazo", "No eres tonto, eres un crack", "Hola, ¿qué tal?", "Thank you so much, my friend", "Eres más salao que las pesetas. Besos."]
+	var nasty := ["Eres un gilipollas y un cansino", "No te quiero ver más", "Me cago en tu calavera", "Eres un sinso y un mojón", "You are an idiot", "Vete a la mierda, so zanguango", "Te odio. Feo."]
+	var wrong: Array = []
+	for t in kind:
+		if C.judge(t) < 0:
+			wrong.append(t)
+	for t in nasty:
+		if C.judge(t) >= 0:
+			wrong.append(t)
+	_check(wrong.is_empty(), "kind letters read as kind and nasty ones as nasty, a no turning a word round (wrong: %s)" % [wrong])
+	_check(C.gain_of(C.judge("Te echo de menos")) == 5 and C.gain_of(C.judge("Hola, ¿qué tal? Aquí andamos.")) == 3 and C.gain_of(C.judge("Eres guapo y gilipollas")) == 3 and C.gain_of(C.judge("Feo")) == -3,
+		"kind +5, plain (nothing either way, or as much of each) +3, nasty -3")
+	# at the window, in the morning
+	g.weekday = 1
+	g.set_time(10.0)
+	co.set_open(true)
+	C._t = 0.0
+	C.tick(0.1)
+	_check(not di.away and no.away and not no.visible, "at ten in the morning Diurno is on and Nocturno is not")
+	g.folk.meet("paca")
+	g.folk.meet("luis")
+	g.stats.erase("carta_dia")
+	g.stats.erase("cartas")
+	g.stats.erase("mili_diurno")
+	g.phase = "free"
+	g._use_door(true, ti)
+	await _frames(10)
+	g.player.p = win1["front"]
+	g.player.sync()
+	await _frames(5)
+	g.talk_to(di)
+	await _frames(4)
+	var opts: Array = g._ask["options"] if g._ask != null else []
+	var greeting := false
+	for hi in Loc.t("correa_hola_diurno"):
+		greeting = greeting or String(g.hud.dlg_text.text).contains(String(hi).left(14).replace("[", "[lb]"))
+	_check(g._ask != null and not g.menu.visible and opts.size() == 3 and opts[0][0] == Loc.t("correa_hablar") and opts[1][0] == Loc.t("correa_enviar") and opts[2][0] == Loc.t("correa_salir") and greeting,
+		"talk to him: his greeting, and Hablar, Enviar una carta and Salir in the bubble over it")
+	if pictures:
+		await _frames(30)
+		await _shot("cartas_ventanilla")
+	g._choose(0)
+	await _frames(3)
+	var story: bool = g.dlg != null and g.dlg["lines"] == Loc.t("mili_0_diurno") and int(g.stats.get("mili_diurno", 0)) == 1
+	await _skip_dialog(false)
+	_check(story, "Hablar: his first story of the mili (the sergeant's hen), and the next time the next one")
+	g.stats.erase("nombre")                          # (a game from before the Padrón: no name to sign with)
+	g.talk_to(di)
+	await _frames(3)
+	g._choose(1)
+	await _frames(3)
+	await _skip_dialog(false)
+	await _frames(5)
+	var roll: bool = g.padron.active and not C.writing
+	g.padron.type_text("Juana")
+	g.padron.sign_up()
+	var waited_roll := 0
+	while not C.writing and waited_roll < 300:
+		await _frames(2)
+		waited_roll += 1
+	_check(roll and C.writing and g.stats.get("nombre", "") == "Juana" and C.signature() == Loc.t("carta_firma") + "Juana",
+		"with no name yet (a game from before the Padrón), the Padrón first; then the letter, signed with the name: %s" % C.signature())
+	var up: bool = C.writing and C.visible and g.phase == "talking" and C.recipients().has("paca") and C.recipients().has("luis") and not C.recipients().has("goat")
+	_check(up, "Enviar una carta: paper and an envelope, and the sheet comes up, to the people you know")
+	var turns := 0
+	while C.to_id() != "paca" and turns < 60:
+		C.next_to(1)
+		turns += 1
+	C.type_text("Tía Paca, eres un sol. Muchas gracias por cuidarme, un abrazo.")
+	if pictures:
+		await _frames(20)
+		await _shot("cartas_carta")
+	var p0: Vector2 = g.player.p
+	Input.action_press("forward")
+	await _frames(20)
+	Input.action_release("forward")
+	_check(g.player.p.distance_to(p0) < 0.05, "while writing you do not walk off (the keys are the letter's)")
+	C.send()
+	if pictures:
+		await _frames(8)
+		await _shot("cartas_sello")
+	var waited := 0
+	while C.writing and waited < 200:
+		await _frames(2)
+		waited += 1
+	var sent: Array = C.letters()
+	_check(not C.writing and sent.size() == 1 and sent[0]["to"] == "paca" and sent[0]["good"] and int(g.stats.get("carta_dia", -1)) == g.day_n
+		and g.dlg != null and Loc.t("correa_enviada_diurno").has(g.dlg["lines"][0]),
+		"Enviar: the stamp comes down, it goes to Tía Paca as a kind letter, and he says she will have it tomorrow")
+	await _skip_dialog(false)
+	g.talk_to(di)
+	await _frames(3)
+	var greyed: bool = g._ask != null and not (g._ask["options"][1][1] as Callable).is_valid() and g._ask["options"][1][0] == Loc.t("correa_enviar_hoy")
+	g._choose(2)
+	await _frames(3)
+	var bye: bool = g.dlg != null and Loc.t("correa_adios_diurno").has(g.dlg["lines"][0])
+	await _skip_dialog(false)
+	_check(greyed and bye, "one a day: the same day, sending is greyed out; Salir, and he says goodbye")
+	# in the afternoon, Nocturno, his side of the same story
+	g.set_time(16.0)
+	C._t = 0.0
+	C.tick(0.1)
+	await _frames(3)
+	_check(di.away and not no.away, "at four in the afternoon it is Nocturno behind the window")
+	g.player.p = win1["front"]
+	await _frames(3)
+	g.talk_to(no)
+	await _frames(3)
+	g._choose(0)
+	await _frames(3)
+	var his: bool = g.dlg != null and g.dlg["lines"] == Loc.t("mili_0_nocturno")
+	if pictures and g.dlg != null:
+		g.dlg["cool"] = 0.0
+		g.dialog_advance()
+		await _frames(40)
+		await _shot("cartas_nocturno")
+	await _skip_dialog(false)
+	_check(his, "Nocturno tells the same story his way")
+	g._use_door(false, ti)
+	await _frames(10)
+	# the next day, Tía Paca rings: +5
+	g.day_n += 1
+	g.set_time(12.0)
+	g.phase = "free"
+	var t0: int = g.folk.trust("paca")
+	sent[0]["due"] = g.llamadas.now() - 0.01
+	C._t = 0.0
+	var rang := false
+	for k in range(60):
+		await _frames(2)
+		if g.phone_call != null:
+			rang = g.phone_call["npc"] == "paca"
+			break
+	if rang:
+		g._answer_call()
+		await _frames(3)
+		var said_ok: bool = g.dlg != null and Loc.t("carta_bien_paca")[0].size() == g.dlg["lines"].size()
+		await _skip_dialog(false)
+		_check(said_ok and g.folk.trust("paca") == mini(100, t0 + C.UP) and sent[0]["done"] and g.phone_call == null,
+			"the next day Tía Paca rings about it, one of her kind calls, and her trust goes up %d (%d -> %d)" % [C.UP, t0, g.folk.trust("paca")])
+	else:
+		_check(false, "the next day Tía Paca rings about it (nobody rang)")
+	# a nasty one to Don Luis: -3
+	g.folk.data["luis"]["t"] = 40
+	g.folk.data["luis"]["floor"] = 25
+	g.stats.erase("carta_dia")
+	g.set_time(10.0)
+	g._use_door(true, ti)
+	await _frames(6)
+	C._t = 0.0
+	C.tick(0.1)
+	g.player.p = win1["front"]
+	await _frames(3)
+	C._before = "free"
+	C.open_sheet(di)
+	await _frames(3)
+	turns = 0
+	while C.to_id() != "luis" and turns < 60:
+		C.next_to(1)
+		turns += 1
+	C.type_text("Eres un gilipollas y un sinso. Tu kebab da asco.")
+	C.send()
+	waited = 0
+	while C.writing and waited < 200:
+		await _frames(2)
+		waited += 1
+	await _skip_dialog(false)
+	g._use_door(false, ti)
+	await _frames(6)
+	var bad: Dictionary = C.letters()[C.letters().size() - 1]
+	g.day_n += 1
+	g.set_time(12.0)
+	bad["due"] = g.llamadas.now() - 0.01
+	g.phase = "free"
+	C._t = 0.0
+	rang = false
+	for k in range(60):
+		await _frames(2)
+		if g.phone_call != null:
+			rang = g.phone_call["npc"] == "luis"
+			break
+	if rang:
+		g._answer_call()
+		await _frames(3)
+		await _skip_dialog(false)
+	_check(rang and not bad["good"] and g.folk.trust("luis") == 37 and bad["done"], "a nasty letter to Don Luis: he rings the next day and his trust goes down %d (40 -> %d)" % [-C.DOWN, g.folk.trust("luis")])
+	# put back
+	g.stats = was_stats
+	g.padron.plaque()                                 # (the tile over your door as the name was before)
+	g.folk.data = was_folk
+	g.day_n = was_day
+	g.weekday = was_wd
+	g.set_time(was_clock)
+	co.set_open(co.open_at(g.weekday, g.clock))
+	C._t = 0.0
+	C.tick(0.1)
+	g.phase = "free"
+
 func _padron_checks(pictures := false) -> void:
 	var P = g.padron
 	var was_stats: Dictionary = g.stats.duplicate(true)
@@ -2095,6 +2326,243 @@ func _ies_checks() -> void:
 	_check(ie.NAME == "I.E.S. VALDEACERO" and street.contains("Tembleque") and g.world.lamp_spots.has(ie.lamps[0]),
 		"its way in gives on to the %s, its name reads %s, and the floodlights of its courts are the town's" % [street, ie.NAME])
 
+## The fairground and market (ferial.gd): built; its fountain in the roundabout's island, inside the ring and solid; its
+## pergola of ivy and the frames of its market standing; nothing of it in a roadway; its lamps the town's; its containers
+## among the street's furniture.
+func _ferial_checks() -> void:
+	var fe = g.world.get("ferial")
+	_check(fe != null and fe.pieces > 600 and fe.posts >= 20 and fe.lamps.size() >= 6, "the fairground is built by hand (%d pieces, %d posts of the market's frames, %d lamps)" % [(fe.pieces if fe != null else 0), (fe.posts if fe != null else 0), (fe.lamps.size() if fe != null else 0)])
+	if fe == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var c: Vector2 = fe.center
+	var a := c + Vector2(-fe.island_r + 0.3, 0.0)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + 0.8, a.y), Vector3(c.x, MapData.height(c) + 0.8, c.y), 1)).is_empty()
+	var ring_free: bool = MapData.road_edge_dist(c) > fe.island_r - 0.5
+	var nearest := 99.0
+	for q in fe.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	# its main walk (the user: "las fuentes están en mitad"): the three fountains on one straight line, and nothing of the
+	# park standing on its walk of setts but the little fountain
+	var off := 0.0
+	for q in [fe.center, fe.little_center, fe.oval_center]:
+		var r: Vector2 = q - fe.AXIS_P
+		off = maxf(off, absf(r.x * fe.AXIS_D.y - r.y * fe.AXIS_D.x))
+	var blocked := 0
+	if fe.walk_ends.size() == 2:
+		for q in fe.yard:
+			var on: Vector2 = Geometry2D.get_closest_point_to_segment(q, fe.walk_ends[0], fe.walk_ends[1])
+			if on.distance_to(q) < fe.AXIS_WALK / 2.0 + 0.3 and q.distance_to(fe.little_center) > 2.5 and q.distance_to(fe.oval_center) > 4.0:
+				blocked += 1
+				print("  on the park's walk: %s (%.2f m from its line)" % [q, on.distance_to(q)])
+	_check(off < 0.6 and fe.walk_ends.size() == 2 and blocked == 0,
+		"its three fountains stand on its main walk (the farthest %.2f m off its line), and the park's walk of setts is clear (%d things on it)" % [off, blocked])
+	_check(fe.jets >= 5 and fe.terraces.size() == 2 and fe.terraces.all(func(q): return g.world.extra_terrazas.any(func(e): return (e[0] as Vector2).distance_to(q) < 0.1)),
+		"its fountains work (%d jets of water, the plaza's moving water), and the bars' two terraces stand under the ivy behind the fairground's walk" % fe.jets)
+	_check(fe.island_r > 3.0 and fe.basin_r < fe.island_r and stops and ring_free and nearest > 0.0 and g.world.lamp_spots.has(fe.lamps[0] - Vector3(0, 0.2, 0)),
+		"its fountain stands in the roundabout's island (%.1f m, the basin %.1f m), clear of the ring's asphalt, and stops you; nothing of it in a roadway (the nearest %.1f m from one); its lamps are the town's" % [fe.island_r, fe.basin_r, nearest])
+	# the Auditorio and the public toilets (the user, 17 Nov 2026: "para el auditorio solo un hueco en el muro por donde
+	# pasar y para los baños una entrada con flecha a otra ubicación"): its wall stops you and its gap lets you through;
+	# its benches and poles; the toilets stop you, the map knows them, their double door leads to their set apart
+	var inw := Vector2(-fe.AUD_E.y, fe.AUD_E.x)
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + h, a.y), Vector3(b.x, MapData.height(a) + h, b.y), 1)).is_empty()
+	var wall_mid: Vector2 = fe.AUD_C0 + fe.AUD_E * 20.0
+	var walls_stop: bool = ray.call(wall_mid - inw * 2.0, wall_mid + inw * 2.0, 1.0)
+	var gap_open := false
+	if fe.aud_gap.size() == 2:
+		var gm: Vector2 = (fe.aud_gap[0] + fe.aud_gap[1]) / 2.0
+		gap_open = not ray.call(gm - inw * 2.0, gm + inw * 2.0, 1.0)
+	_check(walls_stop and gap_open and fe.aud_benches > 200 and fe.aud_poles.size() == 3,
+		"the Auditorio: its wall stops you (%s), the gap by the toilets lets you in (%s); %d stretches of bench, %d poles with floodlights" % [walls_stop, gap_open, fe.aud_benches, fe.aud_poles.size()])
+	# its stage of stone (the user: "la zona que has hecho de tierra y plana, en realidad de piedra también"): you stand a
+	# metre up on it, its front stops you, its steps take you up with no step higher than a stair's
+	var lift := 0.0
+	var front_stops := false
+	var worst := 99.0
+	if fe.stage.size() >= 3 and fe.stage_climb.size() == 2:
+		lift = MapData.foot(fe.stage_mid) - MapData.height(fe.stage_mid)
+		var fp: Vector2 = fe._aud_row(40.0, 0.0)
+		var fo: Vector2 = fe._aud_out(40.0)
+		front_stops = ray.call(fp + fo * 1.5, fp - fo * 1.5, 0.4)
+		worst = 0.0
+		var prev: float = MapData.foot(fe.stage_climb[0])
+		for i in range(1, 41):
+			var q: Vector2 = (fe.stage_climb[0] as Vector2).lerp(fe.stage_climb[1], i / 40.0)
+			var f: float = MapData.foot(q)
+			worst = maxf(worst, absf(f - prev))
+			prev = f
+	_check(lift > 0.7 and lift < 1.6 and front_stops and worst < 0.3 and absf(MapData.foot(fe.stage_climb[1] if fe.stage_climb.size() == 2 else Vector2.ZERO) - fe.stage_top) < 0.05,
+		"its stage of stone stands %.2f m up, its front stops you (%s), its steps take you up (the biggest rise in a tenth of a metre %.2f m)" % [lift, front_stops, worst])
+	var wc_ok := false
+	if fe.wc_outline.size() == 4:
+		var wc_mid: Vector2 = (fe.wc_outline[0] + fe.wc_outline[2]) / 2.0
+		wc_ok = ray.call(wc_mid + fe.AUD_E * 8.0, wc_mid, 1.2) and MapData.outlines.has(fe.wc_outline) and fe.get("aseos") != null \
+			and (fe.aseos.door_out as Vector2).distance_to(wc_mid) < 6.0 and g.entradas.shops().has(fe.aseos)
+	_check(wc_ok, "the public toilets stop you, the map knows them, and their double door (a green arrow) takes you to their inside, a set apart")
+
+## The post office of the Calle de Zaragoza (correos.gd): built where Texturas's house of it was (no longer drawn); its
+## front stops you; the map knows it; nothing of it in a roadway; it gives on to the Zaragoza; its hours (pure functions:
+## the clock is not moved) and its lights.
+func _correos_checks() -> void:
+	if MapData.correos.is_empty():                  # (a map baked before it: nothing to check yet)
+		print("  the post office: not in this map yet")
+		return
+	var co = g.world.get("correos")
+	_check(co != null and co.pieces > 300, "the post office is built by hand (%d pieces)" % (co.pieces if co != null else 0))
+	if co == null:
+		return
+	var drawn := 0
+	for casa in g.world.casas:
+		if casa.id == co.HOUSE:
+			drawn += casa.get_child_count()
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var a := Vector2(-119.5, -71.0)
+	var b := Vector2(-133.0, -77.5)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + 1.2, a.y), Vector3(b.x, MapData.height(a) + 1.2, b.y), 1)).is_empty()
+	var nearest := 99.0
+	for q in co.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	var street: String = String(MapData.nearest_road(co.door)["seg"].road["n"])
+	_check(drawn == 0 and stops and MapData.outlines.has(co.outline) and nearest > 0.0 and street.contains("Zaragoza"),
+		"it stands where Texturas's house of it was (%d pieces of that drawn); its front stops you; the map knows it; nothing of it in a roadway; it gives on to the %s" % [drawn, street])
+	var luz: StandardMaterial3D = co._mats.get("luz")
+	co.set_open(false)
+	var dark: bool = luz != null and luz.emission_energy_multiplier == 0.0
+	co.set_open(true)
+	var lit: bool = luz != null and luz.emission_energy_multiplier > 0.5
+	co.set_open(co.open_at(g.weekday, g.clock))
+	var o0: float = co.OPENS                         # (its hours as correos.gd has them: the user may change them)
+	var o1: float = co.SHUTS
+	_check(co.open_at(0, o0) and not co.open_at(0, o0 - 0.1) and co.open_at(4, o1 - 0.1) and not co.open_at(4, o1) and not co.open_at(5, 12.0) and not co.open_at(6, 12.0) and dark and lit,
+		"it opens from %s to %s from Monday to Friday, shut at the weekend, its lights with it" % [o0, o1])
+	# shut: the grille down across its way in (and solid), its boards dark; open: the grille up, the boards lit; its inside
+	var board: StandardMaterial3D = co._mats.get("rotulo")
+	co.set_open(false)
+	var shut_ok: bool = co._shut_nodes.all(func(n): return n.visible) and not co._grille_solid.disabled
+	co.set_open(true)
+	var open_ok: bool = co._open_nodes.all(func(n): return n.visible) and co._grille_solid.disabled
+	co.set_open(co.open_at(g.weekday, g.clock))
+	co._light_boards(21.0)                          # (pure: the clock is not moved)
+	var lit_night: bool = board != null and board.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED
+	co._light_boards(12.0)
+	var plain_day: bool = board != null and board.shading_mode == BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	co._light_boards(float(g.clock))
+	open_ok = open_ok and lit_night and plain_day
+	var ti = co.tienda
+	var inside_ok: bool = ti != null
+	if inside_ok:
+		var far: float = (MapData.nearest_road(ti.INSIDE, true)["p"] as Vector2).distance_to(ti.INSIDE)
+		var from := Vector3(ti.INSIDE.x, ti.level + 1.0, ti.INSIDE.y + 3.5)
+		var walled := true
+		for to in [Vector3(6, 0, 0), Vector3(-6, 0, 0), Vector3(0, 0, 10), Vector3(0, 0, -6), Vector3(0, 6, 0)]:
+			if space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + to, 1)).is_empty():
+				walled = false
+		var follows := true
+		for on in [true, false]:
+			co.set_open(on)
+			follows = follows and ti.open == on
+		co.set_open(co.open_at(g.weekday, g.clock))
+		inside_ok = far > 200.0 and walled and follows and g.entradas.is_shop(ti) and ti.door_out.distance_to(co.door) < 2.0 and absf(MapData.foot(ti.in_spawn) - ti.level) < 0.01 and ti.pieces > 300
+		print("  Correa's inside: %.0f m from any road, walled %s, follows the hours %s, %d pieces" % [far, walled, follows, ti.pieces])
+	_check(shut_ok and open_ok and inside_ok, "shut, its grille is down across the way in; open, the grille is up; its boards are lit from dusk; its inside is a set apart, walled, listed among the places you go into, open when it is")
+
+## The Merkocarry (merkocarry.gd): built where Catastro's block of the shop was, Texturas's house of its front no longer
+## drawn; its fronts on Santa Ana, the Cristo and the Suspiro and its car park's wall on Magallanes stop you; the map
+## knows it; nothing of it in a roadway; the lane from the Cristo open while it is, shut behind its gate at night; its
+## hours (pure functions: the clock is not moved) with its lights and its gates; its customers' cars come and go with
+## them; its lamps the town's.
+func _merkocarry_checks() -> void:
+	var mk = g.world.get("merkocarry")
+	_check(mk != null and mk.pieces > 450 and mk.bays >= 20, "the Merkocarry is built by hand (%d pieces, %d bays)" % [(mk.pieces if mk != null else 0), (mk.bays if mk != null else 0)])
+	if mk == null:
+		return
+	var drawn := 0
+	for casa in g.world.casas:
+		if casa.id == mk.HOUSE:
+			drawn += casa.get_child_count()
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + h, a.y), Vector3(b.x, MapData.height(a) + h, b.y), 1)).is_empty()
+	var hits := 0
+	for pair in [[Vector2(453.0, 150.0), Vector2(453.0, 166.0)], [Vector2(400.0, 188.0), Vector2(414.0, 194.0)], [Vector2(472.0, 200.0), Vector2(455.0, 192.0)], [Vector2(415.0, 259.5), Vector2(415.0, 246.0)]]:
+		if ray.call(pair[0], pair[1], 1.2):
+			hits += 1
+	var nearest := 99.0
+	for q in mk.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	var streets: Array = []
+	for p in [mk.door, Vector2(399.5, 202.0), Vector2(449.0, 226.0), Vector2(415.0, 257.0)]:
+		streets.append(String(MapData.nearest_road(p)["seg"].road["n"]))
+	_check(drawn == 0 and hits == 4 and MapData.outlines.has(mk.outline) and nearest > 0.0 and String(streets[0]).contains("Santa Ana") and String(streets[1]).contains("Cristo")
+		and String(streets[2]).contains("Suspiro") and String(streets[3]).contains("Magallanes") and mk.NAME == "Merkocarry",
+		"it stands where Catastro's block was (Texturas's house of its front: %d pieces drawn); its fronts and its car park's wall stop you (%d of 4); the map knows it; nothing of it in a roadway (the nearest %.1f m from one); it gives on to %s" % [drawn, hits, nearest, ", ".join(streets)])
+	# its hours, its lights, its gates and the lane through them
+	var luz: StandardMaterial3D = mk._mats.get("luz")
+	var lane_a := Vector2(398.5, 203.5)               # (on the Cristo's pavement, through the gate, down the lane, into the car park)
+	var lane_b := Vector2(428.0, 218.5)
+	var through := func() -> bool:
+		return space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(lane_a.x, MapData.height(lane_a) + 1.0, lane_a.y), Vector3(lane_b.x, MapData.height(lane_b) + 1.0, lane_b.y), 1)).is_empty()
+	mk.set_open(false)
+	var dark: bool = luz != null and luz.emission_energy_multiplier == 0.0 and not through.call() and mk._shut_nodes.all(func(n): return n.visible)
+	mk.set_open(true)
+	var lit: bool = luz != null and luz.emission_energy_multiplier > 0.5 and through.call() and mk._open_nodes.all(func(n): return n.visible)
+	mk.set_open(mk.open_at(g.weekday, g.clock))
+	var rule: bool = mk.open_at(0, 9.5) and not mk.open_at(0, 9.4) and mk.open_at(5, 20.9) and not mk.open_at(5, 21.0) and not mk.open_at(6, 12.0) and mk.open_at(3, 15.0)
+	_check(rule and dark and lit and g.world.lamp_spots.has(mk.lamps[0]),
+		"it opens from 9:30 to 21:00 from Monday to Saturday and not on Sundays; shut, its lights are out and its gates are across the lane; open, lit, and the lane runs through into the car park; its lamps are the town's")
+	# its customers' cars
+	var was: bool = mk.is_open
+	mk.set_open(true)
+	mk.settle_cars(g)
+	var n_open: int = mk.parked.size()
+	mk.set_open(false)
+	mk.settle_cars(g)
+	var n_shut: int = mk.parked.size()
+	mk.set_open(was)
+	mk.settle_cars(g)
+	_check(n_open == mk.cars_wanted(g.clock) if was else n_open >= 6, "while it is open there are cars in its car park (%d), shut there are none (%d)" % [n_open, n_shut])
+	_check(n_shut == 0, "shut, its car park empties")
+	# its inside: a set apart, walled, entered by two doors (the front and the back), open when the shop is
+	var ti = mk.tienda
+	var tb = mk.trasera
+	var ok_in: bool = ti != null and tb != null
+	if ok_in:
+		var far: float = (MapData.nearest_road(ti.INSIDE, true)["p"] as Vector2).distance_to(ti.INSIDE)
+		var from := Vector3(ti.INSIDE.x, ti.level + 1.0, ti.INSIDE.y + ti.D / 2.0)
+		var walled := true
+		for to in [Vector3(10, 0, 0), Vector3(-10, 0, 0), Vector3(0, 0, 16), Vector3(0, 0, -16), Vector3(0, 6, 0)]:
+			if space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + to, 1)).is_empty():
+				walled = false
+		var listed: bool = g.entradas.is_shop(ti) and g.entradas.is_shop(tb) and g.entradas._same_set(ti, tb)
+		var follows := true
+		for on in [true, false]:
+			mk.set_open(on)
+			follows = follows and ti.open == on and tb.open == on
+		mk.set_open(mk.open_at(g.weekday, g.clock))
+		var doors_ok: bool = ti.door_out.distance_to((mk.SA_E + mk.SA_W) / 2.0) < 9.0 and tb.door_out.distance_to((mk.S3 + mk.S4) / 2.0) < 1.0 \
+			and absf(MapData.foot(ti.in_spawn) - ti.level) < 0.01 and absf(MapData.foot(tb.in_spawn) - ti.level) < 0.01 and ti.in_spawn.distance_to(tb.in_spawn) > 15.0
+		ok_in = far > 200.0 and walled and listed and follows and doors_ok and ti.pieces > 800 and ti.trolleys >= 12
+		print("  the Merkocarry's inside: %.0f m from any road, walled %s, both doors listed %s, follows the hours %s, doors %s, %d pieces" % [far, walled, listed, follows, doors_ok, ti.pieces])
+	_check(ok_in, "its inside is a set apart, far from the town, walled and roofed, on a level floor, with a door at each end: in by its front on Santa Ana or by its back on the car park, open when the shop is")
+	# the Mayordomía's nave beside it (mayordomia.gd), on a map baked with it
+	var my = mk.get("mayordomia")
+	if bool(MapData.merkocarry.get("nave", false)):
+		var stops: bool = my != null and not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(406.0, MapData.height(Vector2(406.0, 172.0)) + 1.2, 172.0),
+			Vector3(422.0, MapData.height(Vector2(406.0, 172.0)) + 1.2, 176.0), 1)).is_empty()
+		var on_cristo: bool = my != null and String(MapData.nearest_road((my.NW + my.SW) / 2.0)["seg"].road["n"]).contains("Cristo")
+		_check(my != null and my.pieces > 60 and stops and on_cristo and MapData.outlines.has(my.outline),
+			"the Mayordomía's nave is built by hand beside it (%d pieces): its front on the Cristo stops you, and the map knows it" % (my.pieces if my != null else 0))
+
 ## The corner house of the bank and the copy shop (bancosancho.gd): built on Texturas's house, which casas.gd no longer
 ## draws; its fronts solid; it stands on the Calle del Teniente Infante; each shop's hours (pure functions: the game's
 ## clock and day are not moved) and its lights; the copy shop's inside a set apart, listed among the places you go into,
@@ -2459,6 +2927,9 @@ func _ajedrez_waits(cond: Callable, most := 600) -> void:
 
 func _ajedrez_checks() -> void:
 	var AJ = g.ajedrez
+	if g.menu.visible:                                # (a menu some check before left open: the mayor's answers are a bubble, not the card)
+		print("  (ajedrez: a menu was open: %s)" % g.menu.page)
+		g.menu.close()
 	var M = AJ.Motor
 	# --- the rules, and the player ---
 	var e = M.new()
@@ -2535,8 +3006,8 @@ func _ajedrez_checks() -> void:
 			await _shot("aj_imaginadas")
 		await _skip_dialog(false)
 	await _skip_dialog(false)                            # (you'll think I'm mad?)
-	var opts: Array = g._choice.get("options", [])
-	var asked: bool = g.menu.visible and opts.size() == 2 and opts[0][0] == Loc.t("aj_q_no") and opts[1][0] == Loc.t("aj_q_yes") and AJ._dream.is_empty()
+	var opts: Array = g._ask["options"] if g._ask != null else []
+	var asked: bool = not g.menu.visible and g.hud.ans_box != null and g.hud.ans_box.visible and g.hud.dlg_slot.visible and opts.size() == 2 and opts[0][0] == Loc.t("aj_q_no") and opts[1][0] == Loc.t("aj_q_yes") and AJ._dream.is_empty() 		and String(g.hud.dlg_text.text).contains(String(Loc.t("aj_m_ask")[1]).left(12))     # (his question stays in the box, the answers in a bubble over it)
 	await _shot("aj_pregunta")
 	g._choose(1)                                         # "Como una puñetera regadera"
 	await _frames(3)
@@ -2566,7 +3037,7 @@ func _ajedrez_checks() -> void:
 		if g.dlg != null:
 			g.dlg["cool"] = 0.0
 			g.dialog_advance()
-		return g.menu.visible, 900)
+		return g._ask != null, 900)
 	g._choose(0)                                         # "Noooo, que vaaa, muy normal todo"
 	await _frames(3)
 	var sarcasm: bool = g.dlg != null and g.dlg["lines"] == Loc.t("aj_m_sarcasm")
@@ -2598,9 +3069,13 @@ func _ajedrez_checks() -> void:
 	var dogs: Array = AJ.figs.values().filter(func(f): return f["chara"] == null)
 	var idle_dogs: bool = dogs.size() == 4 and dogs.all(func(f): return f["ap"] != null and f["ap"].current_animation == "Idle")
 	var kids: Array = AJ.figs.values().filter(func(f): return f["kind"] == M.P)
-	var bob0: float = kids[0]["chara"].inner.position.y
-	await _frames(9)
-	var bob1: float = kids[0]["chara"].inner.position.y
+	var bob0: float = kids[0]["chara"].inner.position.y          # (the lowest and highest over 60 frames: two samples 9 frames
+	var bob1: float = bob0                                       # apart could both fall near the top of the bob, 0.0002 apart;
+	for k in range(60):                                          # 20 frames saw 0.0004 of it in a full run, 17 Nov 2026)
+		await get_tree().process_frame
+		var y: float = kids[0]["chara"].inner.position.y
+		bob0 = minf(bob0, y)
+		bob1 = maxf(bob1, y)
 	var whites: Array = AJ.figs.values().filter(func(f): return f["c"] == 0 and f["chara"] != null)
 	var greys: Array = AJ.figs.values().filter(func(f): return f["c"] == M.BLACK and f["chara"] != null)
 	var lum := func(f) -> float:
@@ -3346,8 +3821,9 @@ func _relief_checks() -> void:
 	# --- every wall goes down into the ground (no daylight under a house), and no house is left hanging or buried
 	var aw: Dictionary = W.audit_walls
 	# (how many there are only says the walls were looked at: it goes down as the houses are built by hand one by one
-	# -- each takes over the walls the bake had there -- so 40000 became 35000 when 38948 were left, 16 Nov 2026)
-	_check(aw["n"] > 35000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
+	# -- each takes over the walls the bake had there -- so 40000 became 35000 when 38948 were left, 16 Nov 2026, and
+	# 30000 when 33142 were left, 17 Nov 2026)
+	_check(aw["n"] > 30000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
 	_check(aw["fronts"] > 5000 and aw["odd"] < aw["fronts"] * 0.01 and aw["high"] < 4.0 and aw["deep"] < 0.8,
 		"houses meet their street: of %d fronts, %d (%.1f %%) have the floor over 1.6 m above the pavement or 0.4 m under it; the worst are %.1f m above (at %.0f, %.0f) and %.1f m under (at %.0f, %.0f)"
 		% [aw["fronts"], aw["odd"], 100.0 * aw["odd"] / maxf(1.0, aw["fronts"]), aw["high"], aw["high_at"].x, aw["high_at"].y, aw["deep"], aw["deep_at"].x, aw["deep_at"].y])
@@ -4347,9 +4823,9 @@ func _comida_checks(pictures := false) -> void:
 	await _frames(5)
 	g.money = 3
 	g.talk_to(luis)
-	_check(g.menu.visible and g.phase == "talking" and g._choice["options"].size() == 2 and not (g._choice["options"][0][1] as Callable).is_valid(), "talk to Don Luis and he asks what it will be; without %d euros there is nothing doing" % F.PRICE)
+	_check(g._ask != null and not g.menu.visible and g.phase == "talking" and g._ask["options"].size() == 2 and not (g._ask["options"][0][1] as Callable).is_valid(), "talk to Don Luis and he asks what it will be; without %d euros there is nothing doing" % F.PRICE)
 	g._choose(1)
-	_check(g.dlg != null and g.phase == "free" and not g.menu.visible, "...but he will still talk")
+	_check(g.dlg != null and g.phase == "free" and not g.menu.visible and g._ask == null and not g.hud.ans_box.visible, "...but he will still talk")
 	await _skip_dialog()
 	g.money = 100
 	g.talk_to(luis)
@@ -4860,7 +5336,7 @@ func _sabotaje_checks(pictures := false) -> void:
 	await _skip_dialog(false)
 	_check(g.side == null and not S.active() and S.declined and g._step_flag == "", "nothing has started (and the main story has not been touched)")
 	g.talk_to(luis)
-	_check(g.menu.visible and g._choice["options"].size() == 3 and g._choice["options"][1][0] == Loc.t("food_job"), "from then on his errand is at his counter, between the kebab and the chat")
+	_check(g._ask != null and g._ask["options"].size() == 3 and g._ask["options"][1][0] == Loc.t("food_job"), "from then on his errand is at his counter, between the kebab and the chat")
 	g._choose(1)
 	_check(g.dlg != null and g.dlg["lines"].size() == 1, "ask him for it and he only asks")
 	await _skip_dialog(false)
@@ -5032,7 +5508,7 @@ func _sabotaje_checks(pictures := false) -> void:
 	_check(g._menu_page("log_side")["items"].any(func(it): return String(it["text"]).contains(Loc.t("luis_title")) and String(it["text"]).contains(Loc.t("log_done"))), "and the mission is in it as done")
 	g.menu.close()
 	g.talk_to(luis)
-	_check(g.menu.visible and not g._choice.get("offer", false) and g._choice["options"][0][0].begins_with(Loc.t("food_buy_luis").split("(")[0]), "and at his counter there is no errand left: a kebab or a chat")
+	_check(g._ask != null and not g.menu.visible and g._ask["options"][0][0].begins_with(Loc.t("food_buy_luis").split("(")[0]), "and at his counter there is no errand left: a kebab or a chat")
 	g._choose(1)
 	await _skip_dialog(false)
 	g.day_n += 1
@@ -5040,7 +5516,7 @@ func _sabotaje_checks(pictures := false) -> void:
 	_check(g.dlg != null and g.dlg["lines"] == Loc.t("luis_after") and String(g.dlg["lines"][1]).contains("Nadie notó la diferencia"), "a day later he tells you it was all for nothing: nobody noticed the taste")
 	await _skip_dialog(false)
 	g.talk_to(luis)
-	_check(g.menu.visible and g.dlg == null, "(only the once)")
+	_check(g._ask != null and g.dlg == null, "(only the once)")
 	g._choose(1)
 	await _skip_dialog(false)
 	g.day_n -= 1
@@ -5201,7 +5677,7 @@ func _civicos_checks(pictures := false) -> void:
 	g.player.p = henry.p + Vector2(1.2, 0.8)
 	await _frames(5)
 	g.talk_to(henry)
-	_check(g.dlg != null and not g.menu.visible, "a restaurant you have not been sent to is closed to you: Henry only chats")
+	_check(g.dlg != null and not g.menu.visible and g._ask == null, "a restaurant you have not been sent to is closed to you: Henry only chats")
 	await _skip_dialog()
 	g.player.p = josefa.p + Vector2(1.2, 0.8)
 	await _frames(5)
@@ -5273,8 +5749,8 @@ func _civicos_checks(pictures := false) -> void:
 	g.player.p = henry.p + Vector2(1.2, 0.8)
 	await _frames(5)
 	g.talk_to(henry)
-	_check(g.menu.visible and not g._choice.get("offer", false), "Henry sells you a plate now")
-	g._choose(g._choice["options"].size() - 1)
+	_check(g._ask != null and not g.menu.visible, "Henry sells you a plate now")
+	g._choose(g._ask["options"].size() - 1)
 	await _skip_dialog()
 	g.player.p = g.kebab.spot(11.3, -14.2)
 	await _frames(5)
@@ -5284,8 +5760,8 @@ func _civicos_checks(pictures := false) -> void:
 	g._choose(1)
 	await _skip_dialog(false)
 	g.talk_to(luis)
-	var counter: Array = g._choice.get("options", []).map(func(o): return o[0])
-	_check(g.menu.visible and counter.size() == 3 and counter[1] == Loc.t("food_job"), "after that he is behind his counter: a kebab, his errand, or a chat")
+	var counter: Array = (g._ask["options"] if g._ask != null else []).map(func(o): return o[0])
+	_check(g._ask != null and counter.size() == 3 and counter[1] == Loc.t("food_job"), "after that he is behind his counter: a kebab, his errand, or a chat")
 	g._choose(2)
 	await _skip_dialog()
 	g.weekday = 3
@@ -5856,11 +6332,14 @@ func _limite_checks() -> void:
 	c.place(out_at, 0.0)                            # out again, and this time the count-down runs out (sped up)
 	await _frames(5)
 	L.left = 0.3
-	await _frames(40)
+	var full := false                                 # (the heat full when the chase starts: in the 40 frames after, the cars
+	for k in range(40):                               # just come may not have seen you yet, and it drains a little: 97, 17 Nov 2026)
+		await get_tree().physics_frame
+		full = full or (L.hunting and g.police.heat >= 99.0)
 	var kinds := {}
 	for e in g.police.cops:
 		kinds[e["car"].kind] = true
-	_check(L.hunting and g.police.chasing and g.police.heat >= 99.0 and kinds.has("pitufo") and kinds.has("tricornio") and g.police.cops.size() >= 5,
+	_check(L.hunting and g.police.chasing and full and kinds.has("pitufo") and kinds.has("tricornio") and g.police.cops.size() >= 5,
 		"stay out and everybody comes after you: the heat full, Pitufos and Tricornios at once (%d cars: %s; heat %.0f, hunting %s, chasing %s)" % [g.police.cops.size(), str(kinds.keys()), g.police.heat, str(L.hunting), str(g.police.chasing)])
 	var n0: int = g.police.cops.size()
 	L._more_t = 0.2
@@ -6670,7 +7149,7 @@ func _pintadas_checks() -> void:
 		"the first talk with La Chiki: her peña, the philosophy, a scene over the walls of the peñas, the spray -- and now they can be painted")
 	g.talk_to(chiki)
 	await _frames(3)
-	var offered: bool = g.menu.visible and g._choice["options"].size() == 2
+	var offered: bool = g._ask != null and not g.menu.visible and g._ask["options"].size() == 2 and g.hud.ans_box.visible      # (her question in the box, the answers in the bubble: game.gd ask)
 	g._choose(0)
 	await _frames(3)
 	var hint_said: String = String(g.dlg["lines"][0]) if g.dlg != null else ""
@@ -7494,6 +7973,16 @@ func _run() -> void:
 		print("DOLORES %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--cartas"):        # just the letters from Correa: its clerks, their stories, the sheet, the calls the day after (add --shots for the pictures)
+		shots = OS.get_cmdline_user_args().has("--shots")
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		await _frames(20)
+		await _cartas_checks(shots)
+		print("CARTAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--padron"):        # just the Padrón Municipal after the creator: the sheet, the name, the tile on your house, who calls you by it
 		shots = true
 		g.menu.close()
@@ -7874,6 +8363,287 @@ func _run() -> void:
 		g.phase = "free"
 		await _ies_checks()
 		print("IES %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--ferial"):      # just the fairground and market: its fountain, its pergola of ivy, its market's square, its paths, by day and by night, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var fe = g.world.get("ferial")
+		if fe == null:
+			print("FERIAL FAILED (not built)")
+			get_tree().quit(1)
+			return
+		for moment in [["", 12.0], ["_noche", 22.5]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["fuente", Vector2(150.0, 612.0), 1.7, fe.center, 0.6, 75.0], ["fuente_cerca", fe.center + Vector2(-7.5, 4.0), 1.6, fe.center, 0.5, 70.0],
+					["pergola", Vector2(176.0, 552.0), 1.7, Vector2(184.0, 538.0), 1.8, 80.0], ["pergola_lado", Vector2(160.0, 540.0), 1.7, Vector2(190.0, 545.0), 1.6, 70.0],
+					["pergola_dentro", Vector2(172.0, 536.0), 1.6, Vector2(195.0, 544.0), 1.4, 75.0], ["plaza", Vector2(172.6, 568.2), 1.7, Vector2(195.0, 580.0), 2.0, 85.0],
+					["plaza_este", Vector2(202.6, 580.3), 1.7, Vector2(178.0, 585.0), 1.8, 85.0], ["caminos", Vector2(130.0, 605.6), 1.7, Vector2(110.0, 660.0), 0.5, 75.0],
+					["camino_medio", Vector2(145.2, 627.6), 1.7, Vector2(120.0, 700.0), 0.5, 80.0], ["curva", Vector2(106.7, 661.6), 1.7, Vector2(120.0, 710.0), 0.5, 80.0],
+					["aire", Vector2(230.0, 720.0), 60.0, Vector2(145.0, 610.0), 0.0, 60.0], ["aire_norte", Vector2(170.0, 470.0), 45.0, Vector2(160.0, 590.0), 0.0, 60.0],
+					["parque", Vector2(197.8, 478.0), 1.7, Vector2(197.0, 500.0), 1.0, 85.0], ["parque_este", Vector2(206.8, 481.8), 1.7, Vector2(198.0, 500.0), 1.0, 85.0],
+					["parque_oeste", Vector2(179.5, 469.8), 1.7, Vector2(185.0, 495.0), 1.0, 85.0], ["parque_sur", Vector2(174.1, 537.8), 1.7, Vector2(185.0, 515.0), 1.5, 85.0],
+					["parque_fuentecilla", Vector2(186.8, 543.8), 1.7, Vector2(195.0, 520.0), 1.5, 85.0], ["parque_huerta", Vector2(229.7, 496.7), 1.7, Vector2(205.0, 505.0), 1.5, 80.0],
+					["parque_kiosco", Vector2(213.1, 545.5), 1.7, Vector2(195.0, 530.0), 1.5, 90.0], ["parque_aire", Vector2(255.0, 445.0), 45.0, Vector2(195.0, 510.0), 0.0, 60.0],
+					["eje", Vector2(176.8, 547.0), 1.7, Vector2(197.4, 490.2), 0.8, 70.0], ["eje_parque", Vector2(196.0, 494.0), 1.7, Vector2(180.0, 538.0), 0.8, 75.0],
+					["eje_aire", Vector2(215.0, 455.0), 55.0, Vector2(172.0, 560.0), 0.0, 60.0],
+					["aud_calle", Vector2(161.0, 532.5), 1.7, Vector2(146.0, 528.0), 1.6, 75.0], ["aud_carteles", Vector2(131.0, 536.0), 1.7, Vector2(140.4, 535.3), 1.8, 70.0], ["aud_poyo", Vector2(168.4, 562.0), 1.6, Vector2(168.3, 548.0), 0.4, 75.0], ["aud_aseos", Vector2(159.6, 524.0), 1.7, Vector2(149.0, 527.5), 1.6, 80.0],
+					["aud_hueco", Vector2(152.0, 541.6), 1.7, Vector2(150.0, 533.0), 1.2, 80.0], ["aud_dentro", Vector2(160.5, 545.0), 1.7, Vector2(135.0, 556.0), 0.6, 85.0],
+					["aud_gradas", Vector2(147.0, 557.0), 1.7, Vector2(136.0, 547.0), 0.9, 80.0], ["aud_escenario", Vector2(152.5, 541.5), 1.7, Vector2(143.0, 540.0), 0.8, 80.0], ["aud_curva", Vector2(166.0, 584.0), 1.7, Vector2(150.0, 572.0), 1.2, 80.0],
+					["aud_este", Vector2(177.0, 560.0), 1.7, Vector2(168.0, 545.0), 1.2, 75.0], ["aud_oeste", Vector2(122.0, 550.0), 1.7, Vector2(140.0, 530.0), 1.6, 80.0],
+					["aud_aire", Vector2(185.0, 600.0), 40.0, Vector2(148.0, 555.0), 0.0, 60.0]]:
+				if moment[0] != "" and not (v[0] in ["fuente", "caminos", "plaza", "parque", "aud_dentro"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = Vector2(300.0, 700.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("ferial_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		# the toilets' inside, the set apart, from its door and from the basins; then in by the green arrow and out again
+		var ti = fe.get("aseos")
+		var through := false
+		if ti != null:
+			for v in [["aseos_dentro", Vector3(2.6, 1.7, 0.6), Vector3(-0.8, 1.0, 6.5), 82.0], ["aseos_lavabos", Vector3(-0.9, 1.7, 1.8), Vector3(0.6, 1.2, 7.4), 80.0],
+					["aseos_puerta", Vector3(2.8, 2.2, 6.8), Vector3(-1.5, 0.9, 0.5), 82.0]]:
+				g.cam.position = ti.transform * (v[1] as Vector3)
+				g.cam.look_at(ti.transform * (v[2] as Vector3))
+				g.cam.fov = v[3]
+				await _frames(6)
+				await _shot("ferial_%s" % v[0])
+			g.phase = "free"
+			g.hud.play_ui.visible = true
+			var E = g.entradas
+			var at_door: Vector2 = E.spot(ti, false)
+			var back: Vector2 = (ti.out_spawn - ti.door_out).normalized()
+			g.player.p = at_door + back * 2.4 + Vector2(-back.y, back.x) * 1.5
+			g.player.sync()
+			var foot: float = MapData.height(at_door)
+			g.cam_fixed = [Vector3(at_door.x, foot, at_door.y) + Vector3(back.x, 0, back.y) * 3.5 + Vector3(-back.y, 0, back.x) * 3.5 + Vector3(0, 2.2, 0), Vector3(at_door.x, foot + 1.2, at_door.y)]
+			g.cam_pos = g.cam_fixed[0]
+			g.cam_look = g.cam_fixed[1]
+			await _frames(10)
+			await _shot("ferial_aseos_flecha")
+			g.cam_fixed = null
+			g.player.p = at_door + back * 4.0
+			g.player.sync()
+			await _frames(8)
+			g.player.p = at_door
+			g.player.sync()
+			var w := 0
+			while g.inside_of != ti and w < 40:
+				await _frames(1)
+				w += 1
+			await _frames(20)
+			await _shot("ferial_aseos_jugador")
+			var went_in: bool = g.indoors and g.inside_of == ti
+			g._door_cool = 0.0
+			g.player.p = E.spot(ti, true)
+			g.player.sync()
+			await _frames(6)
+			E.leave()
+			w = 0
+			while g.indoors and w < 30:
+				await _frames(1)
+				w += 1
+			through = went_in and not g.indoors
+			print("  the toilets: in by the green arrow %s, out again %s" % [went_in, not g.indoors])
+			g._door_cool = 1.0
+		g.phase = "free"
+		await _ferial_checks()
+		_check(through, "into the public toilets by the green arrow at their double door, and out again")
+		print("FERIAL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--correos"):      # just the post office of the Calle de Zaragoza: its front from both ends and close, its way in, by day and shut, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var co = g.world.get("correos")
+		if co == null:
+			print("CORREOS FAILED (the map was baked without it)")
+			get_tree().quit(1)
+			return
+		var day_was: int = g.weekday
+		g.weekday = 0
+		for moment in [["", 11.0], ["_cerrado", 21.5]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			co.set_open(co.open_at(0, moment[1]))
+			for v in [["frente", Vector2(-120.6, -72.5), 1.7, Vector2(-127.0, -75.0), 3.6, 85.0], ["desde_plaza", Vector2(-130.7, -56.6), 1.7, Vector2(-126.0, -78.0), 3.0, 75.0],
+					["desde_norte", Vector2(-114.8, -92.0), 1.7, Vector2(-126.0, -75.0), 3.0, 70.0], ["arco", Vector2(-125.6, -66.6), 1.7, Vector2(-129.2, -68.3), 2.0, 80.0],
+					["entrada", Vector2(-122.4, -73.0), 1.6, Vector2(-128.2, -75.7), 1.6, 85.0], ["rotulos", Vector2(-121.0, -78.5), 1.7, Vector2(-127.0, -73.0), 4.6, 80.0],
+					["aire", Vector2(-100.0, -60.0), 40.0, Vector2(-130.0, -76.0), 0.0, 60.0]]:
+				if moment[0] != "" and not (v[0] in ["frente", "entrada"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = Vector2(-100.0, -130.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, co.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("correos_%s%s" % [v[0], moment[0]])
+		# its inside: the set apart, from its door and from the counter
+		g.set_time(11.0)
+		co.set_open(true)
+		var ti = co.tienda
+		if ti != null:
+			for v in [["dentro_entrada", Vector3(-3.6, 2.7, 0.5), Vector3(0.8, 1.0, 9.0), 82.0], ["dentro_mostrador", Vector3(0.0, 1.6, 4.0), Vector3(0.0, 1.5, 7.8), 75.0],
+					["dentro_apartados", Vector3(1.5, 1.7, 2.0), Vector3(-4.4, 1.2, 4.0), 75.0], ["dentro_puerta", Vector3(3.6, 2.6, 10.6), Vector3(-1.0, 1.0, 0.5), 82.0]]:
+				g.cam.position = ti.transform * (v[1] as Vector3)
+				g.cam.look_at(ti.transform * (v[2] as Vector3))
+				g.cam.fov = v[3]
+				await _frames(6)
+				await _shot("correos_%s" % v[0])
+			# in by the green arrow before the way in, and out again
+			g.phase = "free"
+			g.hud.play_ui.visible = true
+			var E = g.entradas
+			var at_door: Vector2 = E.spot(ti, false)
+			var back: Vector2 = (ti.out_spawn - ti.door_out).normalized()
+			g.player.p = at_door + back * 2.4 + Vector2(-back.y, back.x) * 1.5
+			g.player.sync()
+			var foot: float = MapData.height(at_door)
+			g.cam_fixed = [Vector3(at_door.x, foot, at_door.y) + Vector3(back.x, 0, back.y) * 3.0 + Vector3(-back.y, 0, back.x) * 4.0 + Vector3(0, 2.2, 0), Vector3(at_door.x, foot + 1.2, at_door.y)]
+			g.cam_pos = g.cam_fixed[0]
+			g.cam_look = g.cam_fixed[1]
+			await _frames(10)
+			await _shot("correos_flecha")
+			g.cam_fixed = null
+			g.player.p = at_door + back * 4.0
+			g.player.sync()
+			await _frames(8)
+			g.player.p = at_door
+			g.player.sync()
+			var w := 0
+			while g.inside_of != ti and w < 40:
+				await _frames(1)
+				w += 1
+			await _frames(20)
+			await _shot("correos_dentro_jugador")
+			var went_in: bool = g.indoors and g.inside_of == ti
+			g._door_cool = 0.0
+			g.player.p = E.spot(ti, true)
+			g.player.sync()
+			await _frames(6)
+			E.leave()
+			w = 0
+			while g.indoors and w < 30:
+				await _frames(1)
+				w += 1
+			_check(went_in and not g.indoors, "in by the green arrow before its way in, and out again (in: %s, out: %s)" % [went_in, not g.indoors])
+			g._door_cool = 1.0
+		g.weekday = day_was
+		g.set_time(12.0)
+		g.phase = "free"
+		await _correos_checks()
+		print("CORREOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--merkocarry"):      # just the Merkocarry: its four streets, its gates, its car park, by day and by night, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var mk = g.world.get("merkocarry")
+		if mk == null:
+			print("MERKOCARRY FAILED (the map was baked without it)")
+			get_tree().quit(1)
+			return
+		var day_was: int = g.weekday
+		g.weekday = 0
+		for moment in [["", 12.0], ["_noche", 22.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			mk.set_open(mk.open_at(0, moment[1]))
+			mk.settle_cars(g)
+			for v in [["santaana", Vector2(452.5, 147.5), 1.7, Vector2(453.5, 156.6), 4.0, 80.0], ["santaana_oeste", Vector2(437.0, 146.0), 1.7, Vector2(453.0, 157.0), 4.0, 70.0],
+					["cristo", Vector2(409.5, 171.4), 1.7, Vector2(398.0, 205.0), 2.6, 70.0], ["cristo_puerta", Vector2(396.6, 198.6), 1.7, Vector2(402.0, 201.2), 2.6, 90.0],
+					["cristo_sur", Vector2(387.3, 216.2), 1.7, Vector2(410.0, 178.0), 2.6, 70.0], ["suspiro", Vector2(470.9, 181.1), 1.7, Vector2(445.0, 225.0), 2.5, 70.0],
+					["suspiro_puerta", Vector2(447.8, 226.0), 1.7, Vector2(442.0, 223.5), 1.0, 90.0], ["suspiro_sur", Vector2(436.6, 242.3), 1.7, Vector2(462.0, 195.0), 2.0, 70.0],
+					["magallanes", Vector2(414.7, 256.6), 1.7, Vector2(416.0, 250.8), 0.5, 90.0], ["magallanes_oeste", Vector2(385.4, 249.6), 1.7, Vector2(425.0, 252.0), 0.5, 70.0],
+					["aparcamiento", Vector2(429.0, 238.0), 1.7, Vector2(420.0, 220.0), 0.5, 85.0], ["aparcamiento_norte", Vector2(421.0, 223.0), 1.7, Vector2(430.0, 248.0), -0.5, 85.0],
+					["puerta_trasera", Vector2(432.5, 225.0), 1.7, Vector2(437.0, 215.5), 1.2, 80.0], ["pasillo", Vector2(399.0, 203.0), 1.7, Vector2(420.0, 213.0), 0.5, 80.0],
+					["aire", Vector2(470.0, 285.0), 55.0, Vector2(432.0, 205.0), 0.0, 60.0], ["aire_norte", Vector2(470.0, 120.0), 50.0, Vector2(432.0, 205.0), 0.0, 60.0],
+					["mayordomia", Vector2(408.5, 168.0), 1.7, Vector2(413.4, 174.6), 3.0, 80.0], ["mayordomia_puerta", Vector2(407.6, 177.4), 1.7, Vector2(412.6, 177.0), 2.4, 85.0],
+					["mayordomia_norte", Vector2(416.9, 151.9), 1.7, Vector2(412.4, 174.2), 3.0, 60.0]]:
+				if moment[0] != "" and not (v[0] in ["santaana", "cristo_puerta", "aparcamiento", "suspiro_puerta"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = Vector2(520.0, 120.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, mk.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("merkocarry_%s%s" % [v[0], moment[0]])
+		# inside: its set, seen from both doors
+		g.set_time(12.0)
+		mk.set_open(true)
+		var ti = mk.tienda
+		for v in [["dentro_entrada", Vector3(-5.8, 3.4, 0.6), Vector3(1.5, 0.8, 12.0), 82.0], ["dentro_fondo", Vector3(6.0, 3.4, 23.4), Vector3(-1.5, 0.8, 11.0), 82.0],
+				["dentro_pasillo", Vector3(0.0, 1.7, 4.6), Vector3(0.0, 1.2, 20.0), 75.0], ["dentro_carniceria", Vector3(1.2, 1.8, 17.6), Vector3(-4.0, 1.0, 21.6), 75.0],
+				["dentro_cajas", Vector3(1.0, 2.2, 6.0), Vector3(-4.0, 0.8, 1.5), 80.0]]:
+			g.cam.position = ti.transform * (v[1] as Vector3)
+			g.cam.look_at(ti.transform * (v[2] as Vector3))
+			g.cam.fov = v[3]
+			await _frames(6)
+			await _shot("merkocarry_%s" % v[0])
+		# in by the glass doors of Santa Ana, out by the door of the car park
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		var E = g.entradas
+		for q in [[ti, "santaana"], [mk.trasera, "trasera"]]:
+			var pl = q[0]
+			var at_door: Vector2 = E.spot(pl, false)
+			var back: Vector2 = (pl.out_spawn - pl.door_out).normalized()
+			g.player.p = at_door + back * 3.2 + Vector2(-back.y, back.x) * 1.0
+			g.player.sync()
+			var foot: float = MapData.height(at_door)
+			g.cam_fixed = [Vector3(at_door.x, foot, at_door.y) + Vector3(back.x, 0, back.y) * 7.0 + Vector3(-back.y, 0, back.x) * (2.5 if q[1] == "santaana" else 0.0) + Vector3(0, 2.4, 0), Vector3(at_door.x, foot + 1.2, at_door.y)]
+			g.cam_pos = g.cam_fixed[0]
+			g.cam_look = g.cam_fixed[1]
+			await _frames(10)
+			await _shot("merkocarry_flecha_%s" % q[1])
+			g.cam_fixed = null
+		g.player.p = E.spot(ti, false) + (ti.out_spawn - ti.door_out).normalized() * 4.5
+		g.player.sync()
+		await _frames(8)
+		g.player.p = E.spot(ti, false)
+		g.player.sync()
+		var w := 0
+		while g.inside_of != ti and w < 40:
+			await _frames(1)
+			w += 1
+		await _frames(20)
+		await _shot("merkocarry_dentro_jugador")
+		var went_in: bool = g.indoors and g.inside_of == ti
+		g._door_cool = 0.0
+		g.player.p = E.spot(mk.trasera, true)
+		g.player.sync()
+		await _frames(6)
+		var back_shown: bool = E.mark_of(mk.trasera, true) != null and E.mark_of(mk.trasera, true).visible
+		E.leave()
+		w = 0
+		while g.indoors and w < 30:
+			await _frames(1)
+			w += 1
+		var came_out: bool = not g.indoors and g.player.p.distance_to(mk.trasera.out_spawn) < 1.0
+		_check(went_in and back_shown and came_out, "in by the glass doors of Santa Ana (%s), and out by the door of the car park (its way out shown inside: %s; out by it: %s)" % [went_in, back_shown, came_out])
+		g._door_cool = 1.0
+		g.weekday = day_was
+		g.set_time(12.0)
+		g.phase = "free"
+		await _merkocarry_checks()
+		print("MERKOCARRY %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--bancosancho"):      # just the corner house of the bank and the copy shop: from both streets, close, open and shut; into the copy shop
@@ -9811,6 +10581,74 @@ func _run() -> void:
 		print("PEINADOS %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
 		get_tree().quit(1 if fails > fails0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--criba_pelo"):    # for the user's sifting of hairstyles (17 Nov 2026): a plain person, brown hair, every style front, side and back
+		shots = true
+		var fails0 := fails
+		g.menu.close()
+		g.phase = "free"
+		g.set_time(11.0)
+		g.hud.play_ui.visible = false
+		var Ch = load("res://scripts/chara.gd")
+		var Cr = load("res://scripts/creator.gd")
+		var base: Dictionary = Cr.look(Cr.defaults())
+		var styles: Array = []
+		for op in Cr.OPTIONS:
+			if op["key"] == "hair_style":
+				styles = op["values"]
+		for arg in OS.get_cmdline_user_args():    # (--solo=8,13: only those)
+			if String(arg).begins_with("--solo="):
+				var only: Array = []
+				for v in String(arg).trim_prefix("--solo=").split(","):
+					only.append(int(v))
+				styles = styles.filter(func(v): return v in only)
+		var at := Vector2(-1800.0, -1534.0)       # (out in the fields by the house's room)
+		g.player.p = at - Vector2(0.0, 12.0)
+		g.player.sync()
+		g.traffic.max_cars = 0                    # (no car driving through a picture: one blacked out a back view)
+		for e in g.traffic.list:
+			e["car"].visible = false
+		g.traffic.process_mode = Node.PROCESS_MODE_DISABLED
+		var made := 0
+		for s in styles:
+			var o: Dictionary = base.duplicate()
+			o["hair_style"] = s
+			o["hair"] = 0x5a3a22                  # (the creator's brown)
+			var c = Ch.new()
+			g.add_child(c)
+			c.setup(o)
+			c.collision_layer = 0
+			c.collision_mask = 0
+			c.p = at
+			c.h = 0.0
+			c.sync()
+			for view in [["1frente", Vector2(0.0, 1.0)], ["2lado", Vector2(1.0, 0.0)], ["3espalda", Vector2(0.0, -1.0)]]:
+				var eye: Vector2 = at + view[1] * 2.8      # (far enough for the long ones to show whole)
+				g.cam_fixed = [MapData.at(eye, 1.7), MapData.at(at, 1.2)]
+				g.cam_pos = g.cam_fixed[0]
+				g.cam_look = g.cam_fixed[1]
+				g.set_time(11.0)                  # (the same light in every picture)
+				var pic: Image = null
+				for attempt in range(12):         # (the screen fades out for a moment about a minute in: wait it out; a clear one is ~0.75)
+					await _frames(20)
+					await RenderingServer.frame_post_draw
+					pic = get_viewport().get_texture().get_image()
+					var small := pic.duplicate() as Image
+					small.resize(16, 9)
+					var lum := 0.0
+					for y in range(9):
+						for x in range(16):
+							lum += small.get_pixel(x, y).get_luminance()
+					if lum / 144.0 > 0.65:
+						break
+				DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://shots"))
+				pic.save_png("res://shots/criba_pelo_%02d_%s.png" % [s, view[0]])
+			c.queue_free()
+			made += 1
+		_check(made == styles.size(), "a picture of every hairstyle (%d)" % made)
+		g.cam_fixed = null
+		print("CRIBA_PELO %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+		get_tree().quit(1 if fails > fails0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--casa"):          # your house (16 Nov 2026): in by the green arrow, the bed, the wardrobe, your peña on the wall
 		shots = true
 		var fails0 := fails
@@ -10003,6 +10841,18 @@ func _run() -> void:
 		_check(never_stubble and mended[8] == 0 and mended[23] == 1 and CrO.TABS[0].has(23),
 			"the three days' beard is a yes or no of its own on Lustre, not a beard; a game saved with it as a beard keeps it")
 		g.look_sel[8] = 0
+		# the old cropped hair (3) is gone from the creator: an old save with it gets the shaved head (17 Nov 2026)
+		var hair_was: int = g.look_sel[10]
+		g.creator_goto(10)
+		var never_cropped := true
+		for k in range(CrO.OPTIONS[10]["values"].size() + 2):
+			g._creator_input("right")
+			never_cropped = never_cropped and CrO.OPTIONS[10]["values"][g.look_sel[10]] != CrO.CROPPED
+		var old_hair: Array = CrO.defaults()
+		old_hair[10] = CrO.OPTIONS[10]["values"].find(CrO.CROPPED)
+		_check(never_cropped and CrO.OPTIONS[10]["values"][CrO.clean(old_hair)[10]] == CrO.SHAVED,
+			"the creator no longer offers the old cropped hair; a game saved with it gets the shaved head")
+		g.look_sel[10] = hair_was
 		# the peña's T-shirt is the wardrobe's: the creator's Ropa row never lands on it
 		var tee_i: int = CrO.OPTIONS[15]["values"].find(CrO.PENA_TEE)
 		g.creator_goto(15)
@@ -10520,6 +11370,9 @@ func _run() -> void:
 	await _masahorro_checks()
 	await _noche_checks()
 	await _bancosancho_checks()
+	await _merkocarry_checks()
+	await _correos_checks()
+	await _ferial_checks()
 	await _gacha_checks()
 	await _sentido_checks(false)
 	await _cuartel_coche_checks()
@@ -10527,6 +11380,7 @@ func _run() -> void:
 	await _salto_checks()
 	await _ninos_checks()
 	await _chismes_checks()
+	await _cartas_checks()
 	await _suelos_checks()
 	await _ajedrez_checks()                              # (ajedrez) last of the list, as Sistemas asked; it puts everything back
 	var th: Dictionary = MapData.townhall
@@ -10886,9 +11740,9 @@ func _run() -> void:
 	await _frames(30)
 	await _shot("d2_inside")
 	await _skip_dialog()
-	_check(g.menu.visible and g.menu.page == "choice" and not g._menu_page("choice")["items"][0].has("do"), "605 euros: you cannot pay, so paying is greyed out")
+	_check(g._ask != null and not g.menu.visible and not (g._ask["options"][0][1] as Callable).is_valid() and g.hud.ans_rows_off(0), "605 euros: you cannot pay, so paying is greyed out (in the bubble over his words)")
 	g.money = 700
-	_check(g._vip_choice(false) == null and g._menu_page("choice")["items"][0].has("do"), "with the money, paying becomes an option")
+	_check(g._vip_choice(false) == null and (g._ask["options"][0][1] as Callable).is_valid() and not g.hud.ans_rows_off(0), "with the money, paying becomes an option")
 	g.money = 0
 	g._vip_choice(false)
 	await _frames(10)
@@ -10939,7 +11793,7 @@ func _run() -> void:
 	await _frames(40)
 	_check(g.indoors and g.dlg == null and g.phase == "play", "coming back in does not replay his speech")
 	g.talk_to(g.named["vip"])
-	_check(g.menu.visible and g._menu_page("choice")["items"][1]["text"] == Loc.t("vip_rematch"), "talking to him again offers the rematch")
+	_check(g._ask != null and g._ask["options"][1][0] == Loc.t("vip_rematch"), "talking to him again offers the rematch")
 	g._choose(1)
 	await _skip_dialog()
 	g.boxing.wins = 1

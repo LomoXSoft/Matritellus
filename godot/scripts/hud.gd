@@ -933,6 +933,8 @@ func set_hp(frac: float) -> void:
 func _process(dt: float) -> void:
 	if fps_label.visible:
 		fps_label.text = "%d FPS" % Engine.get_frames_per_second()
+	if ans_box != null and ans_box.visible:
+		_place_answers()
 	if _stamp_wait != "" and fade.modulate.a <= 0.05:
 		stamp(_stamp_wait)
 	for entry in tally:                           # the amounts just added or taken away hang under their own number
@@ -1419,3 +1421,117 @@ func box_set(you: float, foe: float) -> void:
 
 func box_round(text: String) -> void:
 	box_info.text = text
+
+# ---------------- answers in a talk ----------------
+## The answers to something you are asked in a talk, in a small bubble over the dialogue box's right-hand corner, a
+## hand at the one picked (the user, 16 November 2026, with a picture of Animal Crossing: "Las opciones de diálogo ...
+## no necesitan poner todo el zócalo para sacarlas. Basta con una burbuja encima del diálogo"). game.gd ask() opens
+## it; the keys move the hand (game.gd), a finger or the mouse on an answer takes it. Mission offers keep the card.
+const ANS_BG := Color("fbe7a6")
+const ANS_EDGE := Color("c9963f")
+const ANS_ON := Color("f6cf55")
+var ans_box: PanelContainer
+var _ans_list: VBoxContainer
+var _ans_rows: Array = []
+var _ans_hand: Control
+var _ans_sel := 0
+
+func show_answers(texts: Array, usable: Array, sel: int, on_pick: Callable, on_hover: Callable) -> void:
+	if ans_box == null:
+		ans_box = PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = ANS_BG
+		sb.border_color = ANS_EDGE
+		sb.set_border_width_all(3)
+		sb.set_corner_radius_all(30)
+		sb.content_margin_left = 46; sb.content_margin_right = 26; sb.content_margin_top = 14; sb.content_margin_bottom = 14
+		sb.shadow_color = Color(0, 0, 0, 0.25)
+		sb.shadow_size = 6
+		ans_box.add_theme_stylebox_override("panel", sb)
+		ans_box.top_level = true
+		_ans_list = VBoxContainer.new()
+		_ans_list.add_theme_constant_override("separation", 4)
+		ans_box.add_child(_ans_list)
+		_ans_hand = Control.new()
+		_ans_hand.custom_minimum_size = Vector2(28, 22)
+		_ans_hand.size = Vector2(28, 22)
+		_ans_hand.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_ans_hand.draw.connect(func():                # a pointing hand: the finger, and the fist behind it
+			var nudge := sin(Time.get_ticks_msec() / 160.0) * 2.5
+			_ans_hand.draw_colored_polygon(PackedVector2Array([Vector2(8 + nudge, 6), Vector2(26 + nudge, 9), Vector2(26 + nudge, 13), Vector2(8 + nudge, 16)]), Color.WHITE)
+			_ans_hand.draw_polyline(PackedVector2Array([Vector2(8 + nudge, 6), Vector2(26 + nudge, 9), Vector2(26 + nudge, 13), Vector2(8 + nudge, 16)]), INK, 1.5, true)
+			_ans_hand.draw_circle(Vector2(6 + nudge, 13), 6.5, Color.WHITE)
+			_ans_hand.draw_arc(Vector2(6 + nudge, 13), 6.5, 0.0, TAU, 20, INK, 1.5, true))
+		ans_box.add_child(_ans_hand)
+		_ans_hand.top_level = true
+		root.add_child(ans_box)
+	for r in _ans_rows:
+		r.queue_free()
+	_ans_rows.clear()
+	for k in range(texts.size()):
+		var b := Button.new()
+		b.text = String(texts[k])
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override("font_size", 24)
+		var on := bool(usable[k])
+		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			b.add_theme_color_override(state, INK if on else Color(INK, 0.4))
+		b.add_theme_color_override("font_disabled_color", Color(INK, 0.4))
+		var plain := StyleBoxFlat.new()
+		plain.bg_color = Color(0, 0, 0, 0)
+		plain.content_margin_left = 12; plain.content_margin_right = 12; plain.content_margin_top = 3; plain.content_margin_bottom = 3
+		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+			b.add_theme_stylebox_override(state, plain)
+		b.disabled = not on
+		b.pressed.connect(func(): on_pick.call(k))
+		b.mouse_entered.connect(func():
+			if on:
+				on_hover.call(k))
+		_ans_list.add_child(b)
+		_ans_rows.append(b)
+	ans_box.visible = true
+	_ans_hand.visible = true
+	ans_box.reset_size()
+	set_answer(sel)
+	_place_answers()
+
+## the hand at answer `sel`, and that one picked out in yellow
+func set_answer(sel: int) -> void:
+	_ans_sel = sel
+	for k in range(_ans_rows.size()):
+		var b: Button = _ans_rows[k]
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = ANS_ON if k == sel else Color(0, 0, 0, 0)
+		sb.set_corner_radius_all(12)
+		sb.content_margin_left = 12; sb.content_margin_right = 12; sb.content_margin_top = 3; sb.content_margin_bottom = 3
+		for state in ["normal", "hover", "pressed", "focus"]:
+			b.add_theme_stylebox_override(state, sb)
+
+func hide_answers() -> void:
+	if ans_box != null:
+		ans_box.visible = false
+		_ans_hand.visible = false
+
+## over the dialogue box's top right-hand corner, a little in from its edge and a little over its top
+func _place_answers() -> void:
+	var box: Rect2 = dlg_bubble.get_global_rect()
+	var want: Vector2 = ans_box.get_combined_minimum_size()
+	ans_box.size = want
+	var view: Vector2 = root.get_viewport_rect().size
+	var at := Vector2(box.end.x - want.x + 40.0, box.position.y - want.y + 26.0)
+	at.x = clampf(at.x, 8.0, view.x - want.x - 8.0)
+	at.y = maxf(8.0, at.y)
+	ans_box.global_position = at
+	if _ans_sel >= 0 and _ans_sel < _ans_rows.size():
+		var row: Button = _ans_rows[_ans_sel]
+		_ans_hand.global_position = Vector2(at.x + 12.0, row.global_position.y + row.size.y / 2.0 - 11.0)
+		_ans_hand.queue_redraw()
+
+## whether answer `k` is shown greyed out (the self-test)
+func ans_rows_off(k: int) -> bool:
+	return k < _ans_rows.size() and (_ans_rows[k] as Button).disabled
+
+## on a touch screen: whether a finger put down here is on the answers (touch.gd)
+func answers_spot(p: Vector2) -> bool:
+	return ans_box != null and ans_box.visible and ans_box.get_global_rect().has_point(p)

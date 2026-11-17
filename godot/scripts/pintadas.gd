@@ -96,11 +96,9 @@ func talk(n) -> bool:
 	if done():
 		return false
 	_before = G.phase
-	G._choice = {"title": n.shown_name(), "options": [[Loc.t("chiki_q_tag"), _hint.bind(n)], [Loc.t("chiki_q_chat"), func():
+	G.ask(n, n.shown_name(), Loc.t("ask_chiki"), [[Loc.t("chiki_q_tag"), _hint.bind(n)], [Loc.t("chiki_q_chat"), func():
 		G.phase = _before
-		G.talk_to(n, true)]]}
-	G.phase = "talking"
-	G.menu.open("choice")
+		G.talk_to(n, true)]])
 	return true
 
 ## the lines of a key with the peña and the street put in

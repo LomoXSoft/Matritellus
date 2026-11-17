@@ -24,7 +24,7 @@ const TINTS := [0xe8322a, 0xf2c230, 0x2a82d8, 0x3aa84a, 0xf07a22, 0xe85aa8, 0x8a
 ## everyone who can come out of a ball: the town's people with a name of their own, more or less as they turn up
 const FIGURES := ["paca", "josefa", "loli", "eusebio", "anselmo", "ramirez", "maruja", "venancio", "dolores", "genaro", "kevin", "goat",
 	"alberto", "chiki", "vip", "henry", "luis", "alcalde", "copista", "katakumba", "comentarista", "madre_alcalde",
-	"alcaldesa", "repartidor", "nino_negro"]
+	"alcaldesa", "repartidor", "nino_negro", "diurno", "nocturno"]
 const THUMB := Vector2i(96, 120)        # the photo of each one on the Agenda's page
 const SEEN := 1.5                       # seconds from the ball in your hand before a press puts it all away (it bursts at 0.84)
 

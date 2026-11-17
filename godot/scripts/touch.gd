@@ -93,6 +93,8 @@ func _wanted() -> Array:
 			# (ajedrez) chess on the square: a finger picks the squares on the board itself; these are Vista, Soltar, II
 			var aj = g.get("ajedrez")
 			return aj.touch_buttons() if aj != null and aj.has_method("touch_buttons") else []
+	if g.get("_ask") != null or (g.get("cartas") != null and g.cartas.writing) or (g.get("padron") != null and g.padron.active):
+		return []                                 # answering somebody: a finger takes an answer in the bubble itself (game.gd ask)
 	if g.get("dlg") != null:
 		return [["Seguir" if es else "Go on", "interact", "big"]]
 	var out: Array = []
@@ -266,6 +268,10 @@ func _input(e: InputEvent) -> void:
 ## creator_spot): "panel", "turn" or ""
 func _creator_spot(p: Vector2) -> String:
 	var g = _game()
+	if g != null and g.get("cartas") != null and (g.cartas.writing or (g.get("padron") != null and g.padron.active and g.phase != "creator")):
+		return "panel"                            # (a letter being written at Correa: the whole screen is its sheet, cartas.gd)
+	if g != null and g.get("_ask") != null and g.get("hud") != null and g.hud.answers_spot(p):
+		return "panel"                            # (the answers bubble in a talk: game.gd ask)
 	if g == null or not (g.get("phase") in ["creator", "armario"]) or g.get("hud") == null:
 		return ""
 	return g.hud.creator_spot(p)

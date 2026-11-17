@@ -47,6 +47,7 @@ const LOGO := [9.08, 19.72, 4.85]   # the name: from, to, its foot
 const WALK := 4.0                   # the raised walk before the front
 const DOWN := -3.0
 const BAYS_W := 2.45                # a bay, along its row
+const PARK_LAMPS := [Vector2(15.8, 26.0), Vector2(15.8, 58.0), Vector2(32.0, 33.0), Vector2(-3.7, 30.0), Vector2(-3.7, 58.0)]   # the car park's tall lamps (this frame)
 const ANNEX := [18.5, 29.5, 5.0]    # the plant room behind: from, to (along the back), how far out
 const DOCK := [8.5, 18.5]           # the loading canopy, beside it
 const OPENS := 9.0                  # its hours (the user, 17 November 2026: Monday to Saturday 9:00 to 21:30, Sunday shut;
@@ -722,9 +723,10 @@ func _park() -> void:
 			if x0 == 27.8 and z < 19.4:
 				_lay(_rect(x0, z + 0.05, x1, z + BAYS_W - 0.05), 0.032, 0x5fae5a)
 			_strip(Vector2(x0, z), Vector2(x1, z), 0.1, 0.045, PAINT)
-			if x0 != -3.3:                                                            # (cars park nose in; not along the Noria, where the lane passes their tails)
-				var dir := Vector2(-1.0 if x0 == 13.3 else 1.0, 0.0)
-				bay_spots.append([Vector2(x0 if x0 == 13.3 else x1, z + BAYS_W / 2.0), dir, x0 == 27.8 and z < 19.4])
+			var dir := Vector2(-1.0 if x0 == 13.3 else 1.0, 0.0)
+			var nose := Vector2(x0 if x0 == 13.3 else x1, z + BAYS_W / 2.0)
+			if x0 != -3.3 and _bay_clear(nose, dir):                                  # (cars park nose in; not along the Noria, where the lane passes their tails)
+				bay_spots.append([nose, dir, x0 == 27.8 and z < 19.4])
 			bays += 1
 			z += BAYS_W
 		_strip(Vector2(x0, z), Vector2(x1, z), 0.1, 0.045, PAINT)
@@ -829,7 +831,7 @@ func _chargers() -> void:
 ## The tall lamps of the car park: two floodlights on each (the town's: they light at night).
 func _park_lamps() -> void:
 	home()
-	for p in [Vector2(15.8, 26.0), Vector2(15.8, 58.0), Vector2(32.0, 33.0), Vector2(-3.7, 30.0), Vector2(-3.7, 58.0)]:
+	for p: Vector2 in PARK_LAMPS:
 		var g: float = ground(p.x, p.y)
 		var o := Vector3(p.x, g, p.y)
 		drum(o - Vector3(0, 0.1, 0), 0.22, 0.22, 0.35, 0x9a9da0, 10)
@@ -895,7 +897,7 @@ func _way_in() -> void:
 	_xf = keep
 	yard.append(spot(20.2, sz))
 	# the bin for old clothes, by the row along the houses
-	var cz: float = _north_end(29.0) - 2.0
+	var cz: float = _bin_z()
 	var cg: float = ground(29.0, cz)
 	box(28.3, cg, cz - 0.7, 1.4, 1.8, 1.4, 0x2f8a48)
 	box(28.25, cg + 1.8, cz - 0.75, 1.5, 0.12, 1.5, 0x26723a)
@@ -952,6 +954,26 @@ func cars_wanted(hour: float) -> int:
 	if not is_open:
 		return 0
 	return 7 if (hour >= 12.0 and hour < 14.5) or (hour >= 18.0 and hour < 21.0) else 5
+
+## Whether a bay is clear for its customers' cars: the longest and widest of them (4.7 by 1.95 m) standing in it must not
+## touch the bin for old clothes or a lamp's post. (The bin stands in the last bay of the row along the houses: a car
+## put there came into the world inside its solid and was pushed down through the ground -- the full self-test, 17 Nov
+## 2026, Sistemas: "julietta at 50, 439: -1.65 m off".)
+func _bay_clear(nose: Vector2, dir: Vector2) -> bool:
+	var f: Vector2 = nose - dir * (4.7 / 2.0 + (0.75 if nose.x > 30.0 else 0.35))
+	var keep_off: Array = [[Vector2(29.0, _bin_z()), 0.75]]
+	for p: Vector2 in PARK_LAMPS:
+		keep_off.append([p, 0.2])
+	for k in keep_off:
+		var c: Vector2 = k[0]
+		var r: float = k[1]
+		if absf(c.x - f.x) < 4.7 / 2.0 + r and absf(c.y - f.y) < 1.95 / 2.0 + r:
+			return false
+	return true
+
+## where the bin for old clothes stands along the row by the houses (this frame's z)
+func _bin_z() -> float:
+	return _north_end(29.0) - 2.0
 
 ## where a car of that make stands in that bay, on the map, and which way it faces
 func _bay_place(bi: int, kind: String) -> Array:

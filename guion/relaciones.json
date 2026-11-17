@@ -444,6 +444,30 @@
    "role": "Niño hermoso, de piel muy oscura. Solo habla de ir a la piscina a comer salchipapas, de la bici todo el día y de sus bocadillos (panceta, tortilla, crema de cacao, chopped) y por qué le gusta cada uno.",
    "where": "Junto a la valla del parque infantil de la plaza, por el lado de la plaza, mirando dentro.",
    "notes": "Harto de que su madre le diga lo gordo que está: «¡Que no estoy gordo, que estoy hermoso!», como dice su abuela. Ni la madre ni la abuela salen en el juego."
+  },
+  {
+   "id": "diurno",
+   "name": "Diurno Correa",
+   "foto": true,
+   "pos": [
+    9,
+    6
+   ],
+   "role": "Funcionario de Correa, la oficina de correos (nombre provisional). Mayor, curtido y alegre: atiende la ventanilla de 8 a 14 y cuenta sus batallitas de la mili como si hubieran sido las mejores vacaciones de su vida.",
+   "where": "Detrás de la primera ventanilla de Correa, por dentro, de 8:00 a 14:00 entre semana.",
+   "notes": "Con él se manda una carta al día a cualquier vecino con nombre que conozcas; le llega al día siguiente y te llama (+5 de confianza si es amable, -3 si no). Escribía en la mili las cartas de amor de medio cuartel."
+  },
+  {
+   "id": "nocturno",
+   "name": "Nocturno Correa",
+   "foto": true,
+   "pos": [
+    10,
+    6
+   ],
+   "role": "Funcionario de Correa (nombre provisional). Mayor, curtido, malhablado, chulesco y vacilón: cuenta las mismas historias de la mili que el Diurno, pero como fueron de verdad, según él, y a base de tacos.",
+   "where": "Detrás de la primera ventanilla de Correa, por dentro, de 14:00 a 20:00 entre semana.",
+   "notes": "Se pidió el turno de tarde para no coincidir con el Diurno. Tampoco puede ver un melón."
   }
  ],
  "links": [
@@ -694,6 +718,14 @@
    "label": "la final",
    "detail": "Presenta la final.",
    "source": "com_rec_final"
+  },
+  {
+   "a": "diurno",
+   "b": "nocturno",
+   "kind": "trato",
+   "label": "la mili y Correa",
+   "detail": "Hicieron la mili juntos y llevan cuarenta y tres años en Correa, uno de mañana y otro de tarde. Cuentan las mismas historias, cada uno a su manera.",
+   "source": "mili_0_diurno"
   }
  ],
  "cabos": [

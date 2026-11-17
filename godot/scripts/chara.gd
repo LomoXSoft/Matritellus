@@ -706,6 +706,26 @@ func _rasurado(hair: int) -> void:
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	neck.add_child(mi)
 
+## The sides and back cut short and faded, under a quiff (the user's photo, 17 Nov 2026): the same zone as the shaved
+## head, but in the hair's colour, thin at the bottom and thicker going up, where the quiff takes over.
+static var _degradado_mesh: ArrayMesh
+static var _degradado_mats := {}
+func _degradado(hex: int) -> void:
+	if _degradado_mesh == null:
+		const FADE := 6.0
+		_degradado_mesh = _shave_zone(func(b: float, e: float) -> float:
+			var lowest: float = lerpf(-20.0, 36.0, pow((1.0 + cos(b)) / 2.0, 2.2))      # (lower down the temples than the shaved head's: short hair there too)
+			return smoothstep(lowest, lowest + FADE, e) * lerpf(0.55, 1.0, smoothstep(lowest, lowest + 22.0, e)), -30.0, 90.0)
+	if not _degradado_mats.has(hex):
+		var m := _shave_mat.duplicate() as StandardMaterial3D
+		m.albedo_color = Color(Parts.col(hex), 0.92)
+		_degradado_mats[hex] = m
+	var mi := MeshInstance3D.new()
+	mi.mesh = _degradado_mesh
+	mi.material_override = _degradado_mats[hex]
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	neck.add_child(mi)
+
 # ---------------- hair ----------------
 func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 	var hatted := cut > 0
@@ -721,18 +741,23 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 		if style - FIRST_PELO < PELOS.size():
 			_pieza_on(PELOS[style - FIRST_PELO], hair, cut)
 		return
-	var cropped := _mix(hair, skin, 0.35)
-	if style == 3 or style == 6:
-		_add("ball", cropped, Vector3(0, 1.53, -0.05), Vector3(0.506, 0.37, 0.506))        # shaved close: the scalp shows through
+	if style == 3:                          # shaved close, the scalp showing through. The creator no longer offers it (the user, 17 Nov 2026: it cuts
+		_add("ball", _mix(hair, skin, 0.35), Vector3(0, 1.53, -0.05), Vector3(0.506, 0.37, 0.506))      # through the head; Rasurao instead), but the neighbours who wear it keep it
+	elif style == 6:
+		_rasurado(hair)                     # shaved close on the sides (the see-through grey, as the shaved head)
 	elif style == 10:
 		_add("ball", hair, Vector3(0, 1.34, -0.1), Vector3(0.515, 0.22, 0.48))             # only round the back and sides
+	elif style == 8:                        # quiff: the top combed up from the forehead and back, the sides faded (it was a ball over the forehead
+		_degradado(hair)                    # till the user, 17 Nov 2026, showed a photo: "debería ser algo como la foto"; tools/creador/tupe.py)
+		if not hatted:
+			_pieza_on("pelo_tupe", hair)
 	elif style != 4 or hatted:
 		_add("ball", hair, Vector3(0, 1.5, -0.06), Vector3(0.5, 0.42, 0.5))                # the ordinary head of hair
 		if not hatted:                       # ...and over the crown and the top of the forehead, which it left bare (the user, 16 Nov 2026: "Arreglaría esta calva también")
 			_add("dome", hair, Vector3(0, 1.665, 0.0), Vector3(0.43, 0.232, 0.43))
 	match style:
-		1:      # bun
-			_add("ball", hair, Vector3(0, 1.72, -0.42), Vector3.ONE * 0.19)
+		1:      # bun (bigger: the user, 17 Nov 2026)
+			_add("ball", hair, Vector3(0, 1.76, -0.46), Vector3(0.27, 0.25, 0.27))
 		2:      # long, down to the shoulders
 			_add("ball", hair, Vector3(0, 1.22, -0.2), Vector3(0.5, 0.52, 0.36))
 		4:      # afro
@@ -746,18 +771,16 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 		5:      # ponytail
 			_add("ball", hair, Vector3(0, 1.62, -0.5), Vector3.ONE * 0.1)
 			_add("ball", hair, Vector3(0, 1.32, -0.6), Vector3(0.12, 0.32, 0.12))
-		6:      # mohawk
+		6:      # mohawk: spikes, each pointing out from the head (pointed, not round: the user, 17 Nov 2026)
 			if not hatted:
 				for k in range(6):
 					var a := -0.75 + k * 0.42
-					_add("ball", hair, Vector3(0, 1.4 + cos(a) * 0.56, -sin(a) * 0.56), Vector3(0.07, 0.16, 0.15))
+					var spike := _add("cone", hair, Vector3(0, 1.4 + cos(a) * 0.62, -sin(a) * 0.62), Vector3(0.06, 0.34, 0.14))
+					spike.rotation.x = -a
 		7:      # pigtails
 			for sx in [-1.0, 1.0]:
 				_add("ball", hair, Vector3(sx * 0.52, 1.36, -0.1), Vector3(0.14, 0.27, 0.14))
 				_acc("ball", 0xd23b3b, Vector3(sx * 0.5, 1.56, -0.1), Vector3.ONE * 0.06)
-		8:      # quiff
-			if not hatted:
-				_add("ball", hair, Vector3(0, 1.86, 0.24), Vector3(0.3, 0.19, 0.27))
 		9:      # bob
 			_add("ball", hair, Vector3(0, 1.33, -0.12), Vector3(0.54, 0.4, 0.44))
 		11:     # curls

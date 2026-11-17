@@ -1,0 +1,261 @@
+{
+ "rc": "4494601VJ5649S",
+ "record": {
+  "address": "AV CONSTITUCION 60 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "167",
+  "year": "2014",
+  "units": [
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "01",
+    "m2": "7"
+   },
+   {
+    "use": "APARCAMIENTO",
+    "floor": "00",
+    "door": "02",
+    "m2": "18"
+   },
+   {
+    "use": "COMERCIO",
+    "floor": "00",
+    "door": "03",
+    "m2": "24"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "59"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "02",
+    "door": "01",
+    "m2": "59"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4494601VJ5649S_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 9.2,
+   "ring": [
+    [
+     90.59,
+     -228.03
+    ],
+    [
+     89.49,
+     -228.02
+    ],
+    [
+     88.62,
+     -236.46
+    ],
+    [
+     89.53,
+     -237.17
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      90.59,
+      -228.03
+     ],
+     "b": [
+      89.49,
+      -228.02
+     ],
+     "len": 1.1,
+     "out": [
+      0.009,
+      1.0
+     ],
+     "street": "Avenida de la Constitución",
+     "to_centre": 1.56
+    },
+    {
+     "a": [
+      89.49,
+      -228.02
+     ],
+     "b": [
+      88.62,
+      -236.46
+     ],
+     "len": 8.48,
+     "out": [
+      -0.995,
+      0.103
+     ],
+     "street": "Avenida de la Constitución",
+     "to_centre": 1.13
+    },
+    {
+     "a": [
+      88.62,
+      -236.46
+     ],
+     "b": [
+      89.53,
+      -237.17
+     ],
+     "len": 1.15,
+     "out": [
+      -0.615,
+      -0.788
+     ],
+     "street": "Avenida de la Constitución",
+     "to_centre": 1.75
+    },
+    {
+     "a": [
+      89.53,
+      -237.17
+     ],
+     "b": [
+      90.59,
+      -228.03
+     ],
+     "len": 9.2,
+     "out": [
+      0.993,
+      -0.115
+     ],
+     "street": "Avenida de la Constitución",
+     "to_centre": 2.18
+    }
+   ],
+   "ground": [
+    8.55,
+    8.76
+   ]
+  },
+  {
+   "id": "4494601VJ5649S_part2",
+   "floors": 3,
+   "below": 0,
+   "area": 50.0,
+   "ring": [
+    [
+     89.53,
+     -237.17
+    ],
+    [
+     96.8,
+     -235.89
+    ],
+    [
+     95.47,
+     -228.35
+    ],
+    [
+     94.12,
+     -228.55
+    ],
+    [
+     90.59,
+     -228.03
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      89.53,
+      -237.17
+     ],
+     "b": [
+      96.8,
+      -235.89
+     ],
+     "len": 7.38,
+     "out": [
+      0.173,
+      -0.985
+     ],
+     "street": "Calle del Clavel",
+     "to_centre": 3.62
+    },
+    {
+     "a": [
+      96.8,
+      -235.89
+     ],
+     "b": [
+      95.47,
+      -228.35
+     ],
+     "len": 7.66,
+     "out": [
+      0.985,
+      0.174
+     ],
+     "street": "Calle del Clavel",
+     "to_centre": 7.37
+    },
+    {
+     "a": [
+      95.47,
+      -228.35
+     ],
+     "b": [
+      94.12,
+      -228.55
+     ],
+     "len": 1.36,
+     "out": [
+      -0.147,
+      0.989
+     ],
+     "street": "Avenida de la Constitución",
+     "to_centre": 6.33
+    },
+    {
+     "a": [
+      94.12,
+      -228.55
+     ],
+     "b": [
+      90.59,
+      -228.03
+     ],
+     "len": 3.57,
+     "out": [
+      0.146,
+      0.989
+     ],
+     "street": "Avenida de la Constitución",
+     "to_centre": 3.89
+    },
+    {
+     "a": [
+      90.59,
+      -228.03
+     ],
+     "b": [
+      89.53,
+      -237.17
+     ],
+     "len": 9.2,
+     "out": [
+      -0.993,
+      0.115
+     ],
+     "street": "Avenida de la Constitución",
+     "to_centre": 2.18
+    }
+   ],
+   "ground": [
+    8.58,
+    8.9
+   ]
+  }
+ ]
+}

@@ -86,6 +86,110 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
 - **41:** el ladrillo es pardo oscuro, casi chocolate; con `brick_dark` sale ya más oscuro, pero todavía rojizo.
 - **24:** falta el rótulo de la tienda de la esquina, porque no se ve en Street View qué vende.
 
+## Restos del centro (Zaragoza, Colón, Salvador)
+
+- **Correos (`zaragoza_b608`):** la banda amarilla es más corta que la real y le falta la franja azul de debajo. El ladrillo real tiene un zócalo oscuro con remate dentado.
+- **`zaragoza_6`:** no se ve bien la torre estrecha que sube detrás del pasaje.
+- **`zaragoza_r59`:** falta la barandilla de hierro que tiene en lo alto.
+- **`colon_3`:** el ojo de buey azul es aquí una ventana cuadrada.
+- **`colon_14b`:** falta el vuelo de ladrillo corrido entre las dos plantas.
+- **`salvador_c3`:** su costado de 5 m a Colón lleva la fila de ventanas de la casa, pero en la foto es un portón grande de madera con un ventanuco encima. Solo se puede describir uno de sus dos costados, y va el de la Constitución, que es el más largo.
+- **Siguen genéricos:**
+  - El costado a Colón de `salvador_31`, porque su parte de dos plantas forma parte de su fachada al Salvador y no se puede separar.
+  - Un trocito de una planta de `salvador_24`.
+  - La parte de dos plantas de `salvador_cv5`, la de los toldos.
+  - Lo que queda del solar de la iglesia en el Salvador, que es cosa de `iglesia.gd`.
+
+## Restos de Ramón y Cajal, Madrid y la Constitución
+
+- **`cajal_b021`:** faltan las líneas blancas que imitan sillería y el mirador de madera de la esquina.
+- **`cajal_rs2`:** faltan las pilastras ocres de la esquina.
+- **`cajal_24d`:** el toldo verde ocupa todo el balcón; en la foto solo cubre la parte derecha.
+- **`cajal_22d`:** la puerta en arco sale más anaranjada que la madera clara de la foto.
+- **`cajal_25`:** la tapia blanca del corral sube hasta la altura de la casa; en la foto es baja.
+- **`constitucion_19`:** el ladrillo sale más naranja que el pardo de la foto, y la tienda no lleva rótulo.
+- **`madrid_24`** (el arco de ladrillo con el balcón de madera encima): no está hecha. El frente que da `house_street.py` queda a 8,9 m de la calle, detrás de otras piezas; hay que buscarle el frente a mano.
+
+## Calle de San Isidro (lo que quedaba)
+
+- **`sanisidro_53`:** los marcos de piedra gris de las ventanas apenas se ven.
+- **`sanisidro_35b`:** las ventanas de celosía de madera salen como paneles claros.
+- **Siguen genéricas:** las casas de las esquinas con las Monjas, Tembleque y el Florido, que se harán con esas calles, y un cuartito de 9 m² junto a las Monjas.
+
+## Calle de Tembleque (primer tramo)
+
+- **`tembleque_1`:** falta el ojo de buey de la planta baja (sale como ventanita cuadrada).
+- **`tembleque_8`:** falta el letrero azul de la fachada (no se lee qué dice).
+- **`tembleque_9`:** falta la tercera planta en terraza con su tejadillo de madera.
+- **`tembleque_10`:** la puerta del porche sale más anaranjada que la madera de la foto.
+- **`tembleque_11`:** el frente que da el Catastro es de 2,4 m; la casa de la foto parece más ancha.
+- **`tembleque_b112`:** el ladrillo de la foto es más pardo.
+
+## Calle de Tembleque (el resto)
+
+- **`tembleque_67`:** el ladrillo salmón sale más naranja, y faltan las dos buhardillas.
+- **`tembleque_79`:** el alicatado de rombos pardos de la planta baja sale como ladrillo.
+- **`tembleque_81`:** el portón de madera en arco sale como un arco claro, sin la madera.
+- **`tembleque_97`:** los bloques de hormigón salen como una pared lisa.
+- **`tembleque_57`:** no está hecha. El Catastro le da 2 m a la calle; habría que ver en Street View si su fachada es parte de la larga del 59.
+
+## Calle de las Monjas (tramo sur)
+
+- **`monjas_73`:** falta el letrero verde que hay sobre la puerta (no se lee qué dice).
+- **`monjas_72` y `monjas_77`:** el ocre sale más amarillo que en la foto.
+- **`monjas_94`:** el alicatado de rombos anaranjados del zócalo sale como ladrillo oscuro.
+- **`monjas_99`:** falta el mirador de la segunda planta.
+- **`monjas_81`:** no tiene foto del Catastro y en Street View se ve de lado. Está hecha a ojo: casa vieja ocre con reja.
+
+## Calle de las Monjas (tramo norte)
+
+- **Sin hacer:**
+  - Monjas 23, la casa amarilla pegada al convento, porque pisa el solar de `santaana.gd`.
+  - El 10, una casa blanca en L cuyo frente cae dentro de la manzana.
+  - Nalda 25.
+  - El 22.
+- **`monjas_27`:** en la foto es de una planta con alero dentado; sale de dos.
+- **`monjas_r13`:** el rojo sale más vivo que el granate de la foto.
+- **`monjas_32`:** el rótulo de la panadería es más pequeño que el de la foto, y falta el cuerpo volado de ladrillo de arriba.
+- **`monjas_5`:** el ojo de buey sale como ventanita.
+
+## Avenida de la Constitución (primer tramo)
+
+- **`constitucion_42`:** el dibujo de piedra blanca de la fachada (sillares y recercados) apenas se lee.
+- **`constitucion_16`:** los tres escaparates cerrados con chapa gris verdosa salen como cristal azul.
+- **`constitucion_28`:** el balcón de ladrillo rojo sale como un balcón de hierro.
+- **`constitucion_17`:** el videoclub de la foto del Catastro va sin rótulo; no está comprobado en Street View.
+- **`constitucion_b808`:** el rótulo de la tienda de 2024 no se lee y va sin él.
+
+## Avenida de la Constitución (segundo tramo)
+
+- **`constitucion_94`:** no está hecha. Es la casa estrecha de puerta con cortina entre tapias, de 3,9 m; una de sus partes queda 25 m detrás y sus piezas salían rotas.
+- **`constitucion_80` y `constitucion_82`:** el despiece blanco en cuadros de la fachada apenas se lee.
+- **`constitucion_100`:** el mirador de la esquina sale como una caja de cristal estrecha.
+- **`constitucion_88`:** falta el toldo de la tienda de la esquina, y el ladrillo sale más rojo.
+- **`constitucion_52`:** los toldos del balcón salen como un alero de madera.
+- **`constitucion_44`:** el tejado real es a cuatro aguas; en el juego el costado de la calle lateral acaba en un piñón triangular, porque `casas.gd` no tiene tejados a cuatro aguas. Las dos fachadas ya están descritas (16/11, a petición del usuario).
+
+## Calle del Regidor (lo que quedaba)
+
+- **`constitucion_34`:** su costado al Regidor sale como una pared lisa sin huecos. No hay foto de ese costado.
+- **`regidor_b102`:** los tres portales con escalera del bloque salen como puertas simples.
+- **`regidor_23`:** el zócalo de piedra clara sale más oscuro.
+
+## Calle de San Rafael (costados de esquinas)
+
+- **`rafael_a21i`** (Alegría 21, almacén largo y bajo): no está hecha, porque el tejado salía como una losa volando sobre la calle.
+- **`rafael_n1d`:** la piedra de la fachada es de mampostería clara con verdugadas de ladrillo; sale como un enfoscado crema liso.
+- **`rafael_fp28b`:** los paneles de piedra entre el ladrillo salen como ladrillo liso.
+- **Las ocho casas:** su fachada principal da a otra calle y, mientras esa calle no se haga, sale con la fila de ventanas genérica.
+
+## Callejón Pando
+
+- **`pando_33`:** falta el dibujo de rombos del ladrillo de arriba.
+- **`pando_b513`:** el entramado marrón oscuro que enmarca la fachada sale como una franja fina.
+- **`pando_25`:** los paños de azulejo azul verdoso salen como cuadros lisos.
+- **`pando_2`:** la mampostería con verdugadas de ladrillo sale como un enfoscado tostado liso.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

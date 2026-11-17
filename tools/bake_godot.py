@@ -182,6 +182,31 @@ for name, at, end in PAVED_STREETS:
         else:
             r['paved'] = 3
         print('paved, open to traffic: %s, %d nodes' % (name, len(paved)))
+# The fairground and market ("Recinto ferial y mercadillo", godot/scripts/ferial.gd; the user, 17 November 2026: "El
+# recinto ferial sin líneas de tráfico. Y tampoco deben circular coches por ahí"): its unnamed roads -- the three paths
+# and their loop, the roundabout of the fountain, the road from it to the east, the way in from the north, the lane by
+# the market's square -- become footpaths as wide as streets (k 2: no traffic, no parked cars, no lines) with a car
+# street's corridor (no house moves); "paved": 4 has ferial.gd lay their asphalt. The street to its north (by the
+# pergola) and the road to its east stay streets for cars.
+FERIAL_ZONE = Polygon([(110, 585), (165, 551), (196, 551), (196, 600), (190, 625), (160, 720), (85, 720), (85, 640), (110, 600)])
+def _half_point(r):
+    ps = [npts[i] for i in r['p']]
+    L = sum(math.dist(a, b) for a, b in zip(ps, ps[1:]))
+    t = L / 2.0
+    for a, b in zip(ps, ps[1:]):
+        d = math.dist(a, b)
+        if d >= t and d > 0:
+            return Point(a[0] + (b[0] - a[0]) * t / d, a[1] + (b[1] - a[1]) * t / d)
+        t -= d
+    return Point(ps[-1])
+_closed = 0
+for r in roads:
+    if r['k'] == 0 and not r.get('n') and r['h'] == 'unclassified' and not r.get('paved') and FERIAL_ZONE.contains(_half_point(r)):
+        r.update(k=2, h='pedestrian', paved=4)
+        r.pop('ow', None)
+        _closed += 1
+print('the fairground: %d roads closed to traffic' % _closed)
+ferial_park = Polygon([(176, 476), (156, 530), (210, 549), (230, 496)]).buffer(1.0)      # the park north of it, by the Paseo del Cristo: the map plants no trees there (ferial.gd plants its own)
 def poly_of(w): return [proj(onodes[i]['lat'], onodes[i]['lon']) for i in w['nodes']]
 
 # the corridor every street is guaranteed to keep free of buildings (centre lines drift a little from reality)
@@ -439,7 +464,32 @@ noche = {'o': list(NOCHE['o']), 'u': list(NOCHE['u'])}
 _noche_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'noche.gd')
 if not (os.path.exists(_noche_gd) and 'const READY := true' in open(_noche_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
     NOCHE_RC, noche = None, {}
-
+# The Merkocash of the Calle de Santa Ana, "Merkocarry" in the game (godot/scripts/merkocarry.gd; the user, 17 November
+# 2026; referencias/merkocarry/): Catastro's block of the shop is not raised -- merkocarry.gd builds it on Catastro's
+# outline, but for its corner on the Cristo (cut back to the game's street) and the lane into its car park -- and the map
+# plants no trees on it, its lane or its car park (down to Magallanes). The ground is not levelled: the car park is laid
+# over it. The nave of the Mayordomía beside it (4790711) is not the shop's and stays as it is.
+MERKOCARRY_RCS = {'4790703VJ5649S', '4790711VJ5649S'}      # the shop, and the Mayordomía's nave beside it on the Cristo (mayordomia.gd, built from merkocarry.gd; the user: "es otro edificio distinto")
+merkocarry_built = Polygon([(445.71, 154.61), (461.41, 158.56), (459.82, 162.30), (452.57, 179.38), (467.48, 182.94), (445.05, 222.26), (438.05, 218.29),
+                            (439.06, 216.44), (434.85, 214.50), (432.70, 219.09), (420.36, 213.47), (421.43, 204.23), (401.59, 199.05), (411.41, 179.03), (432.01, 184.40)])
+merkocarry_park = Polygon([(417.45, 216.05), (420.36, 213.47), (432.70, 219.09), (445.05, 222.26), (428.40, 251.45), (421.19, 254.57), (404.31, 252.57)])     # (its walls narrow the streets too)
+merkocarry_nave = Polygon([(415.47, 169.97), (436.26, 175.17), (432.02, 184.41), (411.41, 179.03)])      # (its front a metre back from Catastro's, as the shop's corner)
+merkocarry_zone = unary_union([merkocarry_built, merkocarry_park, merkocarry_nave, Polygon([(401.59, 199.05), (421.43, 204.23), (420.36, 213.47), (417.45, 216.05), (398.07, 206.23)])]).buffer(0.5)
+merkocarry = {'o': [453.56, 156.59], 'nave': True}
+_merkocarry_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'merkocarry.gd')
+if not (os.path.exists(_merkocarry_gd) and 'const READY := true' in open(_merkocarry_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    MERKOCARRY_RCS, merkocarry, merkocarry_zone = set(), {}, Polygon()
+# The post office of the Calle de Zaragoza, number 1, by the Plaza del Ayuntamiento (godot/scripts/correos.gd; the user,
+# 17 November 2026; referencias/correos/): Catastro's block of it is not raised -- correos.gd builds it on Catastro's
+# outline -- and Texturas's house of it (zaragoza_b608) goes with it.
+CORREOS_RC = '4193608VJ5649S'
+correos_built = Polygon([(-133.85, -89.18), (-132.11, -88.29), (-127.86, -86.1), (-122.17, -83.17), (-130.12, -66.22), (-134.86, -68.43), (-133.34, -72.06),
+                         (-138.91, -74.57), (-141.54, -75.8), (-139.59, -79.88), (-138.37, -79.17), (-138.02, -79.99), (-135.91, -79.42), (-134.68, -83.84),
+                         (-133.11, -83.5), (-132.86, -84.73), (-135.83, -85.25), (-137.0, -85.53), (-135.11, -89.83)])
+correos = {'o': [-126.15, -74.7]}
+_correos_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'correos.gd')
+if not (os.path.exists(_correos_gd) and 'const READY := true' in open(_correos_gd, encoding='utf-8').read()):      # (not built yet: Catastro's block stays)
+    CORREOS_RC, correos = None, {}
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
 # the avenue and the compound lies to the east of it. Catastro parts and generic trees are kept out of that rectangle.
@@ -610,6 +660,8 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid in MERCAMONA_RCS: return                              # ...and the supermarket by the old road, and the old house beside it
     if bid == MASAHORRO_RC: return                               # ...and the supermarket of the Calle de las Viñas
     if bid == NOCHE_RC: return                                   # ...and the little supermarket of the Calle del Teniente Infante
+    if bid in MERKOCARRY_RCS: return                             # ...and the supermarket of the Calle de Santa Ana, and the Mayordomía's nave
+    if bid == CORREOS_RC: return                                 # ...and the post office of the Calle de Zaragoza
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
     elif church_u.contains(c): style, h = 5, max(12.0, floors_c * 4.0)
@@ -1051,6 +1103,8 @@ if cuartel: block_list.append(cuartel_built)        # (the barracks, likewise)
 if mercamona: block_list.append(mercamona_built)    # (the supermarket, likewise)
 if masahorro: block_list.append(masahorro_built)    # (the supermarket of the Calle de las Viñas, likewise)
 if noche: block_list.append(noche_built)            # (the Noche, likewise)
+if merkocarry: block_list.extend([merkocarry_built, merkocarry_park, merkocarry_nave])      # (the Merkocarry and its car park's walls, likewise)
+if correos: block_list.append(correos_built)        # (the post office, likewise)
 block_tree = STRtree(block_list)
 def building_dist(x, z):
     i = block_tree.nearest(Point(x, z)); return block_list[i].distance(Point(x, z))
@@ -1115,6 +1169,8 @@ trees = [t for t in trees if not colegio_zone.contains(Point(t[0], t[1]))]      
 trees = [t for t in trees if not cuartel_zone.contains(Point(t[0], t[1]))]      # ...and the barracks, its apron and its yard
 trees = [t for t in trees if not mercamona_zone.contains(Point(t[0], t[1]))]    # ...and the supermarket, its lawns and its car park
 trees = [t for t in trees if not masahorro_zone.contains(Point(t[0], t[1]))]    # ...and the supermarket of the Calle de las Viñas and its car park
+trees = [t for t in trees if not merkocarry_zone.contains(Point(t[0], t[1]))]   # ...and the Merkocarry, its lane and its car park
+trees = [t for t in trees if not ferial_park.contains(Point(t[0], t[1]))]      # ...and the park of the fairground by the Paseo del Cristo (ferial.gd plants its own)
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
@@ -1127,7 +1183,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)
