@@ -99,6 +99,9 @@ var box_you: ProgressBar
 var box_foe: ProgressBar
 var box_foe_name: Label
 var box_info: Label
+var box_aim: Label
+var box_cue: Label
+var box_controls: RichTextLabel
 var overlay: Control
 var ov_title: Label
 var ov_logo: TextureRect
@@ -344,8 +347,7 @@ func _ready() -> void:
 	var bx := _skinned("paper")
 	var bh := HBoxContainer.new()
 	bh.add_theme_constant_override("separation", 14)
-	var you := _label(17, INK)
-	you.text = "TÚ"
+	box_aim = _label(17, INK)
 	var b1 := _bar(230, Color("5aa84f"))
 	box_you = b1[0]
 	box_you.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -356,7 +358,7 @@ func _ready() -> void:
 	box_foe.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	box_foe.fill_mode = ProgressBar.FILL_END_TO_BEGIN
 	box_foe_name = _label(17, INK)
-	for c in [you, box_you, vs, box_foe, box_foe_name]:
+	for c in [box_aim, box_you, vs, box_foe, box_foe_name]:
 		bh.add_child(c)
 	var bv := VBoxContainer.new()
 	bv.add_theme_constant_override("separation", 4)
@@ -364,8 +366,14 @@ func _ready() -> void:
 	box_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bv.add_child(box_info)
 	bv.add_child(bh)
+	box_cue = _label(23, TERRA)
+	box_cue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bv.add_child(box_cue)
+	box_controls = _rich(15, INK)
+	box_controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bv.add_child(box_controls)
 	bx.add_child(bv)
-	box_slot = _slot(play_ui, bx, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_BEGIN, 16, 132)
+	box_slot = _slot(play_ui, bx, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_BEGIN, 16, 12)
 	box_slot.visible = false
 
 	# moment / mission card
@@ -947,7 +955,7 @@ func _process(dt: float) -> void:
 			change.global_position = Vector2(mid - change.size.x / 2.0, box.global_position.y + box.size.y - 2.0)
 	# While somebody is talking, or a scene is playing between its black bars, the map and the errand are of no use and
 	# only take up room: off the screen they go, to the left, and back when it is over.
-	var away: bool = dlg_slot.visible or bar_top.offset_bottom > 1.0
+	var away: bool = box_slot.visible or dlg_slot.visible or bar_top.offset_bottom > 1.0
 	var was := stowed
 	stowed = move_toward(stowed, 1.0 if away else 0.0, dt * 3.5)
 	if stowed != was:
@@ -1414,13 +1422,31 @@ func phone(on: bool, who := "", status := "", look := {}) -> void:
 func box(on: bool, foe_name: String) -> void:
 	box_slot.visible = on
 	box_foe_name.text = foe_name
+	if on:
+		box_help()
+	else:
+		clear_box_card()
+		box_info.text = ""
+		box_cue.text = ""
+		box_aim.text = ""
 
 func box_set(you: float, foe: float) -> void:
 	box_you.value = you
 	box_foe.value = foe
 
-func box_round(text: String) -> void:
+func box_help() -> void:
+	var hint := "box_hint_pad" if Controls.pad else "box_hint"
+	rt(box_controls, Loc.t("box_hint_touch" if Touch.on else hint))
+
+func clear_box_card() -> void:
+	if _card_tween != null:
+		_card_tween.kill()
+	card_box.modulate.a = 0.0
+
+func box_round(text: String, cue: String, low: bool) -> void:
 	box_info.text = text
+	box_cue.text = Loc.t(cue) if cue != "" else ""
+	box_aim.text = Loc.t("box_aim") % Loc.t("box_body" if low else "box_high")
 
 # ---------------- answers in a talk ----------------
 ## The answers to something you are asked in a talk, in a small bubble over the dialogue box's right-hand corner, a

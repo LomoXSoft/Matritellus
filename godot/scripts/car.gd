@@ -65,6 +65,7 @@ var smoke: CPUParticles3D
 var running := false     # the engine has been started (it coughs smoke the first time you give it throttle)
 var vapour: CPUParticles3D    # the exhaust while moving
 var turbo := false       # held down by whoever is driving (only does anything on a car that has one)
+var arcade := false      # flat, isolated circuit; its race owns the nitro tank
 var boosting := false    # the turbo is actually pushing right now
 var nitro := 1.0         # what is left in the bottle, 0..1: it burns down while the turbo pushes and fills as you drive fast
 var burnt := false       # emptied it: burnt out, and no use until it has filled a good way again
@@ -842,7 +843,7 @@ func airborne() -> bool:
 
 ## thr: -1..1 (forward/back), steer: -1..1 (positive = left), hand: handbrake. Call every physics tick.
 func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> void:
-	if held:
+	if held and not arcade:
 		return
 	var vf := forward_speed()
 	# off the road most cars drop to 55 % of their top speed; "offroad" in the spec overrides that
@@ -860,7 +861,7 @@ func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> vo
 		_start_engine()
 	_thr = thr
 	boosting = turbo and spec.has("turbo") and thr > 0.0 and nitro > 0.0 and not burnt
-	if spec.has("turbo"):
+	if spec.has("turbo") and not arcade:
 		if boosting:
 			nitro = maxf(0.0, nitro - dt / NITRO_BURN)
 			if nitro <= 0.0:
@@ -900,7 +901,7 @@ func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> vo
 	steering = move_toward(steering, steer * lock, 2.6 * dt)
 
 func _physics_process(dt: float) -> void:
-	if held:
+	if (held and not arcade) or (arcade and freeze):
 		return
 	crash_cool -= dt
 	var dv := (linear_velocity - _prev_v)
@@ -973,7 +974,7 @@ func _keep_upright(dt: float) -> void:
 		return                                   # lying still on its side or roof: that is for a shove
 	var b := global_transform.basis
 	var fwd := b.z
-	var ground := MapData.normal(p) if touching >= 2 else Vector3.UP
+	var ground := MapData.normal(p) if touching >= 2 and not arcade else Vector3.UP
 	var tilt := b.y.cross(ground)               # the turn that would set it level again (its size: sin of the angle)
 	var roll := tilt.dot(fwd)
 	var roll_rate := angular_velocity.dot(fwd)

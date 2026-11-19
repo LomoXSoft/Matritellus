@@ -117,6 +117,7 @@ var out_h := 0.0
 var in_door: Vector2             # the set's door, from inside
 var in_spawn: Vector2
 var machine: Vector2             # the Tokken 9 of the final: where the two players sit...
+var rally_seat: Vector2
 var seat_you: Vector2
 var seat_other: Vector2
 var hold_in := false             # (recress.gd) no way out for now: the mayor's challenge, until you have beaten him (entradas.gd)
@@ -777,6 +778,8 @@ func _hall_dress(r: Node3D) -> void:
 	for sx in [-0.555, 0.555]:
 		_bx(drv * Transform3D(Basis(), Vector3(sx, 0.85, 0.3)), Vector3(0.018, 1.7, 0.018), 0x3df2ff, 2.2)
 	_bx(drv * Transform3D(Basis(), Vector3(0.0, 0.07, 1.0)), Vector3(0.7, 0.14, 1.4), 0x1c1c22)
+	var seat := drv * Vector3(0.0, 0.42, 1.25)
+	rally_seat = INSIDE + Vector2(seat.x, seat.z)
 	_bx(drv * Transform3D(Basis(), Vector3(0.0, 0.42, 1.25)), Vector3(0.55, 0.14, 0.5), 0xc8202a)
 	_bx(drv * Transform3D(Basis(Vector3.RIGHT, -0.3), Vector3(0.0, 0.85, 1.52)), Vector3(0.55, 0.85, 0.14), 0xc8202a)
 	_bx(drv * Transform3D(Basis(), Vector3(0.0, 0.25, 1.25)), Vector3(0.3, 0.3, 0.3), 0x1c1c22)

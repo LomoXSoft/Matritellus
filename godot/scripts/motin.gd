@@ -55,6 +55,9 @@ var _fov := 55.0
 
 func setup(game) -> void:
 	G = game
+	set_process_input(false)
+	Controls.device_changed.connect(_hud_device)
+	Input.joy_connection_changed.connect(_pad_connection)
 
 func centre() -> Vector2:
 	return G.places["henry"]["p"]
@@ -360,6 +363,8 @@ func _fight() -> void:
 	G.cine_lock = false
 	G.hud.cine(false)
 	stage = "fight"
+	_reset_swing()
+	set_process_input(true)
 	t = TIME
 	floor_t = 0.0
 	safe_t = 1.5
@@ -376,13 +381,27 @@ func _fight() -> void:
 	Sfx.jingle([659, 880, 659, 880], 0.09)
 
 func _show() -> void:
-	G.hud.set_objective(G._tag(), Loc.t("obj_motin") % score)
+	var button: String = Loc.t("motin_hit") if Touch.on else Controls.glyph("punch")
+	if Controls.pad and not Touch.on and Controls.playstation():
+		button = "□"
+	var hint: String = Loc.t("motin_ready") if swing_phase == "ready" else Loc.t("motin_help") % button
+	G.hud.set_objective(G._tag(), (Loc.t("obj_motin") % score) + "\n" + hint)
 
 # ---------------- the fight ----------------
 func _standing() -> Array:
 	return crowd.filter(func(f): return not f["down"] and is_instance_valid(f["n"]))
 
+## Bars live on the actor, outside its model. Keep them with the visible crowd as the lens moves.
+func face_bars(camera: Camera3D) -> void:
+	var eye := Vector2(camera.position.x, camera.position.z)
+	for f in crowd:
+		if f.bar != null and is_instance_valid(f.n):
+			f.bar.visible = not f.down and f.n.vis.visible and eye.distance_squared_to(f.n.p) > 2.25
+			if f.bar.visible:
+				f.bar.global_rotation.y = G.cam_yaw + PI
+
 func _floor_you() -> void:
+	_reset_swing()
 	floor_t = FLOORED
 	G.shake = 0.5
 	Sfx.noise(0.25, -8.0)
@@ -400,6 +419,7 @@ func _hurt(f: Dictionary, from: Vector2, yours: bool) -> bool:
 	Sfx.noise(0.1, -9.0 if yours else -18.0)
 	Sfx.beep(170.0, 0.1, 2, -10.0 if yours else -20.0, -60.0)
 	var out: bool = int(f["hp"]) <= 0
+	n.inner.rotation.z = 0.0 if out else 0.24
 	if out:
 		f["down"] = true
 		f["target"] = null
@@ -416,23 +436,128 @@ func _hurt(f: Dictionary, from: Vector2, yours: bool) -> bool:
 		_show()
 	return out
 
-## your swing: whoever is within reach in front of you gets it (two of them at most)
-## your blow: the bat goes round, as it does after the mission (game.gd _bat_swing; the user, 17 Nov 2026: "el bate de
-## beisbol ya no tiene swing, creo que me gustaba más cuando lo tenía aunque fuese un poco más lento") -- it was a jab
-## of the fist with the bat in it. It lands a moment into the swing, on whoever is in front of you then.
-const SWING_COOL := 0.7
-func swing() -> void:
-	if stage != "fight" or floor_t > 0.0 or G._punch_cool > 0.0:
-		return
-	G._punch_cool = SWING_COOL
-	G.player.swing_bat()                         # (the player's own bat swings: the one held up hides meanwhile, in pose())
-	Sfx.noise(0.2, -15.0)                        # (the whoosh)
-	G.get_tree().create_timer(G.BAT_LANDS).timeout.connect(_swing_lands)
+## One physics clock drives the hand, contact and recovery. Pausing the world freezes it.
+const CHARGE_TIME := 0.25
+const TAP_CONTACT := 0.40
+const TAP_END := 0.70
+const CHARGED_CONTACT := 0.22
+const CHARGED_RECOVERY := 0.50
+const EPS := 0.000001
+var swing_phase := ""           # hold | ready | tap | charged | recover
+var swing_age := 0.0
+var charged := false
+var landed := false
+var _source := ""
 
-func _swing_lands() -> void:
-	if stage != "fight" or floor_t > 0.0:
+func _hud_device() -> void:
+	if fighting():
+		_show()
+
+func _pad_connection(device: int, connected: bool) -> void:
+	if not connected and _source == "pad%d" % device:
+		_reset_swing()
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT] and _source != "":
+		_reset_swing()
+
+func _input(e: InputEvent) -> void:
+	if e is InputEventScreenTouch and e.canceled and _source == "touch":
+		_reset_swing()
 		return
-	Sfx.beep(190.0, 0.07, 4, -14.0)
+	var source := ""
+	if e is InputEventMouseButton or e is InputEventKey:
+		if e.device == InputEvent.DEVICE_ID_EMULATION:
+			return
+		source = "mouse"
+	elif e is InputEventJoypadButton or (e is InputEventJoypadMotion and absf(e.axis_value) > 0.5):
+		source = "pad%d" % e.device
+	elif e is InputEventScreenTouch or e is InputEventAction:
+		source = "touch"
+	else:
+		return
+	if _source != "" and source != _source and (e.is_pressed() or e is InputEventJoypadMotion):
+		_reset_swing()
+	var press := e.is_action_pressed("punch")
+	var release := e.is_action_released("punch") or (e.is_canceled() and e.is_action("punch"))
+	if not (press or release):
+		return
+	if G.paused or G.map_open or G.menu.visible or G.dlg != null or G._input_lock > 0.0 or e.is_canceled():
+		if release and source == _source:
+			_reset_swing()
+		return
+	if press and swing_phase == "" and floor_t <= 0.0:
+		swing_phase = "hold"
+		_source = source
+		_swing_pose()
+	elif release and source == _source:
+		_source = ""
+		charged = swing_phase == "ready"
+		swing_phase = "charged" if charged else "tap"
+		if charged:
+			swing_age = 0.0
+			_show()
+
+func _reset_swing() -> void:
+	var refresh := swing_phase == "ready" and fighting()
+	swing_phase = ""
+	_source = ""
+	swing_age = 0.0
+	charged = false
+	landed = false
+	if is_instance_valid(_bat):
+		_bat.rotation = Vector3.ZERO
+		G.player._hr.position = Vector3(G.player._hx, 0.68, 0.0)
+	if refresh:
+		_show()
+
+func _advance_swing(dt: float) -> void:
+	if swing_phase == "":
+		return
+	if swing_phase != "ready":
+		swing_age += dt
+	if swing_phase == "hold" and swing_age + EPS >= CHARGE_TIME:
+		swing_phase = "ready"
+		Sfx.beep(660.0, 0.09, 1, -17.0, 180.0)
+		_show()
+	elif swing_phase in ["tap", "charged"]:
+		var contact := CHARGED_CONTACT if charged else TAP_CONTACT
+		if swing_age + EPS >= contact:
+			swing_age = maxf(0.0, swing_age - contact)
+			swing_phase = "recover"
+			landed = _swing_lands()
+			if not landed:
+				Sfx.noise(0.17, -15.0)
+	if swing_phase == "recover" and swing_age + EPS >= _recovery():
+		_reset_swing()
+	else:
+		_swing_pose()
+
+func _recovery() -> float:
+	return CHARGED_RECOVERY if charged else TAP_END - TAP_CONTACT
+
+func _swing_pose() -> void:
+	if swing_phase == "" or not is_instance_valid(_bat):
+		return
+	var k := 0.0
+	match swing_phase:
+		"hold", "ready":
+			k = 0.3 * minf(1.0, swing_age / CHARGE_TIME)
+		"tap":
+			k = 0.3 * minf(1.0, swing_age / CHARGE_TIME) + 0.3 * clampf((swing_age - CHARGE_TIME) / (TAP_CONTACT - CHARGE_TIME), 0.0, 1.0)
+		"charged":
+			k = lerpf(0.3, 0.6, swing_age / CHARGED_CONTACT)
+		"recover":
+			# A hit checks the follow-through briefly; a miss carries straight on across.
+			var progress := clampf(swing_age / _recovery(), 0.0, 1.0)
+			k = lerpf(0.6, 1.0, progress * progress if landed else progress)
+	G.player.bat_pose(k, _bat, 1.22 if charged else 1.0)
+	# Present the bat broadside as it crosses the group, including from behind the shoulder.
+	var across := smoothstep(0.30, 0.60, k) * (1.0 - smoothstep(0.60, 0.90, k))
+	_bat.rotation.y += 1.35 * across
+	G.player._hr.position += Vector3(0.32, 0.18, 0.0) * across
+
+func _swing_lands() -> bool:
 	var dir := Vector2(sin(G.player.h), cos(G.player.h))
 	var near: Array = []
 	for f in _standing():
@@ -440,8 +565,9 @@ func _swing_lands() -> void:
 		if to.length() < 1.9 and (to.length() < 0.6 or to.normalized().dot(dir) > 0.25):
 			near.append(f)
 	near.sort_custom(func(a, b): return a["n"].p.distance_squared_to(G.player.p) < b["n"].p.distance_squared_to(G.player.p))
-	for f in near.slice(0, 2):
+	for f in near.slice(0, 3 if charged else 2):
 		_hurt(f, G.player.p, true)
+	return not near.is_empty()
 
 func _pick(f: Dictionary, up: Array):
 	var best = null
@@ -457,6 +583,9 @@ func _pick(f: Dictionary, up: Array):
 
 func _fight_tick(dt: float, pp: Vector2) -> void:
 	t -= dt
+	if t <= EPS:
+		_over()
+		return
 	var left := maxf(0.0, t)
 	G.hud.timer_label.text = "%d:%02d" % [int(left) / 60, int(left) % 60]
 	G.hud.timer_label.add_theme_color_override("font_color", Color("ff7b5c") if left < 10.0 else G.hud.CREAM)
@@ -502,10 +631,9 @@ func _fight_tick(dt: float, pp: Vector2) -> void:
 			if n.state == "idle":
 				n.state = "busy"
 			continue
-		if f["bar"] != null:
-			f["bar"].global_rotation.y = G.cam_yaw + PI      # (its face to the camera)
 		if float(f["stun"]) > 0.0:
-			f["stun"] -= dt
+			f["stun"] = maxf(0.0, float(f["stun"]) - dt)
+			n.inner.rotation.z = 0.24 * float(f["stun"]) / 0.35
 			n.anim(false, dt, 0.0)
 			n.sync()
 			continue
@@ -531,11 +659,12 @@ func _fight_tick(dt: float, pp: Vector2) -> void:
 				elif randf() < 0.6:
 					_hurt(f["target"], n.p, false)
 		n.sync()
-	if t <= 0.0:
-		_over()
+	_advance_swing(dt)
 
 func _over() -> void:
 	stage = "after"
+	set_process_input(false)
+	_reset_swing()
 	floor_t = 0.0
 	G.player.inner.rotation.x = 0.0
 	G.hud.timer_slot.visible = false
@@ -576,6 +705,7 @@ func _finish() -> void:
 			if f[key] != null and is_instance_valid(f[key]):
 				f[key].queue_free()
 		f["n"].hand_at = null
+		f["n"].inner.rotation.z = 0.0
 		_left.append([f["n"], randf_range(3.0, 7.0) if f["down"] else 0.0])
 	crowd.clear()
 	if agenda:

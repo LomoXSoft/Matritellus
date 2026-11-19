@@ -337,6 +337,55 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
 - **`com_40` y `com_38`:** el dibujo de líneas claras del revoco sale como una franja.
 - **`com_28`:** faltan las macetas de las ventanas.
 
+## Calle del Comisario (tramo este)
+
+- **`com_20`:** los paneles gris azulado entre el ladrillo casi no se ven.
+- **`com_8`:** el alero viejo de teja vuela poco.
+- **`com_ci17`:** su costado a esta calle mide 2,7 m; sale como una tira estrecha.
+
+## Calle de Granada (tramo este)
+
+- **`gra_43`:** la mampostería de piedra de abajo sale como revoco gris liso, y las celosías de ladrillo de arriba, como cuadros oscuros.
+- **`gra_40`:** las placas de pizarra salen como un gris liso que tapa casi todo el ladrillo.
+- **Las traseras de Granada hacia el Molino:** las que ya están hechas desde el Molino (Granada 3 a 35) no tienen fachada propia en esta calle; ahí siguen casas genéricas.
+
+## Calle de Granada (tramo oeste)
+
+- **`gra_22`:** el cartel de venta y la pintada de la foto no se ponen; el muro viejo de ladrillo de arriba sale como revoco.
+- **`gra_18`:** las cenefas de rombos de los vecinos y su alero de teja vieja salen lisos.
+- **`gra_4`:** el zócalo de azulejo con dibujo sale liso.
+
+## Calle del Peso
+
+- **`peso_24`:** los marcos de piedra oscura de las ventanas salen claros.
+- **`peso_2`:** los maceteros de los balcones no se ponen.
+- **Sin hacer:** el 10 (2 m de frente).
+
+## Calle de Covadonga
+
+- **`cov_4`:** la pintada de la foto lleva en el juego una de las peñas; la albardilla de teja vieja sale lisa.
+- **`cov_r5`:** el zócalo de piedra en placas sale liso.
+- **Sin hacer:** Reyes Católicos 3 (la tapia larga del almacén) y el 11.
+
+## Calle de Santiago Apóstol (tramo este)
+
+- **`sap_m31`:** el costado de Monjas 31 está sacado de una vista de Street View en la que no se distingue bien qué fachada es suya.
+- **`sap_3`:** las esquinas de piedra clara salen como un marco en la puerta.
+- **`sap_8`:** la mampostería vieja sale como revoco tostado con remiendos.
+
+## Calle de Santiago Apóstol (tramo oeste)
+
+- **`sap_20` y `sap_22`:** el zócalo de azulejo marrón rojizo sale de un rojo más vivo.
+- **`sap_16` y `sap_18`:** la mampostería de piedra con verdugadas de ladrillo de abajo sale como un paño tostado liso.
+- **`sap_24`:** la cornisa de ladrillo en dientes de sierra sale lisa.
+
+## Calle del Triunfo (tramo del pueblo)
+
+- **`tri_c108`:** la acera de baldosa a cuadros de delante y el árbol no se ponen.
+- **`tri_n7`:** el desconchado de la tapia vieja sale como unos parches lisos.
+- **`tri_7` y `tri_7d`:** el zócalo rojo sale más anaranjado que en la foto.
+- **Sin hacer:** el 18 (caseta de 14 m²).
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

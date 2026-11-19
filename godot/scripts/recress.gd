@@ -1224,6 +1224,9 @@ func free_play(p: Vector2) -> void:
 		G.stats["tokken_mejor"] = maxi(int(G.stats.get("tokken_mejor", 0)), int(G.stats["tokken_racha"]))
 		G.hud.toast((Loc.t("t_tk_streak") % int(G.stats["tokken_racha"])) if won else Loc.t("t_tk_over"), 3.5))
 
+func at_rally(p: Vector2) -> bool:
+	return done() and G.indoors and G.inside_of == sala and sala.state == "abierto" and p.distance_to(sala.rally_seat) < 1.35
+
 func at_machine(p: Vector2) -> bool:
 	if not done() or not G.indoors or G.inside_of != sala:
 		return false

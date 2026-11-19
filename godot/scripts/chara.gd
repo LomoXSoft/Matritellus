@@ -39,8 +39,9 @@ const NECK := 1.0          # whatever is put on at this height or above goes on 
 const NECK_TURN := 1.25    # how far the head turns either way (radians): about seventy degrees, never right round
 var _fl: Node3D
 var _fr: Node3D
-var _hl: Node3D
-var _hr: Node3D
+const HAND_SIZE := Vector3(0.12, 0.12, 0.12)
+var _hl: MeshInstance3D
+var _hr: MeshInstance3D
 var _walk := 0.0
 var _off := randf() * 6.0
 var size := 1.0
@@ -73,7 +74,7 @@ func swing_bat() -> void:
 const _BAT_KEYS := [[0.0, Vector3(0.3, 0.7, 0.05), Vector2(0.2, 0.3)], [0.3, Vector3(0.75, 1.05, -0.35), Vector2(-0.5, 0.6)],
 	[0.45, Vector3(0.8, 0.95, 0.4), Vector2(1.45, 2.2)], [0.6, Vector3(0.1, 0.9, 1.0), Vector2(1.5, -0.3)],
 	[0.78, Vector3(-0.65, 0.95, 0.6), Vector2(1.5, -1.6)], [1.0, Vector3(0.2, 0.75, 0.3), Vector2(0.7, -0.9)]]
-func _bat_pose(k: float) -> void:
+func bat_pose(k: float, bat: Node3D, reach := 1.0) -> void:
 	for i in range(_BAT_KEYS.size() - 1):
 		var a: Array = _BAT_KEYS[i]
 		var b: Array = _BAT_KEYS[i + 1]
@@ -81,7 +82,8 @@ func _bat_pose(k: float) -> void:
 			var t := smoothstep(float(a[0]), float(b[0]), k)
 			_hr.position = (a[1] as Vector3).lerp(b[1], t)
 			var r: Vector2 = (a[2] as Vector2).lerp(b[2], t)
-			_bat.rotation = Vector3(r.x, r.y, 0.0)
+			_hr.position.x *= reach
+			bat.rotation = Vector3(r.x, r.y, 0.0)
 			return
 
 ## A jump, on the spot or on the run. The body goes up with the figure, so a jump gets you up a step, a kerb or a raised
@@ -284,8 +286,8 @@ func set_look(o: Dictionary) -> void:
 	var shod: int = int(o.get("shoe_type", FIRST_CALZADO))     # (neighbours who say nothing of it: the new trainers, as the user asked on 16 Nov 2026)
 	_fl = _foot(-0.17, shoes, shod, ankle)
 	_fr = _foot(0.17, shoes, shod, ankle)
-	_hl = Parts.part("ball", skin, Vector3(-_hx, 0.68, 0), Vector3.ONE * 0.12)
-	_hr = Parts.part("ball", skin, Vector3(_hx, 0.68, 0), Vector3.ONE * 0.12)
+	_hl = Parts.part("ball", skin, Vector3(-_hx, 0.68, 0), HAND_SIZE)
+	_hr = Parts.part("ball", skin, Vector3(_hx, 0.68, 0), HAND_SIZE)
 	for n in [_fl, _fr, _hl, _hr]:
 		inner.add_child(n)
 	_phone = Parts.part("box", 0x1b1b1f, Vector3(0.54, 1.4, 0.1), Vector3(0.05, 0.24, 0.13))
@@ -1090,7 +1092,7 @@ func anim(moving: bool, dt: float, speed: float, bob := true) -> void:
 		hr.y = 0.68 + k * 0.3
 	if bat_t > 0.0 and _bat != null:   # the bat: up over the shoulder, round, and down
 		bat_t = maxf(0.0, bat_t - dt)
-		_bat_pose(1.0 - bat_t / BAT_SWING)
+		bat_pose(1.0 - bat_t / BAT_SWING, _bat)
 		_bat.visible = bat_t > 0.0
 		hr = _hr.position              # (the swing has put the hand where it goes)
 	var iy := absf(cos(_walk)) * 0.07 if moving else (sin(Time.get_ticks_msec() / 420.0 + _off) * 0.015 if bob else 0.0)
@@ -1122,6 +1124,18 @@ func anim(moving: bool, dt: float, speed: float, bob := true) -> void:
 		_hr.position = hr
 	if absf(inner.position.y - iy) > 0.00001:   # (the standing bob moves less than a millimetre a frame: still written)
 		inner.position.y = iy
+
+## Ring colours keep the fists visible against these big heads and the crowd.
+func box_gloves(colour := -1) -> void:
+	var mat := Parts.mat(int(look.get("skin", 0xf6c9a0)) if colour < 0 else colour)
+	for hand in [_hl, _hr]:
+		hand.material_override = mat
+		hand.scale = HAND_SIZE if colour < 0 else Vector3(0.18, 0.17, 0.20)
+
+## Final hand positions for the ring, after the ordinary standing animation.
+func box_hands(left: Vector3, right: Vector3) -> void:
+	_hl.position = left
+	_hr.position = right
 
 ## The head turns towards `at` (a spot on the map), as far as a neck goes and no further; with nothing to look at
 ## (null), or with it behind them, it comes back to the front. The body goes on facing wherever it was going.

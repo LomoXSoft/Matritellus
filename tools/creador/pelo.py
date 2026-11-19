@@ -297,6 +297,12 @@ def put_hat(bm, p):
         out = q - C
         if out.length < R + p.get('eps', EPS):
             q = C + out.normalized() * (R + p.get('eps', EPS))
+        if p.get('over_hair'):                       # (and off the old styles' ball of hair, which stands out of the head behind: chara.gd _hair, (0, 1.5, -0.06) x (0.5, 0.42, 0.5))
+            hc = Vector((0.0, 0.06, 1.5))
+            e = Vector(((q.x - hc.x) / 0.5, (q.y - hc.y) / 0.5, (q.z - hc.z) / 0.42))
+            if q.z > 1.55 and e.length < 1.05:
+                e = e.normalized() * 1.05
+                q = Vector((hc.x + e.x * 0.5, hc.y + e.y * 0.5, hc.z + e.z * 0.42))
         v.co = q
 
 
@@ -350,6 +356,25 @@ def fit(piece, packs):
         f.smooth = True
     if p.get('shift'):                               # (a piece made for another of the pack's heads: moved onto the one measured)
         bmesh.ops.translate(bm, verts=bm.verts[:], vec=Vector(p['shift']))
+    if piece.get('rot_x'):                           # (tipped up behind, round the side-to-side axis through the pack's eyes: a headband sitting lower behind than ours can)
+        import mathutils
+        pivot = Vector((0.0, p['cy'], p['eye']))
+        rot = mathutils.Matrix.Rotation(math.radians(piece['rot_x']), 4, 'X')
+        for v in bm.verts:
+            v.co = pivot + rot @ (v.co - pivot)
+    if piece.get('squash_y'):                        # (shorter front to back, round its middle: a cap too long for our round heads)
+        mid_y = sum(v.co.y for v in bm.verts) / max(1, len(bm.verts))
+        for v in bm.verts:
+            v.co.y = mid_y + (v.co.y - mid_y) * piece['squash_y']
+    if piece.get('squash_z'):                        # (narrower top to bottom, round its middle: a band that would come out too wide on our round heads)
+        mid_z = sum(v.co.z for v in bm.verts) / max(1, len(bm.verts))
+        for v in bm.verts:
+            v.co.z = mid_z + (v.co.z - mid_z) * piece['squash_z']
+    if piece.get('cut_below') is not None:          # (what hangs below this height on the pack's body goes: a headscarf's knotted ends; our heads sit on the body)
+        gone = [f for f in bm.faces if sum(v.co.z for v in f.verts) / len(f.verts) < piece['cut_below']]
+        bmesh.ops.delete(bm, geom=gone, context='FACES')
+        loose = [v for v in bm.verts if not v.link_faces]
+        bmesh.ops.delete(bm, geom=loose, context='VERTS')
     if kind == 'cuerpo' and p.get('cut_x'):          # (our people have no arms: the sleeves go)
         gone = [f for f in bm.faces if any(abs(v.co.x) > p['cut_x'] for v in f.verts)]
         bmesh.ops.delete(bm, geom=gone, context='FACES')

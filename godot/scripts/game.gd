@@ -39,6 +39,7 @@ const LlamadasS = preload("res://scripts/llamadas.gd")
 const MarcasS = preload("res://scripts/marcas.gd")
 const EntradasS = preload("res://scripts/entradas.gd")
 const RecressS = preload("res://scripts/recress.gd")
+const RallyS = preload("res://scripts/rally.gd")
 const TokkenS = preload("res://scripts/tokken.gd")
 const AjedrezS = preload("res://scripts/ajedrez_humano.gd")
 const CalentarS = preload("res://scripts/calentar.gd")
@@ -294,6 +295,7 @@ var llamadas                    # the switchboard: who rings you, and when they 
 var marcas                      # who has a mission for you: photo on the map, green arrow over the head (marcas.gd)
 var entradas                    # the green arrows into the small shops, and back out (entradas.gd)
 var recress                     # "Un torneo en los Galaxy Recress", the Civismo line's second mission (recress.gd)
+var rally
 var tokken                      # Tokken 9, the fighting game on the Recress's machines (tokken.gd): the phase "tokken" is its own
 var ajedrez                     # (ajedrez) the mayor's chess mission and the game on the square's boards (ajedrez_humano.gd): the phase "ajedrez"
 var inside_of = null            # which set you are inside when `indoors`: V.I.P. (vip) or the Recress (recress.sala)
@@ -1530,6 +1532,9 @@ func _setup_places_and_actors() -> void:
 	recress = RecressS.new()
 	add_child(recress)
 	recress.setup(self)
+	rally = RallyS.new()
+	add_child(rally)
+	rally.setup(self)
 	tokken = TokkenS.new()
 	add_child(tokken)
 	tokken.setup(self)
@@ -2396,7 +2401,7 @@ func begin_step(i: int) -> void:
 	match s["type"]:
 		"talk":
 			target_npc = named[s["npc"]]
-			set_target(target_npc.p, false)
+			set_target(_talk_target(s), false)
 		"goto":
 			set_target(vip.door_out if s.get("inside", false) else places[s["place"]]["p"], _by_car(s))
 			if s["place"] == "coop_yard":
@@ -2434,6 +2439,13 @@ func begin_step(i: int) -> void:
 			_side_show()
 
 ## the step's own dialogue has finished: move on, or hand over to the step's "then" hook
+## where a step that has you talk to somebody sends you: to them -- or, if they are inside a shop of its own ("inside":
+## Fonsi, in the V.I.P.), to its door until you are in
+func _talk_target(s: Dictionary) -> Vector2:
+	if s.get("inside", false) and not indoors:
+		return vip.door_out
+	return named[s["npc"]].p
+
 func _after_step_talk() -> void:
 	var s: Dictionary = steps[si]
 	if s.has("then"):
@@ -2777,10 +2789,7 @@ func _vip_spar() -> void:
 func _vip_spar_go() -> void:
 	_mg = {"p": vip.counter_front, "indoors": true, "phase": "free" if steps[si]["type"] == "tbc" else "play"}
 	phase = "play"
-	_start_boxing(func(won: bool):
-		_minigame_over(won)
-		if won:
-			_unlock("box"))
+	_start_boxing(_minigame_over.bind(true))
 
 ## Josefa pays up: two thousand five hundred... pesetas
 func josefa_reward() -> void:
@@ -3178,7 +3187,7 @@ func _play_minigame(id: String, _level: int) -> void:
 	indoors = true
 	_start_boxing(_minigame_over)
 
-func _minigame_over(won: bool) -> void:
+func _minigame_over(won: bool, unlock_box := false) -> void:
 	_fight_done(won)
 	_leave_ring()
 	indoors = _mg["indoors"]
@@ -3189,6 +3198,8 @@ func _minigame_over(won: bool) -> void:
 	if won:
 		stats["box_wins"] = int(stats.get("box_wins", 0)) + 1
 	hud.toast(Loc.t("mg_won") if won else Loc.t("mg_lost"), 4.0)
+	if won and unlock_box:
+		_unlock("box")                          # include a first win at the counter in this same save
 	_save(save_si)
 
 ## everybody out of the ring: the neighbours go home and Fonsi back behind his counter
@@ -3569,12 +3580,24 @@ func _enter_car(c) -> void:
 	hud.gauge.setup(c.spec, c.kind)
 	Sfx.beep(180.0, 0.08)
 	_show_bottles()
+	_vehicle_context_changed()
+
+func _vehicle_context_changed() -> void:
+	_find_interaction()
+	hud.set_prompt("")
+	if Touch.on:
+		Touch._context_tick()
 
 func _exit_car() -> void:
-	_nitro_latch = false
 	var c = in_car
-	if mending != null:                          # not while they have it up on the jack
+	if c == null or mending != null:
 		return
+	if c.vel.length() > 3.0:
+		hud.toast(Loc.t("t_stopfirst"), 1.6)
+		return
+	# Only a successful exit changes the driver, passengers and controls.
+	_nitro_latch = false
+	_autopilot_off("")
 	c.seat({})
 	if not c.riders[1].is_empty():               # whoever came with you gets out too, on the other side
 		c.seat({}, 1)
@@ -3586,11 +3609,6 @@ func _exit_car() -> void:
 			with_you.home = with_you.p
 			with_you.sync()
 	at_garage = false
-	if c.vel.length() <= 3.0:
-		_autopilot_off("")
-	if c.vel.length() > 3.0:
-		hud.toast(Loc.t("t_stopfirst"), 1.6)
-		return
 	player.p = _free_side(c)
 	player.collision_layer = 4
 	player.collision_mask = ON_FOOT_MASK
@@ -3600,6 +3618,7 @@ func _exit_car() -> void:
 	c.park()
 	hud.speed_slot.visible = false
 	_show_bottles()
+	_vehicle_context_changed()
 	Sfx.beep(140.0, 0.08)
 
 func _crash(c, impact: float) -> void:
@@ -3962,6 +3981,10 @@ func _unhandled_input(e: InputEvent) -> void:
 		elif e.is_action_pressed("m_accept") or e.is_action_pressed("interact"):
 			_ask_pick(int(_ask["sel"]))
 		return
+	if phase == "rally":
+		return
+	if phase == "boxing":                        # the ring receives its controls before the HUD (boxing._input)
+		return
 	if phase == "ajedrez":                       # (ajedrez) a game of chess on the square: its own keys, mouse and fingers
 		ajedrez.input(e)
 		return
@@ -4039,14 +4062,6 @@ func _unhandled_input(e: InputEvent) -> void:
 		"tokken":
 			tokken.input(e)
 			return
-		"boxing":
-			if e.is_action_pressed("punch") or e.is_action_pressed("handbrake") or e.is_action_pressed("interact"):
-				boxing.act("punch")
-			elif e.is_action_pressed("left"):
-				boxing.act("left")
-			elif e.is_action_pressed("right"):
-				boxing.act("right")
-			return
 	if e.is_action_pressed("pause"):
 		if map_open:
 			_set_map(false)
@@ -4096,6 +4111,8 @@ func interact() -> void:
 		recress.stick(recress.shop_near(player.p))
 	elif recress.can_play(player.p):
 		recress.play()
+	elif recress.at_rally(player.p):
+		rally.start()
 	elif recress.at_machine(player.p):
 		recress.free_play(player.p)
 	elif gacha.near(player.p) != null:
@@ -4184,8 +4201,7 @@ func _push_car(c) -> void:
 ## left click on foot: a swing that knocks street furniture loose, shoves neighbours and thumps cars
 func _punch() -> void:
 	if motin.busy():                             # (in the riot the swing is the bat's, and it is counted there)
-		motin.swing()
-		return
+		return                                  # motin._input watches both edges of punch
 	if has_bat():
 		_bat_swing()
 		return
@@ -4271,6 +4287,7 @@ func _find_interaction() -> void:
 	near_npc = null
 	near_car = null
 	near_tag = null
+	near_steal = null
 	if in_car != null:
 		return
 	var bd := 3.2 * 3.2
@@ -4295,7 +4312,6 @@ func _find_interaction() -> void:
 			var d2: float = c.p.distance_squared_to(player.p)
 			if d2 < bd:
 				bd = d2; near_car = c
-	near_steal = null
 	if near_npc == null and near_car == null:      # a neighbour's car, stopped or crawling, right beside you
 		for e in traffic.list + police.cops:
 			var tc = e["car"]
@@ -4355,6 +4371,9 @@ func _physics_process(delta: float) -> void:
 		return
 	var dt := minf(delta, 0.05)
 	_prof_t = Time.get_ticks_usec()
+	if phase == "rally":
+		rally.tick(dt)
+		return
 	_update_audio(dt)
 	if phase == "tokken":           # at a machine in the Recress: the town waits (nothing of it is drawn meanwhile)
 		tokken.tick(dt)
@@ -4445,7 +4464,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if phase == "boxing":           # the fight has its own rules and its own camera
 		_update_npcs(dt, player.p)
-		boxing.tick(dt, Input.is_action_pressed("back"))
+		boxing.tick(dt, Input.is_action_pressed("back") or Input.is_action_pressed("box_guard"))
+		if phase != "boxing":       # the result has already restored the camera and player position
+			return
 		var bd: Vector2 = boxing.direction()
 		# behind and above your left shoulder, so you see your own back low in the frame and all of him over it
 		var eye: Vector2 = player.p - bd * 2.5 + Vector2(-bd.y, bd.x) * -3.0
@@ -4623,7 +4644,7 @@ func _physics_process(delta: float) -> void:
 	if phase == "play" and side == null:
 		var s: Dictionary = steps[si]
 		if s["type"] == "talk":
-			target = target_npc.p
+			target = _talk_target(s)
 		elif s["type"] == "goto" and _step_flag == "" and (indoors if s.get("inside", false) else _stayed(pp.distance_to(target) < 7.5, dt)):      # (through a shop's door is arriving; a circle in the street wants two seconds)
 			_arrive()
 		elif s["type"] == "sign" and firmas != null and dlg == null and _now_h() >= float(firmas["until"]):
@@ -4699,6 +4720,8 @@ func _physics_process(delta: float) -> void:
 						pr = Loc.t("p_garage_in")
 		elif recress.shop_near(pp) != null:
 			pr = Loc.t("p_rec_poster")
+		elif recress.at_rally(pp):
+			pr = Loc.t("r9_play")
 		elif recress.can_play(pp) or recress.at_machine(pp):
 			pr = Loc.t("p_rec_play")
 		elif gacha.near(pp) != null:
@@ -4834,6 +4857,8 @@ func _ride_keep() -> void:
 
 ## keyboard swapped for a pad, or back: everything on screen that names a button is written again
 func _on_device() -> void:
+	if phase == "boxing":
+		hud.box_help()
 	if menu.visible:
 		menu.rebuild()
 	match phase:
@@ -4978,7 +5003,7 @@ func _show_step() -> void:
 		hud.set_objective(_tag(), Loc.t(s["obj"]))
 	match s["type"]:
 		"talk":
-			set_target(named[s["npc"]].p, false)
+			set_target(_talk_target(s), false)
 		"goto":
 			set_target(vip.door_out if s.get("inside", false) else places[s["place"]]["p"], _by_car(s))
 		"unlock":
@@ -5326,20 +5351,32 @@ func _clear_to(pp: Vector2, yaw: float, dist: float, height: float) -> float:
 const CAM_TOO_CLOSE := 0.85                  # metres from the middle of a head (half a metre of head, and a bit)
 var _cam_hid: Array = []
 
-func _clear_lens(on: bool) -> void:
+func _clear_lens(on: bool, hide_player := true) -> void:
 	if not on and _cam_hid.is_empty():
 		return
 	var close: Array = []
 	if on:
 		var c: Vector3 = cam.global_position
-		for n in npcs + [player]:
+		var eye := Vector2(c.x, c.z)
+		var to_player: Vector2 = player.p - eye
+		var direction := to_player.normalized()
+		var distance := to_player.length()
+		var scan := 2.0 if hide_player else 5.0
+		for n in (npcs + [player] if hide_player else npcs):
 			if not is_instance_valid(n) or not n.visible:
 				continue
 			var ld = n.get("look_data")
 			var tall: float = float(ld.get("scale", 1.0)) if ld is Dictionary else 1.0
 			var at: Vector3 = n.global_position
-			if absf(c.x - at.x) > 2.0 or absf(c.z - at.z) > 2.0:
+			if absf(c.x - at.x) > scan or absf(c.z - at.z) > scan:
 				continue
+			if not hide_player:
+				# Big hats can cover the whole avatar even when the lens is outside the head.
+				var offset := Vector2(at.x, at.z) - eye
+				var depth := offset.dot(direction)
+				if depth >= -0.55 and depth < distance - 0.25 and absf(offset.cross(direction)) < tall * 0.95:
+					close.append(n)
+					continue
 			if c.distance_to(at + Vector3(0.0, 1.38 * tall, 0.0)) < CAM_TOO_CLOSE * tall or c.distance_to(at + Vector3(0.0, 0.62 * tall, 0.0)) < 0.75 * tall:
 				close.append(n)
 	var still: Array = []
@@ -5365,18 +5402,27 @@ func _update_camera(dt: float, pp: Vector2, speed: float, _cl: float) -> void:
 			cam.look_at(cam_look)
 		_clear_lens(true)
 		return
-	_clear_lens(false)
 	if motin.fighting():                         # the riot: close in over your right shoulder
 		var mf := Vector2(sin(cam_yaw), cos(cam_yaw))
-		var mr := Vector2(-mf.y, mf.x)
-		var over: Vector2 = pp - mf * 3.4 + mr * 0.9
+		var hand_side := Vector2(mf.y, -mf.x)
+		var over: Vector2 = pp - mf * 3.8 + hand_side * 1.35
 		var my := _feet_y()
-		cam_pos = cam_pos.lerp(Vector3(over.x, my + 2.15, over.y), 1.0 - exp(-9.0 * dt))
+		var pivot := Vector3(pp.x, my + 1.6, pp.y)
+		var arm := pp - over
+		var room := _clear_to(pp, atan2(arm.x, arm.y), arm.length(), 2.55)
+		var desired := pivot.lerp(Vector3(over.x, my + 2.55, over.y), room)
+		var candidate := cam_pos.lerp(desired, 1.0 - exp(-9.0 * dt))
+		var behind := pp - Vector2(candidate.x, candidate.z)
+		var clear := _clear_to(pp, atan2(behind.x, behind.y), behind.length(), candidate.y - my)
+		cam_pos = pivot.lerp(candidate, clear)
 		cam_look = cam_look.lerp(Vector3(pp.x + mf.x * 3.5, my + 1.25, pp.y + mf.y * 3.5), 1.0 - exp(-12.0 * dt))
 		shake = maxf(0.0, shake - dt * 2.2)
 		cam.position = cam_pos + Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * shake
 		cam.look_at(cam_look)
+		_clear_lens(true, false)
+		motin.face_bars(cam)
 		return
+	_clear_lens(false)
 	# Inside anywhere enclosed (a set of its own -- the V.I.P., the Recress, the Papelería Rocas -- or Kebab Luis's
 	# house): a fixed camera, high in a corner and at an angle, closer when you talk to somebody (entradas.gd; the user,
 	# 16 November 2026: better than seeing through your own eyes, which it was from 13 November: the whole place is in

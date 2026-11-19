@@ -1,0 +1,118 @@
+{
+ "rc": "4489323VJ5648N",
+ "record": {
+  "address": "CL GRANADA 41(D) 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "41",
+  "year": "2002",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "01",
+    "m2": "41"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4489323VJ5648N_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 40.6,
+   "ring": [
+    [
+     327.82,
+     306.51
+    ],
+    [
+     323.59,
+     305.2
+    ],
+    [
+     326.33,
+     296.12
+    ],
+    [
+     330.3,
+     297.42
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      327.82,
+      306.51
+     ],
+     "b": [
+      323.59,
+      305.2
+     ],
+     "len": 4.43,
+     "out": [
+      -0.296,
+      0.955
+     ],
+     "street": "Calle de Granada",
+     "to_centre": 2.8
+    },
+    {
+     "a": [
+      323.59,
+      305.2
+     ],
+     "b": [
+      326.33,
+      296.12
+     ],
+     "len": 9.48,
+     "out": [
+      -0.957,
+      -0.289
+     ],
+     "street": "Calle de Granada",
+     "to_centre": 7.53
+    },
+    {
+     "a": [
+      326.33,
+      296.12
+     ],
+     "b": [
+      330.3,
+      297.42
+     ],
+     "len": 4.18,
+     "out": [
+      0.311,
+      -0.95
+     ],
+     "street": "Calle del Molino",
+     "to_centre": 11.03
+    },
+    {
+     "a": [
+      330.3,
+      297.42
+     ],
+     "b": [
+      327.82,
+      306.51
+     ],
+     "len": 9.42,
+     "out": [
+      0.965,
+      0.263
+     ],
+     "street": "Calle de Granada",
+     "to_centre": 7.53
+    }
+   ],
+   "ground": [
+    -7.01,
+    -6.06
+   ]
+  }
+ ]
+}

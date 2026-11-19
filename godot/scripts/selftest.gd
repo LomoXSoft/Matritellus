@@ -14,7 +14,8 @@ func _ready() -> void:
 	g = get_parent()
 	g.dwell = 0.0                                  # (a mission's circle counts at once here; _reglas_checks tries the two seconds)
 	shots = OS.get_cmdline_user_args().has("--shots")
-	if DisplayServer.get_name() != "headless":      # (a test's window takes no keys: whatever is being typed on the PC meanwhile went to it, and pressed through its menus)
+	var interactive := OS.get_cmdline_user_args().has("--manual") and (OS.get_cmdline_user_args().has("--boxeo") or OS.get_cmdline_user_args().has("--motin") or OS.get_cmdline_user_args().has("--rally"))
+	if DisplayServer.get_name() != "headless" and not interactive:      # (a test's window takes no keys: whatever is being typed on the PC meanwhile went to it, and pressed through its menus)
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	_run.call_deferred()
 
@@ -837,10 +838,11 @@ func _traffic_checks() -> void:
 	g.add_child(jul)
 	jul.setup("julietta", 0, seg.a + u * 4.0 + rightv * lane, heading)
 	await _frames(10)
+	var plain := 0.0                                   # (the fastest it went: on a street a little short, the turbo's run reaches its end and stops dead)
 	for i in range(150):
 		jul.drive(1.0, 0.0, false, true, 0.016)
 		await get_tree().physics_frame
-	var plain: float = jul.forward_speed()
+		plain = maxf(plain, jul.forward_speed())
 	var hp_after: float = jul.hp
 	var first_end: Vector2 = jul.p
 	jul.queue_free()                                   # (a fresh one for the turbo's run: the one put back in its place stuck at 0 km/h, now and then)
@@ -850,11 +852,12 @@ func _traffic_checks() -> void:
 	await _frames(10)
 	jul.turbo = true
 	var lit := false
+	var boosted := 0.0
 	for i in range(150):
 		jul.drive(1.0, 0.0, false, true, 0.016)
 		await get_tree().physics_frame
 		lit = lit or (jul.flame != null and jul.flame.emitting)
-	var boosted: float = jul.forward_speed()
+		boosted = maxf(boosted, jul.forward_speed())
 	_check(plain > 12.0 and boosted > plain * 1.3 and lit, "the Julietta's turbo pushes much harder (%.0f km/h after 2.5 s instead of %.0f) and spits fire%s" % [boosted * 3.6, plain * 3.6,
 		"" if boosted > plain * 1.3 else " -- first run ended %.0f m on at %.0f hp; now at %s, %.1f m from the start, sleeping %s, frozen %s, flipped %s, broken %s, wheels on the ground %d, near: %s" % [first_end.distance_to(seg.a + u * 4.0), hp_after, str(jul.p.round()), jul.p.distance_to(seg.a + u * 4.0 + rightv * lane), jul.sleeping, jul.freeze, jul.flipped(), jul.broken(),
 			jul.wheels.filter(func(w): return w.is_in_contact()).size(), str(g.cars.filter(func(c): return is_instance_valid(c) and c != jul and c.p.distance_to(jul.p) < 8.0).map(func(c): return "%s %s" % [c.kind, str(c.p.round())]))]])
@@ -3166,6 +3169,32 @@ func _kebabdeluxe_checks() -> void:
 	rule = rule and kd.open_at(5, 1.9) and not kd.open_at(5, 2.0) and kd.open_at(0, 1.9) and not kd.open_at(0, 2.0) and not kd.open_at(4, 1.6) and kd.open_at(6, 13.5)
 	_check(good and rule, "it opens from 13:00 every day until 1:30 in the night after Monday to Thursday and 2:00 after Friday to Sunday: open, its door ajar and its lights and boards on; shut, all of it dark")
 
+## The house of the Calle de Matías Pérez (matias.gd): on its house of the map, which casas.gd no longer draws (handed
+## over as "obra"); its front stops you; nothing of it on the asphalt.
+func _matias_checks() -> void:
+	var found := 0
+	for hd in MapData.houses:
+		if String(hd["id"]) == "matias_16":
+			found += 1
+	var mp = g.world.get("matias")
+	if found == 0 or mp == null:
+		print("  the house of Matías Pérez: not in this map")
+		return
+	var line = preload("res://scripts/casas_calles.gd").HOUSES.get("matias_16", [])
+	var drawn: bool = not (line is Array and line.size() > 0 and String(line[0]) == "obra")      # (casas.gd leaves it to matias.gd)
+	_check(mp.pieces > 300 and mp.openings >= 5, "the house of Matías Pérez is built by hand (%d pieces, %d windows and doors)" % [mp.pieces, mp.openings])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var a: Vector2 = mp.spot(3.45, 1.5)
+	var b: Vector2 = mp.spot(3.45, -1.5)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, mp.level + 1.2, a.y), Vector3(b.x, mp.level + 1.2, b.y), 1)).is_empty()
+	var nearest := 99.0
+	for p in mp.yard:
+		var d: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(stops and nearest > 0.0 and not drawn, "its front stops you (%s), nothing of it on the asphalt (the nearest %.2f m)" % [stops, nearest])
+
 ## The little hermitage of San Cristóbal (cristobal.gd): built where Catastro's building was (no longer raised by the
 ## bake); its walls stop you; the ground before its yard is free; nothing of it on the asphalt.
 func _cristobal_checks() -> void:
@@ -4405,7 +4434,8 @@ func _relief_checks() -> void:
 	# (how many there are only says the walls were looked at: it goes down as the houses are built by hand one by one
 	# -- each takes over the walls the bake had there -- so 40000 became 35000 when 38948 were left, 16 Nov 2026, and
 	# 30000 when 33142 were left, 17 Nov 2026)
-	_check(aw["n"] > 30000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
+	# Fewer generic walls remain as hand-built places and Texturas' houses replace them.
+	_check(aw["n"] > 28000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
 	_check(aw["fronts"] > 5000 and aw["odd"] < aw["fronts"] * 0.01 and aw["high"] < 4.0 and aw["deep"] < 0.8,
 		"houses meet their street: of %d fronts, %d (%.1f %%) have the floor over 1.6 m above the pavement or 0.4 m under it; the worst are %.1f m above (at %.0f, %.0f) and %.1f m under (at %.0f, %.0f)"
 		% [aw["fronts"], aw["odd"], 100.0 * aw["odd"] / maxf(1.0, aw["fronts"]), aw["high"], aw["high_at"].x, aw["high_at"].y, aw["deep"], aw["deep_at"].x, aw["deep_at"].y])
@@ -6448,14 +6478,197 @@ func _riot_through() -> bool:
 	return M.stage == ""
 
 ## The whole of it. Begins with Josefa's errand on offer (the phone mission done, restaurants not yet known).
-## (the riot: someone kept in front of you while your bat goes round, `secs` of it)
-func _hold_in_front(f: Dictionary, secs: float) -> void:
-	var t := 0.0                                  # (the game's own time: headless at a fixed 60 it runs faster than the clock)
-	while t < secs:
-		if not f["down"]:
-			f["n"].p = g.player.p + Vector2(sin(g.player.h), cos(g.player.h)) * 1.1
-		await get_tree().process_frame
-		t += get_process_delta_time()
+func _riot_button(button: InputEvent, pressed: bool) -> void:
+	button.set("pressed", pressed)
+	get_viewport().push_input(button, true)
+	Input.flush_buffered_events()
+
+## Place a real shoulder camera with a facade behind it, using street collision in the playable area.
+func _riot_facade() -> bool:
+	var m = g.motin
+	var street: Vector2 = m.centre()
+	var eye := MapData.at(street, 1.6)
+	var door: Vector2 = (g.named["henry"].p - street).normalized()
+	for i in range(24):
+		var wall := door.rotated(i * TAU / 24.0)
+		var ray := PhysicsRayQueryParameters3D.create(eye, eye + Vector3(wall.x, 0, wall.y) * m.RING, 1)
+		var hit: Dictionary = g.get_world_3d().direct_space_state.intersect_ray(ray)
+		if hit.is_empty() or absf(hit.normal.y) > 0.2 or eye.distance_to(hit.position) < 2.6:
+			continue
+		var normal := Vector2(hit.normal.x, hit.normal.z).normalized()
+		g.player.p = Vector2(hit.position.x, hit.position.z) + normal * 2.6
+		g.cam_yaw = atan2(normal.x, normal.y)
+		g.player.h = g.cam_yaw
+		g.player.sync()
+		for step in range(50):
+			g._update_camera(1.0 / 60.0, g.player.p, 0, 0)
+		ray.from = MapData.at(g.player.p, 1.6)
+		ray.to = g.cam.position
+		return g.get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
+	return false
+
+func _riot_gestures(pictures: bool) -> void:
+	var m = g.motin
+	var p: Vector2 = g.player.p
+	var heading: float = g.player.h
+	var yaw: float = g.cam_yaw
+	var old_touch := Touch.on
+	var old_pad := Controls.pad
+	g.hud.toast_slot.visible = false
+	var clear := _riot_facade()
+	if pictures:
+		await _shot("motin_fachada")
+	_check(clear, "a facade behind the shoulder camera does not cut off the player")
+	_check(m.crowd.all(func(f): return f.n.vis.visible or not f.bar.visible), "an occluding neighbour hidden by the lens leaves no floating health bar")
+	g.player.p = p
+	g.player.h = heading
+	g.player.sync()
+	g.cam_yaw = yaw
+	var front := Vector2(sin(heading), cos(heading))
+	var side := Vector2(front.y, -front.x)
+	var fighters: Array = m._standing()
+	var places := []
+	for f in fighters:
+		places.append(f.n.p)
+		f.n.p = p + front * 5.0 + side * (places.size() - 5)
+		f.hp = 100
+	var mouse := InputEventMouseButton.new()
+	mouse.button_index = MOUSE_BUTTON_LEFT
+	var pad := Controls._pad(JOY_BUTTON_X)
+	_riot_button(mouse, true)
+	m._advance_swing(0.10)
+	_check(m.swing_phase == "hold" and m._bat.visible, "the original bat winds up immediately on click")
+	_riot_button(mouse, false)
+	m._advance_swing(0.299)
+	_check(m.swing_phase == "tap" and m.blows == 0, "a short tap has no contact before 0.40 seconds from press")
+	# Move them *after* release, turn the camera independently of the avatar.
+	g.cam_yaw = heading + 0.52
+	fighters[3].n.p = p + front * 1.5
+	fighters[2].n.p = p + front * 1.1
+	fighters[1].n.p = p - front * 0.5
+	fighters[0].n.p = p - front * 0.8
+	m._advance_swing(0.001)
+	_check(m.score == 10 and fighters[2].hp == 75 and fighters[1].hp == 75 and fighters[0].hp == 100 and fighters[3].hp == 100, "tap finds the two nearest at contact, including the close exception, excluding the rear sector")
+	m._advance_swing(0.299)
+	_riot_button(mouse, true)
+	_riot_button(mouse, false)
+	_check(m.swing_phase == "recover" and m.blows == 2, "extra edges during recovery do not queue another swing")
+	m._advance_swing(0.001)
+	_check(m.swing_phase == "", "tap is ready again at 0.70 seconds")
+	for f in fighters.slice(0,4):
+		f.n.p = p - front * 3
+	_riot_button(mouse, true)
+	m._advance_swing(0.249)
+	_riot_button(mouse, false)
+	m._advance_swing(0.151)
+	_check(not m.charged and not m.landed and m.score == 10 and m.swing_phase == "recover", "0.249 seconds still selects tap; a miss scores zero")
+	m._advance_swing(0.30)
+	var group := [Vector2(0.80, 0.65), Vector2(-0.95, 0.92), Vector2(0.12, 1.50), Vector2(0.62, 1.65)]
+	for i in range(group.size()):
+		fighters[i].n.p = p + front * group[i].y + side * group[i].x
+	_riot_button(pad, true)
+	m._advance_swing(0.25)
+	_check(m.swing_phase == "ready" and g.hud.obj_text.text.contains(Loc.t("motin_ready")), "X held for exactly 0.25 seconds shows charge ready")
+	m._advance_swing(1.0)
+	_check(m.swing_phase == "ready" and m.blows == 2, "holding charge has no automatic contact")
+	if pictures:
+		var language := Loc.lang
+		Loc.lang = "en"
+		g.cam_yaw = heading - 0.38
+		m._show()
+		for step in range(45):
+			g._update_camera(1.0 / 60.0, p, 0, 0)
+		await _shot("motin_carga_lista")
+		_check(g.hud.obj_text.text.contains("Bat ready!"), "the charged pose is held under the English release cue")
+		Loc.lang = language
+	_riot_button(pad, false)
+	for i in range(group.size()):
+		fighters[i].hp = 25 if i == 0 else 100
+	m._advance_swing(0.219)
+	_check(m.blows == 2 and m.swing_phase == "charged", "release commits charge; no contact at 0.219 seconds")
+	m._advance_swing(0.001)
+	_check(m.score == 30 and m.kos == 1 and m.blows == 5 and fighters[0].down and fighters[1].hp == 75 and fighters[2].hp == 75 and fighters[3].hp == 100, "charged contact at 0.22 seconds: two blows plus one knockout score twenty")
+	_check(g.player._hr.position.z > 0.95 and fighters[1].n.inner.rotation.z > 0.1, "the bat crosses the front in the same step as the struck neighbour recoils")
+	if pictures:
+		for step in range(45):
+			g._update_camera(1.0 / 60.0, p, 0, 0)
+		await _shot("motin_contacto_cargado")
+		g.cam_yaw = heading - 0.8
+		for step in range(45):
+			g._update_camera(1.0 / 60.0, p, 0, 0)
+		await _shot("motin_giro_grupo")
+	m._advance_swing(0.499)
+	_check(m.swing_phase == "recover" and m.blows == 5, "charged recovery lasts half a second; each participant scores once")
+	m._advance_swing(0.001)
+	Touch._show(true)
+	Touch._context_tick()
+	var hit := Vector2.ZERO
+	for b in Touch._buttons:
+		if b.action == "punch":
+			hit = b.centre
+	_box_touch(1, hit, true)
+	m._advance_swing(0.25)
+	var origin := Vector2(Touch._size().x * 0.53, 180)
+	_box_touch(0, origin, true)
+	_box_drag(origin + Vector2(35, 0))
+	_box_touch(0, origin, false)
+	_check(m.swing_phase == "ready" and not Touch.take_look().is_zero_approx(), "a second finger can turn the camera while Golpe holds the charge")
+	for i in range(1,4):
+		fighters[i].n.p = p + front * (0.8 + i * 0.19) + side * (i - 2) * 0.15
+	_box_touch(1, hit, false)
+	m._advance_swing(0.22)
+	_check(m.charged and m.swing_phase == "recover" and m.blows == 8, "release of the actual touch button delivers one charged sweep")
+	m._advance_swing(0.50)
+	for i in range(1,4):               # the previous impact shoved them: give the tap two clear targets
+		fighters[i].n.p = p + front * (0.8 + i * 0.19) + side * (i - 2) * 0.15
+	_box_touch(1, hit, true)
+	_box_touch(1, hit, false)
+	m._advance_swing(0.40)
+	_check(not m.charged and m.blows == 10, "a fast touch delivers a single basic sweep")
+	m._advance_swing(0.30)
+	Touch._show(false)
+	_riot_button(mouse, true)
+	m._advance_swing(0.25)
+	m.notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_riot_button(mouse, false)
+	_check(m.swing_phase == "", "losing focus discards the held charge and its later release")
+	_riot_button(mouse, true)
+	_riot_button(pad, true)
+	_riot_button(mouse, false)
+	_check(m.swing_phase == "hold" and m._source == "pad%d" % pad.device, "switching devices drops the first gesture, whose release cannot fire the second")
+	m._pad_connection(pad.device, false)
+	_riot_button(pad, false)
+	_check(m.swing_phase == "", "pad disconnection leaves the bat idle")
+	_riot_button(mouse, true)
+	m._advance_swing(0.1)
+	g._open_pause()
+	var clock_before_pause: float = m.t
+	g.set_physics_process(true)
+	await _frames(12)
+	g.set_physics_process(false)
+	_check(is_equal_approx(m.swing_age, 0.1) and is_equal_approx(m.t, clock_before_pause), "both the charge and the 60-second clock freeze during pause")
+	_riot_button(mouse, false)
+	g._close_pause()
+	_check(m.swing_phase == "", "release in the pause menu discards the unfinished swing")
+	_riot_button(mouse, true)
+	g._set_map(true)
+	_riot_button(mouse, false)
+	g._set_map(false)
+	_check(m.swing_phase == "", "releasing while the map is open drops the gesture")
+	_riot_button(mouse, true)
+	_riot_button(mouse, false)
+	m._advance_swing(0.39)
+	m._floor_you()
+	m._advance_swing(0.02)
+	_riot_button(mouse, true)
+	_riot_button(mouse, false)
+	_check(m.swing_phase == "" and m.blows == 10, "a fall cancels pending contact; another press while down cannot start a swing")
+	for i in range(fighters.size()):
+		fighters[i].n.p = places[i]
+	g.cam_yaw = yaw
+	Touch._show(old_touch)
+	Controls.pad = old_pad
+	m._show()
 
 func _motin_checks(pictures := false) -> void:
 	var M = g.motin
@@ -6561,7 +6774,7 @@ func _motin_checks(pictures := false) -> void:
 	var behind: Vector3 = g.cam.global_position - g.player.global_position
 	var facing := Vector2(sin(g.cam_yaw), cos(g.cam_yaw))
 	_check(Vector2(behind.x, behind.z).dot(facing) < -2.0 and Vector2(behind.x, behind.z).dot(facing) > -4.5 and behind.y > 1.5 and behind.y < 2.8, "(%.1f m behind you and %.1f m up)" % [-Vector2(behind.x, behind.z).dot(facing), behind.y])
-	_check(M.crowd.all(func(f): return f["arm"] != null and f["hp"] == 100 and f["bar"].visible) and M._standing().size() >= M.ACTIVE, "everybody armed, everybody with a hundred points over their head")
+	_check(M.crowd.all(func(f): return f["arm"] != null and f["hp"] == 100 and f["bar"] != null) and M.crowd.any(func(f): return f.bar.visible) and M._standing().size() >= M.ACTIVE, "everybody armed, everybody with a hundred points over their head")
 	g.police.add_heat(50.0)
 	_check(g.police.heat == 0.0, "nothing you do here reaches Los Pitufos")
 	await _frames(30)
@@ -6569,32 +6782,30 @@ func _motin_checks(pictures := false) -> void:
 	if pictures:
 		await _frames(120)
 		await _shot("motin_7_pelea")
+	if OS.get_cmdline_user_args().has("--motin") and OS.get_cmdline_user_args().has("--manual"):
+		print("MOTIN manual — pads ", Input.get_connected_joypads(), ", touchscreen ", DisplayServer.is_touchscreen_available())
+		var taps := 0
+		var sweeps := 0
+		var previous := ""
+		while M.fighting():
+			if M.swing_phase == "recover" and previous != "recover":
+				if M.charged:
+					sweeps += 1
+				else:
+					taps += 1
+			previous = M.swing_phase
+			await get_tree().physics_frame
+		print("MOTIN manual — taps ", taps, ", charged ", sweeps, ", blows ", M.blows, ", knockouts ", M.kos, ", score ", M.score)
+		_check(taps + sweeps > 0 and M.score == (M.blows - M.kos) * M.HIT + M.kos * M.KO, "native input reached contact and the full round closed with the displayed score")
+		await _skip_dialog(false)
+		return
 	# your bat
 	M.floor_t = 0.0                                # (on your feet, and left alone for the moment)
 	M.safe_t = 5.0
 	g.player.inner.rotation.x = 0.0
-	var mark: Dictionary = M._standing()[0]
-	for f in M._standing():
-		f["hp"] = 100
-		f["cool"] = 3.0
-		M._bar(f)
-	mark["n"].p = g.player.p + Vector2(sin(g.player.h), cos(g.player.h)) * 1.1
-	g._punch_cool = 0.0
-	var before: int = M.score
-	g._punch()
-	await _hold_in_front(mark, 0.1)
-	var swung: bool = g.player.bat_t > 0.0 and not M._bat.visible       # (the bat goes round: the one held up is the swinging one meanwhile)
-	await _hold_in_front(mark, g.BAT_LANDS)
-	if not swung or mark["hp"] != 75 or M.score < before + M.HIT or g._punch_cool <= 0.0:
-		print("motin: swung %s (bat_t %.2f, held bat shown %s), hp %d, score %d -> %d, cool %.2f" % [swung, g.player.bat_t, M._bat.visible, mark["hp"], before, M.score, g._punch_cool])
-	_check(swung and mark["hp"] == 75 and M.score >= before + M.HIT and g._punch_cool > 0.0, "your blow is the bat's swing, as after the mission (the user, 17 Nov 2026); landing, it takes 25 off them and is worth %d points" % M.HIT)
-	await _frames(30)
-	mark["hp"] = 25
-	g._punch_cool = 0.0
-	before = M.score
-	g._punch()
-	await _hold_in_front(mark, g.BAT_LANDS + 0.1)
-	_check(mark["down"] and mark["hp"] <= 0 and M.score >= before + M.KO and M.kos >= 1 and not mark["bar"].visible and absf(mark["n"].inner.rotation.x + PI / 2.0) < 0.01, "the one that takes them to nought lays them out, and is worth %d" % M.KO)
+	g.set_physics_process(false)
+	await _riot_gestures(pictures)
+	g.set_physics_process(true)
 	# they fight one another too, and more come from the corners
 	var total: int = M.crowd.size()
 	for f in M._standing().slice(0, 7):
@@ -6613,6 +6824,7 @@ func _motin_checks(pictures := false) -> void:
 	_check(low < M.ACTIVE and M.came > came0 and fewest >= M.ACTIVE - 1 and M.crowd.size() > total, "lay enough of them out and more come running from the street corners: never fewer than ten for long (%d came; %d on their feet)" % [M.came - came0, M._standing().size()])
 	_check(M.crowd.any(func(f): return not f["down"] and f["hp"] < 100) or M.crowd.filter(func(f): return f["down"]).size() > 8, "and they are hitting one another, not only you")
 	# they can floor you, and it only costs you time
+	var before: int
 	M.floor_t = 0.0
 	M.safe_t = 0.0
 	M._floor_you()
@@ -6633,8 +6845,15 @@ func _motin_checks(pictures := false) -> void:
 	_check(g.player.p.distance_to(M.centre()) <= M.RING + 0.5, "nobody leaves the street until it is over")
 	# time
 	var final: int = M.score
-	M.t = 0.3
+	var last_tap := InputEventMouseButton.new()
+	last_tap.button_index = MOUSE_BUTTON_LEFT
+	_riot_button(last_tap, true)
+	_riot_button(last_tap, false)
+	M._advance_swing(0.39)
+	_check(M.swing_phase == "tap", "last tap is committed with ten milliseconds to contact")
+	M.t = 0.01
 	await _frames(30)
+	_check(M.swing_phase == "" and M.score == final, "clock ending on the contact step cancels it")
 	_check(M.stage == "after" and g.dlg != null and g.dlg["lines"] == Loc.t("henry_motin_fin") and String(g.dlg["lines"][1]).contains("coger aceituna") and not g.hud.timer_slot.visible,
 		"time: Henry stops it and congratulates you on your way with a stick")
 	await _skip_dialog(false)
@@ -6697,6 +6916,8 @@ func _motin_checks(pictures := false) -> void:
 		n += 1
 		if g.dlg != null:
 			await _skip_dialog(false)
+	await _frames(32)
+	_check(M.swing_phase == "" and M.blows == 0 and M.score == 0, "the replay starts fresh with no delayed contact from the previous riot")
 	M.t = 0.2
 	await _frames(30)
 	await _skip_dialog(false)
@@ -8272,8 +8493,650 @@ func _derrape_checks(pictures := false) -> void:
 	_check(D.count() == 0, "drive off and leave them far behind and they are gone")
 	g.traffic._spawn_t = 2.0
 
+const BOX_DT := 1.0 / 60.0
+
+func _box_ticks(n: int, cover := false) -> void:
+	for i in range(n):
+		g.boxing.tick(BOX_DT, cover)
+
+## Put the contact on an exact physics step. The combat still resolves it itself.
+func _box_wind(body: bool, heavy: bool, frames: int) -> void:
+	var b = g.boxing
+	b.state = "wind"
+	b.foe_low = body
+	b.big = heavy
+	b.guard = false
+	b.t = frames * BOX_DT
+
+func _box_rules() -> void:
+	var b = g.boxing
+	var pattern := []
+	for run in range(2):
+		var choices := []
+		b.seed_for_test(1706)
+		for i in range(16):
+			b._wind_up()
+			choices.append([b.foe_low, b.big, b.t, b._cue()])
+		if run == 0:
+			pattern = choices
+		else:
+			_check(choices == pattern and choices.any(func(a): return a[0] and a[2] == b.WIND and a[3] == "box_warn_body") and choices.any(func(a): return not a[0] and a[2] == b.WIND_BIG and a[3] == "box_warn_high"), "Fonsi repeats both height tells and both wind-up lengths with a fixed combat seed")
+	for body in [false, true]:
+		for cover_body in [false, true]:
+			b._begin_round()
+			if cover_body:
+				Input.action_press("box_low")
+			else:
+				Input.action_release("box_low")
+			_box_wind(body, false, 2)
+			_box_ticks(1, true)
+			var glove_y: float = b.foe._hl.position.y if body else b.foe._hr.position.y
+			_check(b.foe_low == body and (glove_y < 0.8 if body else glove_y > 1.3), "the announced height is visible in Fonsi's loaded hand before contact (%s)" % body)
+			_box_ticks(1, true)
+			_check(is_equal_approx(b.hp, 100.0 - b.SWING * (0.2 if body == cover_body else 1.0)), "guard at contact: Fonsi body %s, player body %s, health %.1f" % [body, cover_body, b.hp])
+
+			b._begin_round()
+			b.foe_low = body
+			b.act("other" if cover_body else "punch")
+			_box_ticks(1, true)
+			_check(b.foe_hp == 100.0 and b.other_hand == cover_body and b.punch_low == cover_body and not b.blocking, "the selected hand and height commit on acceptance; guard drops during the wind-up")
+			Input.action_release("box_low")
+			_box_ticks(5, true)
+			var damage := 1.0 if body == cover_body else 6.0
+			var hand = g.player._hl if cover_body else g.player._hr
+			_check(b.foe_hp == 100.0 - damage and hand.position.z > 0.9 and is_equal_approx(hand.position.y, 0.76 if cover_body else 1.25), "the chosen hand reaches the selected height and only matching gloves stop it")
+			_box_ticks(17, true)
+			_check(b.foe_hp == 100.0 - damage, "one command lands once across the active frames and recovery")
+
+	for frames in [2, 3, 14, 15, 25]:
+		b._begin_round()
+		_box_wind(false, true, frames)
+		b.act("right")
+		_box_ticks(frames)
+		var safe: bool = frames >= 3 and frames < 15
+		_check(b.hp == (100.0 if safe else 100.0 - b.HAYMAKER) and (b.counter_left > 0.0) == safe, "dodge starts at step 3 and ends before step 15: contact on step %d" % frames)
+
+	b._begin_round()
+	_box_wind(true, false, 3)
+	b.act("left")
+	b.act("right")
+	b.act("punch")
+	_box_ticks(3)
+	_check(b.dodge_dir == -1 and b.punch_age < 0.0 and is_equal_approx(b.counter_left, b.COUNTER_TIME), "simultaneous left/right/attack picks the left dodge and opens one counter")
+	_box_ticks(12)
+	b.act("other")
+	_box_ticks(6)
+	_check(b.dodge_age > 0.0 and b.foe_hp == 88.0 and b.counter_left == 0.0, "the other hand can take the counter during dodge recovery")
+	_box_ticks(15)
+	b.act("punch")
+	_box_ticks(6)
+	_check(b.foe_hp == 82.0, "a second clean hit during the same opening does normal damage")
+	for frames in [5, 6, 7]:
+		b._begin_round()
+		b.guard = false
+		b.counter_left = frames * BOX_DT
+		b.act("punch")
+		_box_ticks(6)
+		_check(b.foe_hp == (88.0 if frames == 7 else 94.0), "counter expiry is exclusive at contact, %d steps left at input" % frames)
+	b._begin_round()
+	b.counter_left = b.COUNTER_TIME
+	b.act("punch")
+	_box_ticks(6)
+	_check(b.foe_hp == 99.0 and b.counter_left > 0.0, "a glove block leaves the counter available")
+
+	b._begin_round()
+	b.guard = false
+	for name_ in ["box_punch_other", "interact", "handbrake", "punch"]:
+		var action := InputEventAction.new()
+		action.action = name_
+		action.pressed = true
+		get_viewport().push_input(action, true)
+	_box_ticks(6)
+	_check(not b.other_hand and b.foe_hp == 94.0, "three primary aliases and the second hand in one step resolve to one primary punch")
+	_box_ticks(16)
+	var echo := InputEventKey.new()
+	echo.physical_keycode = Controls.keys["interact"]
+	echo.pressed = true
+	echo.echo = true
+	get_viewport().push_input(echo, true)
+	_box_ticks(6)
+	_check(b.foe_hp == 94.0 and b.punch_age < 0.0, "a held key's echo cannot start a second punch")
+
+	b._begin_round()
+	_box_wind(false, false, 2)
+	b.act("punch")
+	_box_ticks(6)
+	_check(b.hp == 84.0 and b.foe_hp == 94.0 and b.stun > 0.0, "a nonlethal contact during wind-up cannot erase an already accepted punch")
+	b._begin_round()
+	b.hp = b.SWING
+	b.foe_hp = b.HIT
+	_box_wind(false, false, 6)
+	b.act("other")
+	_box_ticks(6)
+	_check(b.hp == 0.0 and b.foe_hp == 0.0 and b.state == "rest" and b.wins == 1 and b.losses == 0, "simultaneous contacts both land; a double knockdown awards one round to the player")
+	b.act("punch")
+	_box_ticks(204)
+	_check(b.round_n == 2 and b.hp == 100.0 and b.foe_hp == 100.0 and b.punch_age < 0.0 and b.dodge_age < 0.0 and not b.touch_low and b.counter_left == 0.0, "3.4 seconds of rest refill both health bars and discard input")
+	b.wins = 0
+	b.round_n = 1
+	b._begin_round()
+	_box_wind(false, false, 6)
+	b.clock = 6 * BOX_DT
+	b.act("punch")
+	_box_ticks(6)
+	_check(b.state == "rest" and b.wins == 1 and b.hp == 100.0 and b.foe_hp == 100.0, "bell precedes both contacts on a tied score")
+	b.wins = 0
+	b.round_n = 1
+	b._begin_round()
+
+func _box_touch(index: int, position: Vector2, pressed: bool) -> void:
+	var event := InputEventScreenTouch.new()
+	event.index = index
+	event.position = position
+	event.pressed = pressed
+	get_viewport().push_input(event, true)
+	Input.flush_buffered_events()
+
+func _box_drag(position: Vector2) -> void:
+	var event := InputEventScreenDrag.new()
+	event.index = 0
+	event.position = position
+	get_viewport().push_input(event, true)
+	Input.flush_buffered_events()
+
+func _box_inputs() -> void:
+	var b = g.boxing
+	var old_lang := Loc.lang
+	var old_pad := Controls.pad
+	var old_touch := Touch.on
+	var old_keys: Dictionary = Controls.keys.duplicate()
+	var old_map := old_keys.duplicate()
+	old_map.erase("box_low")
+	old_map.erase("box_punch_other")
+	old_map["interact"] = KEY_F
+	Controls.load_keys(old_map)
+	_check(Controls.keys.interact == KEY_F and Controls.keys.box_punch_other != KEY_F, "a saved F binding keeps its old action when new boxing defaults load")
+	Controls.load_keys(old_keys)
+	var mouse := InputEventMouseButton.new()
+	for button in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+		b._begin_round()
+		mouse.button_index = button
+		mouse.pressed = true
+		get_viewport().push_input(mouse, true)
+		_box_ticks(1)
+		_check(b.punch_age >= 0.0 and b.other_hand == (button == MOUSE_BUTTON_RIGHT), "a viewport mouse click starts the corresponding hand, button %d" % button)
+		mouse.pressed = false
+		get_viewport().push_input(mouse, true)
+	for key in [KEY_E, KEY_SPACE, KEY_F]:
+		b._begin_round()
+		var physical := InputEventKey.new()
+		physical.physical_keycode = key
+		physical.pressed = true
+		get_viewport().push_input(physical, true)
+		_box_ticks(1)
+		_check(b.punch_age >= 0.0 and b.other_hand == (key == KEY_F), "physical key %s reaches its mapped hand" % OS.get_keycode_string(key))
+		physical.pressed = false
+		get_viewport().push_input(physical, true)
+	var height_key := Controls._key(Controls.keys["box_low"])
+	var left_key := Controls._key(Controls.keys["box_punch_other"])
+	var guard_key := Controls._key(Controls.keys["back"])
+	b._begin_round()
+	height_key.pressed = true
+	left_key.pressed = true
+	left_key.ctrl_pressed = true
+	Input.parse_input_event(height_key)
+	Input.parse_input_event(left_key)
+	Input.flush_buffered_events()
+	height_key.pressed = false
+	left_key.pressed = false
+	Input.parse_input_event(left_key)
+	Input.parse_input_event(height_key)
+	Input.flush_buffered_events()
+	_box_ticks(6)
+	_check(b.other_hand and b.punch_low and b.foe_hp == 94.0, "Ctrl and F tapped between physics steps still land one left to the body")
+	b._begin_round()
+	height_key.pressed = true
+	guard_key.pressed = true
+	guard_key.ctrl_pressed = true
+	Input.parse_input_event(height_key)
+	Input.parse_input_event(guard_key)
+	Input.flush_buffered_events()
+	_box_wind(true, false, 1)
+	_box_ticks(1, Input.is_action_pressed("back"))
+	_check(b.blocking and b.low and is_equal_approx(b.hp, 96.8), "holding Ctrl and the physical back key absorbs a body punch through InputMap")
+	guard_key.pressed = false
+	height_key.pressed = false
+	Input.parse_input_event(guard_key)
+	Input.parse_input_event(height_key)
+	Input.flush_buffered_events()
+	for button in [JOY_BUTTON_X, JOY_BUTTON_A, JOY_BUTTON_B, JOY_BUTTON_Y]:
+		b._begin_round()
+		var joy := InputEventJoypadButton.new()
+		joy.button_index = button
+		joy.pressed = true
+		get_viewport().push_input(joy, true)
+		_box_ticks(1)
+		_check(b.punch_age >= 0.0 and b.other_hand == (button == JOY_BUTTON_Y), "mapped gamepad button %d starts the correct hand" % button)
+	var shoulder := InputEventJoypadButton.new()
+	shoulder.button_index = JOY_BUTTON_LEFT_SHOULDER
+	shoulder.pressed = true
+	_check(shoulder.is_action_pressed("box_low"), "left shoulder selects body on a gamepad")
+	var motion := InputEventJoypadMotion.new()
+	motion.axis = JOY_AXIS_LEFT_X
+	b._begin_round()
+	b.t = 10.0
+	var sides := []
+	for strength in [-0.4, -0.85, -0.79, 0.0, 0.86, 0.0]:
+		motion.axis_value = strength
+		Input.parse_input_event(motion)
+		Input.flush_buffered_events()
+		_box_ticks(1)
+		if is_equal_approx(b.dodge_age, BOX_DT):
+			sides.append(b.dodge_dir)
+		_box_ticks(30)
+	_check(sides == [-1, 1], "physical pad axis mapping needs a threshold crossing and a neutral release on each side")
+	b._begin_round()
+	shoulder.pressed = true
+	Input.parse_input_event(shoulder)
+	motion.axis = JOY_AXIS_LEFT_Y
+	motion.axis_value = 0.95
+	Input.parse_input_event(motion)
+	Input.flush_buffered_events()
+	_box_wind(true, true, 1)
+	_box_ticks(1, Input.is_action_pressed("back"))
+	_check(b.blocking and b.low and is_equal_approx(b.hp, 100.0 - b.HAYMAKER * 0.2), "holding pad down and LB covers a heavy body punch through InputMap")
+	shoulder.pressed = false
+	Input.parse_input_event(shoulder)
+	motion.axis_value = 0.0
+	Input.parse_input_event(motion)
+	Input.flush_buffered_events()
+	b._begin_round()
+	Touch._show(true)
+	Touch._context_tick()
+	var buttons := {}
+	for button in Touch._buttons:
+		if button.node.visible:
+			buttons[button.action] = button.centre
+	var origin := Vector2(200, 470)
+	_box_touch(0, origin, true)
+	_box_drag(origin - Vector2(Touch.STICK_R, 0))
+	_box_ticks(1)
+	_check(b.dodge_dir == -1 and b.dodge_age >= 0.0, "a real ScreenTouch/ScreenDrag through the floating touch stick starts a left dodge")
+	_box_ticks(35)
+	_box_drag(origin - Vector2(Touch.STICK_R * 0.85, 0))
+	_box_ticks(1)
+	_check(b.dodge_age < 0.0, "a held or jittering stick does not repeat after recovery")
+	_box_drag(origin)
+	_box_ticks(1)
+	_box_drag(origin + Vector2(Touch.STICK_R, 0))
+	_box_ticks(1)
+	_check(b.dodge_dir == 1 and b.dodge_age >= 0.0, "neutral then right on the same finger starts a fresh right dodge")
+	_box_touch(0, origin, false)
+	_box_ticks(31)
+	_box_touch(1, buttons.box_low_toggle, true)
+	_box_touch(1, buttons.box_low_toggle, false)
+	_box_ticks(1)
+	_box_touch(2, buttons.box_guard, true)
+	_box_touch(0, origin, true)
+	_box_drag(origin + Vector2(10, 0))
+	_box_ticks(1, Input.is_action_pressed("box_guard"))
+	_check(b.touch_low and b.blocking and b.low, "a separate guard finger holds body guard while the real stick sends back release")
+	_box_touch(2, buttons.box_guard, false)
+	_box_touch(0, origin, false)
+	for name_ in ["punch", "box_punch_other"]:
+		_box_touch(1, buttons[name_], true)
+		_box_ticks(6)
+		_check(b.punch_age >= 0.0 and b.other_hand == (name_ == "box_punch_other") and b.punch_low, "the labelled touch button starts the correct hand at body height: " + name_)
+		_box_ticks(21)
+		_check(b.punch_age < 0.0, "holding the touch button does not auto-punch")
+		_box_touch(1, buttons[name_], false)
+	for lang in ["en", "es"]:
+		Loc.lang = lang
+		Touch._context_tick()
+		g.hud.box_help()
+		_check(g.hud.box_controls.text == Loc.t("box_hint_touch") and Touch._wanted()[3][0].contains(Loc.t("box_body")), "touch height and help follow the language: " + lang)
+	b._begin_round()
+	_check(not b.touch_low, "a fresh round resets the touch selector to high")
+	Loc.lang = old_lang
+	Touch._show(old_touch)
+	Controls.pad = old_pad
+	Controls.device_changed.emit()
+
+func _box_win_round() -> void:
+	g.boxing.foe_hp = 1.0
+	g.boxing.act("punch")
+	_box_ticks(6)
+
+func _box_card_decision(mine: bool) -> void:
+	g.boxing.hp = 81.0 if mine else 40.0
+	g.boxing.foe_hp = 40.0 if mine else 81.0
+	g.boxing.clock = BOX_DT
+	_box_ticks(1)
+
+func _box_two_rounds(mine: bool) -> void:
+	_box_card_decision(mine)
+	_box_ticks(204)
+	_box_card_decision(mine)
+	_box_ticks(150)
+
+## The same result callbacks are used by the mission, the shop offer and the Agenda.
+func _box_routes() -> void:
+	var b = g.boxing
+	g.menu.close()
+	g.start_game(g._idx("vip"))
+	g._exit_car()
+	g._use_door(true, g.vip)
+	g.player.p = g.vip.counter_front
+	g.talk_to(g.named.vip)
+	await _skip_dialog()
+	g._choose(1)
+	await _skip_dialog()
+	_check(g.phase == "boxing" and b.active and g.vip_crowd[0].visible, "Josefa's phone challenge enters the V.I.P. ring")
+	_box_rules()
+	_box_inputs()
+	_box_two_rounds(false)
+	_check(g.dlg != null and not b.active and g.player.p.distance_to(g.vip.counter_front) < 0.1 and g.stats.get("box_fights", 0) == 1 and g.stats.get("box_wins", 0) == 0, "a mission defeat returns to the counter and counts the fight once")
+	await _skip_dialog()
+	g.talk_to(g.named.vip)
+	g._choose(1)
+	await _skip_dialog()
+	_check(b.active and b.round_n == 1 and b.wins == 0 and b.losses == 0 and not b.touch_low and b.punch_age < 0.0, "a mission rematch starts with two fresh fighters")
+	_box_two_rounds(true)
+	await _skip_dialog()
+	_check(_at("josefa_back") and int(g.unlocked.get("box", 0)) == 1 and g.stats.box_wins == 1, "winning the rematch returns Josefa's phone and unlocks box")
+
+	# The other way to open box: after settling the phone bill, ask at the counter.
+	g.begin_step(g._idx("alberto"))
+	g.unlocked.erase("box")
+	g.stats["pc_on"] = true
+	g.day_n += 1
+	var pc_before: int = g.pc
+	g.talk_to(g.named.vip)
+	g._choose(0)
+	_check(b.active and g.phase == "boxing", "Fonsi's free challenge uses the same ring")
+	_box_two_rounds(true)
+	var saved = g._load_slot(g.slot)
+	_check(g.indoors and g.player.p.distance_to(g.vip.counter_front) < 0.1 and int(saved.unlocked.get("box", 0)) == 1 and g.pc == pc_before + 1, "first free victory saves the unlock immediately and pays one civic point")
+	g._use_door(false, g.vip)
+	var origin: Vector2 = g.player.p
+	var record: int = g.stats.box_best
+	var played: int = g.stats.box_fights
+	var won: int = g.stats.box_wins
+	for win in [false, true]:
+		g._open_pause()
+		var items: Array = g._menu_page("log_games").items
+		for item in items:
+			if item.has("do") and String(item.text).contains(Loc.t("mg_box")):
+				item["do"].call()
+				break
+		_check(b.active and not g.paused and not g.menu.visible, "the Agenda's box entry starts the rematch")
+		if win:
+			_box_card_decision(true)
+			_box_ticks(204)
+			b.hp = b.SWING
+			b.foe_hp = b.HIT
+			_box_wind(false, false, 6)
+			b.act("punch")
+			_box_ticks(6)
+			_check(b.state == "out" and b.wins == 2 and b.hp == 0.0 and b.foe_hp == 0.0, "a double knockdown also settles the deciding round exactly once")
+			_box_ticks(150)
+		else:
+			_box_two_rounds(false)
+		_box_ticks(15)
+		played += 1
+		won += int(win)
+		_check(not b.active and not g.indoors and g.player.p.distance_to(origin) < 0.1 and g.phase == "play", "the Agenda returns to the exact outdoor origin after win=%s" % win)
+		_check(g.stats.box_fights == played and g.stats.box_wins == won and g.stats.box_best == record and record == 281 and g.pc == pc_before + 1, "record is rounds and remaining health; count each result once; no second civic point today")
+		_check(g.player._hl.scale.is_equal_approx(g.player.HAND_SIZE) and g.named.vip._hr.material_override == PartsS.mat(int(g.named.vip.look.get("skin", 0xf6c9a0))), "both fighters put their ring gloves away on returning to town")
+		_check(not g.hud.box_slot.visible and not b.blocking and b.counter_left == 0.0 and b.dodge_age < 0.0 and g.player.vis.position.x == 0.0 and g.named.vip.inner.rotation == Vector3.ZERO and not g.vip_crowd[0].visible, "leaving clears the ring, fighters, off-balance pose, inputs and HUD")
+	if OS.get_cmdline_user_args().has("--guardado-anterior"):
+		var old_path := ProjectSettings.globalize_path("res://../tools/fixtures/boxeo_0_0_17.json")
+		var copy := DirAccess.copy_absolute(old_path, g._slot_path(2))
+		_check(copy == OK, "copy of the pre-change 0.0.17 save into an isolated test slot")
+		if copy == OK:
+			var old = g._load_slot(2)
+			g._continue(2)
+			_check(g.unlocked.get("box", 0) == 1 and g.stats.box_best == old.stats.box_best and g.stats.box_fights == 1 and g.stats.box_wins == 1 and g.stats.box_pc == old.stats.box_pc, "Continue reads the actual previous fight, record, wins, daily marker and box unlock")
+			g._play_minigame("box", 0)
+			_check(b.active, "the old save's unlocked fight can be played")
+			_box_two_rounds(true)
+			_check(g.stats.box_fights == 2 and g.stats.box_wins == 2 and g.stats.box_best >= old.stats.box_best, "playing from the old slot extends its counters and keeps its record")
+
+## Capture settled camera frames without advancing the fight between pose and screenshot.
+func _box_photos() -> void:
+	g.menu.close()
+	g.start_game(g._idx("alberto"))
+	g._exit_car()
+	g._use_door(true, g.vip)
+	g._vip_spar_go()
+	await _frames(32)
+	g.set_physics_process(false)
+	var b = g.boxing
+	b._begin_round()
+	_box_wind(false, false, 30)
+	_box_ticks(1)
+	await _shot("fonsi_aviso_alto")
+	var paper = g.hud.box_slot.get_child(0)
+	var screen := get_viewport().get_visible_rect()
+	_check(screen.encloses(paper.get_global_rect()) and g.hud.box_cue.text == Loc.t("box_warn_high") and g.hud.stowed > 0.99, "16:9 keyboard HUD, high warning and clear ring")
+
+	DisplayServer.window_set_size(Vector2i(1200, 540))
+	Touch._show(true)
+	Loc.lang = "en"
+	g.hud.box_help()
+	await _frames(6)
+	_box_wind(true, true, 3)
+	b.act("toggle")
+	_box_ticks(1, true)
+	await _shot("fonsi_tactil_cuerpo")
+	screen = get_viewport().get_visible_rect()
+	var fits := screen.encloses(paper.get_global_rect())
+	for button in Touch._buttons:
+		if button.node.visible:
+			var centre: Vector2 = button.centre
+			var radius := Vector2.ONE * float(button.r)
+			fits = fits and screen.encloses(Rect2(centre - radius, radius * 2.0)) and not paper.get_global_rect().has_point(centre)
+	_check(fits and b.blocking and b.low and g.hud.box_cue.text == Loc.t("box_warn_body"), "20:9 English HUD and four touch buttons fit around the body tell and body guard")
+
+	Loc.lang = "es"
+	Touch._show(false)
+	g.hud.box_help()
+	_box_wind(true, false, 3)
+	b.act("right")
+	_box_ticks(10)
+	await _shot("fonsi_esquiva_contra")
+	_check(b.counter_left > 0.0 and g.hud.box_cue.text == Loc.t("box_dodge") and b.foe.inner.rotation.x > 0.2, "the missed swing exposes Fonsi and the counter cue")
+	g.set_physics_process(true)
+
+func _box_manual() -> void:
+	g.menu.close()
+	g.start_game(g._idx("alberto"))
+	g._exit_car()
+	g._use_door(true, g.vip)
+	g.player.p = g.vip.counter_front
+	g.player.sync()
+	g.talk_to(g.named.vip)
+	print("BOXEO manual — pads ", Input.get_connected_joypads(), ", touchscreen ", DisplayServer.is_touchscreen_available())
+	while not g.boxing.active:
+		await get_tree().physics_frame
+	var hands := [0, 0]
+	var body := 0
+	var dodges := 0
+	var blocks := 0
+	var hits := 0
+	var punching := false
+	var dodging := false
+	var guarding := false
+	var previous_hp := 100.0
+	while g.boxing.active:
+		var b = g.boxing
+		if b.punch_age >= 0.0 and not punching:
+			hands[int(b.other_hand)] += 1
+			body += int(b.punch_low)
+		if b.dodge_age >= 0.0 and not dodging:
+			dodges += 1
+		if b.blocking and not guarding:
+			blocks += 1
+		if b.foe_hp < previous_hp:
+			hits += 1
+		punching = b.punch_age >= 0.0
+		dodging = b.dodge_age >= 0.0
+		guarding = b.blocking
+		previous_hp = b.foe_hp
+		await get_tree().physics_frame
+	print("BOXEO manual inputs — hands ", hands, ", body ", body, ", dodges ", dodges, ", guards ", blocks, ", landed ", hits)
+	_check(g.stats.get("box_fights", 0) == 1 and hits > 0, "interactive punches registered and the fight finished at the counter")
+	print("BOXEO MANUAL %s (%d failed), rounds %d-%d" % ["OK" if fails == 0 else "FAILED", fails, g.boxing.wins, g.boxing.losses])
+
+func _vehicle_exit_event(event: InputEvent, down: bool) -> void:
+	var edge := event.duplicate() as InputEvent
+	edge.set("pressed",down)
+	Input.parse_input_event(edge)
+	Input.flush_buffered_events()
+
+func _vehicle_exit_checks() -> void:
+	g.menu.close()
+	g.start_game(g._idx("alberto"))
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	var road := _long_street()
+	var car = g.paca_car
+	car.place(road.p+road.u*28,atan2(road.u.x,road.u.y))
+	g.player.p = car.p
+	g._enter_car(car)
+	await _frames(20)
+	var interact_key := Controls._key(Controls.keys.interact)
+	car.set_speed(road.u*6)
+	_vehicle_exit_event(interact_key,true)
+	_vehicle_exit_event(interact_key,false)
+	_check(g.in_car == car and not car.riders[0].is_empty() and not g.player.visible, "refusing exit in motion keeps the visible driver and the driving controls together")
+	car.set_speed(Vector2.ZERO)
+	_vehicle_exit_event(interact_key,true)
+	var echo := interact_key.duplicate() as InputEventKey
+	echo.pressed = true
+	echo.echo = true
+	Input.parse_input_event(echo)
+	Input.flush_buffered_events()
+	_vehicle_exit_event(interact_key,false)
+	await _frames(9)
+	_check(g.in_car == null and g.player.visible and g.player.collision_mask == g.ON_FOOT_MASK and not g.hud.speed_slot.visible and g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_drive")), "keyboard exit restores the on-foot HUD, and a held E does not board again")
+	var button := Controls._pad(JOY_BUTTON_A)
+	_vehicle_exit_event(button,true)
+	_vehicle_exit_event(button,false)
+	_check(g.in_car == car,"a fresh gamepad A boards the same vehicle after exiting on keyboard")
+	if g.in_car == null:
+		g._enter_car(car)
+	car.set_speed(Vector2.ZERO)
+	_vehicle_exit_event(button,true)
+	_vehicle_exit_event(button,false)
+	await _frames(9)
+	_check(g.in_car == null and not Input.is_action_pressed("interact"),"gamepad release leaves the interaction free on foot")
+	g._enter_car(car)
+	var old_touch := Touch.on
+	Touch._show(true)
+	await _frames(8)
+	Touch._context_tick()
+	var exit_key := Vector2.ZERO
+	var gas_key := Vector2.ZERO
+	var exit_caption := ""
+	for item in Touch._buttons:
+		if item.action == "interact":
+			exit_key = item.centre
+			exit_caption = item.label
+		if item.action == "forward":
+			gas_key = item.centre
+	_check(exit_key != Vector2.ZERO and gas_key != Vector2.ZERO, "a stopped car presents a physical touch target for Bajar")
+	_box_touch(0,gas_key,true)
+	car.set_speed(Vector2.ZERO)
+	_box_touch(1,exit_key,true)
+	_check(g.in_car == null and not Input.is_action_pressed("forward") and not Touch._buttons.any(func(b): return b.node.visible and b.label == exit_caption),"exiting drops the old pedal and Bajar immediately, even with both fingers still down")
+	await _frames(9)
+	_box_touch(0,gas_key,false)
+	var punch_pos := Vector2.ZERO
+	for item in Touch._buttons:
+		if item.action == "punch":
+			punch_pos = item.centre
+	_box_touch(2,punch_pos,true)
+	_box_touch(1,exit_key,false)
+	_check(Input.is_action_pressed("punch") and not Input.is_action_pressed("interact"),"lifting the old Bajar finger cannot release the new on-foot punch")
+	_box_touch(2,punch_pos,false)
+	var start: Vector2 = g.player.p
+	var origin := Vector2(200,400)
+	_box_touch(0,origin,true)
+	_box_drag(origin+Vector2(0,-90))
+	await _frames(12)
+	_box_touch(0,origin,false)
+	_check(g.player.p.distance_to(start)>0.3 and not Input.is_action_pressed("forward"),"the floating stick walks normally after getting out")
+	g.player.p=start
+	await _frames(9)
+	Touch._context_tick()
+	for item in Touch._buttons:
+		if item.action=="interact":
+			_box_touch(0,item.centre,true)
+			_box_touch(0,item.centre,false)
+			break
+	_check(g.in_car==car,"the next touch on Conducir boards again on a fresh press")
+	Touch._show(old_touch)
+	# Arrive at Alberto's protest with the same south face button used to talk and board.
+	if g.in_car != car:
+		g._enter_car(car)
+	var bridge = g.bridge
+	car.place(bridge.spot(bridge.open * (bridge.kerb() - 2.0), -5.2), atan2(bridge.u.x, bridge.u.y))
+	await _frames(12)
+	car.set_speed(bridge.u * 3.2)
+	_vehicle_exit_event(button, true)
+	_vehicle_exit_event(button, false)
+	_check(g.in_car == car and not car.riders[0].is_empty(), "gamepad at the bridge: a press just before stopping leaves the driver seated")
+	car.set_speed(Vector2.ZERO)
+	await _frames(2)
+	var driving_prompt: String = g.hud.as_shown(g.hud.prompt, Loc.t("p_out"))
+	var offered_exit: bool = g.hud.prompt_slot.visible and g.hud.prompt.text == driving_prompt
+	_vehicle_exit_event(button, true)
+	_check(offered_exit and g.in_car == null and g.player.visible and g.hud.prompt.text != driving_prompt, "gamepad at the bridge: getting out removes Bajar on the press")
+	await _frames(12)
+	_vehicle_exit_event(button, false)
+	_check(g.near_npc == g.named.alberto and g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_talk")), "holding A after leaving the car offers Hablar with Alberto")
+	_vehicle_exit_event(button, true)
+	_vehicle_exit_event(button, false)
+	_check(g.dlg != null and g.hud.dlg_name.text == g.named.alberto.shown_name() and g.dlg.lines.size() == Loc.t("alberto_bridge").size(), "the next A opens Alberto's bridge dialogue")
+	await _skip_dialog()
+	var other = null
+	for candidate in g.cars:
+		if candidate != car and candidate != g.cuartel_coche.car:
+			other = candidate
+			break
+	if other != null:
+		g.player.p = other.p + Vector2(cos(other.h), -sin(other.h)) * 1.45
+		await _frames(10)
+		_vehicle_exit_event(button, true)
+		_vehicle_exit_event(button, false)
+	_check(other != null and g.in_car == other, "after speaking at the bridge a fresh A takes the wheel of another car")
+
 func _run() -> void:
 	await _frames(10)
+	if OS.get_cmdline_user_args().has("--bajar"):
+		await _vehicle_exit_checks()
+		print("BAJAR %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--rally"):
+		await preload("res://scripts/rally_pruebas.gd").new().run(self)
+		print("RALLY %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--boxeo"):
+		g.save_prefix = ProjectSettings.globalize_path("res://../logs/fonsi_prueba_")
+		if OS.get_cmdline_user_args().has("--manual"):
+			await _box_manual()
+		elif shots:
+			await _box_photos()
+			print("BOXEO FOTOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		else:
+			await _box_routes()
+			print("BOXEO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(int(fails > 0))
+		return
 	if OS.get_cmdline_user_args().has("--tokken"):        # Tokken 9, the fighting game on the Recress's machines (add --shots)
 		shots = OS.get_cmdline_user_args().has("--shots")
 		g.menu.close()
@@ -9413,6 +10276,38 @@ func _run() -> void:
 		g.phase = "free"
 		await _cultura_checks()
 		print("CULTURA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--matias"):      # just the house of the Calle de Matías Pérez: straight on, along the street both ways, its doorways and windows close, at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var mp = g.world.get("matias")
+		if mp == null:
+			print("MATIAS FAILED (not built: its house is not in this map)")
+			get_tree().quit(1)
+			return
+		for moment in [["", 12.0], ["_noche", 22.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["frente", mp.spot(3.45, 6.5), 1.6, mp.spot(3.45, 0.0), 3.0, 70.0], ["oeste", mp.spot(-6.0, 3.8), 1.7, mp.spot(3.5, 0.0), 2.8, 65.0],
+					["este", mp.spot(13.0, 3.8), 1.7, mp.spot(3.5, 0.0), 2.8, 65.0], ["bajo", mp.spot(2.5, 3.2), 1.5, mp.spot(2.5, 0.0), 1.3, 70.0],
+					["arriba", mp.spot(3.4, 3.8), 1.7, mp.spot(3.4, 0.0), 4.5, 70.0]]:
+				if moment[0] != "" and v[0] != "frente":
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = Vector2(240.0, 60.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, mp.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("matias_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.phase = "free"
+		await _matias_checks()
+		print("MATIAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--cristobal"):      # just the little hermitage of San Cristóbal: from the old road, from Ortega y Gasset, its door and yard, at night, from the air
@@ -11774,7 +12669,8 @@ func _run() -> void:
 		print("PEINADOS %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
 		get_tree().quit(1 if fails > fails0 else 0)
 		return
-	if OS.get_cmdline_user_args().has("--criba_pelo"):    # for the user's sifting of hairstyles (17 Nov 2026): a plain person, brown hair, every style front, side and back
+	var criba := "pelo" if OS.get_cmdline_user_args().has("--criba_pelo") else ("sombrero" if OS.get_cmdline_user_args().has("--criba_sombrero") else ("ropa" if OS.get_cmdline_user_args().has("--criba_ropa") else ""))
+	if criba != "":       # for the user's sifting (17 Nov 2026): a plain person, every hairstyle (brown hair), hat or top, front, side and back
 		shots = true
 		var fails0 := fails
 		g.menu.close()
@@ -11783,11 +12679,26 @@ func _run() -> void:
 		g.hud.play_ui.visible = false
 		var Ch = load("res://scripts/chara.gd")
 		var Cr = load("res://scripts/creator.gd")
-		var base: Dictionary = Cr.look(Cr.defaults())
-		var styles: Array = []
-		for op in Cr.OPTIONS:
-			if op["key"] == "hair_style":
-				styles = op["values"]
+		var opt_i := 0
+		for k in range(Cr.OPTIONS.size()):
+			if Cr.OPTIONS[k]["key"] == {"pelo": "hair_style", "sombrero": "hat", "ropa": "top"}[criba]:
+				opt_i = k
+		var styles: Array = []                    # (the values' places in the option's list; the creator's own names go beside the pictures)
+		var names_txt := ""
+		for k in range(Cr.OPTIONS[opt_i]["values"].size()):
+			if criba == "sombrero" and String(Cr.OPTIONS[opt_i]["values"][k]) == "":
+				continue                          # (bare-headed: no hat to look at)
+			styles.append(k)
+			var why := ""                         # (what the creator itself does not offer)
+			if Cr.wardrobe_only(opt_i, k):
+				why = " (solo en el ropero)"
+			elif Cr.skipped(opt_i, k):
+				why = " (retirado)"
+			names_txt += "%d|%s%s\n" % [k, String(Loc.TX["c_values"]["es"][opt_i][k]), why]
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://shots"))
+		var nf := FileAccess.open("res://shots/criba_%s_nombres.txt" % criba, FileAccess.WRITE)
+		nf.store_string(names_txt)
+		nf.close()
 		for arg in OS.get_cmdline_user_args():    # (--solo=8,13: only those)
 			if String(arg).begins_with("--solo="):
 				var only: Array = []
@@ -11803,8 +12714,9 @@ func _run() -> void:
 		g.traffic.process_mode = Node.PROCESS_MODE_DISABLED
 		var made := 0
 		for s in styles:
-			var o: Dictionary = base.duplicate()
-			o["hair_style"] = s
+			var sel: Array = Cr.defaults()
+			sel[opt_i] = s
+			var o: Dictionary = Cr.look(sel)      # (as the creator would dress them: a cap's badge, a straw hat's band)
 			o["hair"] = 0x5a3a22                  # (the creator's brown)
 			var c = Ch.new()
 			g.add_child(c)
@@ -11834,12 +12746,12 @@ func _run() -> void:
 					if lum / 144.0 > 0.65:
 						break
 				DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://shots"))
-				pic.save_png("res://shots/criba_pelo_%02d_%s.png" % [s, view[0]])
+				pic.save_png("res://shots/criba_%s_%02d_%s.png" % [criba, s, view[0]])
 			c.queue_free()
 			made += 1
-		_check(made == styles.size(), "a picture of every hairstyle (%d)" % made)
+		_check(made == styles.size(), "a picture of every %s (%d)" % ["hairstyle" if criba == "pelo" else "hat", made])
 		g.cam_fixed = null
-		print("CRIBA_PELO %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+		print("CRIBA_%s %s (%d failed)" % [criba.to_upper(), "OK" if fails == fails0 else "FAILED", fails - fails0])
 		get_tree().quit(1 if fails > fails0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--casa"):          # your house (16 Nov 2026): in by the green arrow, the bed, the wardrobe, your peña on the wall
@@ -12295,16 +13207,22 @@ func _run() -> void:
 		await _frames(20)
 		g._punch_cool = 0.0
 		Engine.time_scale = 0.05                     # (slowed right down: a picture takes longer to save than the swing lasts)
+		victim.p = g.player.p + su * 1.3
+		victim.state = "busy"
 		g._punch()
+		_check(g.player.bat_t > 0.0 and g.player._bat.visible and g.motin.swing_phase == "", "exploration starts its own timed bat immediately")
+		var knocked := false
 		for i in range(5):
 			await get_tree().create_timer(0.12).timeout
 			await RenderingServer.frame_post_draw          # (straight away: _shot waits two-thirds of a second first)
+			knocked = knocked or victim.state in ["fly", "down"]
 			get_viewport().get_texture().get_image().save_png("res://shots/bate_%d.png" % i)
 		Engine.time_scale = 1.0
 		await _frames(30)
 		await _shot("bate_5_suelo")
-		print("BATE %s" % victim.state)
-		get_tree().quit(0)
+		_check(knocked and g.player.bat_t <= 0.0 and not g.player._bat.visible, "the exploration bat knocks down a neighbour and is put away again")
+		print("BATE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--pintadas"):      # La Chiki and the walls of the peñas
 		g.menu.close()
@@ -12604,6 +13522,7 @@ func _run() -> void:
 	await _cultura_checks()
 	await _sebastian_checks()
 	await _cristobal_checks()
+	await _matias_checks()
 	await _gacha_checks()
 	await _sentido_checks(false)
 	await _cuartel_coche_checks()
@@ -12967,12 +13886,22 @@ func _run() -> void:
 	await _frames(40)
 	_check(g.vip.open > 0.9, "the shop door swings open as you walk up")
 	await _shot("d2_shopfront")
+	var to_door: bool = g.target != null and (g.target as Vector2).distance_to(g.vip.door_out) < 0.5
 	g.player.p = g.vip.door_out + (g.vip.out_spawn - g.vip.door_out).normalized() * 0.9
 	g.player.h = g.vip.out_h + PI
 	await _frames(6)
-	_check(g.indoors and g.dlg != null and g.player.p.distance_to(g.vip.counter_front) < 0.6, "walking into the door takes you inside, and Fonsi takes a look at it")
-	await _frames(30)
+	var fonsi = g.named["vip"]
+	g.marcas._t = 0.0
+	await _frames(40)
+	var arrow = g.marcas.arrow_of(fonsi)
+	_check(to_door and g.indoors and g.dlg == null and g.target != null and (g.target as Vector2).distance_to(fonsi.p) < 0.5 and arrow != null and arrow.visible,
+		"walking in starts nothing: the way leads to the shop's door and, inside, to Fonsi, the objective, with the green arrow over him (the user, 17 Nov 2026)")
 	await _shot("d2_inside")
+	g.player.p = g.vip.counter_front
+	g.player.sync()
+	g.talk_to(fonsi)
+	_check(g.dlg != null and g.dlg["lines"] == Loc.t("vip_fix"), "talk to him and he takes a look at it")
+	await _frames(30)
 	await _skip_dialog()
 	_check(g._ask != null and not g.menu.visible and not (g._ask["options"][0][1] as Callable).is_valid() and g.hud.ans_rows_off(0), "605 euros: you cannot pay, so paying is greyed out (in the bubble over his words)")
 	g.money = 700
@@ -12986,22 +13915,9 @@ func _run() -> void:
 	_check(g.phase == "boxing" and g.boxing.active and g.player.p.distance_to(g.vip.ring_me) < 0.3 and g.vip_crowd[0].visible, "challenging him takes you both to the ring in the back room, neighbours and all")
 	await _frames(60)
 	await _shot("d1_boxing")
-	# (the fight has been running while the picture was taken: put both back to full before measuring)
-	g.boxing.hp = 100.0; g.boxing.foe_hp = 100.0; g.boxing.stun = 0.0; g.boxing.cool = 0.0; g.boxing.dodge = 0.0
-	g.boxing.state = "open"; g.boxing.t = 5.0
-	g.boxing.act("punch")
-	_check(g.boxing.foe_hp == 100.0 - g.boxing.HIT_OPEN, "a punch while he is wide open does double damage")
-	g.boxing.hp = 100.0; g.boxing.stun = 0.0; g.boxing.dodge = 0.0
-	g.boxing.state = "wind"; g.boxing.t = 0.05; g.boxing.big = false
-	g.boxing.act("left")
-	await _frames(6)
-	_check(g.boxing.hp == 100.0 and g.boxing.state == "open", "dodging his swing leaves him open and you unhurt")
-	g.boxing.hp = 100.0; g.boxing.stun = 0.0; g.boxing.dodge = 0.0
-	g.boxing.state = "wind"; g.boxing.t = 0.05; g.boxing.big = true
-	await _frames(6)
-	_check(g.boxing.hp == 100.0 - g.boxing.HAYMAKER, "standing there for the big one hurts (%.0f left)" % g.boxing.hp)
+	_box_rules()
 	g.boxing.hp = 1.0
-	g.boxing.state = "wind"; g.boxing.t = 0.05; g.boxing.dodge = 0.0
+	_box_wind(false, true, 3)
 	await _frames(30)
 	_check(g.boxing.active and g.boxing.losses == 1 and g.boxing.state == "rest", "going down loses you the round, not the fight")
 	await _shot("d2_round_end")
@@ -13014,7 +13930,7 @@ func _run() -> void:
 	await _frames(115)
 	_check(g.boxing.round_n == 3, "one each: a third round decides it")
 	g.boxing.hp = 1.0
-	g.boxing.state = "wind"; g.boxing.t = 0.05; g.boxing.dodge = 0.0
+	_box_wind(false, false, 3)
 	await _frames(110)
 	_check(g.dlg != null and not g.boxing.active and not g.vip_crowd[0].visible, "two rounds lost ends the fight and he laughs at you")
 	_check(g.player.p.distance_to(g.vip.counter_front) < 0.6 and g.named["vip"].p.distance_to(g.vip.keeper_spot) < 0.6, "...back at the counter, both of you")
@@ -13031,9 +13947,7 @@ func _run() -> void:
 	g._choose(1)
 	await _skip_dialog()
 	g.boxing.wins = 1
-	g.boxing.foe_hp = 1.0
-	g.boxing.state = "open"; g.boxing.cool = 0.0
-	g.boxing.act("punch")
+	_box_win_round()
 	await _frames(110)
 	_check(g.dlg != null and not g.boxing.active, "winning two rounds: he hands the phone over")
 	await _skip_dialog()
@@ -13132,9 +14046,7 @@ func _run() -> void:
 	await _frames(10)
 	_check(g.phase == "boxing" and g.boxing.active and not g.paused and not g.menu.visible, "choosing it in the log starts a fight in the ring")
 	g.boxing.wins = 1
-	g.boxing.foe_hp = 1.0
-	g.boxing.state = "open"; g.boxing.cool = 0.0; g.boxing.stun = 0.0
-	g.boxing.act("punch")
+	_box_win_round()
 	await _frames(110)
 	_check(g.phase == "free" and not g.indoors and g.player.p.distance_to(was_at) < 1.0 and int(g.stats.get("box_wins", 0)) == wins_before + 1, "afterwards you are back where you were, with one more win on the books")
 	# the clock and the days of the week

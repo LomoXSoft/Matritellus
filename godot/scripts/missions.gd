@@ -51,7 +51,9 @@ const STEPS := [
 	# --- El móvil de la Josefa ---
 	{"id": "call", "type": "call", "npc": "paca", "lines": "paca_phone", "obj": "obj_phone", "card": "d1_m1"},
 	{"id": "josefa", "type": "talk", "npc": "josefa", "lines": "josefa_problem", "obj": "obj_josefa"},
-	{"id": "vip", "type": "goto", "place": "vip", "inside": true, "obj": "obj_vip", "npc": "vip", "lines": "vip_fix", "then": "vip_bill"},
+	# (the user, 17 Nov 2026: not on walking into the shop but talking to Fonsi, him the mission's objective: a "talk" step,
+	# and "inside" -- he is in a shop of its own, so the way there is to its door until you are in)
+	{"id": "vip", "type": "talk", "place": "vip", "inside": true, "obj": "obj_vip", "npc": "vip", "lines": "vip_fix", "then": "vip_bill"},
 	{"id": "josefa_back", "type": "talk", "npc": "josefa", "lines": "josefa_thanks", "obj": "obj_josefa_back", "then": "josefa_reward", "thanks": "josefa"},
 	# --- El puente de Arroyuelo Medio: five signatures against pulling it down ---
 	{"id": "alberto", "type": "talk", "npc": "alberto", "lines": "alberto_bridge", "obj": "obj_bridge", "card": "d1_m2"},

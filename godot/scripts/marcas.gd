@@ -124,7 +124,7 @@ func tick(dt: float, pp: Vector2) -> void:
 				_arrows[n] = _new_arrow()
 		var marks: Array = []
 		for n in _list:
-			marks.append([n.p, photo(n)])
+			marks.append([G.vip.door_out if n.id == "vip" and G.get("vip") != null else n.p, photo(n)])      # (Fonsi is in his shop's own set, far off the map: on it, at its door)
 		G.hud.minimap.givers = marks
 		G.hud.bigmap.givers = marks
 	_spin += dt * 2.2

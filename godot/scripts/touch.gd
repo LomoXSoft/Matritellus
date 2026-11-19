@@ -46,7 +46,7 @@ func _ready() -> void:
 		b.pressed.connect(_pressed.bind(i))
 		b.released.connect(_released.bind(i))
 		add_child(b)
-		_buttons.append({"node": b, "label": "", "action": "", "centre": Vector2.ZERO, "r": 0.0, "big": false, "small": false})
+		_buttons.append({"node": b, "label": "", "action": "", "held_action": "", "centre": Vector2.ZERO, "r": 0.0, "big": false, "small": false})
 	_show(on)
 
 func _size() -> Vector2:
@@ -83,8 +83,11 @@ func _wanted() -> Array:
 			return []
 		"prologue", "flyover", "cutscene", "failed", "end":
 			return [["Seguir" if es else "Go on", "interact", "big"]]
+		"rally":
+			return g.rally.touch_buttons()
 		"boxing":
-			return [["Pegar" if es else "Punch", "punch", "big"], ["Cubrirse" if es else "Block", "back", ""]]
+			return [[Loc.t("box_right_hand"), "punch", "big"], [Loc.t("box_left_hand"), "box_punch_other", ""],
+				[Loc.t("box_cover"), "box_guard", ""], [Loc.t("box_body" if g.boxing.touch_low else "box_high") + " ↕", "box_low_toggle", ""]]
 		"tokken":
 			# the arcade fighting game (tokken.gd) says its own buttons: Fuerte, Rápido, Poder, II; Elegir on the roster
 			var tk = g.get("tokken")
@@ -117,7 +120,7 @@ func _wanted() -> Array:
 		if prompt != "":
 			out.append([prompt, "interact", "big"])
 		out.append(["Saltar" if es else "Jump", "handbrake", ""])
-		out.append(["Golpe" if es else "Hit", "punch", ""])
+		out.append([Loc.t("motin_hit"), "punch", ""])
 	out.append(["Mapa" if es else "Map", "map", "top"])
 	out.append(["II", "pause", "top"])
 	return out
@@ -155,7 +158,11 @@ func _context_tick() -> void:
 	for i in range(_buttons.size()):
 		var b: Dictionary = _buttons[i]
 		var tsb: TouchScreenButton = b["node"]
-		var was: String = b["action"]
+		var next_action: String = want[i][1] if i < want.size() else ""
+		if b["action"] != next_action:
+			_release_button(i)
+			# Reset the native finger index before moving the button to its new action.
+			tsb.visible = false
 		if i < want.size():
 			var kind: String = want[i][2]
 			b["label"] = want[i][0]
@@ -173,14 +180,10 @@ func _context_tick() -> void:
 				b["centre"] = arc[mini(n_arc, arc.size() - 1)]
 				b["r"] = 58.0
 				n_arc += 1
-			if tsb.is_pressed() and was != b["action"]:
-				_send(was, false)
 			(tsb.shape as CircleShape2D).radius = b["r"] * 1.12
 			tsb.position = b["centre"]
 			tsb.visible = on
 		else:
-			if tsb.is_pressed() and was != "":
-				_send(was, false)
 			b["action"] = ""
 			tsb.visible = false
 	_pad.queue_redraw()
@@ -210,11 +213,17 @@ func _send(action: String, down: bool) -> void:
 
 func _pressed(i: int) -> void:
 	Controls.pad = true
-	_send(_buttons[i]["action"], true)
+	_buttons[i]["held_action"] = _buttons[i]["action"]
+	_send(_buttons[i]["held_action"], true)
 	_pad.queue_redraw()
 
+func _release_button(i: int) -> void:
+	var action: String = _buttons[i]["held_action"]
+	_buttons[i]["held_action"] = ""
+	_send(action, false)
+
 func _released(i: int) -> void:
-	_send(_buttons[i]["action"], false)
+	_release_button(i)
 	_pad.queue_redraw()
 
 func _on_button(p: Vector2) -> bool:
@@ -288,12 +297,12 @@ func _show(v: bool) -> void:
 	for b in _buttons:
 		(b["node"] as TouchScreenButton).visible = v and b["action"] != ""
 	if not v:
-		for b in _buttons:
-			if b["action"] != "":
-				_send(b["action"], false)
-		_stick_id = -1
+		for i in range(_buttons.size()):
+			_release_button(i)
+		if _stick_id >= 0:
+			_stick_id = -1
+			_move_stick(_stick_at)
 		_look_id = -1
-		_move_stick(_stick_at)
 	else:
 		Controls.pad = true
 		_context = ""
@@ -310,7 +319,7 @@ func _move_stick(p: Vector2) -> void:
 	var x := _stick.x if absf(_stick.x) > DEAD else 0.0
 	var y := _stick.y if absf(_stick.y) > DEAD else 0.0
 	var g = _game()
-	var wheel_only: bool = g != null and g.get("in_car") != null and not (g.get("menu") != null and g.menu.visible)
+	var wheel_only: bool = g != null and (g.get("in_car") != null or g.phase == "rally") and not (g.get("menu") != null and g.menu.visible)
 	for pair in [["right", maxf(x, 0.0)], ["left", maxf(-x, 0.0)], ["back", maxf(y, 0.0)], ["forward", maxf(-y, 0.0)]]:
 		if wheel_only and (pair[0] == "back" or pair[0] == "forward"):
 			continue                              # (at the wheel the stick only steers: the pedals are buttons, and hold those two)

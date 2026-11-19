@@ -96,7 +96,7 @@ Pruebas: `--selftest --civicos` (con `--shots`, fotos).
   cortos; Henry («los que queden en pie tendrán jamón asao»); tú alzando el bate.
 - Pelea: cámara sobre el hombro derecho, 60 s, barra de vida sobre cada vecino (100; −25 por golpe), siempre dos a por
   ti, refuerzos desde los cruces para que no bajen de diez, Pitufos desactivados. No se puede salir de la calle (15 m).
-- Tu golpe (botón de puñetazo) alcanza a quien tengas delante, dos como mucho. Si te derriban estás 1,6 s en el suelo.
+- Con Golpe, un toque barre hasta dos vecinos. Mantén 0,25 s y suelta al ver «¡Bate listo!» para barrer hasta tres. Se cuentan los más próximos al llegar el bate. Cada impacto vale 5 puntos, o 10 si derriba. Si te derriban estás 1,6 s en el suelo.
 - Al acabar: Henry («…se te tiene que dar de miedo coger aceituna»), puntuación guardada (Agenda → Minijuegos:
   «Recoger el jamón asao»), 1 P.C. si es la primera del día, y el jamón en la mano si ibas a por él.
 - Entregar un jamón (a Josefa o al vecino del jueves): 20 € y 3 P.C.
