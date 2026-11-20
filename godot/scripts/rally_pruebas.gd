@@ -156,7 +156,7 @@ func _rules() -> void:
 	check(r.downs==was+1 and r.level==1 and r.fuel==150,"aftertouch takedown keeps the tier and fills once")
 	await shot("reincorporacion")
 	# A finished competitor takes priority over the contact that otherwise happens this tick.
-	y.gates=15
+	y.gates=23
 	var first=r.field[3]
 	first.finish=1.0
 	_at(y,0.2,0)
@@ -228,7 +228,7 @@ func _drive_race() -> void:
 	var frames := 0
 	var last_gate := -1
 	var boost_photo := false
-	while r.mode!="result" and frames < 60*170:
+	while r.mode!="result" and frames < 60*240:
 		if r.mode=="run":
 			var q := Track.project(r.car.p)
 			var look_ahead := clampf(6.0+r.car.vel.length()*0.44,7,19)
@@ -258,7 +258,7 @@ func _drive_race() -> void:
 		frames+=1
 	for action in r.ACTIONS:
 		Input.action_release(action)
-	check(r.mode=="result" and r.you.gates==16,"two complete laps under wheel physics through ordered controls and finish line")
+	check(r.mode=="result" and r.you.gates==24,"three complete laps under wheel physics through ordered controls and finish line")
 	if r.mode=="result":
 		print("RALLY finish ",r.rank_now(),"/4 in ",snappedf(r.clock,0.01)," seconds; gates ",r.field.map(func(d):return d.gates))
 		await shot("meta")

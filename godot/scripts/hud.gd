@@ -112,6 +112,10 @@ var play_ui: Control
 var heat_bar: ProgressBar
 var heat_label: Label
 var heat_fill: StyleBoxFlat
+var suspicion_slot: Control
+var suspicion_label: Label
+var suspicion_bar: ProgressBar
+var suspicion_fill: StyleBoxFlat
 var hp_bar: ProgressBar
 var hp_fill: StyleBoxFlat
 var bar_top: ColorRect
@@ -188,6 +192,24 @@ func _ready() -> void:
 	tv.add_child(timer_label); tv.add_child(hb); tp.add_child(tv)
 	timer_slot = _slot(play_ui, tp, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_BEGIN)
 	timer_slot.visible = false
+
+	# suspicion meter (top centre, below timer): used while tailing the kebab delivery van
+	var sup := _panel(Color("f5ebd6f0"), 14, 3, INK)
+	var suv := VBoxContainer.new()
+	suv.alignment = BoxContainer.ALIGNMENT_CENTER
+	suv.add_theme_constant_override("separation", 4)
+	suspicion_label = _label(15, INK)
+	suspicion_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	suspicion_label.text = Loc.t("sab_susp")
+	var sub := _bar(210, GOLD)
+	suspicion_bar = sub[0]
+	suspicion_fill = sub[1]
+	suspicion_bar.custom_minimum_size = Vector2(210, 14)
+	suv.add_child(suspicion_label)
+	suv.add_child(suspicion_bar)
+	sup.add_child(suv)
+	suspicion_slot = _slot(play_ui, sup, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_BEGIN, 16, 68)
+	suspicion_slot.visible = false
 
 	# counters (top right)
 	var cp := _skinned("slate")            # the tally, chalked up on the bar's slate
@@ -868,6 +890,22 @@ func set_heat(heat: float, chasing: bool, t: float, elite := false) -> void:
 	heat_arc.chasing = chasing
 	heat_arc.elite = elite
 	heat_fill.bg_color = (Color("2f6bff") if int(t * 5.0) % 2 == 0 else Color("e23b3b")) if chasing else GOLD
+
+func set_suspicion(level: float, on: bool) -> void:
+	if suspicion_slot == null:
+		return
+	suspicion_slot.visible = on
+	if not on:
+		return
+	var k := clampf(level, 0.0, 1.0)
+	suspicion_label.text = Loc.t("sab_susp")
+	suspicion_bar.value = k
+	if k >= 0.72:
+		suspicion_fill.bg_color = Color("d93829")
+	elif k >= 0.4:
+		suspicion_fill.bg_color = Color("e88a2a")
+	else:
+		suspicion_fill.bg_color = GOLD
 
 ## where on the screen the tail of the bubble should point (Vector2), or null for a voice from nowhere
 func set_dlg_point(at) -> void:

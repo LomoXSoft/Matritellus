@@ -209,14 +209,14 @@ func _flight(edge: Vector2, y: float, down: Vector2, wide: float, drop: float) -
 		box(-wide / 2.0, -drop - 0.4, (k - 1) * tread, wide, drop + 0.4 - k * rise, tread, "hormigon")
 	_xf = keep
 	var run: float = tread * (n - 1)
-	var foot: Vector2 = edge + down * run
+	var foot: Vector2 = edge + down * (run + 0.3)
 	var side := Vector2(down.y, -down.x) * wide / 2.0
 	var c: Array = [edge + side, edge - side, foot - side, foot + side]
-	_hull([Vector3(c[0].x, y, c[0].y), Vector3(c[1].x, y, c[1].y), Vector3(c[2].x, y - drop + rise, c[2].y), Vector3(c[3].x, y - drop + rise, c[3].y),
+	_hull([Vector3(c[0].x, y, c[0].y), Vector3(c[1].x, y, c[1].y), Vector3(c[2].x, y - drop - 0.04, c[2].y), Vector3(c[3].x, y - drop - 0.04, c[3].y),
 		Vector3(c[0].x, y - drop - 0.4, c[0].y), Vector3(c[1].x, y - drop - 0.4, c[1].y), Vector3(c[2].x, y - drop - 0.4, c[2].y), Vector3(c[3].x, y - drop - 0.4, c[3].y)])
 	var mid: Vector2 = edge + down * run / 2.0
 	var up_axis: Vector2 = (spot(0.0, 0.0) - spot(down.x, down.y)).normalized()
-	_decks.append({"o": spot(mid.x, mid.y), "ax": up_axis, "half": run / 2.0, "wide": wide / 2.0, "top": level + y, "ramp": run, "low": level + y - drop})
+	_decks.append({"o": spot(mid.x, mid.y), "ax": up_axis, "half": run / 2.0 + 0.25, "wide": wide / 2.0, "top": level + y, "ramp": run, "low": level + y - drop})
 
 ## A roof of tiles over any outline: every eave runs up to the nearer end of the ridge (r0 -- r1).
 func _tent(ring: Array, r0: Vector2, r1: Vector2, ye: float, yr: float, out := 0.45) -> void:

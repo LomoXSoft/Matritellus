@@ -428,6 +428,8 @@ func _hurt(f: Dictionary, from: Vector2, yours: bool) -> bool:
 		n.inner.position.y = 0.35
 		n.look_at_spot(null, 1.0)
 	if yours:
+		if out or (randf() < 0.45 and not n.is_barking()):
+			n.bark(G._hit_line("bat", n), 2.2)
 		score += KO if out else HIT
 		blows += 1
 		if out:

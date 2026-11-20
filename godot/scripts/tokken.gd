@@ -202,6 +202,8 @@ var _art := {}                   # fighter -> {tex, face}
 var _stages := {}                # n -> texture
 var _icons := {}
 var _tiles: Array = []           # where the portraits of the choosing screen are, for a finger or the mouse
+var _exit_rect := Rect2()        # clickable "Salir" button on the choosing screen
+var _mouse_was := Input.MOUSE_MODE_CAPTURED
 var _view := Vector2(1280, 720)
 
 func setup(game) -> void:
@@ -240,9 +242,12 @@ func start(o: Dictionary, done: Callable) -> void:
 	mute = false
 	test_inp = null
 	_phase_was = G.phase
+	_mouse_was = Input.mouse_mode
 	G.phase = "tokken"
 	G.hud.set_prompt("")
 	G.get_viewport().disable_3d = true           # (nothing of the town is drawn behind the machine's screen)
+	if not Touch.on:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	pick = clampi(int(G.stats.get("tokken_pick", 0)), 0, ROSTER.size() - 1)
 	a = null
 	b = null
@@ -254,7 +259,17 @@ func _finish() -> void:
 	visible = false
 	G.get_viewport().disable_3d = false
 	G.phase = _phase_was
+	Input.mouse_mode = _mouse_was
 	_done.call(won)
+
+## Walk away from the machine before starting the match (no win, no loss, no streak reset).
+func _cancel() -> void:
+	active = false
+	visible = false
+	paused = false
+	G.get_viewport().disable_3d = false
+	G.phase = _phase_was
+	Input.mouse_mode = _mouse_was
 
 func _to(m: String) -> void:
 	mode = m
@@ -273,7 +288,7 @@ func touch_buttons() -> Array:
 		return [[Loc.t("tk_resume"), "interact", "big"], [Loc.t("tk_quit"), "handbrake", ""]]
 	match mode:
 		"select":
-			return [[Loc.t("tk_b_pick"), "interact", "big"]]
+			return [[Loc.t("tk_b_pick"), "interact", "big"], [Loc.t("m_quit"), "m_back", ""]]
 		"intro", "fight":
 			# (the quick blow is the one pressed most: it gets the big button under the thumb)
 			return [[Loc.t("tk_b_light"), "punch", "big"], [Loc.t("tk_b_heavy"), "interact", ""], [Loc.t("tk_b_special"), "handbrake", ""], ["II", "pause", "top"]]
@@ -282,13 +297,22 @@ func touch_buttons() -> Array:
 func input(e: InputEvent) -> void:
 	if not active:
 		return
-	if e.is_action_pressed("pause") and (mode == "fight" or mode == "intro" or mode == "select"):
+	if mode == "select" and not paused:
+		if e.is_action_pressed("m_back") or e.is_action_pressed("pause"):
+			_snd("tick")
+			_cancel()
+			return
+	if e.is_action_pressed("pause") and (mode == "fight" or mode == "intro"):
 		paused = not paused
+		if not Touch.on:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
 		_snd("tick")
 		return
 	if paused:
 		if e.is_action_pressed("interact") or e.is_action_pressed("m_accept"):
 			paused = false
+			if not Touch.on:
+				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		elif e.is_action_pressed("handbrake") or e.is_action_pressed("m_back"):
 			paused = false
 			won = false
@@ -301,6 +325,10 @@ func input(e: InputEvent) -> void:
 		elif e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			at = e.position
 		if at != null:
+			if _exit_rect.has_point(at):
+				_snd("tick")
+				_cancel()
+				return
 			for i in range(_tiles.size()):
 				if (_tiles[i] as Rect2).has_point(at):
 					if pick == i:
@@ -309,7 +337,7 @@ func input(e: InputEvent) -> void:
 						pick = i
 						_snd("tick")
 					return
-			if e is InputEventScreenTouch:
+			if e is InputEventScreenTouch or e is InputEventMouseButton:
 				return
 	if e is InputEventKey and e.pressed and not e.echo:      # (J K L too, for whoever plays with the keyboard alone)
 		match e.physical_keycode:
@@ -449,6 +477,8 @@ func _choose() -> void:
 	if stage_n == 0:
 		stage_n = int(b.d["stage"])
 	_snd("pick")
+	if not Touch.on:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_to("versus")
 
 func _begin_round() -> void:
@@ -1666,7 +1696,12 @@ func _draw_select() -> void:
 		screen.draw_texture_rect(_art[ROSTER[i]]["face"], r, false, Color.WHITE if on else Color(0.55, 0.55, 0.65))
 		if on:
 			_text("1P", Vector2(r.position.x + tw / 2.0, r.position.y - 30.0 * ui), 3.0, Color(1.0, 0.85, 0.15), 1)
-	_hint_row([["m_left", ""], ["m_right", Loc.t("tk_b_pick")], ["interact", "OK"]], _view.y - 34.0 * ui, 2.0)
+	_hint_row([["m_left", ""], ["m_right", Loc.t("tk_b_pick")], ["interact", "OK"], ["esc", Loc.t("m_quit")]], _view.y - 34.0 * ui, 2.0)
+	_exit_rect = Rect2(_view.x - 156.0 * ui, _view.y - 46.0 * ui, 138.0 * ui, 34.0 * ui)
+	var hover := not Touch.on and _exit_rect.has_point(screen.get_local_mouse_position())
+	screen.draw_rect(_exit_rect.grow(2.0 * ui), Color(1.0, 0.85, 0.25) if hover else Color(0.95, 0.38, 0.32))
+	screen.draw_rect(_exit_rect, Color(0.55, 0.14, 0.14) if hover else Color(0.32, 0.08, 0.12))
+	_text(Loc.t("m_quit"), Vector2(_exit_rect.get_center().x, _exit_rect.position.y + 8.0 * ui), 2.2, Color.WHITE, 1)
 
 func _draw_versus() -> void:
 	var ui := _view.y / 720.0

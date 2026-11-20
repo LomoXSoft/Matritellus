@@ -98,6 +98,9 @@ var pushes := 0          # shoves received while lying flipped (three put it bac
 var speed_boost := 1.0   # top speed and pull, times this (the police chasing you out of town: limite.gd)
 var flip_told := false
 var last_impact := 0.0   # set when the speed changed violently this physics tick; game.gd reads and clears it
+var _ramp_cool := 0.0    # short cooldown after launching off a ramp/stair structure
+static var _slip_mat: PhysicsMaterial
+const RESPRAY := [0x6fb7e6, 0xe6c229, 0xf4f4f0, 0xd42027, 0x3b5fa8, 0xef7f1a, 0x7d3fc4, 0x2f8a3a, 0xef8fa9, 0x1f1f24]
 
 var p: Vector2:
 	get:
@@ -258,10 +261,13 @@ func _stepped(pts: PackedVector3Array, foot: float, ceiling: float) -> Array:
 		secs[at] = [a[0], b[1], maxf(a[2], b[2]), maxf(a[3], b[3])]
 		secs.remove_at(at + 1)
 	var shapes: Array = []
-	for sc in secs:
+	for i in range(secs.size()):
+		var sc: Array = secs[i]
+		var end_lift := 0.1 if (i == 0 or i == secs.size() - 1) and secs.size() > 1 else 0.0
+		var f_y := foot + end_lift
 		var bx := BoxShape3D.new()
-		bx.size = Vector3(2.0 * float(sc[3]), maxf(0.3, float(sc[2]) - foot), float(sc[1]) - float(sc[0]))
-		shapes.append([bx, Vector3(0.0, foot + bx.size.y / 2.0, (float(sc[0]) + float(sc[1])) / 2.0)])
+		bx.size = Vector3(2.0 * float(sc[3]), maxf(0.28, float(sc[2]) - f_y), float(sc[1]) - float(sc[0]))
+		shapes.append([bx, Vector3(0.0, f_y + bx.size.y / 2.0, (float(sc[0]) + float(sc[1])) / 2.0)])
 	var out := [shapes, secs]
 	_steps[kind] = out
 	return out
@@ -296,6 +302,11 @@ func setup(kind_: String, hex: int, pos: Vector2, heading: float) -> void:
 	center_of_mass = Vector3(0, 0.25, 0)          # low, so it corners flat instead of rolling over
 	angular_damp = 0.6
 	continuous_cd = true
+	if _slip_mat == null:
+		_slip_mat = PhysicsMaterial.new()
+		_slip_mat.friction = 0.06
+		_slip_mat.bounce = 0.04
+	physics_material_override = _slip_mat
 
 	var by := wr + 0.15 + bh / 2.0
 	var top := by + bh / 2.0 + cab
@@ -446,8 +457,12 @@ func setup(kind_: String, hex: int, pos: Vector2, heading: float) -> void:
 				_heads.append([m, m.material_override])
 			elif m.material_override == Parts.mat(0xd23b2e):
 				_tails.append([m, m.material_override])
-	place(pos, heading)
-	Parts.thin(self)                             # (its small parts are not drawn from far away)
+	if arcade:
+		position = Vector3(pos.x, 0.08, pos.y)
+		rotation = Vector3(0.0, heading, 0.0)
+	else:
+		place(pos, heading)
+		Parts.thin(self)                             # (its small parts are not drawn from far away)
 
 ## The bodywork made of boxes, as every car was before it had a model (and still is where it has none). Returns how
 ## high it stands.
@@ -828,6 +843,28 @@ func repair() -> void:
 	hp = spec["hp"]
 	smoke.emitting = false
 
+## Gives the car a fresh coat of paint (always a different colour from its current one).
+func repaint(new_hex := -1) -> int:
+	var pool: Array = []
+	var own: Array = spec.get("colors", [])
+	for col in (own if own.size() >= 2 else RESPRAY):
+		if int(col) != paint:
+			pool.append(int(col))
+	if pool.is_empty():
+		pool = RESPRAY.duplicate()
+	var chosen: int = new_hex if new_hex >= 0 else int(pool.pick_random())
+	paint = chosen
+	if model != null:
+		Modelos.repaint(kind, model, paint)
+	else:
+		var pmat: StandardMaterial3D = Parts.mat(paint)
+		for ch in inner.get_children():
+			if ch is MeshInstance3D and not (ch in lights):
+				var om = ch.material_override
+				if om != null and om != Parts.mat(0xcfe8f2) and om != Parts.mat(0xfff3a8) and om != Parts.mat(0xf4f8ff) and om != Parts.mat(0xd23b2e) and om != Parts.mat(0x26262b):
+					ch.material_override = pmat
+	return paint
+
 func broken() -> bool:
 	return hp <= 0.0
 
@@ -894,8 +931,10 @@ func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> vo
 	for w in wheels:
 		if not w.use_as_steering:
 			w.wheel_friction_slip = 1.1 if hand else 2.8     # handbrake breaks the rear loose: drifts
-	if absf(vf) > max_v:                            # e.g. just left the road at speed
-		apply_central_force(-linear_velocity.normalized() * mass * 6.0)
+	if absf(vf) > max_v and not airborne() and _ramp_cool <= 0.0:      # e.g. just left the road at speed (horizontal only, never kills a jump)
+		var flat_v := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+		if flat_v.length() > 0.1:
+			apply_central_force(-flat_v.normalized() * mass * 6.0)
 	# steering gets gentler with speed, and eases towards its target
 	var lock: float = spec["turn"] * lerpf(1.0, 0.3, clampf(absf(vf) / 28.0, 0.0, 1.0))
 	steering = move_toward(steering, steer * lock, 2.6 * dt)
@@ -904,9 +943,13 @@ func _physics_process(dt: float) -> void:
 	if (held and not arcade) or (arcade and freeze):
 		return
 	crash_cool -= dt
+	if _ramp_cool > 0.0:
+		_ramp_cool = maxf(0.0, _ramp_cool - dt)
+	if not arcade and not freeze:
+		_ramp_launch(dt)
 	var dv := (linear_velocity - _prev_v)
 	dv.y = 0.0
-	if dv.length() > 3.0:
+	if dv.length() > 3.0 and _ramp_cool <= 0.0:
 		last_impact = maxf(last_impact, dv.length())
 	_prev_v = linear_velocity
 	if cough != null:
@@ -989,6 +1032,54 @@ func _keep_upright(dt: float) -> void:
 		var v := linear_velocity.length()
 		var top: float = spec["max"]
 		apply_central_force(-b.y * mass * 9.8 * DOWNFORCE * clampf(v / top, 0.0, 1.3) ** 2)
+
+## Driving fast onto any ramp-like structure (Plaza ramps/stairs, Ermita steps, bridge flights...) launches the car
+## cleanly into the air instead of snagging its front bumper and stopping dead.
+func _ramp_launch(_dt: float) -> void:
+	var flat_v := Vector2(linear_velocity.x, linear_velocity.z)
+	var spd := flat_v.length()
+	if spd < 6.0:
+		return
+	var dir := flat_v / spd
+	var nose := p + Vector2(sin(h), cos(h)) * (float(spec["len"]) * 0.42)
+	var car_y := global_position.y
+	for d in MapData.decks:
+		if not d.has("ramp"):
+			continue
+		var o: Vector2 = d["o"]
+		var ax: Vector2 = d["ax"]
+		if dir.dot(ax) < 0.35:
+			continue
+		var half: float = float(d["half"])
+		var wide: float = float(d["wide"])
+		var hit := false
+		var along_best := -1e9
+		for probe in [nose, p]:
+			var rel: Vector2 = probe - o
+			var a := rel.dot(ax)
+			var w := absf(rel.dot(Vector2(-ax.y, ax.x)))
+			if a >= -half - 0.6 and a <= half + 0.4 and w <= wide + 0.35:
+				hit = true
+				along_best = maxf(along_best, a)
+		if not hit:
+			continue
+		var low: float = float(d["low"])
+		var top: float = float(d["top"])
+		if top - low < 0.25 or car_y < low - 0.6 or car_y > top + 1.4:
+			continue
+		var slope: float = clampf((top - low) / maxf(float(d["ramp"]), 0.6), 0.26, 0.72)
+		var want_vy: float = clampf(spd * slope * 1.18, 3.0, 11.5)
+		if linear_velocity.y < want_vy:
+			linear_velocity.y = maxf(linear_velocity.y, want_vy)
+		# Keep forward speed brisk over the lip so it flies over the crest instead of scrubbing speed on impact
+		if along_best > -half * 0.2 and _ramp_cool <= 0.0:
+			var boost := Vector3(dir.x, 0.0, dir.y) * maxf(0.0, 2.5)
+			linear_velocity += boost
+			var right := global_transform.basis.x
+			angular_velocity += right * clampf(-slope * 2.4, -1.6, -0.5)
+		_ramp_cool = 0.55
+		last_impact = 0.0
+		return
 
 ## lying on its roof or side for a moment (not just mid-jump)
 func flipped() -> bool:

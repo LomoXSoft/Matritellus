@@ -536,6 +536,7 @@ static func make_from(table: Dictionary, kind: String, spec: Dictionary, paint: 
 		seat_y = over - 2.02 * 0.46 - 0.25 * (rs - 0.46)
 	root.set_meta("rider", rs)
 	root.set_meta("seat", Vector3(side, seat_y, size.z * float(at[1]) + 0.1 * rs))
+	root.set_meta("table", "sk" if table == SK else "closer")
 	if table == SK:             # (these come with their own crane and lights)
 		match kind:
 			"tricornio":    # its own blue bar, in two halves that can flash by turns
@@ -579,6 +580,56 @@ static func make_from(table: Dictionary, kind: String, spec: Dictionary, paint: 
 			root.add_child(Parts.part("box", 0xf4f4f0, Vector3(0, size.y * 0.43, -size.z * 0.05), Vector3(size.x + 0.03, size.y * 0.2, size.z * 0.4)))
 			_extras(root, "tricornio", size)
 	return root
+
+## Repaints a built car model in place with a new colour (garages).
+static func repaint(kind: String, root: Node3D, paint: int) -> void:
+	if root == null:
+		return
+	var table: Dictionary = SK if String(root.get_meta("table", "sk")) == "sk" else CLOSER
+	if not table.has(kind):
+		return
+	var m: Dictionary = table[kind]
+	for c in root.get_children():
+		if not (c is MeshInstance3D):
+			continue
+		var mi := c as MeshInstance3D
+		if mi.mesh == null or String(mi.name).begins_with("wheel") or String(mi.name).begins_with("luz"):
+			continue
+		for s in range(mi.mesh.get_surface_count()):
+			var mat = mi.mesh.surface_get_material(s)
+			if not (mat is StandardMaterial3D):
+				continue
+			var sm: StandardMaterial3D = mat
+			var nm := String(sm.resource_name)
+			var done := false
+			for mname in m.get("mats", {}):
+				if nm.begins_with(mname) and int(m["mats"][mname]) == OWN:
+					var key := "%s|%s|%x" % [m["glb"], nm, paint]
+					if not _mats.has(key):
+						var pm: StandardMaterial3D = sm.duplicate()
+						pm.albedo_color = _hex(paint)
+						pm.cull_mode = BaseMaterial3D.CULL_DISABLED
+						_mats[key] = pm
+					mi.set_surface_override_material(s, _mats[key])
+					done = true
+			if done or sm.albedo_texture == null or not m.has("hue"):
+				continue
+			var hk := "%s|%s|hue|%x" % [m["glb"], nm, paint]
+			if not _mats.has(hk):
+				if _hue_shader == null:
+					_hue_shader = Shader.new()
+					_hue_shader.code = HUE_SHADER
+				var hm := ShaderMaterial.new()
+				hm.shader = _hue_shader
+				hm.set_shader_parameter("tex", sm.albedo_texture)
+				var hue: Array = m["hue"]
+				for k in range(mini(2, hue.size())):
+					hm.set_shader_parameter("from%d" % k, _hex(hue[k][0]))
+					hm.set_shader_parameter("to%d" % k, _hex(paint if hue[k][1] == OWN else hue[k][1]))
+				hm.set_shader_parameter("two", 1.0 if hue.size() > 1 else 0.0)
+				hm.set_shader_parameter("pale", 1.0 if m.get("pale", false) else 0.0)
+				_mats[hk] = hm
+			mi.set_surface_override_material(s, _mats[hk])
 
 ## Every point of a car's bodywork (not its wheels), where the car has it: for finding its nose, its roof, its lamps.
 ## (Worked out once for each kind of car: ask before anything is moved out of `root`.)

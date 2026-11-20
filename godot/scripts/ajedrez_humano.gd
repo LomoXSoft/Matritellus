@@ -250,7 +250,8 @@ func _dream_board() -> void:
 		if s & 0x88 or start.board[s] == 0:
 			continue
 		var pc: int = start.board[s]
-		var f := _figure(pc & 7, pc & Motor.BLACK, s, false, false)
+		var side_c: int = pc & Motor.BLACK
+		var f := _figure(pc & 7, side_c, s, false, side_c != 0)
 		f["node"].scale = Vector3.ONE * 0.001
 		f["node"].visible = false
 		_dream.append(f)
@@ -479,7 +480,7 @@ func _dog(c: int, mono: bool) -> Node3D:
 			first = false
 		_dog_k = DOG_LONG / maxf(0.01, maxf(box.size.x, box.size.z))
 	body.scale = Vector3.ONE * _dog_k
-	body.rotation.y = PI                          # (the model looks down its -z: turned, it looks where the piece is going, like everybody else)
+	# (perro.glb already faces +z, the same as Chara: no 180-degree flip needed)
 	if mono:
 		for mi: MeshInstance3D in meshes:
 			for k in range(mi.mesh.get_surface_count()):
@@ -609,7 +610,9 @@ func start(lv: int, side: int, b: int, fen := "") -> void:
 	for s in range(120):
 		if s & 0x88 or eng.board[s] == 0:
 			continue
-		figs[s] = _figure(eng.board[s] & 7, eng.board[s] & Motor.BLACK, s)
+		var pc: int = eng.board[s]
+		var side_c: int = pc & Motor.BLACK
+		figs[s] = _figure(pc & 7, side_c, s, true, side_c != mine)
 	_make_panel()
 	_set_view(0, true)
 	_comment("aj_c_hello_%d" % level)
@@ -853,7 +856,7 @@ func _crowned(s: int, kind: int, c: int) -> void:
 	var old = figs.get(s)
 	if old != null and is_instance_valid(old["node"]):
 		old["node"].queue_free()
-	var f := _figure(kind, c, s)
+	var f := _figure(kind, c, s, true, c != mine)
 	f["node"].scale = Vector3.ONE * 0.2
 	create_tween().tween_property(f["node"], "scale", Vector3.ONE, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	figs[s] = f

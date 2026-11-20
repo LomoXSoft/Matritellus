@@ -32,7 +32,7 @@ func _draw() -> void:
 		# The pause button occupies the top-right corner in viewport (touch) coordinates.
 		lap_x = minf(lap_x, (size.x - _offset().x - 100.0) / _fit() - 193.0)
 	panel(Rect2(lap_x,22,193,85),TEAL)
-	label(lap_x+17,51,Loc.t("r9_lap")+"   %d/2" % mini(2,1+floori(float(race.you.gates)/8)),22)
+	label(lap_x+17,51,Loc.t("r9_lap")+"   %d/%d" % [mini(race.LAPS,1+floori(float(race.you.gates)/8)),race.LAPS],22)
 	label(lap_x+17,88,"%02d:%05.2f" % [int(race.clock)/60,fmod(race.clock,60.0)],24)
 	label(39,132,"%d pts" % race.points,19,PAPER)
 	var base_y := 145.0 if Touch.on else 620.0

@@ -53,6 +53,8 @@ const BoxingS = preload("res://scripts/boxing.gd")
 const VipShopS = preload("res://scripts/vipshop.gd")
 const CasaS = preload("res://scripts/casa_dentro.gd")
 const CaballeteS = preload("res://scripts/caballete.gd")
+const PickupsS = preload("res://scripts/pickups.gd")
+const InventarioS = preload("res://scripts/inventario.gd")
 
 ## A whole day lasts 48 minutes of play: two minutes an hour. The day of the week moves on at midnight.
 const DAY_SECONDS := 48.0 * 60.0
@@ -293,6 +295,8 @@ var tirones = null              # the hitch log: tirones.gd
 var limite                      # the edge of the map: limite.gd
 var llamadas                    # the switchboard: who rings you, and when they try again (llamadas.gd)
 var marcas                      # who has a mission for you: photo on the map, green arrow over the head (marcas.gd)
+var pickups                     # 3D floating spinning glowing item pickups (pickups.gd)
+var inventario                  # Animal Crossing-style pocket inventory (inventario.gd)
 var entradas                    # the green arrows into the small shops, and back out (entradas.gd)
 var recress                     # "Un torneo en los Galaxy Recress", the Civismo line's second mission (recress.gd)
 var rally
@@ -618,6 +622,9 @@ func _boot_rest() -> void:
 	set_time(9.0)
 	menu = MenuS.new()
 	hud.root.add_child(menu)
+	inventario = InventarioS.new()
+	hud.root.add_child(inventario)
+	inventario.setup(self)
 	Controls.device_changed.connect(_on_device)
 	hud.creator_pick.connect(func(what: String):
 		if phase == "creator":
@@ -1012,6 +1019,23 @@ func driver_look() -> Dictionary:
 	var o := _neighbour_look(NEIGHBOUR_VOICES[kind])
 	o["voice_i"] = kind
 	return o
+
+## Uniformed driver for police / Guardia Civil patrol cars (Pitufo: blue uniform + blue cap; Tricornio: clone of Ramírez).
+func officer_look(kind: String) -> Dictionary:
+	if kind == "tricornio":
+		var base: Dictionary = named["ramirez"].look_data.duplicate() if named.has("ramirez") else {"face": 1, "top": 1, "build": 1.12, "shirt": 0x3f6b45, "hair": 0x2a1c14, "hat": "tricorn"}
+		base["voice_i"] = 0
+		return base
+	return {
+		"face": randi_range(0, 6),
+		"top": 1,
+		"shirt": 0x2456b8,
+		"hair": [0x2a1c14, 0x5a3a22, 0x111111, 0x7b5b38, 0xb8b8c0].pick_random(),
+		"hair_style": randi_range(0, 5),
+		"hat": "cap",
+		"hat_color": 0x2456b8,
+		"voice_i": 0,
+	}
 
 ## (with `look`: that very person -- the driver of a car, getting out of it)
 func spawn_neighbour(p: Vector2, still := false, look: Dictionary = {}):
@@ -1512,8 +1536,6 @@ func _setup_places_and_actors() -> void:
 	motin = MotinS.new()
 	add_child(motin)
 	motin.setup(self)
-	rondas = RondasS.new()                       # (once everybody with a name is in place, and the places they go to are built)
-	rondas.setup(self)
 	derrape = DerrapeS.new()
 	add_child(derrape)
 	derrape.setup(self)
@@ -1532,6 +1554,11 @@ func _setup_places_and_actors() -> void:
 	recress = RecressS.new()
 	add_child(recress)
 	recress.setup(self)
+	rondas = RondasS.new()                       # (after recress and all places/named NPCs are built so every leisure zone exists)
+	rondas.setup(self)
+	pickups = PickupsS.new()
+	add_child(pickups)
+	pickups.setup(self)
 	rally = RallyS.new()
 	add_child(rally)
 	rally.setup(self)
@@ -1712,6 +1739,7 @@ func _menu_page(id: String) -> Dictionary:
 			items.append({"text": Loc.t("m_settings"), "do": _open_settings.bind("main")})
 			items.append({"text": Loc.t("m_howto"), "do": _goto.bind("howto")})
 			items.append({"text": Loc.t("m_credits"), "do": _goto.bind("credits")})
+			items.append({"text": Loc.t("m_quit"), "do": _quit_app})
 			return {"title": "", "sub": Loc.t("m_place"), "crest": true, "items": items, "foot": Loc.t("m_foot")}      # (no name on its plaque: it has just faded in and out over the town, the user, 14 Nov 2026)
 		"slots":
 			for i in range(3):
@@ -1838,8 +1866,13 @@ func _menu_page(id: String) -> Dictionary:
 			items.append({"text": Loc.t("m_settings"), "do": _open_settings.bind("pause")})
 			if Settings.data.get("dev", false):
 				items.append({"text": Loc.t("m_dev"), "do": _goto.bind("dev")})
-			items.append({"text": Loc.t("m_quit"), "do": _quit_to_menu})
+			items.append({"text": Loc.t("m_quit"), "do": _goto.bind("quit_confirm")})
 			return {"title": Loc.t("m_pause"), "items": items, "back": _close_pause, "foot": Loc.t("m_foot")}
+		"quit_confirm":
+			items.append({"text": Loc.t("m_quit_game"), "do": _quit_app})
+			items.append({"text": Loc.t("m_quit_menu"), "do": _quit_to_menu})
+			items.append({"text": Loc.t("m_quit_stay"), "do": _goto.bind("pause")})
+			return {"title": Loc.t("m_quit").to_upper(), "sub": Loc.t("m_quit_confirm"), "items": items, "back": "pause", "foot": Loc.t("m_foot")}
 	return {"title": "", "items": [back]}
 
 func _menu_new() -> void:
@@ -1853,6 +1886,71 @@ func _menu_new() -> void:
 ## moves it, the right zooms it (or WASD and the wheel; on a phone the stick and a drag on the right). The photos of who
 ## has a mission for you stay the same size however close it is (the user, 15 November 2026).
 const MAP_ZOOM_MAX := 8.0
+var track_pick := "auto"        # "auto" | "none" | "giver:<id>" — mission selected from the big map
+var _raw_beacon := false
+var _map_mouse_was := Input.MOUSE_MODE_CAPTURED
+
+func _guide_target():
+	if track_pick == "none":
+		return null
+	if track_pick.begins_with("giver:"):
+		var gid := track_pick.substr(6)
+		var n = named.get(gid)
+		if n != null and is_instance_valid(n) and marcas != null and (n in marcas._list):
+			return vip.door_out if gid == "vip" and vip != null else n.p
+		track_pick = "auto"
+	return target
+
+func _map_missions() -> Array:
+	var out: Array = [{"id": "none", "label": Loc.t("map_track_none"), "p": null}]
+	if side != null:
+		var lbl := String(hud.obj_text.text) if hud != null and hud.obj_text.text != "" else String(Loc.t("map_track_active"))
+		out.append({"id": "auto", "label": lbl, "p": target})
+	elif phase == "play" and target != null:
+		var s: Dictionary = steps[si] if si >= 0 and si < steps.size() else {}
+		var lbl := String(Loc.t(s["card"])) if s.has("card") else (String(hud.obj_text.text) if hud != null and hud.obj_text.text != "" else String(Loc.t("map_track_active")))
+		out.append({"id": "auto", "label": lbl, "p": target})
+	if marcas != null:
+		for n in marcas.givers():
+			var np: Vector2 = vip.door_out if n.id == "vip" and vip != null else n.p
+			out.append({"id": "giver:" + n.id, "label": n.shown_name(), "p": np})
+	return out
+
+func select_mission(id: String) -> void:
+	if id == track_pick and id != "none":
+		track_pick = "none"
+	else:
+		track_pick = id
+	var gt = _guide_target()
+	beacon.visible = track_pick == "auto" and target != null and _raw_beacon
+	if gt == null:
+		MapData.clear_route()
+	else:
+		MapData.set_route_target(gt)
+	if hud != null:
+		hud.minimap.target = gt
+		hud.bigmap.target = gt
+		hud.bigmap.tracked_id = track_pick
+		var ms := _map_missions()
+		hud.bigmap.missions = ms
+		for i in range(ms.size()):
+			if String(ms[i]["id"]) == track_pick:
+				hud.bigmap.map_sel = i
+				break
+		hud.bigmap.queue_redraw()
+		hud.minimap.queue_redraw()
+		if track_pick == "none":
+			hud.toast(Loc.t("t_track_off"), 2.2)
+		else:
+			var picked_lbl := ""
+			for m in ms:
+				if String(m["id"]) == track_pick:
+					picked_lbl = String(m["label"])
+					break
+			if picked_lbl != "":
+				hud.toast(Loc.t("t_track_on") % picked_lbl, 2.2)
+	Sfx.beep(680.0 if track_pick != "none" else 420.0, 0.06, 1, -16.0)
+
 func _set_map(open: bool) -> void:
 	if open == map_open:
 		return
@@ -1860,12 +1958,27 @@ func _set_map(open: bool) -> void:
 	hud.bigmap.visible = open
 	_hold_world(open)
 	if open:
+		_map_mouse_was = Input.mouse_mode
+		if not Touch.on:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		var mm = hud.bigmap
 		for key in ["center", "heading", "target", "cars", "cops", "repairs", "ramps", "givers", "blink", "spray"]:
 			mm.set(key, hud.minimap.get(key))
+		mm.target = _guide_target()
+		mm.missions = _map_missions()
+		mm.tracked_id = track_pick
+		mm.map_sel = 0
+		for i in range(mm.missions.size()):
+			if String(mm.missions[i]["id"]) == track_pick:
+				mm.map_sel = i
+				break
 		mm.zoom = 1.0
 		mm.pan = Vector2.ZERO
 		mm.queue_redraw()
+	else:
+		if not paused and not Touch.on:
+			Input.mouse_mode = _map_mouse_was
+	Touch._context_tick()
 
 func _map_zoom(by: float) -> void:
 	var mm = hud.bigmap
@@ -1876,7 +1989,7 @@ func _map_zoom(by: float) -> void:
 
 func _map_nav(dt: float) -> void:
 	var mm = hud.bigmap
-	var move := Vector2(Input.get_axis("left", "right"), Input.get_axis("forward", "back"))
+	var move := Input.get_vector("left", "right", "forward", "back", 0.25)
 	var stick := Controls.look_stick()
 	var drag: Vector2 = Touch.take_look() if Touch.on else Vector2.ZERO
 	var zoom_by := -stick.y * dt * 2.2 - drag.y * 0.006
@@ -1948,6 +2061,10 @@ func _quit_to_menu() -> void:
 	_hold_world(false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().reload_current_scene()
+
+func _quit_app() -> void:
+	_hold_world(false)
+	get_tree().quit()
 
 # ---------- saving: three slots ----------
 func _slot_path(i: int) -> String:
@@ -2379,12 +2496,15 @@ func _by_car(s: Dictionary) -> bool:
 
 func set_target(p, with_beacon: bool) -> void:
 	target = p
-	beacon.visible = p != null and with_beacon
-	if p == null:
+	_raw_beacon = with_beacon
+	var gt = _guide_target()
+	beacon.visible = track_pick == "auto" and p != null and with_beacon
+	if p != null:
+		beacon.position = MapData.at(p)
+	if gt == null:
 		MapData.clear_route()
 	else:
-		beacon.position = MapData.at(p)
-		MapData.set_route_target(p)
+		MapData.set_route_target(gt)
 
 func begin_step(i: int) -> void:
 	si = i
@@ -3454,6 +3574,10 @@ func _menu_start() -> void:
 	side = {"id": "menu", "who": "josefa", "stage": "fetch", "t": 0.0}
 	hud.show_card(Loc.t("josefa_menu_title"), "")
 	Sfx.jingle([392, 523, 659, 784])
+	if pickups != null and named.has("josefa"):
+		var jp: Vector2 = named["josefa"].p
+		var dir: Vector2 = (player.p - jp).normalized() if player.p.distance_to(jp) > 0.2 else Vector2(0, 1)
+		pickups.spawn("bate", jp + dir * 1.4, {"tag": "bate"})
 	_side_show()
 
 # ---------------- the old bridge: yours for ten Puntos Cívicos ----------------
@@ -3760,8 +3884,9 @@ func honk() -> void:
 			if to.length() < 9.0 and to.normalized().dot(Vector2(sin(in_car.h), cos(in_car.h))) > 0.6:
 				n.bark(Loc.t("honked").pick_random(), 2.2)
 				break
-	if at_garage and mending == null and in_car.hp < in_car.spec["hp"]:
-		var cost := mini(money, repair_price(in_car))
+	if at_garage and mending == null and _can_garage(in_car, at_shop):
+		var cost := mini(money, _service_price(in_car))
+		_just_mended_shop = at_shop
 		at_garage = false
 		var gar = at_shop.get("garage") if at_shop != null else null
 		if gar == null:                          # at the kerb: done on the spot
@@ -3772,12 +3897,30 @@ func honk() -> void:
 		cam_fixed = gar.view()
 		Sfx.noise(0.6, -15.0)
 
+var _just_mended_shop = null
+
+func _can_garage(c, shop) -> bool:
+	if shop == null or mending != null or shop == _just_mended_shop:
+		return false
+	return c.hp < c.spec["hp"] or police.heat > 0.0 or police.chasing or shop.has("garage")
+
+func _service_price(c) -> int:
+	var p := repair_price(c)
+	return p if c.hp < c.spec["hp"] else maxi(p, 10)
+
 func _mended(c, cost: int) -> void:
+	var had_heat: bool = police.heat > 0.0 or police.chasing
 	money -= cost
 	c.repair()
+	c.repaint()
+	if had_heat:
+		police.reset()
 	_refresh_counts()
 	Sfx.jingle([523, 784], 0.1)
-	hud.toast(Loc.t("t_repair") % cost if cost > 0 else Loc.t("t_repair_free"), 3.5)
+	if had_heat:
+		hud.toast(Loc.t("t_repair_heat") % cost if cost > 0 else Loc.t("t_repair_heat_free"), 3.8)
+	else:
+		hud.toast(Loc.t("t_repair") % cost if cost > 0 else Loc.t("t_repair_free"), 3.5)
 
 ## The garages you drive into: the shutter goes up when you come, and comes down while they mend the car.
 func _garages_tick(dt: float, pp: Vector2) -> void:
@@ -3882,10 +4025,12 @@ func _drive_car(c, dt: float, thr: float, steer: float, hand: bool) -> void:
 		c.last_air = 0.0
 	# taller / gasolinera
 	var shop = props.repair_at(c, dt)
+	if shop == null:
+		_just_mended_shop = null
 	at_shop = shop
-	var could: bool = shop != null and c.hp < c.spec["hp"] and mending == null
+	var could: bool = _can_garage(c, shop)
 	if could and not at_garage:              # just pulled in: they tell you the price, and how to say yes
-		hud.toast(Loc.t("t_garage_ask") % repair_price(c), 4.5)
+		hud.toast(Loc.t("t_garage_ask") % _service_price(c), 4.5)
 		Sfx.beep(660.0, 0.07, 1, -16.0)
 	at_garage = could
 	if c.last_impact > 0.0:
@@ -3918,7 +4063,7 @@ func _drive_car(c, dt: float, thr: float, steer: float, hand: bool) -> void:
 					hud.toast(Loc.t("t_maruja_bump").pick_random(), 3.5)
 				Sfx.noise(0.15, -14.0)
 				Sfx.beep(500.0, 0.25, 2, -12.0, 500.0)
-				n.bark(Loc.speaker(Loc.t("ouch_old" if n.voice.begins_with("old") and randf() < 0.6 else "ouch").pick_random(), n.voice.ends_with("_f")), 3.5)
+				n.bark(_hit_line("car", n), 3.5)
 			else:
 				n.p = q + nv.normalized() * (c.r + 0.55)
 				if v > 1.0 and not n.is_barking():
@@ -3980,6 +4125,9 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 	if cartas != null and cartas.writing:        # writing a letter at Correa: the sheet's keys (cartas.gd)
 		cartas.input(e)
+		return
+	if inventario != null and inventario.open:   # Animal Crossing-style pocket inventory (inventario.gd)
+		inventario.input(e)
 		return
 	if _ask != null:                             # answering somebody in a talk: the bubble's keys (ask)
 		if e.is_action_pressed("m_up", true):
@@ -4079,6 +4227,42 @@ func _unhandled_input(e: InputEvent) -> void:
 	if e.is_action_pressed("map"):
 		_set_map(not map_open)
 		return
+	if e.is_action_pressed("inventory") and in_car == null and not map_open and dlg == null and not cine_lock and not motin.busy() and (phase == "play" or phase == "free"):
+		inventario.toggle()
+		return
+	if map_open:
+		var mm = hud.bigmap
+		if e.is_action_pressed("m_back"):
+			_set_map(false)
+			return
+		if e.is_action_pressed("m_up", true) and not mm.missions.is_empty():
+			mm.map_sel = posmod(mm.map_sel - 1, mm.missions.size())
+			Sfx.beep(520.0, 0.03, 1, -20.0)
+			mm.queue_redraw()
+			return
+		if e.is_action_pressed("m_down", true) and not mm.missions.is_empty():
+			mm.map_sel = posmod(mm.map_sel + 1, mm.missions.size())
+			Sfx.beep(520.0, 0.03, 1, -20.0)
+			mm.queue_redraw()
+			return
+		if (e.is_action_pressed("m_accept") or e.is_action_pressed("interact")) and mm.map_sel >= 0 and mm.map_sel < mm.missions.size():
+			select_mission(String(mm.missions[mm.map_sel]["id"]))
+			return
+		var click_at = null
+		if e is InputEventScreenTouch and e.pressed:
+			click_at = e.position
+		elif e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			click_at = e.position
+		if click_at != null:
+			var ri: int = mm.row_at(click_at)
+			if ri >= 0 and ri < mm.missions.size():
+				select_mission(String(mm.missions[ri]["id"]))
+				return
+			var gid: String = mm.giver_at(click_at)
+			if gid != "":
+				select_mission("giver:" + gid)
+				return
+		return
 	if dlg != null:
 		if accept:
 			dialog_advance()
@@ -4131,6 +4315,8 @@ func interact() -> void:
 		gacha.play(gacha.near(player.p))
 	elif entradas.exit_here() != null:           # on the green arrow by a set's door, inside: out (entradas.gd)
 		entradas.leave()
+	elif entradas.enter_here() != null:          # on the green arrow by a set's door, outside: in (entradas.gd)
+		entradas.enter()
 	elif _can_dress():                           # at home, in front of the wardrobe
 		_open_armario()
 	elif ajedrez.on_board(player.p):             # (ajedrez) on one of the square's chessboards: a game
@@ -4259,6 +4445,17 @@ func _bat_swing() -> void:
 	Sfx.noise(0.2, -17.0)                        # (the whoosh)
 	get_tree().create_timer(BAT_LANDS).timeout.connect(_bat_lands)
 
+func _hit_line(kind: String, n) -> String:
+	var key := "hit_both"
+	if kind == "car":
+		if n.voice.begins_with("old") and randf() < 0.45:
+			key = "ouch_old"
+		else:
+			key = "hit_car" if randf() < 0.55 else "hit_both"
+	elif kind == "bat":
+		key = "hit_bat" if randf() < 0.55 else "hit_both"
+	return Loc.speaker(Loc.t(key).pick_random(), n.voice.ends_with("_f"))
+
 func _bat_lands() -> void:
 	if in_car != null or not (phase == "play" or phase == "free"):
 		return
@@ -4282,7 +4479,7 @@ func _bat_lands() -> void:
 		folk.hurt(n.id, day_n)
 		if not n.still:
 			n.home = n.p
-		n.bark(Loc.t("batted").pick_random(), 2.2)
+		n.bark(_hit_line("bat", n), 2.2)
 		police.add_heat(12.0)
 		floored += 1
 	if floored > 0:
@@ -4491,7 +4688,7 @@ func _physics_process(delta: float) -> void:
 		cam.look_at(cam_look)
 		cam_yaw = atan2(bd.x, bd.y)
 		return
-	var frozen: bool = dlg != null or _ask != null or (cartas != null and cartas.writing) or (padron != null and padron.active) or phase == "failed" or phase == "ending" or phase == "end" or menu.visible or comida.blackout or cine_lock
+	var frozen: bool = dlg != null or _ask != null or (cartas != null and cartas.writing) or (padron != null and padron.active) or (inventario != null and inventario.open) or phase == "failed" or phase == "ending" or phase == "end" or menu.visible or comida.blackout or cine_lock
 	_mark("start of the tick")
 	comida.tick(dt)
 	if phase == "play" or phase == "free" or phase == "talking":
@@ -4562,8 +4759,9 @@ func _physics_process(delta: float) -> void:
 		_look_idle += dt
 	else:
 		cam_yaw += cl * 2.2 * dt
+		var move_in := Vector2.ZERO if frozen else Input.get_vector("left", "right", "back", "forward", 0.25)
 		var f := Vector2(sin(cam_yaw), cos(cam_yaw))
-		var mv := f * iy + Vector2(-f.y, f.x) * ix      # (-f.y, f.x) is screen-right
+		var mv := f * move_in.y + Vector2(-f.y, f.x) * move_in.x      # (-f.y, f.x) is screen-right
 		var moving := mv.length() > 0.0
 		if moving:
 			if Controls.pad:                     # on a pad the stick says how fast: a little is a stroll, all the way is a run (no button)
@@ -4620,7 +4818,7 @@ func _physics_process(delta: float) -> void:
 	_update_npcs(dt, pp)
 	_mark("neighbours")
 	if (phase == "play" or phase == "talking" or phase == "free") and not indoors:
-		var stopped: bool = frozen and not (cine_lock and dlg == null and not menu.visible)      # (in a scene the town goes on)
+		var stopped: bool = recress.cine or mending != null or (frozen and not (cine_lock and dlg == null and not menu.visible))      # (in a scene the town goes on, except the Recress street scenes and inside a garage)
 		police.tick(dt, pp, in_car.vel if in_car != null else Vector2.ZERO, in_car, stopped, iy != 0.0)
 		traffic.tick(dt, pp, stopped)
 		_mark("traffic")
@@ -4636,6 +4834,8 @@ func _physics_process(delta: float) -> void:
 	if cartas != null:
 		cartas.tick(dt)                          # (letters: the clerks' shifts, and the calls of the ones that have arrived)
 	marcas.tick(dt, pp)
+	if pickups != null:
+		pickups.tick(dt, pp)
 	recress.tick(dt, pp)
 	sabotaje.tick(dt, pp)
 	motin.tick(dt, pp)
@@ -4685,16 +4885,21 @@ func _physics_process(delta: float) -> void:
 	_weather_tick(dt)
 	_mark("weather")
 	# --- GPS + guide arrow ---
+	var guide = _guide_target()
 	_route_t -= dt
 	if _route_t <= 0.0:
 		_route_t = 0.5
-		MapData.update_route(map_p)
-	arrow.visible = target != null and (phase == "play" or side != null) and not indoors and dlg == null and not cine_lock      # (not while somebody is talking, nor in a scene)
-	if target != null:
+		if guide != null:
+			MapData.set_route_target(guide)
+			MapData.update_route(map_p)
+		else:
+			MapData.clear_route()
+	arrow.visible = guide != null and (phase == "play" or side != null or track_pick.begins_with("giver:")) and not indoors and dlg == null and not cine_lock      # (not while somebody is talking, nor in a scene, nor when deselected on map)
+	if guide != null:
 		# Straight at the place itself, walls or no walls: the minimap already shows the streets (the user, 15 November
 		# 2026; it used to point down the next street of the route, nose up to the sky)
-		var aim: Vector2 = target
-		var left: float = (target as Vector2).distance_to(pp)
+		var aim: Vector2 = guide
+		var left: float = (guide as Vector2).distance_to(pp)
 		var close: float = clampf(1.0 - (left - 8.0) / 30.0, 0.0, 1.0)       # 0 a street away .. 1 on top of it
 		var beat: float = 4.2 + close * 5.0                                  # it gets excited as you arrive
 		_arrow_beat += dt * beat                 # (sin(time * beat) jumped about whenever `beat` changed, that is, whenever you moved)
@@ -4725,9 +4930,10 @@ func _physics_process(delta: float) -> void:
 			if mending != null:
 				pr = Loc.t("p_mending")
 			elif at_garage:
-				pr = Loc.t("p_repair") % repair_price(in_car) if money >= repair_price(in_car) else Loc.t("p_repair_tab") % [repair_price(in_car), money]
-			elif in_car.hp < in_car.spec["hp"]:
-				for gar in garages:              # at the door with a dented car: they do not work in the street
+				var sp := _service_price(in_car)
+				pr = Loc.t("p_repair") % sp if money >= sp else Loc.t("p_repair_tab") % [sp, money]
+			elif in_car.hp < in_car.spec["hp"] or police.heat > 0.0 or police.chasing:
+				for gar in garages:              # at the door with a dented or wanted car: they do not work in the street
 					if pp.distance_to(gar.mouth) < 16.0 and not gar.holds(pp, 0.0):
 						pr = Loc.t("p_garage_in")
 		elif recress.shop_near(pp) != null:
@@ -4742,6 +4948,8 @@ func _physics_process(delta: float) -> void:
 			pr = gacha.prompt()
 		elif entradas.exit_here() != null:
 			pr = Loc.t("p_salir")
+		elif entradas.enter_here() != null:
+			pr = Loc.t("p_entrar")
 		elif _can_dress():
 			pr = Loc.t("p_armario")
 		elif ajedrez.on_board(pp):               # (ajedrez) on the square's chessboard: a game
@@ -4758,7 +4966,7 @@ func _physics_process(delta: float) -> void:
 		elif _can_nap():
 			pr = Loc.t("p_nap")
 	var about = null                             # who or what the prompt is about: a neighbour, a car... or nobody but you
-	if not frozen and in_car == null and gacha.near(pp) == null and not ajedrez.on_board(pp):     # (at a gumball machine the prompt is about the machine; on the chessboard, about the board)
+	if not frozen and in_car == null and gacha.near(pp) == null and not ajedrez.on_board(pp) and entradas.enter_here() == null and entradas.exit_here() == null:     # (at a door or gumball machine or chessboard, prompt is about that)
 		if near_npc != null:
 			about = near_npc
 		elif near_car != null:
@@ -4813,7 +5021,7 @@ func _physics_process(delta: float) -> void:
 		mm.center = map_p
 		mm.heading = ph
 		mm.spin = cam_yaw
-		mm.target = target
+		mm.target = guide
 		mm.cars = cars.map(func(c): return c.p)
 		mm.cops = police.cops.map(func(e): return e["car"].p)
 		mm.repairs = props.repairs.map(func(e): return e["p"])

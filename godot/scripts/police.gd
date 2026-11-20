@@ -72,11 +72,7 @@ func _spawn(pp: Vector2, kind := "pitufo", ace := false) -> void:
 			to = q - spot
 			break
 	c.setup(kind, 0x2456b8, spot, atan2(to.x, to.y))
-	var officer: Dictionary = game.driver_look()            # in uniform: the Pitufos' blue cap, the Tricornios' tricorn
-	officer["shirt"] = 0x1f6b3a if kind == "tricornio" else 0x2456b8
-	officer["hat"] = "tricorn" if kind == "tricornio" else "cap"
-	officer["hat_color"] = 0x2456b8
-	c.seat(officer)
+	c.seat(game.officer_look(kind))
 	cops.append({"car": c, "path": PackedVector2Array(), "repath": randf() * 0.5, "stuck": 0.0, "reverse": 0.0, "last_seen": pp, "sees": false, "best": 1e9, "idle": 0.0, "ace": ace, "n": cops.size()})
 
 ## A patrol car on its beat has caught you at it (the turbo): that very car gives chase, and calls a mate.

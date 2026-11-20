@@ -63,7 +63,7 @@ func prewarm() -> void:
 		var c = CarS.new()
 		game.add_child(c)
 		c.setup(kind, 0, Vector2(0, -5000), 0.0)
-		c.seat(game.driver_look())
+		c.seat(game.officer_look(kind) if (kind == "pitufo" or kind == "tricornio") else game.driver_look())
 		c.visible = false
 		c.set_speed(Vector2.ZERO)
 		c.place(Vector2(-6000.0 - (_pool.size() + _warm.size()) * 12.0, -6100.0), 0.0)
@@ -246,7 +246,7 @@ func add(kind: String, hex: int, a: int, b: int) -> Dictionary:
 		c = CarS.new()
 		game.add_child(c)
 		c.setup(kind, hex, MapData.nodes[a] + Vector2(-u.y, u.x) * 1.0, atan2(u.x, u.y))
-		c.seat(game.driver_look())
+		c.seat(game.officer_look(kind) if (kind == "pitufo" or kind == "tricornio") else game.driver_look())
 	var e := {"car": c, "a": a, "b": b, "wait": 0.0, "honk": 0.0, "lat": 1.0, "stuck": 0.0, "rev": 0.0, "rs": 1.0, "tries": 0}
 	list.append(e)
 	return e

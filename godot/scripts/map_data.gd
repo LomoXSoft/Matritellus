@@ -423,6 +423,8 @@ func _nearest_node(p: Vector2, need_reach: bool) -> int:
 	return best
 
 func set_route_target(p: Vector2) -> void:
+	if route_active and route_target.distance_squared_to(p) < 0.01:
+		return
 	route_target = p
 	route_active = true
 	_dist.fill(INF)

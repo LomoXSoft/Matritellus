@@ -29,6 +29,7 @@ var _marks := {}                        # [place, "out"|"in"] key -> Node3D (the
 var _armed := {}                        # the same key -> true once you have stepped off it
 var _spin := 0.0
 var _was_in := false                    # were you indoors last time
+var _enter = null                       # the place whose way in you are standing on (game.gd: "Entrar" on the button)
 var _exit = null                        # the place whose way out you are standing on (game.gd: "Salir" on the button)
 var _mat: StandardMaterial3D
 var _ink: StandardMaterial3D
@@ -154,7 +155,7 @@ func tick(dt: float) -> void:
 	# in a scene, a conversation, a menu, a game at a machine: no arrows (they would only be in the picture: the user)
 	var scene: bool = G.cine_lock or G.dlg != null or G.menu.visible or not (G.phase == "play" or G.phase == "free") \
 		or (G.get("recress") != null and bool(G.recress.get("cine")))
-	var go = null
+	_enter = null
 	_exit = null
 	for place in shops():
 		for inside in [false, true]:
@@ -173,22 +174,23 @@ func tick(dt: float) -> void:
 			arrow.position.y = (0.9 if inside else 1.15) + sin(_spin * 3.0) * 0.12
 			arrow.rotation.y = _spin * 2.2
 			(m.get_node("ring") as Node3D).scale = Vector3.ONE * (1.0 + 0.08 * sin(_spin * 4.0)) * Vector3(1.0, 0.08, 1.0)
-			if inside:                                   # the way out: stand on it and press the action button (not by mistake: the user)
+			if inside:                                   # the way out: stand on it and press the action button
 				if on_foot and not scene and pp.distance_to(at) < STEP * 1.2:
 					_exit = place
-				continue
-			var d: float = pp.distance_to(at)
-			if d > AWAY:
-				_armed[key] = true
-			elif G._door_cool > 0.0 or crossed:
-				_armed[key] = false                     # (just come through a door, by whatever way, and standing on it: not straight back)
-			if on_foot and G._door_cool <= 0.0 and _armed.get(key, true) and d < STEP and go == null:
-				go = [place, inside]
-				_armed[key] = false
-	if go != null:
-		var other: Array = [go[0], not go[1]]
-		_armed[other] = false                       # (where you come out, you are standing on the other one: not straight back)
-		G._use_door(not go[1], go[0])
+			else:                                        # the way in: stand on it and press the action button (same as going out)
+				if on_foot and not scene and pp.distance_to(at) < STEP * 1.35:
+					_enter = place
+
+## standing on the way in to a set (its arrow outside): the place, for the button's "Entrar"; null if not
+func enter_here():
+	return _enter if _enter != null and not G.indoors and G._door_cool <= 0.0 else null
+
+## the action button pressed on it: in you go
+func enter() -> void:
+	var place = enter_here()
+	if place == null:
+		return
+	G._use_door(true, place)
 
 ## standing on the way out of a set (its arrow inside): the place, for the button's "Salir"; null if not
 func exit_here():
@@ -199,7 +201,6 @@ func leave() -> void:
 	var place = exit_here()
 	if place == null:
 		return
-	_armed[[place, false]] = false                  # (you come out standing by the way in: not straight back)
 	G._use_door(false, place)
 
 ## what the self-test wants to know

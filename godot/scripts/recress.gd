@@ -52,6 +52,8 @@ var _star_t := 0.0
 var _music := ""                 # (game.gd _update_audio plays this instead, while it is set)
 var _music_db := -14.0
 var _remind_t := 0.0
+var _poster_t := 0.0
+var _poster_shop_id := ""
 
 func setup(game) -> void:
 	G = game
@@ -290,10 +292,18 @@ func talk(n) -> bool:
 			if stage() == "carteles":
 				G.say(n.shown_name(), Loc.t("copista_rec_again"), n.voice)
 				return true
-		"katakumba":                             # at full trust he tells you his real name (the user's joke, 13 November 2026)
+		"katakumba":                             # at full trust he tells you his real name (the user's joke, 13 November 2026); in the hall, ask to play him
 			if G.folk.golden("katakumba") and not G.stats.has("nachin"):
 				G.stats["nachin"] = true
 				G.say(n.shown_name(), Loc.t("katakumba_nachin"), n.voice)
+				return true
+			if done() and G.indoors and G.inside_of == sala:
+				var prev_phase: String = G.phase
+				G.ask(n, n.shown_name(), Loc.t("kata_ask").pick_random(), [
+					[Loc.t("kata_opt_play"), func(): G.phase = prev_phase; play_katakumba()],
+					[Loc.t("kata_opt_chat"), func(): G.phase = prev_phase; G.talk_to(n, true)],
+					[Loc.t("kata_opt_bye"), func(): G.phase = prev_phase],
+				])
 				return true
 	return false
 
@@ -415,6 +425,9 @@ func _pay(n) -> void:
 func _got_posters() -> void:
 	st["carteles"] = POSTERS
 	_to("carteles")
+	if G.pickups != null:
+		var at: Vector2 = G.player.p + Vector2(sin(G.player.h), cos(G.player.h)) * 1.5
+		G.pickups.spawn("carteles", at, {"tag": "carteles"})
 	G.hud.toast(Loc.t("t_rec_posters"), 3.0)
 	Sfx.jingle([659, 784], 0.1)
 	show()
@@ -434,6 +447,7 @@ func show() -> void:
 		"carteles":
 			G.hud.set_objective(G._tag(), Loc.t("obj_rec_posters") % [st["posters"].size(), POSTERS])
 			var s = _nearest_free_shop(G.player.p)
+			_poster_shop_id = String(s["id"]) if s != null else ""
 			G.set_target(s["stand"] if s != null else null, s != null)
 		"llamada":
 			G.hud.set_objective(G._tag(), Loc.t("obj_rec_wait"))
@@ -464,7 +478,13 @@ func tick(dt: float, pp: Vector2) -> void:
 		G.llamadas.ring({"npc": "alberto", "lines": "alberto_rec_packed", "plain": true, "after": _tournament,
 			"valid": func(): return stage() == "llamada"})
 	if active() and stage() == "carteles":
-		show()
+		_poster_t -= dt
+		if _poster_t <= 0.0:
+			_poster_t = 0.35
+			var s = _nearest_free_shop(pp)
+			var sid: String = String(s["id"]) if s != null else ""
+			if sid != _poster_shop_id:
+				show()
 	# put off until you have the money: the mayor is waiting, and the objective says so (when nothing else is on)
 	_remind_t -= dt
 	if _remind_t <= 0.0:
@@ -489,6 +509,7 @@ func _begin_scene() -> void:
 func _end_scene() -> void:
 	_walkers.clear()                             # (nobody goes on walking where a scene sent them)
 	_clear_front(false)
+	G.player.visible = true
 	cine = false
 	G.cine_lock = false
 	G.cam_fixed = null
@@ -496,26 +517,46 @@ func _end_scene() -> void:
 	G.hud.cine(false)
 	_pan = null
 
-## The cars parked in front of the Recress are not drawn while a scene is on in its street: one left at the door stood
-## in the middle of the crowd, and of the picture. They are there again as soon as the scenes leave the street. Only
-## cars standing still, and none the traffic is driving.
+## The cars in front of the Recress (parked and traffic alike) are not drawn while a scene is on in its street: one left
+## at the door or rolling down the street stood in the middle of the crowd, or clipped through the mayor and his wife.
+## They are there again as soon as the scenes leave the street.
 var _cars_hid: Array = []
+var _npcs_hid: Array = []
 
 func _clear_front(on: bool) -> void:
 	for c in _cars_hid:
 		if is_instance_valid(c):
 			c.visible = true
 	_cars_hid.clear()
+	for n in _npcs_hid:
+		if is_instance_valid(n):
+			n.visible = true
+	_npcs_hid.clear()
 	if not on:
 		return
-	var driven: Array = G.traffic.list.map(func(e): return e.get("car"))
-	for c in G.cars:
-		if not is_instance_valid(c) or not c.visible or c == G.in_car or c in driven or (c.vel as Vector2).length() > 0.5:
+	var pool: Array = G.cars.duplicate()
+	for e in G.traffic.list:
+		var tc = e.get("car")
+		if tc != null and not (tc in pool):
+			pool.append(tc)
+	for e in G.police.cops:
+		var pc = e.get("car")
+		if pc != null and not (pc in pool):
+			pool.append(pc)
+	for c in pool:
+		if not is_instance_valid(c) or not c.visible or c == G.in_car:
 			continue
 		var d: Vector2 = (c.p as Vector2) - sala.shutter(0.0)
-		if absf(d.dot(sala.u) - 1.0) < 11.0 and d.dot(sala.out) > -1.0 and d.dot(sala.out) < 9.0:
+		if absf(d.dot(sala.u) + 8.0) < 42.0 and d.dot(sala.out) > -2.0 and d.dot(sala.out) < 16.0:
 			c.visible = false
 			_cars_hid.append(c)
+	for n in G.npcs:
+		if not is_instance_valid(n) or not n.visible or n.id in ["alcalde", "alcaldesa", "alberto", "katakumba"]:
+			continue
+		var d: Vector2 = (n.p as Vector2) - sala.shutter(0.0)
+		if absf(d.dot(sala.u) + 8.0) < 42.0 and d.dot(sala.out) > -2.0 and d.dot(sala.out) < 16.0:
+			n.visible = false
+			_npcs_hid.append(n)
 
 ## a camera place over the shoulder of one, onto the other: [from, at]
 func _two_shot(a, b, flip := false) -> Array:
@@ -1065,7 +1106,8 @@ func _night() -> void:
 	_inside_people["alcaldesa"] = wife
 	_place(mayor, door, sala.shutter(5.0))
 	_place(wife, her, door)
-	G.player.p = sala.shutter(1.0) - sala.u * 30.0          # (you are still inside: out of the picture)
+	G.player.p = sala.in_spawn                              # (you are still inside: hidden, out of the picture)
+	G.player.visible = false
 	G.player.sync()
 	var two := [MapData.at(sala.shutter(6.4) + sala.u * 2.4, 2.1), MapData.at(sala.shutter(1.8) + sala.u * 1.8, 1.3)]
 	var h_him := atan2((her - stop).x, (her - stop).y)
@@ -1185,13 +1227,13 @@ func _open_hall() -> void:
 			G.npcs.erase(n)
 			n.queue_free()
 	_regulars.clear()
+	var kata_at: Vector2 = sala.stage_other + Vector2(0.8, -0.4)
 	if not G.named.has("katakumba"):
-		G._make_npc("katakumba", LOOKS["katakumba"].duplicate(), "adult_m", sala.cabinets[0][0])
+		G._make_npc("katakumba", LOOKS["katakumba"].duplicate(), "adult_m", kata_at)
 	var kata = G.named["katakumba"]
 	kata.state = "busy"
 	kata.still = true
-	_place(kata, sala.cabinets[0][0], sala.cabinets[0][0] - Vector2(sin(float(sala.cabinets[0][1])), cos(float(sala.cabinets[0][1]))))
-	kata.h = float(sala.cabinets[0][1])
+	_place(kata, kata_at, sala.duel_him)
 	kata.sync()
 	for i in [3, 4, 6]:
 		var c: Array = sala.cabinets[i]
@@ -1203,21 +1245,20 @@ func _open_hall() -> void:
 		n.sync()
 		_regulars.append(n)
 
-## The Recress open: a game of Tokken 9 at any machine. At the big one of the final, against Katakumba69 himself (he
-## plays Dracula, and he is good; a game with him is a game with a neighbour: folk.played). At the others, against
-## the machine, which gets harder the more games you win in a row.
+## The Recress open: a game of Tokken 9 at any machine is against the machine (harder the more games you win in a row).
+## To play against Katakumba69 himself (Dracula; counts with him: folk.played), talk to him in the hall.
 const LADDER := ["facil", "normal", "normal", "dificil", "dificil", "katakumba"]
 
-func free_play(p: Vector2) -> void:
-	if p.distance_to(sala.seat_you) < 1.4 and G.named.has("katakumba"):
-		G.tokken.start({"foe": "dracula", "foe_tag": "Katakumba69", "ai": "katakumba"}, func(won: bool):
-			G.folk.played("katakumba")
-			G.stats["tokken_kata"] = int(G.stats.get("tokken_kata", 0)) + (1 if won else 0)
-			var kata = G.named.get("katakumba")
-			if kata != null:
-				kata.bark(Loc.t("kata_tk_won" if won else "kata_tk_lost").pick_random(), 4.0)
-			G.hud.toast(Loc.t("t_tk_won" if won else "t_tk_lost") % "Katakumba69", 3.5))
-		return
+func play_katakumba() -> void:
+	G.tokken.start({"foe": "dracula", "foe_tag": "Katakumba69", "ai": "katakumba"}, func(won: bool):
+		G.folk.played("katakumba")
+		G.stats["tokken_kata"] = int(G.stats.get("tokken_kata", 0)) + (1 if won else 0)
+		var kata = G.named.get("katakumba")
+		if kata != null:
+			kata.bark(Loc.t("kata_tk_won" if won else "kata_tk_lost").pick_random(), 4.0)
+		G.hud.toast(Loc.t("t_tk_won" if won else "t_tk_lost") % "Katakumba69", 3.5))
+
+func free_play(_p: Vector2) -> void:
 	var streak: int = int(G.stats.get("tokken_racha", 0))
 	G.tokken.start({"foe": "", "ai": LADDER[mini(streak, LADDER.size() - 1)]}, func(won: bool):
 		G.stats["tokken_racha"] = streak + 1 if won else 0

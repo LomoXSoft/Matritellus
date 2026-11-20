@@ -179,6 +179,7 @@ func rebuild() -> void:
 			if i == sel:
 				lab.add_theme_stylebox_override("normal", _plaque(Color("f3e2b3"), 2))
 			row.add_child(lab)
+			row.set_meta("menu_i", i)
 			_list.add_child(row)
 			continue
 		var l := _text(int(it.get("size", 17 if plain else 26)), Color("5a4a3a") if plain else INK)
@@ -191,9 +192,11 @@ func rebuild() -> void:
 		if plain:
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			l.custom_minimum_size = Vector2(640, 0)
-		elif i == sel:
-			l.add_theme_stylebox_override("normal", _plaque(Color("f3e2b3"), 2))
-			l.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		else:
+			l.set_meta("menu_i", i)
+			if i == sel:
+				l.add_theme_stylebox_override("normal", _plaque(Color("f3e2b3"), 2))
+				l.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		_list.add_child(l)
 	queue_redraw()
 	_redraw_when_laid_out()
@@ -324,6 +327,14 @@ func _move(by: int) -> void:
 	Sfx.beep(520.0, 0.04, 1, -18.0)
 	rebuild()
 
+func _row_at(pos: Vector2) -> int:
+	for c in _list.get_children():
+		if c is Control and c.has_meta("menu_i"):
+			var r: Rect2 = (c as Control).get_global_rect().grow_individual(18.0, 2.0, 18.0, 2.0)
+			if r.has_point(pos):
+				return int(c.get_meta("menu_i"))
+	return -1
+
 func _unhandled_input(e: InputEvent) -> void:
 	if not visible:
 		return
@@ -337,7 +348,34 @@ func _unhandled_input(e: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	if e is InputEventMouseMotion:
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+			var hi := _row_at(e.position)
+			if hi >= 0 and hi != sel:
+				sel = hi
+				Sfx.beep(520.0, 0.04, 1, -18.0)
+				rebuild()
 		return
+	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		var ci := _row_at(e.position)
+		if ci >= 0 and ci < _items.size():
+			sel = ci
+			var it_c: Dictionary = _items[sel]
+			if it_c.has("do"):
+				Sfx.beep(700.0, 0.06, 1, -16.0)
+				it_c["do"].call()
+				if visible:
+					rebuild()
+			elif it_c.has("left") and it_c.has("right"):
+				var mid_x := _box.get_global_rect().get_center().x
+				(it_c["left"] if e.position.x < mid_x else it_c["right"]).call()
+				Sfx.beep(600.0, 0.04, 1, -18.0)
+				rebuild()
+			elif it_c.has("right"):
+				it_c["right"].call()
+				Sfx.beep(600.0, 0.04, 1, -18.0)
+				rebuild()
+			get_viewport().set_input_as_handled()
+			return
 	var handled := true
 	if e.is_action_pressed("m_up", true):
 		_move(-1)

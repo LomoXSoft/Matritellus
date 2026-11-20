@@ -446,7 +446,11 @@ func _steps() -> void:
 		var post: bool = i % 9 == 0
 		cbox(Vector3(x, y + 0.53, zr), Vector3(0.035 if post else 0.014, 0.95 if post else 0.83, 0.035 if post else 0.014), RAIL)
 	solid(Vector3((x0 + x1) / 2.0, 0.3, 1.0), Vector3(x1 - x0 + 0.4, 2.0, 3.6))
-	solid(Vector3((x1 + xe) / 2.0, 0.6, wide / 2.0), Vector3(xe - x1, 2.4, wide))
+	var rxe := xe + 0.35
+	_hull([Vector3(x1, FLOOR, 0.0), Vector3(x1, FLOOR, wide), Vector3(rxe, ye - 0.04, wide), Vector3(rxe, ye - 0.04, 0.0),
+		Vector3(x1, DOWN, 0.0), Vector3(x1, DOWN, wide), Vector3(rxe, DOWN, wide), Vector3(rxe, DOWN, 0.0)])
+	var up_ax: Vector2 = (spot(x1, wide / 2.0) - spot(xe, wide / 2.0)).normalized()
+	_decks.append({"o": spot((x1 + xe) / 2.0, wide / 2.0), "ax": up_ax, "half": (xe - x1) / 2.0 + 0.3, "wide": wide / 2.0, "top": level + FLOOR, "ramp": xe - x1, "low": level + ye})
 
 # ---------------- before the main front ----------------
 ## The apron between the front and the avenue: tarmac, the bays painted on it where cars park nose-in, the yellow

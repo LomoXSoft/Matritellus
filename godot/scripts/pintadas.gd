@@ -124,6 +124,10 @@ func _unlock() -> void:
 	G.stats["chiki_tags"] = int(G.day_n)
 	G.folk.meet("chiki")
 	G._refresh_counts()
+	if G.pickups != null and G.named.has("chiki"):
+		var cp: Vector2 = G.named["chiki"].p
+		var dir: Vector2 = (G.player.p - cp).normalized() if G.player.p.distance_to(cp) > 0.2 else Vector2(0, 1)
+		G.pickups.spawn("spray", cp + dir * 1.4, {"tag": "spray"})
 	G.hud.toast(Loc.t("t_tags_unlocked"), 7.0)
 
 ## The scene while she tells you about the walls: the camera glides past one wall after another, each of a different

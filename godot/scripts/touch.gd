@@ -96,6 +96,10 @@ func _wanted() -> Array:
 			# (ajedrez) chess on the square: a finger picks the squares on the board itself; these are Vista, Soltar, II
 			var aj = g.get("ajedrez")
 			return aj.touch_buttons() if aj != null and aj.has_method("touch_buttons") else []
+	if g.get("inventario") != null and g.inventario.open:
+		return []
+	if g.get("map_open"):
+		return [["Cerrar" if es else "Close", "map", "top"]]
 	if g.get("_ask") != null or (g.get("cartas") != null and g.cartas.writing) or (g.get("padron") != null and g.padron.active):
 		return []                                 # answering somebody: a finger takes an answer in the bubble itself (game.gd ask)
 	if g.get("dlg") != null:
@@ -121,6 +125,7 @@ func _wanted() -> Array:
 			out.append([prompt, "interact", "big"])
 		out.append(["Saltar" if es else "Jump", "handbrake", ""])
 		out.append([Loc.t("motin_hit"), "punch", ""])
+		out.append(["Mochila" if es else "Bag", "inventory", "top"])
 	out.append(["Mapa" if es else "Map", "map", "top"])
 	out.append(["II", "pause", "top"])
 	return out
@@ -316,8 +321,9 @@ func _move_stick(p: Vector2) -> void:
 		_stick_at = p - v.normalized() * STICK_R
 		v = v.normalized()
 	_stick = v if _stick_id >= 0 else Vector2.ZERO
-	var x := _stick.x if absf(_stick.x) > DEAD else 0.0
-	var y := _stick.y if absf(_stick.y) > DEAD else 0.0
+	var radial := _stick if _stick.length() > DEAD else Vector2.ZERO
+	var x := radial.x
+	var y := radial.y
 	var g = _game()
 	var wheel_only: bool = g != null and (g.get("in_car") != null or g.phase == "rally") and not (g.get("menu") != null and g.menu.visible)
 	for pair in [["right", maxf(x, 0.0)], ["left", maxf(-x, 0.0)], ["back", maxf(y, 0.0)], ["forward", maxf(-y, 0.0)]]:

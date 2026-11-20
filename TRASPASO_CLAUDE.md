@@ -166,6 +166,37 @@ Se reutilizan el ring, Fonsi, las reglas, los controles y el marcador del combat
 
 El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección por distancia en `recress.gd`, la entrada y el retorno en `game.gd` y el aviso en `loc.gd`. El filtro `python tools/run_tests.py hitvip --headless` de `selftest.gd` prueba la disponibilidad antes y después de la reapertura, los tres tipos de máquina, el aviso, una derrota y una victoria consecutivas, las estadísticas y el regreso. Se verificó la lectura del rótulo sobre fondo oscuro y la animación de guantes en la [vista final del mueble](godot/shots/hit_the_vip_mueble.png). Pasaron las nueve comprobaciones [sin ventana](logs/selftest_hitvip_20261119_204503.log) y [con imagen](logs/selftest_hitvip_shots_20261119_204943.log), las [86 de boxeo con guardado anterior](logs/selftest_boxeo_guardado-anterior_20261119_204542.log) y las [16 de la misión del Galaxy Recress](logs/selftest_recress_20261119_204621.log). El botón A se comprobó con eventos simulados de mando en Windows.
 
+### Tanda de 20 mejoras jugables (20/11)
+
+20 de noviembre de 2026. Implementadas las 20 mejoras solicitadas por el usuario en `X:\MatritellusGPT` sobre `main` e incorporadas a la edición local `0.0.18`:
+
+- **Rendimiento carteles (Galaxy Recress):** `map_data.gd` evita recalcular Dijkstra en `set_route_target()` si el destino no cambió y `recress.gd` espacia la búsqueda de tienda más cercana (`_poster_t = 0.35`).
+- **Rampas y saltos con coche:** planos inclinados lisos a ras de suelo en `sebastian.gd`, `plaza.gd`, `aceras_altas.gd`, `puente.gd`, `caridad.gd` y `cuartel.gd`; `car.gd` añade material de baja fricción, levanta 0,10 m los bajos del morro/trasera y lanza el coche en `_ramp_launch(dt)` al entrar rápido en cualquier rampa de `MapData.decks`.
+- **Cinemática del alcalde a la salida del Recress:** `recress.gd` oculta al jugador y limpia vehículos aparcados, tráfico, policía y peatones en el tramo de calle; `game.gd` congela el tráfico durante `recress.cine`.
+- **Tokken 9 — Salir:** botón «SALIR», atajo `ESC`/atrás, ratón visible en selección/pausa y botón táctil en `tokken.gd`.
+- **Rally 9:** ruedas visuales montadas en `body.inner` para los 7 coches (sin culling en `parts.gd` ni desync en `car.gd`), hitboxes dinámicas por tamaño de coche, rubberbanding + reaparición con llama de nitro si un rival se descuelga `> 95 m`, y 3 vueltas (`rally.gd`, `rally_hud.gd`, `rally_pruebas.gd`).
+- **Katakumba69 y máquinas de Tokken 9:** todas las cabinas en libre juegan contra la CPU; para retar a Katakumba69 hay que hablar con él dentro del Recress (con puntos de confianza y respetando su revelación a 100 de confianza).
+- **Ajedrez humano y perros:** eliminada la rotación errónea de `PI` en `perro.glb` (`ajedrez_humano.gd` y `ruta.gd`); las piezas del jugador miran hacia la partida y las rivales hacia el jugador.
+- **Rondas lúdicas de NPCs únicos:** ampliadas a 12 personajes únicos exteriores en `rondas.gd` con rutinas por personalidad (bares, pubs, comida, recreativos, salud, plazas) cuando están libres y sin misión.
+- **Movimiento diagonal estable:** vector radial `Input.get_vector(..., 0.25)` en `game.gd` y zona muerta radial en `touch.gd`.
+- **Misión del kebab (sospecha, furgoneta rápida y captura):** medidor continuo de sospecha en `hud.gd` + `sabotaje.gd`, velocidad de reparto subida (`PACE = 1.65`) con bocadillos flotantes de `*hablando en árabe inventado*`, y si el repartidor te pilla fuera de la furgoneta esta queda aparcada junto a él sin clonarse ni marcharse.
+- **Frases de golpe divididas:** `hit_bat`, `hit_car` y `hit_both` en `loc.gd` (incluyendo «¡Ostia!» y cumpliendo `palabros.md`), cableadas en `game.gd` y `motin.gd`.
+- **Policías y guardias civiles uniformados:** `officer_look()` en `game.gd` (uniforme y gorra azul para pitufos; clon de Ramírez con tricornio para guardias civiles) usado en `traffic.gd` y `police.gd`.
+- **Taller (repintado y limpieza de búsqueda):** `Modelos.repaint()` y `car.repaint()` cambian el color a otro distinto y `_mended()` limpia `police.reset()`, congelando a la policía durante la reparación.
+- **Entrar en interiores pulsando Acción:** `entradas.gd` y `game.gd` exigen pulsar interacción (`p_entrar`) igual que al salir.
+- **Mapa grande (elegir/quitar misión):** panel interactivo y fotos clicables en `minimap.gd` + `game.gd` + `marcas.gd`; deseleccionar («Ninguna») oculta flecha 3D, baliza y ruta GPS.
+- **Objetos 3D flotantes giratorios con brillo:** nuevo `godot/scripts/pickups.gd` (halo billboard aditivo + aro en suelo + malla 3D giratoria para bate, spray, carteles, jamón, móvil, kebab), integrado en `game.gd`, `pintadas.gd` y `recress.gd`.
+- **Inventario estilo Animal Crossing:** nuevo `godot/scripts/inventario.gd` con dos pestañas (`Objetos` y `Objetos clave` no vendibles/tirables), tecla `I` / mando `Y`/`△` (`controls.gd`) y botón táctil «Mochila» (`touch.gd`).
+- **Salir del juego con confirmación y ratón en menús:** opción Salir en menú principal y pausa con confirmación («¿Tás seguro? Mía que se estaba poniendo divertío.») en `game.gd`/`loc.gd` y soporte de ratón en `menu.gd`.
+
+**Pruebas ejecutadas (todas con 0 fallos y 0 errores de script):**
+- `python tools/run_tests.py mejoras --window`: **9 ok, 0 failed** ([log](logs/selftest_mejoras_20261120_150152.log)) + capturas revisadas (`mejora_mapa.png`, `mejora_pickups.png`, `mejora_inv_obj.png`, `mejora_inv_key.png`).
+- `python tools/run_tests.py entradas --window`: **4 ok, 0 failed** ([log](logs/selftest_entradas_20261120_150247.log)).
+- `python tools/run_tests.py rally shots --window`: **31 ok, 0 failed** ([log](logs/selftest_rally_shots_20261120_150401.log)) + capturas revisadas (`rally9_derribo.png`, `rally9_nitro.png`, `rally9_meta.png`, `rally9_reincorporacion.png`).
+- `python tools/run_tests.py ajedrez --window`: **17 ok, 0 failed** ([log](logs/selftest_ajedrez_20261120_151618.log)) + capturas revisadas (`aj_inicio.png`, `aj_perro_salta.png`, `aj_perro_quieto.png`).
+- `python tools/run_tests.py palabros --headless`: **3 ok, 0 failed** ([log](logs/selftest_palabros_20261120_151815.log)).
+- `python tools/run_tests.py recress --headless` (**16 ok, 0 failed**), `tokken shots --window` (**11 ok, 0 failed**), `rondas --headless` (**1 ok, 0 failed**), `sabotaje --headless` (**45 ok, 0 failed**).
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.

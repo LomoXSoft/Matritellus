@@ -3,6 +3,7 @@ const Track = preload("res://scripts/rally_pista.gd")
 const Car = preload("res://scripts/car.gd")
 const Glass = preload("res://scripts/rally_hud.gd")
 const CAPS := [100,150,225,300]
+const LAPS := 3
 const BURN := 32.0
 const CREDIT := 1.2
 const SHOT := 0.55
@@ -31,6 +32,9 @@ class Driver:
 	var tracking := false
 	var brushed := false
 	var separation := INF
+	var wheel_nodes: Array = []
+	var wheel_rads: Array = []
+	var nitro_t := 0.0
 
 var G
 var view: SubViewport
@@ -145,6 +149,28 @@ func _entrant(kind: String, paint: int, s: float, lane: float, pace: float, civi
 	d.body.freeze = true
 	d.body.collision_layer = 0
 	d.body.collision_mask = 1
+	# Attach visual wheel meshes directly onto inner at axle height for every Rally 9 car (including the player):
+	# VehicleWheel3D stays on the player car for live suspension/traction, while visual meshes never vanish,
+	# never desync to (0,0,0) on freeze/teleport, and tilt cleanly with inner during wrecks.
+	for w in d.body.wheels:
+		var rad: float = maxf(0.2, float(w.wheel_radius))
+		var axle := Vector3(w.position.x, Car.GROUND + rad, w.position.z)
+		var steer_pivot := Node3D.new()
+		steer_pivot.position = axle
+		steer_pivot.set_meta("steer", w.use_as_steering)
+		var spin_hub := Node3D.new()
+		steer_pivot.add_child(spin_hub)
+		d.body.inner.add_child(steer_pivot)
+		for ch in w.get_children():
+			w.remove_child(ch)
+			ch.position = Vector3.ZERO
+			spin_hub.add_child(ch)
+		d.wheel_nodes.append(spin_hub)
+		d.wheel_rads.append(rad)
+		if d.id > 0:
+			w.queue_free()
+	if d.id > 0:
+		d.body.wheels.clear()
 	d.s = s
 	d.lane = lane
 	d.home_lane = lane
@@ -170,6 +196,11 @@ func _entrant(kind: String, paint: int, s: float, lane: float, pace: float, civi
 func _snap(d: Driver) -> void:
 	d.body.global_position = Track.at(Track.point(d.s,d.lane),0.08)
 	d.body.rotation = Vector3(0,Track.heading(d.s)+(PI if d.pace < 0 else 0.0),0)
+	if d == you:
+		for w in d.body.wheels:
+			for ch in w.get_children():
+				if ch is Node3D:
+					(ch as Node3D).position = Vector3.ZERO
 	d.body.reset_physics_interpolation()
 	d.old = d.body.p
 
@@ -307,6 +338,13 @@ func _drive(dt: float) -> void:
 			Sfx.beep(280,0.18,3,-17,540)
 	var slide: float = G.derrape.slide_of(car)
 	_charge_drift(dt,slide,absf(car.vel.dot(Vector2(cos(car.h),-sin(car.h)))),not car.airborne())
+	var vf: float = car.forward_speed()
+	for i in range(you.wheel_nodes.size()):
+		var hub: Node3D = you.wheel_nodes[i]
+		hub.rotation.x += (vf / float(you.wheel_rads[i])) * dt
+		var pivot := hub.get_parent() as Node3D
+		if pivot != null and pivot.get_meta("steer", false):
+			pivot.rotation.y = car.steering
 
 func _charge_drift(dt: float, slide: float, side: float, grounded: bool) -> void:
 	if slide > 0.15 and side > 1.0 and grounded:
@@ -319,18 +357,71 @@ func _charge_drift(dt: float, slide: float, side: float, grounded: bool) -> void
 	else:
 		_drift = 0
 
+func _catchup_respawn(d: Driver) -> void:
+	# Rival fell far behind: bring them back behind the player in a clear lane with nitro blazing!
+	var back_s := fposmod(you.s - randf_range(36.0, 50.0), Track.LENGTH)
+	var best := -1.0
+	var lane_pick := d.home_lane
+	for cand in [-4.8, -1.8, 1.8, 4.8]:
+		var room := 1000.0
+		var pt := Track.point(back_s, cand)
+		for other in field + traffic:
+			if other != d:
+				room = minf(room, pt.distance_squared_to(other.body.p))
+		if room > best:
+			best = room
+			lane_pick = cand
+	var spacing := Track.LENGTH / Track.GATES
+	var want_prog := maxf(0.0, _progress(you) - 42.0)
+	d.gates = clampi(int(floor(want_prog / spacing)), 0, LAPS * Track.GATES - 1)
+	d.invalid = false
+	d.s = fposmod(want_prog, Track.LENGTH)
+	d.lane = lane_pick
+	d.kick = 0.0
+	d.safe = 0.6
+	d.nitro_t = 4.2
+	d.speed = clampf(maxf(d.pace + 9.0, you.speed + 5.0), d.pace + 6.0, 38.5)
+	_snap(d)
+
 func _advance_ai(d: Driver, dt: float) -> void:
 	d.old = d.body.p
 	d.safe = maxf(0,d.safe-dt)
+	if d.nitro_t > 0.0:
+		d.nitro_t = maxf(0.0, d.nitro_t - dt)
 	if d.finish < INF:
+		if d.body.flame != null:
+			d.body.flame.emitting = false
 		return
 	if d.wreck > 0:
 		d.wreck -= dt
 		d.body.inner.rotation.z += dt*2.5
+		if d.body.flame != null:
+			d.body.flame.emitting = false
 		if d.wreck <= 0:
 			_respawn(d)
 		return
-	d.speed = move_toward(d.speed,d.pace,7.8*dt)
+	var target_pace := d.pace
+	var ai_boost := false
+	if mode == "run" and you != null and you.finish == INF and d != you and d in field:
+		var behind := _progress(you) - _progress(d)
+		if behind > 95.0 and you.gates < LAPS * Track.GATES - 1:
+			_catchup_respawn(d)
+			behind = _progress(you) - _progress(d)
+		if d.nitro_t > 0.0:
+			target_pace = clampf(maxf(d.pace * 1.45, you.speed + 5.0), d.pace + 6.0, 38.5)
+			ai_boost = true
+		elif behind > 12.0:
+			var k := clampf((behind - 12.0) / 55.0, 0.0, 1.0)
+			target_pace = lerpf(d.pace, clampf(maxf(d.pace * 1.42, you.speed + 4.0), d.pace * 1.15, 37.5), k)
+			ai_boost = behind > 24.0
+		elif behind < -25.0:
+			target_pace = d.pace * 0.92
+	d.body.boosting = ai_boost
+	if ai_boost and d.body.flame == null:
+		d.body.flame = d.body._emitter(Vector3(0, float(d.body.spec["wheel"]) * 0.85, -float(d.body.spec["len"]) / 2.0 - 0.1), Vector3(0, 0.1, -1), Color(1.0, 0.55, 0.12, 0.9), 26, 0.28, 5.0, 0.42, 1.0)
+	if d.body.flame != null:
+		d.body.flame.emitting = ai_boost
+	d.speed = move_toward(d.speed, target_pace, (12.0 if ai_boost else 7.8) * dt)
 	d.s = fposmod(d.s+d.speed*dt,Track.LENGTH)
 	d.lane += d.kick*dt
 	d.kick = move_toward(d.kick,0,7*dt)
@@ -338,6 +429,8 @@ func _advance_ai(d: Driver, dt: float) -> void:
 		d.lane = move_toward(d.lane,d.home_lane,0.9*dt)
 	d.body.position = Track.at(Track.point(d.s,d.lane),0.08)
 	d.body.rotation.y = Track.heading(d.s)+(PI if d.pace < 0 else 0.0)
+	for i in range(d.wheel_nodes.size()):
+		(d.wheel_nodes[i] as Node3D).rotation.x += (absf(d.speed) / float(d.wheel_rads[i])) * dt
 
 func _gates(d: Driver, dt: float) -> void:
 	if d.finish < INF or d.wreck > 0:
@@ -359,7 +452,7 @@ func _gates(d: Driver, dt: float) -> void:
 			continue
 		if i == (d.gates+1)%Track.GATES and not d.invalid:
 			d.gates += 1
-			if d.gates == 2*Track.GATES:
+			if d.gates == LAPS*Track.GATES:
 				d.finish = clock-dt+dt*fraction
 		else:
 			d.invalid = true
@@ -394,16 +487,22 @@ func _eligible(d: Driver) -> bool:
 func _gap(a: float, b: float) -> float:
 	return wrapf(b-a,-Track.LENGTH/2,Track.LENGTH/2)
 
+func _hit_dims(a: Driver, b: Driver) -> Vector2:
+	var hl: float = (float(a.body.spec["len"]) + float(b.body.spec["len"])) * 0.5 + 0.15
+	var hw: float = (float(a.body.spec["wid"]) + float(b.body.spec["wid"])) * 0.5 + 0.15
+	return Vector2(hl, hw)
+
 func _bump(a: Driver, b: Driver) -> void:
 	if not _eligible(a) or not _eligible(b):
 		return
 	var gap := _gap(a.s,b.s)
 	var side := b.lane-a.lane
+	var dims := _hit_dims(a, b)
 	var pair := Vector2i(a.id,b.id)
-	if absf(gap)>4.7 or absf(side)>2.4:
+	if absf(gap)>dims.x+0.9 or absf(side)>dims.y+0.55:
 		touching.erase(pair)
 		return
-	if touching.has(pair) or absf(gap)>3.75 or absf(side)>1.86:
+	if touching.has(pair) or absf(gap)>dims.x or absf(side)>dims.y:
 		return
 	touching[pair] = true
 	var hitter := a if a.speed >= b.speed else b
@@ -519,7 +618,7 @@ func _wreck_step(dt: float) -> void:
 	car.rotation = Vector3(0,Track.heading(you.s)+(1-timer)*1.65,0)
 	car.inner.rotation.z = sin((1.0-timer)*2.5)*0.9
 	for d in field:
-		if d != you and _eligible(d) and d.body.p.distance_to(car.p)<2.9 and not after_hit:
+		if d != you and _eligible(d) and d.body.p.distance_to(car.p)<3.6 and not after_hit:
 			_fall(d,true)
 	if timer <= 0.000001:
 		_respawn(you)
@@ -527,6 +626,7 @@ func _wreck_step(dt: float) -> void:
 func _traffic_step(t: Driver) -> void:
 	var gap := _gap(you.s,t.s)
 	var side := absf(t.lane-you.lane)
+	var dims := _hit_dims(you, t)
 	if not _eligible(you) or mode != "run":
 		t.tracking = false
 		return
@@ -534,15 +634,15 @@ func _traffic_step(t: Driver) -> void:
 		t.tracking = true
 		t.brushed = false
 		t.separation = INF
-	if absf(gap)<3.6:
-		if side < 1.85:
+	if absf(gap)<dims.x:
+		if side < dims.y:
 			t.brushed = true
 			_crash()
 			return
 		if t.tracking:
 			t.separation = minf(t.separation,side)
-	if t.tracking and gap < -3.7:
-		if not t.brushed and t.separation <= 3.85 and you.speed-t.speed>2:
+	if t.tracking and gap < -dims.x:
+		if not t.brushed and t.separation <= dims.y + 2.0 and you.speed-t.speed>2:
 			fuel = minf(capacity(),fuel+15)
 			points += 50
 			_notice("r9_pass")
@@ -564,7 +664,8 @@ func _contacts() -> void:
 			continue
 		var obstacle := absf(d.lane)>Track.WIDTH-0.7
 		for t in traffic:
-			if absf(_gap(d.s,t.s))<3.6 and absf(d.lane-t.lane)<1.85:
+			var dims := _hit_dims(d, t)
+			if absf(_gap(d.s,t.s))<dims.x and absf(d.lane-t.lane)<dims.y:
 				obstacle = true
 		if obstacle:
 			_fall(d)

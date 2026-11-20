@@ -103,6 +103,8 @@ static func thin(root: Node, scale := Vector3.ONE) -> int:
 	var here := scale
 	if root is Node3D:
 		here = scale * (root as Node3D).scale.abs()
+	if root is VehicleWheel3D:
+		return done
 	if root is CPUParticles3D:
 		_puffs(root)
 	if root is Label3D:

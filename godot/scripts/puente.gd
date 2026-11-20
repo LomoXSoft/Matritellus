@@ -231,15 +231,15 @@ func _flight(edge: Vector2, y: float, down: Vector2, wide: float, drop: float, n
 		box(-wide / 2.0, -drop - 0.4, (k - 1) * tread, wide, drop + 0.4 - k * rise, tread, "hormigon")
 	_xf = keep
 	var run: float = tread * (n - 1)
-	var foot: Vector2 = edge + down * run
+	var foot: Vector2 = edge + down * (run + 0.3)
 	var corners: Array = []
 	for q in [edge + Vector2(down.y, -down.x) * wide / 2.0, edge - Vector2(down.y, -down.x) * wide / 2.0, foot - Vector2(down.y, -down.x) * wide / 2.0, foot + Vector2(down.y, -down.x) * wide / 2.0]:
 		corners.append(q)
-	_hull([Vector3(corners[0].x, y, corners[0].y), Vector3(corners[1].x, y, corners[1].y), Vector3(corners[2].x, y - drop + rise, corners[2].y), Vector3(corners[3].x, y - drop + rise, corners[3].y),
+	_hull([Vector3(corners[0].x, y, corners[0].y), Vector3(corners[1].x, y, corners[1].y), Vector3(corners[2].x, y - drop - 0.04, corners[2].y), Vector3(corners[3].x, y - drop - 0.04, corners[3].y),
 		Vector3(corners[0].x, y - drop - 0.4, corners[0].y), Vector3(corners[1].x, y - drop - 0.4, corners[1].y), Vector3(corners[2].x, y - drop - 0.4, corners[2].y), Vector3(corners[3].x, y - drop - 0.4, corners[3].y)])
 	var mid: Vector2 = edge + down * run / 2.0
 	var up_axis: Vector2 = (spot(0.0, 0.0) - spot(down.x, down.y)).normalized()
-	_decks.append({"o": spot(mid.x, mid.y), "ax": up_axis, "half": run / 2.0, "wide": wide / 2.0, "top": level + y, "ramp": run, "low": level + y - drop})
+	_decks.append({"o": spot(mid.x, mid.y), "ax": up_axis, "half": run / 2.0 + 0.25, "wide": wide / 2.0, "top": level + y, "ramp": run, "low": level + y - drop})
 
 func _pavements() -> void:
 	# --- the side of the even numbers (east): from the corner of the block near the Calle del Santo to the steps past the bridge ---

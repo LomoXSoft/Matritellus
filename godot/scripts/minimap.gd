@@ -17,6 +17,11 @@ var repairs: Array = []
 var ramps: Array = []
 var spray: Array = []        # walls La Chiki told you of, not yours yet (pintadas.gd hinted)
 var blink := false
+var missions: Array = []     # selectable missions on the big map: [{id, label, p}, ...]
+var tracked_id := "auto"
+var map_sel := 0
+var _row_rects: Array = []   # Rect2 in local coordinates for mouse/touch click
+var _giver_hits: Array = []  # [Vector2 local_pos, float radius, String giver_id]
 var _passes := [[], [], []]  # segments by road kind: asphalt, dirt, footpath
 const CELL := 90.0
 var _seg_cells := [{}, {}, {}]      # the same, by map cell: Vector2i -> Array (so the minimap only looks at what is near)
@@ -122,6 +127,7 @@ func _draw() -> void:
 		draw_circle(tp + half, 8.0, Color("4a3424"))
 		draw_circle(tp + half, 6.0, Color("38d64d"))
 	# who has a mission for you: their photo in a circle, kept upright however the map turns; at the edge if far off
+	_giver_hits.clear()
 	if not givers.is_empty():
 		var turn := (spin - PI) if (round and not full) else 0.0
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -134,11 +140,15 @@ func _draw() -> void:
 					gp = gp.normalized() * edge2
 					r = 10.0
 			var at := mid + gp.rotated(turn) if not full else gp + mid
-			draw_circle(at, r + 1.5, Color("1a1612"))
+			var gid: String = String(gv[2]) if gv.size() > 2 else ""
+			var tracked_here: bool = full and gid != "" and tracked_id == "giver:" + gid
+			draw_circle(at, r + (4.0 if tracked_here else 1.5), Color("38d64d") if tracked_here else Color("1a1612"))
 			if gv[1] != null:
 				draw_texture_rect(gv[1], Rect2(at - Vector2(r, r), Vector2(r, r) * 2.0), false)
 			else:
 				draw_circle(at, r - 1.0, Color("f2e6c8"))
+			if full and gid != "":
+				_giver_hits.append([at, r + 6.0, gid])
 		if round and not full:
 			draw_set_transform(mid, spin - PI, Vector2.ONE)
 	var pp := (center - c) * k + half
@@ -149,3 +159,51 @@ func _draw() -> void:
 	draw_polyline(arrow + PackedVector2Array([arrow[0]]), Color.WHITE, 1.5)
 	if not round:
 		draw_rect(Rect2(Vector2.ZERO, sz), Color("4a3424"), false, 4.0)
+	_row_rects.clear()
+	if full and not missions.is_empty():
+		var font: Font = ThemeDB.fallback_font
+		var pw := minf(310.0, sz.x * 0.36)
+		var row_h := 32.0
+		var ph := 42.0 + missions.size() * row_h + 12.0
+		var box := Rect2(14.0, 14.0, pw, ph)
+		draw_rect(Rect2(box.position + Vector2(4, 5), box.size), Color(0, 0, 0, 0.25))
+		draw_rect(box, Color("f8f2e2eb"))
+		draw_rect(box, Color("4a3424"), false, 2.5)
+		draw_string(font, box.position + Vector2(14.0, 26.0), Loc.t("map_missions"), HORIZONTAL_ALIGNMENT_LEFT, pw - 24.0, 16, Color("4a3424"))
+		draw_line(box.position + Vector2(10.0, 34.0), box.position + Vector2(pw - 10.0, 34.0), Color("c9b99a"), 1.5)
+		for i in range(missions.size()):
+			var m: Dictionary = missions[i]
+			var rr := Rect2(box.position.x + 8.0, box.position.y + 40.0 + i * row_h, pw - 16.0, row_h - 4.0)
+			_row_rects.append(rr)
+			var is_tracked: bool = String(m["id"]) == tracked_id
+			var is_sel: bool = i == map_sel
+			if is_sel:
+				draw_rect(rr, Color("f3e2b3"))
+				draw_rect(rr, Color("4a3424"), false, 1.5)
+			elif is_tracked:
+				draw_rect(rr, Color("e4f4df"))
+			var dot_col := Color("2fb84a") if (is_tracked and String(m["id"]) != "none") else (Color("c04838") if is_tracked else Color("b7a78a"))
+			draw_circle(Vector2(rr.position.x + 12.0, rr.get_center().y), 5.0, dot_col)
+			var txt := String(m["label"])
+			if txt.length() > 30:
+				txt = txt.left(29) + "…"
+			draw_string(font, Vector2(rr.position.x + 24.0, rr.position.y + 19.0), txt, HORIZONTAL_ALIGNMENT_LEFT, rr.size.x - 28.0, 14, Color("2a221c"))
+		var foot := String(Loc.t("map_foot"))
+		var fbox := Rect2(14.0, sz.y - 38.0, sz.x - 28.0, 26.0)
+		draw_rect(fbox, Color("f8f2e2e0"))
+		draw_rect(fbox, Color("4a3424"), false, 1.5)
+		draw_string(font, Vector2(fbox.position.x + 12.0, fbox.position.y + 18.0), foot, HORIZONTAL_ALIGNMENT_LEFT, fbox.size.x - 24.0, 13, Color("4a3424"))
+
+func row_at(global_pos: Vector2) -> int:
+	var lp := global_pos - global_position
+	for i in range(_row_rects.size()):
+		if (_row_rects[i] as Rect2).has_point(lp):
+			return i
+	return -1
+
+func giver_at(global_pos: Vector2) -> String:
+	var lp := global_pos - global_position
+	for g in _giver_hits:
+		if lp.distance_to(g[0] as Vector2) <= float(g[1]):
+			return String(g[2])
+	return ""

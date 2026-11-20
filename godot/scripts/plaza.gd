@@ -1739,11 +1739,23 @@ func _sunk_side() -> void:
 	for ramp in [north, south]:
 		quad(ramp[0], ramp[1], ramp[2], ramp[3], "tiling", Vector3.UP)
 		tri(ramp[0], ramp[3], Vector3((ramp[0] as Vector3).x, _low - 0.5, (ramp[0] as Vector3).z), "rubble", Vector3(-1, 0, 0))
-		_hull([ramp[0], ramp[1], ramp[2], ramp[3], Vector3((ramp[0] as Vector3).x, _low - 0.3, (ramp[0] as Vector3).z), Vector3((ramp[1] as Vector3).x, _low - 0.3, (ramp[1] as Vector3).z)])
+		var r0: Vector3 = ramp[0]
+		var r1: Vector3 = ramp[1]
+		var r2: Vector3 = ramp[2]
+		var r3: Vector3 = ramp[3]
+		var ext: Vector3 = (r3 - r0)
+		ext.y = 0.0
+		ext = ext.normalized() * 0.4
+		var f2 := r2 + ext
+		var f3 := r3 + ext
+		f2.y = minf(_low, ground(f2.x, f2.z)) - 0.05
+		f3.y = minf(_low, ground(f3.x, f3.z)) - 0.05
+		var rbot := minf(_low, minf(f2.y, f3.y)) - 0.5
+		_hull([r0, r1, f2, f3, Vector3(r0.x, rbot, r0.z), Vector3(r1.x, rbot, r1.z), Vector3(f2.x, rbot, f2.z), Vector3(f3.x, rbot, f3.z)])
 	_prism([k0, k1, Vector2(EDGE, k1.y), Vector2(EDGE, 0.0), Vector2(-HALF, 0.0), Vector2(-HALF, k0.y)], _low - 0.3, pav)
 	_prism([k1, k2, Vector2(EDGE, SW_END), Vector2(EDGE, k1.y)], _low - 0.3, pav)
-	_decks.append({"o": spot((k0.x - HALF) / 2.0, k0.y - run / 2.0), "ax": n_axis, "half": run / 2.0, "wide": (-HALF - k0.x) / 2.0, "top": level + pav, "ramp": run, "low": level + _low})
-	_decks.append({"o": spot((k2.x + EDGE) / 2.0, k2.y + run / 2.0), "ax": -n_axis, "half": run / 2.0, "wide": (EDGE - k2.x) / 2.0, "top": level + pav, "ramp": run, "low": level + _low})
+	_decks.append({"o": spot((k0.x - HALF) / 2.0, k0.y - run / 2.0), "ax": n_axis, "half": run / 2.0 + 0.3, "wide": (-HALF - k0.x) / 2.0, "top": level + pav, "ramp": run, "low": level + _low})
+	_decks.append({"o": spot((k2.x + EDGE) / 2.0, k2.y + run / 2.0), "ax": -n_axis, "half": run / 2.0 + 0.3, "wide": (EDGE - k2.x) / 2.0, "top": level + pav, "ramp": run, "low": level + _low})
 
 	# --- its kerb, yellow and grey by turns; iron hoops along it, except where steps or the steel bridge come up ---
 	var n: float = k0.y
@@ -1768,7 +1780,13 @@ func _sunk_side() -> void:
 		for k in range(3):
 			var hgt: float = PAV * (k + 1) / 4.0
 			cbox(Vector3(ku - (2.5 - k) * 0.3, _low + hgt / 2.0, mid), Vector3(0.3, hgt, s.y - s.x), "caliza")
-		_decks.append({"o": spot(ku - 0.45, mid), "ax": u_axis, "half": 0.45, "wide": (s.y - s.x) / 2.0, "top": level + pav, "ramp": 0.9, "low": level + _low})
+		var f_u := ku - 1.25
+		var fy0 := minf(_low, ground(f_u, s.x)) - 0.05
+		var fy1 := minf(_low, ground(f_u, s.y)) - 0.05
+		var sbot := minf(_low, minf(fy0, fy1)) - 0.5
+		_hull([Vector3(ku + 0.15, pav, s.x), Vector3(ku + 0.15, pav, s.y), Vector3(f_u, fy1, s.y), Vector3(f_u, fy0, s.x),
+			Vector3(ku + 0.15, sbot, s.x), Vector3(ku + 0.15, sbot, s.y), Vector3(f_u, sbot, s.y), Vector3(f_u, sbot, s.x)])
+		_decks.append({"o": spot(ku - 0.45, mid), "ax": u_axis, "half": 0.75, "wide": (s.y - s.x) / 2.0, "top": level + pav, "ramp": 1.1, "low": level + _low})
 
 	# --- the flights up from the pavement: to the square, and into the covered walk of the town hall ---
 	var rise: float = -pav / RISERS
@@ -1785,7 +1803,10 @@ func _sunk_side() -> void:
 			bar(Vector3(top_u - flight, pav + 0.95, side), Vector3(top_u, 0.95, side), 0.05, 0.05, IRON)
 			cbox(Vector3(top_u - flight, pav + 0.5, side), Vector3(0.05, 1.0, 0.05), IRON)
 			cbox(Vector3(top_u, 0.5, side), Vector3(0.05, 1.0, 0.05), IRON)
-		_decks.append({"o": spot(top_u - flight / 2.0, mid), "ax": u_axis, "half": flight / 2.0, "wide": (span.y - span.x) / 2.0, "top": level, "ramp": flight, "low": level + pav})
+		var fu := top_u - flight - 0.3
+		_hull([Vector3(top_u + 0.2, 0.0, span.x), Vector3(top_u + 0.2, 0.0, span.y), Vector3(fu, pav - 0.04, span.y), Vector3(fu, pav - 0.04, span.x),
+			Vector3(top_u + 0.2, pav - 0.5, span.x), Vector3(top_u + 0.2, pav - 0.5, span.y), Vector3(fu, pav - 0.5, span.y), Vector3(fu, pav - 0.5, span.x)])
+		_decks.append({"o": spot(top_u - flight / 2.0, mid), "ax": u_axis, "half": flight / 2.0 + 0.25, "wide": (span.y - span.x) / 2.0, "top": level, "ramp": flight, "low": level + pav})
 
 	# --- the wall that holds the square up, wherever the ground outside is lower: white, a low parapet, a railing ---
 	var centre := Vector2(0.0, 35.0)

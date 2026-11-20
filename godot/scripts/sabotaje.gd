@@ -28,6 +28,8 @@ const LORRY_PAINT := 0x1f1f24
 const MAN := {"shirt": 0x2a9d8f, "hair": 0x111111, "face": 2, "brows": 1, "hat": "cap", "hat_color": 0xc0392b, "top": 4, "skin": 0xc98e5f}
 const PAY := 30                 # euros (a provisional figure)
 const CLOSE := 13.0             # nearer the lorry than this while it is on its way and he sees you in the mirror...
+const SUS_FAR := 24.0           # suspicion meter starts rising once you creep closer than this behind the van
+const SUS_NEAR := 6.0           # right on its bumper: fills fastest
 const SEEN_FOR := 2.0           # ...after this many seconds of it
 const FAR := 100.0              # further than this...
 const LOST_FOR := 6.0           # ...for this long, and it is gone
@@ -37,7 +39,7 @@ const WINDOW := 30.0            # seconds from the boxes being set down to the l
 const EYES := 16.0              # how far he sees when he is out of the lorry, in front of him...
 const EYES_ANGLE := 0.96        # ...this many radians either side of where he is facing
 const ACT_FOR := 2.6            # seconds the deed takes
-const PACE := 1.0               # the lorry goes at the pace of the rest of the traffic
+const PACE := 1.65              # brisk delivery van: moves fast through town
 
 var G
 var K
@@ -64,9 +66,12 @@ var _target_t := 0.0
 var _walk: Array = []           # where he is walking to: points on the map
 var _then := ""                 # what he does when he gets there
 var _pause := 0.0
-var _left: Array = []           # what a mission left lying about (boxes, a man standing there): gone once you are far away
+var _left: Array = []           # what a mission left lying about (boxes, a man standing there, parked van): gone once you are far away
 var _rang := false
 var _done_here := false
+var _van_bark: Label3D = null
+var _van_bark_t := 0.0
+var _van_murmur_t := 1.8
 
 func setup(game) -> void:
 	G = game
@@ -418,8 +423,35 @@ func _cine_go() -> void:
 		_pause = 3.2
 		_then = "go_over")
 
+func _clear_van_bark() -> void:
+	if _van_bark != null and is_instance_valid(_van_bark):
+		_van_bark.queue_free()
+	_van_bark = null
+	_van_bark_t = 0.0
+
+func _van_say(text: String, secs := 2.6) -> void:
+	if lorry == null or not is_instance_valid(lorry.get("car")):
+		return
+	var c = lorry["car"]
+	if _van_bark == null or not is_instance_valid(_van_bark) or _van_bark.get_parent() != c:
+		_clear_van_bark()
+		_van_bark = Label3D.new()
+		_van_bark.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_van_bark.no_depth_test = true
+		_van_bark.font_size = 34
+		_van_bark.pixel_size = 0.0085
+		_van_bark.outline_size = 10
+		_van_bark.modulate = Color("fff6e0")
+		_van_bark.outline_modulate = Color("1f1814")
+		_van_bark.position = Vector3(0.0, 2.75, 0.0)
+		c.add_child(_van_bark)
+	_van_bark.text = text
+	_van_bark.visible = true
+	_van_bark_t = secs
+
 # ---------------- when it goes wrong ----------------
 func _release_lorry() -> void:
+	_clear_van_bark()
 	G.traffic.closed = {}                        # (its streets open again)
 	if lorry == null:
 		return
@@ -438,8 +470,10 @@ func fail(why: String) -> void:
 	_cine(false)
 	G.cine_lock = false
 	G.hud.timer_slot.visible = false
+	G.hud.set_suspicion(0.0, false)
 	G.player.y = 0.0
-	if man != null and is_instance_valid(man):   # he stays where he is, shouting, until you are gone
+	var outside: bool = man != null and is_instance_valid(man)
+	if outside:                                  # he stays where he is, shouting, until you are gone
 		if man.state == "busy":
 			man.state = "idle"
 		man.bark(_arabic(), 4.0)
@@ -454,7 +488,19 @@ func fail(why: String) -> void:
 		else:
 			_left.append(boxes)
 		boxes = null
-	_release_lorry()
+	if outside and lorry != null:
+		# Caught while outside the van: keep the van parked right there beside him instead of cloning a driver to drive it off!
+		_clear_van_bark()
+		G.traffic.closed = {}
+		var vc = lorry.get("car")
+		G.traffic.list.erase(lorry)
+		lorry = null
+		if vc != null and is_instance_valid(vc):
+			vc.park()
+			vc.set_speed(Vector2.ZERO)
+			_left.append(vc)
+	else:
+		_release_lorry()
 	G.stats["luis_fails"] = int(G.stats.get("luis_fails", 0)) + 1
 	G.hud.toast(Loc.t("t_sab_fail_" + why), 6.0)
 	Sfx.noise(0.5, -8.0)
@@ -484,6 +530,8 @@ func abort(dropped: bool) -> void:
 
 func _clear() -> void:
 	G.traffic.closed = {}
+	G.hud.set_suspicion(0.0, false)
+	_clear_van_bark()
 	if man != null and is_instance_valid(man):
 		G.npcs.erase(man)
 		G.named.erase("repartidor")
@@ -521,6 +569,8 @@ func _reward() -> void:
 		G._mission_done()
 		G._show_step()
 		G.comida.eat()                           # ...and the kebab, there and then
+		if G.inventario != null:
+			G.inventario.add_item("kebab", 1)    # ...plus one tucked in your pocket for later
 		get_tree().create_timer(4.5).timeout.connect(func(): G.hud.toast(Loc.t("t_luis_unlocked"), 5.0)))
 
 # ---------------- every tick ----------------
@@ -548,9 +598,16 @@ func tick(dt: float, pp: Vector2) -> void:
 			_left.erase(thing)
 		elif Vector2(thing.global_position.x, thing.global_position.z).distance_to(pp) > 120.0 or stage == "cine_out":
 			G.npcs.erase(thing)
+			G.cars.erase(thing)
 			thing.queue_free()
 			_left.erase(thing)
+	if _van_bark != null and is_instance_valid(_van_bark):
+		if _van_bark_t > 0.0:
+			_van_bark_t -= dt
+			if _van_bark_t <= 0.0:
+				_van_bark.visible = false
 	if stage == "":
+		G.hud.set_suspicion(0.0, false)
 		return
 	if G.dlg == null and _pause > 0.0:
 		_pause -= dt
@@ -576,6 +633,7 @@ func tick(dt: float, pp: Vector2) -> void:
 					return
 			else:
 				caught = maxf(0.0, caught - dt)
+			G.hud.set_suspicion(caught / 0.6, caught > 0.01)
 			if stage == "window":
 				t -= dt
 				var left := maxf(0.0, t)
@@ -652,10 +710,17 @@ func _follow(dt: float, pp: Vector2) -> void:
 		lorry["halt"] = true
 		if c.vel.length() < 0.6:
 			G.set_target(null, false)
+			G.hud.set_suspicion(0.0, false)
 			_warn("")
 			_unload()
 		return
 	_make_way()
+	# Floating murmur bubbles over the van while he drives fast across town
+	_van_murmur_t -= dt
+	if _van_murmur_t <= 0.0 and c.forward_speed() > 1.5:
+		_van_murmur_t = randf_range(3.6, 5.4)
+		var pool: Array = Loc.t("sab_murmurs")
+		_van_say(String(pool.pick_random()) if randf() < 0.72 else _arabic(), 2.6)
 	if c.forward_speed() < -0.5:                 # backing out of somewhere, towards you: if it brings you within its mirror,
 		_backed = BACKED_GRACE                   # that is not you following too close -- you have a few seconds to drop back
 		seen = 0.0
@@ -663,17 +728,21 @@ func _follow(dt: float, pp: Vector2) -> void:
 		_backed = maxf(0.0, _backed - dt)
 	if not armed and d > CLOSE + 5.0:
 		armed = true
-	# "he sees you in the mirror": close behind it while it is going along. (Not while it stands in a jam or backs out of
-	# one, and not if it has had to turn round and comes past you: none of that is your doing.)
+	# Visual suspicion meter: fills faster the closer you get behind the van, drains smoothly as you back off.
 	var behind: bool = (pp - c.p).dot(Vector2(sin(c.h), cos(c.h))) < 0.0
-	if armed and d < CLOSE and behind and c.forward_speed() > 1.5 and _backed <= 0.0:
-		seen += dt
-		_warn("close")
+	if armed and behind and c.forward_speed() > 1.5 and _backed <= 0.0 and d < SUS_FAR:
+		var rate: float
+		if d <= CLOSE:
+			rate = lerpf(1.0, 1.35, clampf((CLOSE - d) / (CLOSE - SUS_NEAR), 0.0, 1.0))
+		else:
+			rate = 0.35 * (1.0 - (d - CLOSE) / (SUS_FAR - CLOSE))
+		seen += dt * rate
 		if seen >= SEEN_FOR:
 			fail("close")
 			return
 	else:
-		seen = maxf(0.0, seen - dt * 0.5)
+		seen = maxf(0.0, seen - dt * 0.55)
+	G.hud.set_suspicion(seen / SEEN_FOR, true)
 	_sight_t -= dt
 	if _sight_t <= 0.0:
 		_sight_t = 0.3
@@ -682,7 +751,7 @@ func _follow(dt: float, pp: Vector2) -> void:
 	lost = lost + dt if d > FAR else 0.0
 	if d > FAR * 0.75 or blind > BLIND_FOR * 0.5:
 		_warn("far")
-	elif not (armed and d < CLOSE and behind):
+	else:
 		_warn("")
 	if lost >= LOST_FOR or blind >= BLIND_FOR:
 		fail("lost")

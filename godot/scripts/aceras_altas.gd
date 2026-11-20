@@ -149,13 +149,13 @@ func _flight(edge: Vector2, y: float, down: Vector2, wide: float, drop: float, n
 		box(-wide / 2.0, -drop - 0.4, (k - 1) * TREAD, wide, drop + 0.4 - k * rise, TREAD, "hormigon")
 	_xf = keep
 	var run: float = TREAD * (n - 1)
-	var foot: Vector2 = edge + down * run
+	var foot: Vector2 = edge + down * (run + 0.3)
 	var side := Vector2(down.y, -down.x) * wide / 2.0
 	var c0: Vector2 = edge + side
 	var c1: Vector2 = edge - side
 	var c2: Vector2 = foot - side
 	var c3: Vector2 = foot + side
-	_hull([Vector3(c0.x, y, c0.y), Vector3(c1.x, y, c1.y), Vector3(c2.x, y - drop + rise, c2.y), Vector3(c3.x, y - drop + rise, c3.y),
+	_hull([Vector3(c0.x, y, c0.y), Vector3(c1.x, y, c1.y), Vector3(c2.x, y - drop - 0.04, c2.y), Vector3(c3.x, y - drop - 0.04, c3.y),
 		Vector3(c0.x, y - drop - 0.4, c0.y), Vector3(c1.x, y - drop - 0.4, c1.y), Vector3(c2.x, y - drop - 0.4, c2.y), Vector3(c3.x, y - drop - 0.4, c3.y)])
 	var mid: Vector2 = edge + down * run / 2.0
-	_decks.append({"o": mid, "ax": -down, "half": run / 2.0, "wide": wide / 2.0, "top": y, "ramp": run, "low": y - drop})
+	_decks.append({"o": mid, "ax": -down, "half": run / 2.0 + 0.25, "wide": wide / 2.0, "top": y, "ramp": run, "low": y - drop})

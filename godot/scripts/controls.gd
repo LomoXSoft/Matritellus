@@ -3,9 +3,9 @@ extends Node
 ## and a gamepad works everywhere. Keyboard bindings are stored by Settings.
 
 ## the actions the player can reassign, in the order the settings screen lists them
-const REBINDABLE := ["forward", "back", "left", "right", "interact", "run", "handbrake", "horn", "radio", "map", "pause", "box_punch_other", "box_low"]
+const REBINDABLE := ["forward", "back", "left", "right", "interact", "run", "handbrake", "horn", "radio", "map", "inventory", "pause", "box_punch_other", "box_low"]
 const DEFAULT_KEYS := {"forward": KEY_W, "back": KEY_S, "left": KEY_A, "right": KEY_D, "interact": KEY_E, "run": KEY_SHIFT,
-	"handbrake": KEY_SPACE, "horn": KEY_H, "radio": KEY_R, "map": KEY_M, "pause": KEY_P, "box_punch_other": KEY_F, "box_low": KEY_CTRL}
+	"handbrake": KEY_SPACE, "horn": KEY_H, "radio": KEY_R, "map": KEY_M, "inventory": KEY_I, "pause": KEY_P, "box_punch_other": KEY_F, "box_low": KEY_CTRL}
 
 var keys: Dictionary = DEFAULT_KEYS.duplicate()
 
@@ -13,7 +13,7 @@ var keys: Dictionary = DEFAULT_KEYS.duplicate()
 ## device_changed tells whoever is showing such text to write it again.
 signal device_changed
 var pad := false
-const PAD_NAMES := {"interact": "(A)", "punch": "(X)", "box_punch_other": "(Y)", "box_low": "LB", "run": "RB", "handbrake": "(B)", "horn": "(Y)", "radio": "cruceta →", "map": "BACK", "pause": "START",
+const PAD_NAMES := {"interact": "(A)", "punch": "(X)", "box_punch_other": "(Y)", "box_low": "LB", "run": "RB", "handbrake": "(B)", "horn": "(Y)", "inventory": "(Y)", "radio": "cruceta →", "map": "BACK", "pause": "START",
 	"forward": "stick ↑", "back": "stick ↓", "left": "stick ←", "right": "stick →", "ok": "(A)", "esc": "(B)"}
 var _token: RegEx
 
@@ -105,7 +105,7 @@ func glyph(action: String) -> String:
 ## is in the player's hands (the user, 13 November 2026: icons, not the names written out). A PlayStation pad gets its
 ## own shapes; any other pad (the Steam Machine's, a Steam Deck, an Xbox one) the A B X Y kind.
 const ICONS := "res://assets/botones/"
-const PAD_ICONS := {"interact": "a", "punch": "x", "box_punch_other": "y", "box_low": "lb", "run": "rb", "handbrake": "b", "horn": "y", "radio": "dpad_right",
+const PAD_ICONS := {"interact": "a", "punch": "x", "box_punch_other": "y", "box_low": "lb", "run": "rb", "handbrake": "b", "horn": "y", "inventory": "y", "radio": "dpad_right",
 	"map": "back", "pause": "start", "ok": "a", "esc": "b", "forward": "ls", "back": "ls", "left": "ls", "right": "ls",
 	"tab_prev": "lb", "tab_next": "rb", "turn_left": "lt", "turn_right": "rt", "accel": "rt", "brake": "lt", "look": "rs",
 	"random": "y", "m_up": "dpad_up", "m_down": "dpad_down", "m_left": "dpad_left", "m_right": "dpad_right"}
@@ -237,6 +237,7 @@ func build() -> void:
 	_bind("horn", [_key(keys["horn"]), _pad(JOY_BUTTON_Y)])
 	_bind("radio", [_key(keys["radio"]), _pad(JOY_BUTTON_DPAD_RIGHT)])
 	_bind("map", [_key(keys["map"]), _key(KEY_TAB), _pad(JOY_BUTTON_BACK)])
+	_bind("inventory", [_key(keys["inventory"]), _pad(JOY_BUTTON_Y)])
 	_bind("pause", [_key(keys["pause"]), _key(KEY_ESCAPE), _pad(JOY_BUTTON_START)])
 	# --- in menus (fixed) ---
 	# (the stick is not bound to these: it comes as steps, see _stick below)

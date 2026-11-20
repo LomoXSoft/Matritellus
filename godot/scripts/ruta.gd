@@ -131,7 +131,7 @@ func _add_dog(p: Dictionary) -> void:
 			first = false
 		_dog_k = DOG_LONG / maxf(0.01, maxf(box.size.x, box.size.z))
 	body.scale = Vector3.ONE * _dog_k
-	body.rotation.y = PI                          # (the model looks down its -z)
+	# (perro.glb already faces +z)
 	var ap: AnimationPlayer = null
 	for x in body.find_children("*", "AnimationPlayer", true, false):
 		ap = x

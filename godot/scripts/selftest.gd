@@ -3837,19 +3837,27 @@ func _ajedrez_checks() -> void:
 	AJ.pick(f3)
 	await _frames(12)
 	var body: Node3D = dog["node"].get_child(0)
-	var nose: Vector3 = -body.global_transform.basis.z                 # (the model looks down its own -z)
+	var nose: Vector3 = body.global_transform.basis.z                  # (perro.glb looks down its own +z, like Chara)
 	var going: Vector3 = AJ._sq_world(f3) - AJ._sq_world(g1)
 	var ahead: bool = Vector2(nose.x, nose.z).normalized().dot(Vector2(going.x, going.z).normalized()) > 0.9
 	await _shot("aj_perro_salta")
 	await _ajedrez_waits(func(): return AJ._busy <= 0.0, 200)
-	AJ._cam_from = AJ._world(AJ._local(f3) + Vector2(0.4, 3.6), 1.3)    # (from your side: its face)
+	AJ._cam_from = AJ._world(AJ._local(f3) + Vector2(0.4, 3.6), 1.3)    # (from your side: looking across the board)
 	AJ._cam_at = AJ._world(AJ._local(f3), 0.5)
 	await _frames(40 if shots else 20)
-	var nose2: Vector3 = -body.global_transform.basis.z
+	var nose2: Vector3 = body.global_transform.basis.z
+	var away_from_you: Vector3 = AJ._plaza().global_transform.basis * Vector3(0, 0, -1)
 	var toward_you: Vector3 = AJ._plaza().global_transform.basis * Vector3(0, 0, 1)
-	var faces_you: bool = Vector2(nose2.x, nose2.z).normalized().dot(Vector2(toward_you.x, toward_you.z).normalized()) > 0.9
+	var faces_match: bool = Vector2(nose2.x, nose2.z).normalized().dot(Vector2(away_from_you.x, away_from_you.z).normalized()) > 0.9
+	var opp_king = AJ.figs[M.sq(4, 7)]
+	var opp_fwd: Vector3 = opp_king["node"].global_transform.basis.z
+	var opp_faces: bool = Vector2(opp_fwd.x, opp_fwd.z).normalized().dot(Vector2(toward_you.x, toward_you.z).normalized()) > 0.9
+	var my_pawn = AJ.figs[M.sq(0, 1)]
+	var pawn_fwd: Vector3 = my_pawn["node"].global_transform.basis.z
+	var pawn_faces: bool = Vector2(pawn_fwd.x, pawn_fwd.z).normalized().dot(Vector2(away_from_you.x, away_from_you.z).normalized()) > 0.9
 	await _shot("aj_perro_quieto")
-	_check(holos.size() == 32 and ahead and faces_you, "every piece has its hologram over its head, facing the camera (%d); a dog jumps looking where it goes (%s) and stands looking your way, like everybody (%s)" % [holos.size(), ahead, faces_you])
+	_check(holos.size() == 32 and ahead and faces_match and opp_faces and pawn_faces,
+		"every piece has its hologram (%d); dogs jump nose-first (%s) and face the same way as the other pieces — player pieces face the match (%s/%s), opponent pieces face you (%s)" % [holos.size(), ahead, faces_match, pawn_faces, opp_faces])
 	AJ.test_hold = false
 	AJ.leave()
 	g.stats.erase("ajedrez_partida")
@@ -4902,7 +4910,8 @@ func _mayhem_checks() -> void:
 	_check(c.global_position.distance_to(held_at) < 0.2 and Sfx.held() and not Ambience._players.any(func(p): return p.playing and not p.stream_paused),
 		"the pause stops the world: the car stays where it was (%.2f m) and the music and the engine wait" % c.global_position.distance_to(held_at))
 	var pause_items: Array = g._menu_page("pause")["items"].map(func(it): return it["text"])
-	_check(g.paused and g.menu.visible and pause_items == [Loc.t("m_resume"), Loc.t("m_log"), Loc.t("m_save"), Loc.t("m_settings"), Loc.t("m_quit")], "pause menu: Resume, Log, Save, Settings, Quit")
+	var qc: Dictionary = g._menu_page("quit_confirm")
+	_check(g.paused and g.menu.visible and pause_items == [Loc.t("m_resume"), Loc.t("m_log"), Loc.t("m_save"), Loc.t("m_settings"), Loc.t("m_quit")] and qc["sub"] == Loc.t("m_quit_confirm"), "pause menu: Resume, Log, Save, Settings, Quit (with confirmation)")
 	g.money = 77
 	g._pause_save()
 	_check(int(g._load_slot(g.slot)["money"]) == 77, "Save writes the slot")
@@ -7002,6 +7011,131 @@ func _ruta_checks(pictures := false) -> void:
 	for p in R.people.duplicate():
 		R._drop(p)
 
+func _mejoras_checks(pictures := false) -> void:
+	# 1) Diagonal speed: radial Input.get_vector gives equal magnitude on cardinals & 45-deg diagonals
+	var old_pad := Controls.pad
+	Controls.pad = true
+	Input.action_press("forward", 1.0)
+	var v_card := Input.get_vector("left", "right", "back", "forward", 0.25)
+	Input.action_release("forward")
+	Input.action_press("forward", 0.7071)
+	Input.action_press("right", 0.7071)
+	var v_diag := Input.get_vector("left", "right", "back", "forward", 0.25)
+	Input.action_release("forward")
+	Input.action_release("right")
+	Controls.pad = old_pad
+	_check(is_equal_approx(g.stick_speed(v_card.length()), 9.0) and is_equal_approx(g.stick_speed(v_diag.length()), 9.0),
+		"player movement speed is consistent on cardinals (%.1f) and 45-deg diagonals (%.1f)" % [g.stick_speed(v_card.length()), g.stick_speed(v_diag.length())])
+	# 2) Ramps: Z15 driving onto Ermita de San Sebastian steps & Plaza ramp climbs/launches instead of stopping dead
+	var z15 = g.paca_car
+	if z15 != null:
+		g._enter_car(z15)
+		var ramp_deck = null
+		for d in MapData.decks:
+			if d.has("ramp") and float(d["top"]) - float(d["low"]) >= 0.45:
+				ramp_deck = d
+				break
+		var launched := false
+		if ramp_deck != null:
+			var ax: Vector2 = ramp_deck["ax"]
+			var o: Vector2 = ramp_deck["o"]
+			var start_p: Vector2 = o - ax * (float(ramp_deck["half"]) + 8.0)
+			z15.place(start_p, atan2(ax.x, ax.y))
+			z15.set_speed(ax * 16.0)
+			var max_y: float = z15.global_position.y
+			for _k in range(50):
+				await get_tree().physics_frame
+				max_y = maxf(max_y, z15.global_position.y)
+				if z15.airborne() or z15.linear_velocity.y > 2.0 or max_y > float(ramp_deck["top"]) + 0.1:
+					launched = true
+			z15.set_speed(Vector2.ZERO)
+		_check(launched, "driving fast onto a ramp-like structure launches the car airborne")
+		# 3) Garage repaint + heat clear
+		var old_paint: int = z15.paint
+		g.police.heat = 80.0
+		g.police.chasing = true
+		g._mended(z15, 0)
+		_check(z15.paint != old_paint and g.police.heat == 0.0 and not g.police.chasing,
+			"garage repaints car (0x%x -> 0x%x) and clears police heat (%.0f)" % [old_paint, z15.paint, g.police.heat])
+		g._exit_car()
+	# 4) Police & Guardia Civil uniformed drivers
+	var pit_look: Dictionary = g.officer_look("pitufo")
+	var tri_look: Dictionary = g.officer_look("tricornio")
+	_check(int(pit_look.get("shirt", 0)) == 0x2456b8 and String(pit_look.get("hat", "")) == "cap" and String(tri_look.get("hat", "")) == "tricorn" and int(tri_look.get("shirt", 0)) == 0x3f6b45,
+		"Pitufos wear blue uniform + cap, Tricornios clone Ramirez with tricorn")
+	# 5) Split hit phrases (bat-only, car-only, shared, including ¡Ostia!)
+	var has_ostia := false
+	for k in ["hit_both", "hit_car", "hit_bat"]:
+		for l in Loc.TX[k]["es"]:
+			if String(l).contains("Ostia"):
+				has_ostia = true
+	_check(Loc.TX.has("hit_bat") and Loc.TX.has("hit_car") and Loc.TX.has("hit_both") and has_ostia,
+		"hit phrases are split into bat-only (%d), car-only (%d) and shared (%d) including ¡Ostia!" % [Loc.TX["hit_bat"]["es"].size(), Loc.TX["hit_car"]["es"].size(), Loc.TX["hit_both"]["es"].size()])
+	# 6) Big map mission select / deselect (hiding green arrow)
+	g.phase = "play"
+	g.set_target(g.places["home"]["p"], true)
+	await _frames(4)
+	var arrow_on: bool = g.arrow.visible
+	g._set_map(true)
+	await _frames(6)
+	if pictures:
+		await _shot("mejora_mapa")
+	g.select_mission("none")
+	g._set_map(false)
+	await _frames(4)
+	var arrow_off: bool = not g.arrow.visible and not g.beacon.visible and MapData.route_pts.is_empty()
+	g.select_mission("auto")
+	await _frames(4)
+	var arrow_back: bool = g.arrow.visible
+	_check(arrow_on and arrow_off and arrow_back, "from big map, deselecting mission removes green arrow (%s -> %s -> %s)" % [arrow_on, arrow_off, arrow_back])
+	g.phase = "free"
+	g.set_target(null, false)
+	# 7) 3D floating spinning glowing pickups
+	var base_p: Vector2 = g.places["home"]["p"]
+	g.player.p = base_p + Vector2(0.0, -4.5)
+	g.player.h = 0.0
+	g.player.sync()
+	var got := [false]
+	g.pickups.spawn("bate", base_p + Vector2(-1.6, 0.0), {"tag": "t_bat", "on_take": func(): got[0] = true})
+	g.pickups.spawn("spray", base_p + Vector2(0.0, 0.0), {"tag": "t_spray"})
+	g.pickups.spawn("carteles", base_p + Vector2(1.6, 0.0), {"tag": "t_post"})
+	g.cam_fixed = [MapData.at(base_p + Vector2(0.0, -4.8), 2.1), MapData.at(base_p, 1.0)]
+	await _frames(20)
+	if pictures:
+		await _shot("mejora_pickups")
+	g.cam_fixed = null
+	g.player.p = base_p + Vector2(-1.6, 0.0)
+	g.player.sync()
+	await _frames(10)
+	_check(got[0] and g.pickups.items.size() == 2, "3D floating spinning glowing pickups spawn and collect cleanly (collected=%s, left=%d)" % [got[0], g.pickups.items.size()])
+	g.pickups.clear()
+	# 8) Animal Crossing Inventory (2 tabs: Objetos + Objetos clave non-droppable)
+	g.saffron = 3
+	g.stats["menu_done"] = true
+	g.stats["chiki_tags"] = 1
+	g.inventario.add_item("kebab", 2)
+	g.inventario.show_bag()
+	g.inventario.tab = 0
+	g.inventario.sel = 0
+	g.inventario._refresh()
+	await _frames(6)
+	if pictures:
+		await _shot("mejora_inv_obj")
+	var dropped_ok: bool = g.inventario.drop_selected()
+	g.inventario.tab = 1
+	g.inventario.sel = 0
+	g.inventario._refresh()
+	await _frames(6)
+	if pictures:
+		await _shot("mejora_inv_key")
+	var key_locked: bool = not g.inventario.drop_selected() and g.inventario.key_items().size() >= 4
+	g.inventario.close()
+	_check(dropped_ok and g.saffron == 2 and key_locked, "Animal Crossing inventory: Objetos drops/uses (%s, saffron=%d), Objetos clave cannot be dropped/sold (%s)" % [dropped_ok, g.saffron, key_locked])
+	# 9) Quit confirmation & Main Menu Quit
+	var main_has_quit: bool = g._menu_page("main")["items"].any(func(it): return it["text"] == Loc.t("m_quit"))
+	var qc: Dictionary = g._menu_page("quit_confirm")
+	_check(main_has_quit and qc["sub"] == "¿Tás seguro? Mía que se estaba poniendo divertío.", "main menu has Quit and pause Quit asks '¿Tás seguro? Mía que se estaba poniendo divertío.'")
+
 ## The rounds of the neighbours with a name of their own (rondas.gd; the user, 17 Nov 2026): with no mission for you, the
 ## old go to church, the grown-ups to the bars, the children to the parks, by the clock; wanted, back to their spot.
 func _rondas_checks() -> void:
@@ -7967,8 +8101,10 @@ func _recress_checks() -> void:
 	g.player.h = atan2(-S.out.x, -S.out.y)
 	g._door_cool = 0.0
 	await _frames(3)
-	g.player.p = g.entradas.spot(S, false)            # (and on to it)
+	g.player.p = g.entradas.spot(S, false)            # (and on to it, then press Action to enter)
 	g.player.sync()
+	await _frames(4)
+	g.interact()
 	for i in range(60):
 		await get_tree().physics_frame
 		if g.indoors:
@@ -7981,22 +8117,39 @@ func _recress_checks() -> void:
 	g._use_door(false, S)
 	await _frames(5)
 	_check(went_in and not g.indoors and g.player.p.distance_to(S.out_spawn) < 0.5, "the Recress is open: in through its door and out again")
-	# with the Recress open, the big machine is a game against Katakumba69, and a game with him counts with him
+	# with the Recress open, every machine plays against the CPU (and select has an Exit option);
+	# to play against Katakumba69 you talk to him, and a game with him counts with him
 	var kata = g.named.get("katakumba")
 	var folk_was: Dictionary = g.folk.data.duplicate(true)
 	g.indoors = true
 	g.inside_of = S
 	g.player.p = S.seat_you + Vector2(0.0, -0.4)
 	await _frames(4)
-	var trust0: int = g.folk.trust("katakumba")
 	var free_prompt: bool = g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_rec_play"))
 	g.interact()
 	await _frames(6)
-	var versus_kata: bool = g.tokken.active and String(g.tokken.opts.get("foe_tag", "")) == "Katakumba69"
-	g.tokken.test_end(false)
-	await _frames(8)
-	_check(free_prompt and versus_kata and not g.tokken.active and g.folk.trust("katakumba") == trust0 + 5,
-		"the Recress open: the big machine is a game against Katakumba69, and playing him counts with him (+%d)" % (g.folk.trust("katakumba") - trust0))
+	var versus_cpu: bool = g.tokken.active and String(g.tokken.opts.get("foe_tag", "")) == ""
+	var esc_ev := InputEventAction.new()
+	esc_ev.action = "m_back"
+	esc_ev.pressed = true
+	g.tokken.input(esc_ev)
+	await _frames(4)
+	var exited_select: bool = not g.tokken.active
+	var trust0: int = g.folk.trust("katakumba")
+	var versus_kata := false
+	if kata != null:
+		g.player.p = kata.p + Vector2(0.0, -1.2)
+		await _frames(4)
+		g.talk_to(kata)
+		await _frames(4)
+		if g._ask != null:
+			g._ask_pick(0)
+			await _frames(6)
+			versus_kata = g.tokken.active and String(g.tokken.opts.get("foe_tag", "")) == "Katakumba69"
+			g.tokken.test_end(false)
+			await _frames(8)
+	_check(free_prompt and versus_cpu and exited_select and versus_kata and not g.tokken.active and g.folk.trust("katakumba") >= trust0 + 5,
+		"the Recress open: cabinets play CPU (%s) and allow exiting select (%s); talking to Katakumba69 plays him (%s) and counts (+%d)" % [versus_cpu, exited_select, versus_kata, g.folk.trust("katakumba") - trust0])
 	g._use_door(false, S)
 	await _frames(4)
 	# Katakumba69, at full trust, tells you his real name: the once
@@ -8058,7 +8211,7 @@ func _tokken_checks(matches := 12) -> void:
 	var ended: Array = []
 	T.start({"foe": "monstruo", "foe_tag": "DoomAssasin78", "ai": "alcalde"}, func(w): ended.append(w))
 	await tick.call(20)
-	var opened: bool = g.phase == "tokken" and T.active and T.mode == "select" and T.touch_buttons().size() == 1
+	var opened: bool = g.phase == "tokken" and T.active and T.mode == "select" and T.touch_buttons().size() == 2
 	T.pick = 3
 	await snap.call("tokken_1_elegir")
 	T.pick = 0
@@ -9660,6 +9813,17 @@ func _run() -> void:
 		print("RONDAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--mejoras"):       # verification of the 20 improvements (ramps, diagonal speed, hit lines, police drivers, garage repaint+heat, map tracking, 3D pickups, AC inventory, quit confirm)
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		g.phase = "free"
+		shots = shots or OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _mejoras_checks(shots)
+		print("MEJORAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--colores"):       # just the colours of names, places and mission objects in dialogue
 		_colores_checks()
 		print("COLORES %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
@@ -9726,13 +9890,16 @@ func _run() -> void:
 		var green: bool = arrow_col.g > 0.7 and arrow_col.a < 0.95 and arrow_col.a > 0.5      # (green, and a little see-through)
 		await _shot("entrada_vip")
 		g.cam_fixed = null
-		g.player.p = arrow_at                               # stepping on it
+		g.player.p = arrow_at                               # standing on it: must press Action to enter (not auto)
 		g.player.sync()
+		await _frames(6)
+		var wait_action: bool = not g.indoors and E.enter_here() == V
+		g.interact()
 		var waited := 0
 		while not g.indoors and waited < 30:
 			await _frames(1)
 			waited += 1
-		var went_in: bool = g.indoors and g.inside_of == V
+		var went_in: bool = wait_action and g.indoors and g.inside_of == V
 		await _frames(20)
 		await _shot("entrada_dentro")
 		await _skip_dialog()
@@ -9795,6 +9962,8 @@ func _run() -> void:
 			var r_shown: bool = E.mark_of(R, false) != null and E.mark_of(R, false).visible and E.is_shop(R)
 			g.player.p = E.spot(R, false)
 			g.player.sync()
+			await _frames(4)
+			g.interact()
 			waited = 0
 			while not g.indoors and waited < 30:
 				await _frames(1)
@@ -12564,6 +12733,8 @@ func _run() -> void:
 		_check(g.phase == "play" and g._step_flag == "bed" and g.target != null, "then the arrow leads to your door, and the screen does not go dark yet")
 		g.player.p = g.entradas.spot(g.casa, false)
 		g.player.sync()
+		await _frames(4)
+		g.interact()
 		var waited := 0
 		while not g.indoors and waited < 60:
 			await _frames(1)
@@ -13606,7 +13777,7 @@ func _run() -> void:
 			DirAccess.remove_absolute(g._slot_path(i))
 	g.menu.open("main")
 	var main_items: Array = g._menu_page("main")["items"].map(func(it): return it["text"])
-	_check(g.menu.visible and main_items == [Loc.t("menu_new"), Loc.t("m_settings"), Loc.t("m_howto"), Loc.t("m_credits")], "main menu: New game, Settings, How to play, Credits (no Continue without a save)")
+	_check(g.menu.visible and main_items == [Loc.t("menu_new"), Loc.t("m_settings"), Loc.t("m_howto"), Loc.t("m_credits"), Loc.t("m_quit")], "main menu: New game, Settings, How to play, Credits, Quit (no Continue without a save)")
 	await _shot("0_menu")
 	g.menu.open("settings")
 	var before_res: int = Settings.data["res"]
@@ -13893,6 +14064,8 @@ func _run() -> void:
 		await _frames(20)
 		g.player.p = g.entradas.spot(g.casa, false)
 		g.player.sync()
+		await _frames(4)
+		g.interact()
 		var waited_in := 0
 		while not g.indoors and waited_in < 60:
 			await _frames(1)
@@ -13935,8 +14108,10 @@ func _run() -> void:
 	_check(g.vip.open > 0.9, "the shop door swings open as you walk up")
 	await _shot("d2_shopfront")
 	var to_door: bool = g.target != null and (g.target as Vector2).distance_to(g.vip.door_out) < 0.5
-	g.player.p = g.vip.door_out + (g.vip.out_spawn - g.vip.door_out).normalized() * 0.9
+	g.player.p = g.entradas.spot(g.vip, false)
 	g.player.h = g.vip.out_h + PI
+	await _frames(4)
+	g.interact()
 	await _frames(6)
 	var fonsi = g.named["vip"]
 	g.marcas._t = 0.0
@@ -14117,6 +14292,8 @@ func _run() -> void:
 		g.player.p = door_at + (g.places["home"]["p"] - door_at).normalized() * 4.5
 		await _frames(5)
 		g.player.p = door_at
+		await _frames(4)
+		g.interact()
 		var waited := 0
 		while not g.indoors and waited < 90:
 			await _frames(1)

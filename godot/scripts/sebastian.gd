@@ -273,9 +273,21 @@ func _flight(edge: Vector2, y: float, down: Vector2, wide: float, drop: float, k
 		box(-wide / 2.0, -drop - 0.5, (k - 1) * tread, wide, drop + 0.5 - k * rise, tread, key)
 	_xf = keep
 	var run: float = tread * (n - 1)
+	var top_in: Vector2 = edge - down * 0.25
+	var foot: Vector2 = edge + down * (run + 0.35)
+	var side := Vector2(down.y, -down.x) * wide / 2.0
+	var c0: Vector2 = top_in + side
+	var c1: Vector2 = top_in - side
+	var c2: Vector2 = foot - side
+	var c3: Vector2 = foot + side
+	var fy2: float = minf(y - drop, ground(c2.x, c2.y)) - 0.05
+	var fy3: float = minf(y - drop, ground(c3.x, c3.y)) - 0.05
+	var bot: float = minf(fy2, fy3) - 0.6
+	_hull([Vector3(c0.x, y, c0.y), Vector3(c1.x, y, c1.y), Vector3(c2.x, fy2, c2.y), Vector3(c3.x, fy3, c3.y),
+		Vector3(c0.x, bot, c0.y), Vector3(c1.x, bot, c1.y), Vector3(c2.x, bot, c2.y), Vector3(c3.x, bot, c3.y)])
 	var mid: Vector2 = edge + down * run / 2.0
 	var up_axis: Vector2 = (spot(0.0, 0.0) - spot(down.x, down.y)).normalized()
-	_decks.append({"o": spot(mid.x, mid.y), "ax": up_axis, "half": run / 2.0, "wide": wide / 2.0, "top": level + y, "ramp": run, "low": level + y - drop})
+	_decks.append({"o": spot(mid.x, mid.y), "ax": up_axis, "half": run / 2.0 + 0.3, "wide": wide / 2.0, "top": level + y, "ramp": run, "low": level + y - drop})
 
 ## a bench of iron and wooden slats, facing `faces` (a way on the floor plan)
 func _bench(at: Vector2, y: float, faces: Vector2) -> void:
