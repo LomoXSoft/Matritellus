@@ -108,7 +108,7 @@ Versiones:
 | 0.0.15 | 17/11/2026 | Escribir con mando, en el móvil y bajo Steam: ya se puede pasar del Padrón (el teclado del móvil, el de Steam, o el del juego, que ahora cabe y marca la tecla en amarillo); la A del mando pulsa; el tres en raya se juega con mando. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.15 |
 | 0.0.16 | 17/11/2026 | Mucho más fluido al girar la cámara (las casas fundidas por zonas: la peor dirección de 10 a 53 fps); Feliciano y su jamón de los jueves; armas nuevas y el swing del bate en la riña; teclado QWERTY; la ermita de San Sebastián y su parque; el Buen Suceso y la Travesía de las Cruces. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.16 |
 | 0.0.17 | 17/11/2026 | Coches que ya no salen volando tras la pausa, el stick del mando por pasos, niños con horario, colores en los diálogos, rondas de los vecinos con nombre, la ruta del colesterol, el ajedrez con vista de cine, Brillo, la ermita de San Cristóbal y calles nuevas. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.17 |
-| 0.0.18 | 19/11/2026 | Versión local con el boxeo de Fonsi, el bate de Henry, las recreativas RALLY 9 y Hit The VIP del Galaxy Recress y el arreglo de «Bajar» en la misión del puente. [Paquetes](dist/v0.0.18/) y [registro de trabajo](TRASPASO_CLAUDE.md). |
+| 0.0.18 | 20/11/2026 | El boxeo de Fonsi rehecho, la riña del jamón con golpe cargado, las recreativas RALLY 9 y Hit The VIP del Galaxy Recress, tres cámaras en el coche y cámara lenta en los saltos, el taller que repinta y quita la búsqueda, la mochila, elegir misión en el mapa, Tomasa Malvora y el interior de los chinos, y el arreglo de «Bajar». https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.18 |
 
 ## Varias sesiones en la misma carpeta
 

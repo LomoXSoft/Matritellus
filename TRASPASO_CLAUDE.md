@@ -197,6 +197,35 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - `python tools/run_tests.py palabros --headless`: **3 ok, 0 failed** ([log](logs/selftest_palabros_20261120_151815.log)).
 - `python tools/run_tests.py recress --headless` (**16 ok, 0 failed**), `tokken shots --window` (**11 ok, 0 failed**), `rondas --headless` (**1 ok, 0 failed**), `sabotaje --headless` (**45 ok, 0 failed**).
 
+### Cámaras al conducir, Tomasa Malvora, fumadores y HUD dev (20/11)
+
+20 de noviembre de 2026. Implementadas las 5 mejoras nuevas en `X:\MatritellusGPT` sobre `main` (commit `8262fd8`, con el director del tráiler `trailer.gd`; la canción, `trailer song/`, queda fuera del repositorio en `.gitignore`):
+
+- **Sistema de cámara en coche (3 modos):** acción reasignable `cam_mode` (`V` en teclado, `cruceta ←` / `R3` en mando, botón táctil «Cámara» en `controls.gd` y `touch.gd`).
+  - `0` Tercera persona (clásica).
+  - `1` Primera persona (`car.gd:driver_pov()` + `set_driver_head_visible(false)` en el nodo `head` de `chara.gd:sit()`): vista desde encima de los hombros dentro del habitáculo con `cam.near = 0.05` y giro libre de cabeza con ratón/stick derecho.
+  - `2` Cinemática tipo GTA (`game.gd:_pick_cine_spot()`): planos estratégicos en acera/esquina/ángulo bajo validados con raycast; salta automáticamente al siguiente punto si el coche se aleja `> 36 m`, si pasan `≥ 5 s` o si un edificio tapa la vista.
+- **Slow-motion + cámara cinemática en saltos de coche:** `game.gd:_update_air_cine()` detecta saltos reales en el aire (`airborne()`, altura sobre el suelo/rampa), baja `Engine.time_scale` suavemente a `0,38` con plano cinemático lateral-bajo siguiendo el vuelo y restaura `1,00` al aterrizar (y al instante al pausar, bajar del coche o cambiar de fase).
+- **Tomasa Malvora e interior de los chinos del Arroyuelo:**
+  - Nuevo `godot/scripts/chinos_dentro.gd` en `(1800, 1400)`, conectado en `chinos.gd` y `entradas.gd` según el horario comercial del local.
+  - Nuevo `godot/scripts/tomasa.gd`: Tomasa Malvora pasea cerca de los chinos mientras están abiertos; al hablar ofrece el recado (`Sí` / `No`: decir «No» la enfada y resta confianza; decir «Sí» hace que espere fuera). Dentro del local, **El chino** habla en infinitivo advirtiendo que no robes nada porque te vigila, y en el pasillo derecho gira el paquete de tabaco (`pickups.gd`, `auto = false`, cartel «Comprar · 6 €»). Al entregarlo a Tomasa termina la misión (`+10` confianza, `+3` PC, `10 €`), explica que sus hijos le vigilan el dinero pero que ella controla, y se enciende un cigarro. El paquete figura en `Objetos clave` de `inventario.gd`.
+- **Tabaco en el 5 % de la población (no niños):** `game.gd:_neighbour_look()` asigna `"smoke": true` al 5 % de vecinos adultos y mayores (0 % niños); `chara.gd:_cigarette()` acopla un cigarro encendido con brasa emisiva y voluta ligera de humo en `neck`.
+- **Opción de desarrollador para ocultar HUD:** fila «Botón ocultar HUD (ºª / Select)» en `Pausa → Desarrollador` (`game.gd:dev_hud_key`, `set_hud_hidden()`). Con el modo desarrollador y la opción activados, `ºª` en teclado y `Select` (`JOY_BUTTON_BACK`) en mando ocultan y muestran el HUD, flecha guía, baliza, FPS y controles táctiles sin bloquear los menús.
+
+**Pruebas ejecutadas (todas con 0 fallos y 0 errores de script):**
+- `python tools/run_tests.py mejoras2 --window`: **9 ok, 0 failed** ([log](logs/selftest_mejoras2_20261120_182926.log)) + capturas revisadas (`mejora2_cam_fp.png`, `mejora2_cam_cine.png`, `mejora2_air_slowmo.png`, `mejora2_chinos_tabaco.png`).
+- `python tools/run_tests.py chinos --window`: **5 ok, 0 failed** ([log](logs/selftest_chinos_20261120_183050.log)).
+- `python tools/run_tests.py palabros --headless`: **3 ok, 0 failed** ([log](logs/selftest_palabros_20261120_182640.log)).
+
+### Publicación de la 0.0.18 en GitHub (20/11, Claude · Sistemas)
+
+20 de noviembre de 2026. El usuario pidió publicar la 0.0.18 con todo lo pendiente y que las sesiones de Claude trabajen desde ahora en `X:\MatritellusGPT` (`X:\Matritellus` queda de copia de seguridad). Avisadas Edificios Especiales (Pretil), Texturas y Modelado y Worldbuilding; Creador y Recreativos están archivadas.
+
+- **Prueba completa** (`python tools/run_tests.py`): 879 ok y 1 fallo en 568 s ([log](logs/selftest_full_20261120_231727.log)). El fallo era de la prueba: la copistería del Recress esperaba entrar solo con pisar la flecha y desde la tanda de 20 mejoras hay que pulsar Acción. `selftest.gd` llama ahora a `g.interact()` sobre la flecha, como ya hacía la del Recress. `python tools/run_tests.py recress --headless`: 16 ok ([log](logs/selftest_recress_20261120_232718.log)).
+- **Commits:** `8262fd8` (la tanda de cámaras, Tomasa, fumadores, HUD dev y tráiler) y «Matritellus 0.0.18» con estas notas. La etiqueta local `v0.0.18`, que no se había subido, se movió a este último.
+- **Paquetes** rehechos con `tools/make_apk.py 0.0.18`, `tools/make_installer.py` y `tools/make_linux.py`, copiados a `dist/v0.0.18/` con sus `SHA256SUMS.txt` nuevas, y subidos a la release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.18
+- **Pendiente:** la casa de Matías Pérez 16 sale como hueco hasta que Pretil la haga a mano (aviso de Texturas).
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.

@@ -6,6 +6,7 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
+- **Cámaras al conducir, Tomasa Malvora, chinos del Arroyuelo, fumadores y HUD dev (20/11).** 3 modos de cámara en coche (`V` / cruceta izq. / R3: 3.ª persona, 1.ª persona sin cabeza desde encima de hombros, cinemática tipo GTA con saltos cada ≥5 s o si se aleja), slow-motion + cámara cinemática al saltar por los aires con el coche, interior completo de los chinos del Arroyuelo (`chinos_dentro.gd`) con dependiente hablando en infinitivo, misión de Tomasa Malvora (`tomasa.gd`) con paquete de tabaco giratorio a 6 €, tabaco en el 5 % de los adultos/mayores (0 % niños) y opción de desarrollador para ocultar/mostrar el HUD (`ºª` / `Select`). [Detalle y pruebas](TRASPASO_CLAUDE.md#cámaras-al-conducir-tomasa-malvora-fumadores-y-hud-dev-2011).
 - **Tanda de 20 mejoras jugables (20/11).** Rendimiento al pegar carteles, rampas lanzaderas de coches, cinemática nocturna del Galaxy Recress limpia, botón «Salir» en Tokken 9, Rally 9 a 3 vueltas con ruedas corregidas/hitbox dinámica/nitro de alcance, Katakumba69 por diálogo (máquinas contra la CPU), orientación de piezas y perros en el ajedrez, rondas de ocio de 12 NPCs únicos, velocidad diagonal radial, medidor de sospecha + furgoneta rápida con murmullos + arreglo de captura fuera de la furgoneta en el kebab, frases de golpe divididas (bate / atropello / ambas con «¡Ostia!»), conductores uniformados de policía y Guardia Civil, repintado y borrado de búsqueda en taller, pulsar Acción para entrar en interiores, selector/deselector de misión en el mapa grande, pickups 3D flotantes con halo (`pickups.gd`), inventario estilo Animal Crossing con 2 pestañas (`inventario.gd`) y confirmación de salida con ratón en menús. [Detalle y pruebas](TRASPASO_CLAUDE.md#tanda-de-20-mejoras-jugables-2011).
 - **Hit The VIP.** La versión local 0.0.18 incluye la recreativa de boxeo contra Fonsi en el Galaxy Recress. [Ubicación, controles y pruebas](TRASPASO_CLAUDE.md#hit-the-vip-en-el-galaxy-recress).
 - **Bajar del coche (19/11).** Corregida la salida al frenar y la actualización del aviso de interacción. El filtro `bajar` llega al puente con mando, habla con Alberto y sube a otro coche. [Reproducción y resultados](TRASPASO_CLAUDE.md#salir-del-coche-en-la-misión-del-puente).
@@ -21,9 +22,9 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
 
 ## Versión
 
-- **Versión local 0.0.18 (19/11/2026).** La [prueba completa](logs/selftest_full_20261119_201317.log) pasó sus 880 comprobaciones. [Windows, Android y Linux](dist/v0.0.18/) · [Cambios y pruebas](TRASPASO_CLAUDE.md).
+- **Publicada:** 0.0.18 (20/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.18 — completa: 879 ok y 1 fallo de la propia prueba (la copistería sin pulsar Acción), corregido y comprobado con `recress` (16 ok). Lo hizo Codex en X:\MatritellusGPT: [cambios y pruebas](TRASPASO_CLAUDE.md).
 
-- **Publicada:** 0.0.17 (17/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.17 — completa: 816 ok, 0 fallos.
+- **Anterior:** 0.0.17 (17/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.17 — completa: 816 ok, 0 fallos.
   - **Sistemas:**
     - Pausa: los coches ya no salen volando al volver (`CarS.held`: sin fuerzas acumuladas con la física parada).
     - El stick en menús, tableros y botones va por pasos con repetición de tecla (`controls.gd _stick`), no una pulsación por cada movimiento: el Steam Controller se desbocaba.
