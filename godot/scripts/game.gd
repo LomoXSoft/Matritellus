@@ -3192,8 +3192,16 @@ func _minigame_over(won: bool, unlock_box := false) -> void:
 	_leave_ring()
 	indoors = _mg["indoors"]
 	player.p = _mg["p"]
+	if _mg.has("heading"):     # Return facing the arcade cabinet, with the hall already in view.
+		player.h = _mg.heading
+		cam_yaw = _mg.yaw
+		cam_pos = _mg.eye
+		cam_look = _mg.look
+		cam.position = cam_pos
+		cam.look_at(cam_look)
+	else:
+		cam_pos = Vector3(player.p.x, MapData.height(player.p) + 3.0, player.p.y - 3.0)
 	player.sync()
-	cam_pos = Vector3(player.p.x, MapData.height(player.p) + 3.0, player.p.y - 3.0)
 	phase = _mg["phase"]
 	if won:
 		stats["box_wins"] = int(stats.get("box_wins", 0)) + 1
@@ -4111,6 +4119,10 @@ func interact() -> void:
 		recress.stick(recress.shop_near(player.p))
 	elif recress.can_play(player.p):
 		recress.play()
+	elif recress.at_hit_vip(player.p):
+		_mg = {"p": player.p, "indoors": indoors, "phase": phase, "heading": player.h,
+			"yaw": cam_yaw, "eye": cam_pos, "look": cam_look}
+		_start_boxing(_minigame_over)
 	elif recress.at_rally(player.p):
 		rally.start()
 	elif recress.at_machine(player.p):
@@ -4720,6 +4732,8 @@ func _physics_process(delta: float) -> void:
 						pr = Loc.t("p_garage_in")
 		elif recress.shop_near(pp) != null:
 			pr = Loc.t("p_rec_poster")
+		elif recress.at_hit_vip(pp):
+			pr = Loc.t("p_hit_vip")
 		elif recress.at_rally(pp):
 			pr = Loc.t("r9_play")
 		elif recress.can_play(pp) or recress.at_machine(pp):

@@ -1227,10 +1227,13 @@ func free_play(p: Vector2) -> void:
 func at_rally(p: Vector2) -> bool:
 	return done() and G.indoors and G.inside_of == sala and sala.state == "abierto" and p.distance_to(sala.rally_seat) < 1.35
 
+func at_hit_vip(p: Vector2) -> bool:
+	return done() and G.indoors and G.inside_of == sala and sala.open and p.distance_to(sala.cabinets[sala.HIT_VIP][0]) < 1.2
+
 func at_machine(p: Vector2) -> bool:
 	if not done() or not G.indoors or G.inside_of != sala:
 		return false
-	for c in sala.cabinets:
-		if (c[0] as Vector2).distance_to(p) < 1.2:
+	for i in range(sala.cabinets.size()):
+		if i != sala.HIT_VIP and p.distance_to(sala.cabinets[i][0]) < 1.2:
 			return true
 	return p.distance_to(sala.seat_you) < 1.4

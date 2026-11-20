@@ -1083,6 +1083,7 @@ const TX := {
 	"kata_tk_lost": {"es": ["Frame data, {amigo|amiga}. Frame data.", "Ni el alcalde me dura tanto.", "Buen intento. Ya casi me rozas.", "Eso te pasa por no cancelar."],
 		"en": ["Frame data, my friend. Frame data.", "Even the mayor doesn't last me that long.", "Good try. You nearly touched me.", "That's what you get for not cancelling."]},
 	"p_rec_poster": {"es": "<interact> Pegar cartel", "en": "<interact> Stick up poster"},
+	"p_hit_vip": {"es": "<interact> Hit The VIP", "en": "<interact> Hit The VIP"},
 	"r9_play": {"es": "<interact> Jugar a RALLY 9", "en": "<interact> Play RALLY 9"},
 	"r9_lap": {"es": "VUELTA", "en": "LAP"},
 	"r9_place": {"es": "PUESTO", "en": "POSITION"},

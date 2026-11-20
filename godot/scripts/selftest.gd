@@ -8902,6 +8902,49 @@ func _box_routes() -> void:
 			_box_two_rounds(true)
 			_check(g.stats.box_fights == 2 and g.stats.box_wins == 2 and g.stats.box_best >= old.stats.box_best, "playing from the old slot extends its counters and keeps its record")
 
+func _hit_vip_checks() -> void:
+	g.menu.close()
+	g.start_game(g._idx("alberto"))
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	var hall = g.recress.sala
+	var cabinet: Array = hall.cabinets[hall.HIT_VIP]
+	var spot: Vector2 = cabinet[0]
+	g.set_time(18)
+	g._use_door(true, hall)
+	_check(not g.recress.at_hit_vip(spot), "the boxing cabinet waits for the hall to reopen")
+	g.stats["recress"] = {"stage": "hecho", "posters": []}
+	g.recress.load_state()
+	g.player.p = spot
+	g.player.h = cabinet[1]
+	g.player.sync()
+	await _frames(12)
+	var step: int = g.si
+	var played: int = g.stats.get("box_fights", 0)
+	var wins: int = g.stats.get("box_wins", 0)
+	var key := Controls._pad(JOY_BUTTON_A)
+	_check(g.recress.at_hit_vip(spot) and not g.recress.at_machine(spot) and g.recress.at_rally(hall.rally_seat) and g.recress.at_machine(hall.seat_you), "Hit The VIP, RALLY 9 and the Tokken final have separate targets")
+	_check(g.hud.prompt.text == g.hud.as_shown(g.hud.prompt, Loc.t("p_hit_vip")), "Hit The VIP is offered at the marked cabinet")
+	if shots:
+		g.player.visible = false  # Cabinet detail from the aisle.
+		await _view_at(MapData.at(spot + Vector2(-0.55, 1.75), 2.08), MapData.at(spot + Vector2(0.86, 0), 1.5), "hit_the_vip_mueble", 45)
+		g.player.visible = true
+	for won in [false, true]:
+		var origin: Vector2 = g.player.p
+		var heading: float = g.player.h
+		_vehicle_exit_event(key, true)
+		_vehicle_exit_event(key, false)
+		_check(g.phase == "boxing" and g.boxing.active and g.hud.box_slot.visible and g.player.p.distance_to(g.vip.ring_me) < 1, "the cabinet starts Fonsi's match through the normal interact button")
+		if not g.boxing.active:
+			return
+		_box_two_rounds(won)
+		played += 1
+		wins += int(won)
+		_check(not g.boxing.active and not g.hud.box_slot.visible and g.indoors and g.inside_of == hall and g.player.p.distance_to(origin) < 0.1 and is_equal_approx(g.player.h, heading), "the finished match returns to the same cabinet facing it, win=%s" % won)
+		_check(g.phase == "play" and g.si == step and g.stats.box_fights == played and int(g.stats.get("box_wins", 0)) == wins, "a cabinet match records one result and preserves the current mission")
+		await _frames(10)
+
 ## Capture settled camera frames without advancing the fight between pose and screenshot.
 func _box_photos() -> void:
 	g.menu.close()
@@ -9115,6 +9158,11 @@ func _vehicle_exit_checks() -> void:
 
 func _run() -> void:
 	await _frames(10)
+	if OS.get_cmdline_user_args().has("--hitvip"):
+		await _hit_vip_checks()
+		print("HITVIP %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(int(fails > 0))
+		return
 	if OS.get_cmdline_user_args().has("--bajar"):
 		await _vehicle_exit_checks()
 		print("BAJAR %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])

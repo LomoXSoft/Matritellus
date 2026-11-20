@@ -28,6 +28,7 @@ const BIG_FIGHT := 2.0
 ## tools/blender/recreativas.py: each faces +z, is its real height and stands on y = 0 round its middle. On each, where
 ## its screen is (its middle, its size, how far it leans back, in radians) and where its marquee is (middle, width; for
 ## the words TOKKEN 9 on it): measured on the models. The machines stand where the boxes that stop you are, as before.
+const HIT_VIP := 7  # Last cabinet on the wall with the basketball machine.
 const MODELS := "res://assets/recreativas/"
 const MACHINES := {
 	"neon_negra": {"screen": [Vector3(0.0, 1.237, -0.016), Vector2(0.58, 0.39), 0.15], "marquee": [Vector3(0.0, 1.82, 0.282), 0.42]},
@@ -46,6 +47,7 @@ uniform float offset = 0.0;
 uniform float on = 1.0;
 uniform float big = 0.0;            // the screen over the final: it stays on the one fight, the one being played
 uniform float ko = 0.0;             // 1: the round is over (a white flash fading)
+uniform bool boxing_demo = false;
 uniform float aspect = 1.0;         // the screen's width over its height (the fights are square: black either side)
 void fragment() {
 	float t = TIME + offset;
@@ -56,6 +58,20 @@ void fragment() {
 	uv = clamp(uv, vec2(0.004), vec2(0.996));                              // (not into the edge of the next frame)
 	vec3 c = texture(fights, vec2((frame + uv.x) / 8.0, (row + uv.y) / rows)).rgb * inside;
 	c = mix(c, vec3(1.0), clamp(ko, 0.0, 1.0) * 0.8);
+	if (boxing_demo) {
+		// Ring ropes and the two glove colours from Fonsi's fight, on a pixel grid.
+		vec2 pixel = floor(UV * vec2(64.0, 40.0));
+		float rope = step(mod(pixel.y + 2.0, 10.0), 1.0);
+		c = mix(vec3(0.025, 0.045, 0.09), vec3(0.34, 0.24, 0.19), rope);
+		bool red = pixel.x >= 32.0;
+		float reach = 8.0 * pow(max(0.0, sin(t * 3.5 + (red ? 3.14 : 0.0))), 3.0);
+		vec2 hand = vec2(red ? 63.0 - pixel.x : pixel.x, pixel.y) - vec2(14.0 + reach, 20.0);
+		vec3 dye = red ? vec3(0.94, 0.12, 0.07) : vec3(0.10, 0.74, 0.66);
+		if (hand.x > -13.0 && hand.x < -4.0 && abs(hand.y - 2.0) < 4.0) { c = dye * 0.62; }
+		if (length(hand / vec2(9.0, 7.0)) < 1.0 || length((hand - vec2(-3.0, 5.0)) / vec2(5.0, 4.0)) < 1.0) {
+			c = dye * (hand.y < -3.0 ? 1.25 : 0.95);
+		}
+	}
 	float scan = 0.86 + 0.14 * sin(UV.y * 460.0);
 	float vign = 1.0 - 0.5 * pow(length(UV - 0.5) * 1.35, 2.0);
 	c *= scan * vign * (0.95 + 0.05 * sin(t * 47.0)) * on;
@@ -865,7 +881,7 @@ func _cabinet(r: Node3D, pos: Vector3, turn: float, k: int, rng: RandomNumberGen
 	if ResourceLoader.exists(MODELS + model + ".glb"):
 		for ch in c.get_children():
 			ch.queue_free()                      # (the box machine's body, art and neon: the model has its own)
-		_machine(c, model, rng)
+		_machine(c, model, rng, k == HIT_VIP)
 		return
 	_box(c, 0x111114, Vector3(0, 0.98, 0.39), Vector3(wide - 0.06, 0.12, 0.12))          # the panel's lip
 	var panel := _box(c, 0x1a1a1e, Vector3(0, 1.02, 0.48), Vector3(wide - 0.04, 0.06, 0.36))
@@ -878,14 +894,18 @@ func _cabinet(r: Node3D, pos: Vector3, turn: float, k: int, rng: RandomNumberGen
 			var btn := Parts.part("sphere", [0xf2c230, 0x2f7fe0, 0x3fa34d][b], Vector3(side + 0.02 + b * 0.07, 1.09, 0.52 - (b % 2) * 0.03), Vector3(0.045, 0.02, 0.045))
 			c.add_child(btn)
 	var scr := _screen(c, Vector3(0, 1.48, 0.33), Vector2(wide - 0.22, 0.52), 0.0, rng.randf() * 30.0)
+	scr.set_shader_parameter("boxing_demo", k == HIT_VIP)
 	scr.set_shader_parameter("on", 1.0)
 	var marquee := _box(c, 0xffffff, Vector3(0, 1.98, 0.22), Vector3(wide, 0.28, 0.3))
 	marquee.material_override = _glow([0xff3df0, 0x3df2ff, 0xffd23f, 0x5dff7a][k % 4] if not final else 0xff4040, 1.1)
-	_text(c, "TOKKEN 9" if (final or k % 3 != 1) else "TOKKEN 2", Vector3(0, 1.98, 0.38), 48, 0x111111)
+	if k == HIT_VIP:
+		_lit_words(c, "Hit The VIP", Vector3(0, 1.98, 0.38), 0.08, wide - 0.06, 0x10182a, 0xffc637, -1, false)
+	else:
+		_text(c, "TOKKEN 9" if (final or k % 3 != 1) else "TOKKEN 2", Vector3(0, 1.98, 0.38), 48, 0x111111)
 
 ## a bought-in machine in `c` (MACHINES): the model, the fights on its screen, TOKKEN 9 on its marquee. False if the
 ## model is not there (the box machine is built instead)
-func _machine(c: Node3D, name: String, rng: RandomNumberGenerator) -> bool:
+func _machine(c: Node3D, name: String, rng: RandomNumberGenerator, boxing_demo := false) -> bool:
 	var path: String = MODELS + name + ".glb"
 	if not ResourceLoader.exists(path):
 		return false
@@ -895,12 +915,18 @@ func _machine(c: Node3D, name: String, rng: RandomNumberGenerator) -> bool:
 	var sc: Array = m["screen"]
 	var scr := _screen(c, sc[0], sc[1], 0.0, rng.randf() * 30.0)
 	scr.set_shader_parameter("on", 1.0)
+	scr.set_shader_parameter("boxing_demo", boxing_demo)
 	(c.get_child(c.get_child_count() - 1) as Node3D).rotation.x = -float(sc[2])
 	if m.has("marquee"):
 		var mq: Array = m["marquee"]
 		if m.has("cover"):                       # (what is written on the model's own marquee goes under a board of ours)
 			_box(c, int(m["cover"]), mq[0] + Vector3(0.0, 0.0, 0.006), Vector3(float(mq[1]) + 0.06, 0.15, 0.012)).material_override = _glow(int(m["cover"]), 0.6)
-		_lit_words(c, "TOKKEN 9", mq[0] + Vector3(0.0, 0.0, 0.016), 0.07, float(mq[1]), 0x10182a, 0x3df2ff, -1, false)
+		if boxing_demo:
+			var centre: Vector3 = mq[0] + Vector3(0.0, -0.095, 0.032)
+			_box(c, 0x182130, centre, Vector3(0.60, 0.13, 0.012))
+			_lit_words(c, "Hit The VIP", centre + Vector3(0, 0, 0.012), 0.073, 0.55, 0xffe59e, 0x10182a, -1, false)
+		else:
+			_lit_words(c, "TOKKEN 9", mq[0] + Vector3(0.0, 0.0, 0.016), 0.07, float(mq[1]), 0x10182a, 0x3df2ff, -1, false)
 	return true
 
 ## the machines that are only to look at (no box stops you at them; none is where a scene's camera or anybody stands):

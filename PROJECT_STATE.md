@@ -6,6 +6,7 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
+- **Hit The VIP.** La versión local 0.0.18 incluye la recreativa de boxeo contra Fonsi en el Galaxy Recress. [Ubicación, controles y pruebas](TRASPASO_CLAUDE.md#hit-the-vip-en-el-galaxy-recress).
 - **Bajar del coche (19/11).** Corregida la salida al frenar y la actualización del aviso de interacción. El filtro `bajar` llega al puente con mando, habla con Alberto y sube a otro coche. [Reproducción y resultados](TRASPASO_CLAUDE.md#salir-del-coche-en-la-misión-del-puente).
 - **RALLY 9 (19/11).** El asiento rojo del Galaxy Recress reabierto da acceso a una carrera de dos vueltas con El Tunero, tres rivales, tráfico, nitro, derribos y aftertouch. [Controles, decisiones y pruebas](TRASPASO_CLAUDE.md#rally-9-en-galaxy-recress).
 
