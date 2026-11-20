@@ -224,7 +224,67 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Prueba completa** (`python tools/run_tests.py`): 879 ok y 1 fallo en 568 s ([log](logs/selftest_full_20261120_231727.log)). El fallo era de la prueba: la copistería del Recress esperaba entrar solo con pisar la flecha y desde la tanda de 20 mejoras hay que pulsar Acción. `selftest.gd` llama ahora a `g.interact()` sobre la flecha, como ya hacía la del Recress. `python tools/run_tests.py recress --headless`: 16 ok ([log](logs/selftest_recress_20261120_232718.log)).
 - **Commits:** `8262fd8` (la tanda de cámaras, Tomasa, fumadores, HUD dev y tráiler) y «Matritellus 0.0.18» con estas notas. La etiqueta local `v0.0.18`, que no se había subido, se movió a este último.
 - **Paquetes** rehechos con `tools/make_apk.py 0.0.18`, `tools/make_installer.py` y `tools/make_linux.py`, copiados a `dist/v0.0.18/` con sus `SHA256SUMS.txt` nuevas, y subidos a la release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.18
-- **Pendiente:** la casa de Matías Pérez 16 sale como hueco hasta que Pretil la haga a mano (aviso de Texturas).
+- ~~**Pendiente:** la casa de Matías Pérez 16 sale como hueco hasta que Pretil la haga a mano (aviso de Texturas).~~ El aviso era un error. La casa sí está en la 0.0.18: la levanta `matias.gd`. Edificios Especiales lo comprobó con el paquete de Linux y en esta carpeta (prueba `matias`: 2 ok). Solo sale como hueco en las hojas de repaso de casas, que dibujan únicamente `casas.gd`. Más abajo está la entrada de Texturas del 20/11.
+
+### Árbol de relaciones: Tomasa Malvora y el chino del Arroyuelo (20/11)
+
+20 de noviembre de 2026, Worldbuilding (Claude). Cada personaje nuevo va al árbol de relaciones del guion (`guion/relaciones.html`, para el usuario; no es parte del juego). Tomasa Malvora y el chino llegaron con la 0.0.18 y no estaban.
+
+- **Hecho.** Tres personas más: Tomasa Malvora, sus hijos (solo se les nombra) y el chino del Arroyuelo. Tres relaciones: la Tomasa y sus hijos, que le vigilan el dinero; la Tomasa y el chino, que no le vende directamente porque ella no entra; tú y la Tomasa, el recado del tabaco. Un cabo suelto nuevo: ni los hijos ni el chino tienen nombre.
+- **Archivos.** `guion/relaciones.json`, `guion/relaciones.html` (hecho con `tools/make_relaciones.py`: 43 personas, 36 relaciones) y las fotos `guion/fotos/tomasa.png` y `guion/fotos/chino.png`. En `godot/scripts/selftest.gd`, el modo `--portraits` saca también a la Tomasa y al chino (sus caras están en `tomasa.gd`, porque solo salen con la tienda abierta). La opción nueva `--solo=tomasa,chino` hace solo esas fotos y deja las demás como estaban.
+- **Verificación.** `python tools/run_tests.py portraits solo=tomasa,chino --window` escribió solo las dos fotos, revisadas a ojo (el ejecutor dice «NO RESULT» porque este modo no hace comprobaciones: guarda las fotos y sale). Se comprobó con un cálculo sobre las posiciones que ninguna línea del árbol pasa por encima de una cara junto a los nuevos.
+- **Sin commit.**
+
+### El color de la barandilla de una terraza en Covadonga (20/11)
+
+20 de noviembre de 2026, Texturas (Claude). Edificios Especiales vio que la prueba registraba el error `Invalid hexadecimal notation character "r" in string "brick_red"`. Sale en `casas.gd:877` (`_unpack`), al que llaman `world._houses` y `recress._spec_of`.
+
+- **Causa.** En la línea de `cov_6` (Calle de Covadonga, aprobada el 17/11), la pieza `ter` llevaba como color de la barandilla el nombre de un material, `brick_red`. Ese valor solo admite un código hexadecimal, así que la barandilla salía negra. No había ningún otro `ter`, `awn` o `c=` con un nombre en lugar de un código.
+- **Hecho.** La barandilla es ahora `9a4e36`, un rojo ladrillo como el remate de la terraza en la foto del Catastro. No hace falta rehacer el mapa, porque la línea de la casa se lee al cargar el juego.
+- **Archivos.** `godot/scripts/casas_calles.gd`: solo la línea de `cov_6`.
+- **Verificación.** `python tools/run_tests.py casas "solo=cov_6"`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_cov_6_20261120_233933.log)). El aviso del hexadecimal ya no sale.
+- **Corrección.** El pendiente de la entrada de la 0.0.18 sobre Matías Pérez 16 salió de un aviso mío equivocado. Está tachado y explicado allí.
+- **Sin commit.**
+
+### Matías Pérez 16 retocada con Street View (21/11)
+
+21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Luis lo pidió el 17/11 («Nuevo proyecto. Matias Pérez 16», con una captura de Street View de noviembre de 2024). La casa se levantó a mano en `X:\Matritellus` y llegó a la 0.0.18. Al compararla en esta carpeta con Street View desde las mismas cámaras, salieron estas diferencias, ya corregidas:
+
+- **El ladrillo.** Era el rojo oscuro y rugoso de `brick_wall_006`; en la foto es caravista salmón, de hiladas regulares y llaga clara. Ahora es `brick_wall_003@0.9`, para que cada ladrillo mida 25 cm.
+- **Los sardineles.** Antes eran rosados y destacaban. Ahora tienen el tono del muro. El de cada ventana de arriba va justo sobre el hueco, sin hilada en medio, y la faja corrida está a 2,85 m.
+- **Las persianas.** Quedaban detrás del cristal y no se veían. Ahora están bajadas hasta el alféizar, delante de la ventana, en color liso con sus lamas, como las de `casas.gd`. Las de arriba son blancas y la de abajo beige.
+- **El resto.**
+  - Las cortinas del portalón son crema con rosas grandes de gris malva, se juntan en el centro y el portalón lleva jambas de madera oscura.
+  - La cortina de la puerta es más blanca.
+  - La reja tiene nueve barrotes y travesaños solo arriba y abajo.
+  - El zócalo gris sube a unos 45 cm.
+  - El cable va a la altura de los alféizares, y en lugar de la caja gris hay dos cajitas blancas.
+- **Archivos.** `godot/scripts/matias.gd` y, nuevos, `tools/matias/hojas.py` y `referencias/matias/LEEME.md`. No se tocó ningún archivo compartido.
+- **Pruebas.**
+  - `python tools/run_tests.py matias`: 2 ok, 0 fallos ([log](logs/selftest_matias_20261121_002706.log)).
+  - Las vistas desde las cámaras de Street View se sacaron con `tools/merkocarry/vistas.py`. El ejecutor dice «NO RESULT» porque ese modo solo hace fotos.
+  - Se probó también el paquete de Linux publicado (`--main-pack`), con la casa antigua: 2 ok, 357 piezas.
+  - Esa última prueba coincidió un momento con un Godot de otra sesión. No volverá a pasar.
+- **Hojas para Luis.** `guion/fotos/matias/01_street_view_y_juego.jpg` (Street View al lado del juego) y `02_en_el_juego.jpg`.
+- **Aprobada** por Luis el 21/11: «Visto bueno». Sin commit: la publica Sistemas.
+
+### Calle del Triunfo, tramo de las afueras: 16 naves (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). Es la siguiente calle del núcleo, a la orden del usuario («Visto bueno y siguiente»).
+
+- **Hecho.** 16 naves y almacenes con su frente en el Triunfo (`tri_e147` … `tri_17`), descritos con las fotos del Catastro. Para cuatro, cuya foto del Catastro está hecha desde la Avenida de Europa, se usó Street View. Se dejan sin hacer el 35, el molino viejo de Reyes Católicos, el 11, el 27 y el 18. La razón de cada uno está en `PROJECT_STATE.md`, y lo que aún no se parece, en `guion/repaso_casas.md`.
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd`: 16 entradas nuevas.
+  - `godot/data/map.json`: horneado.
+  - Las carpetas del Catastro `tools/casas/<ref>/` de estos edificios.
+  - Las hojas `guion/fotos/tanda34/triunfo_4..6.jpg`.
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Se horneó dos veces, avisando a Edificios Especiales antes y después. Comparado con la copia de antes: 16 casas nuevas, ninguna quitada ni cambiada. Calles (656), nodos (6376), relieve, árboles (2956) y holguras de las calles siguen igual. Ninguna casa tiene partes por delante de su frente.
+- **Pruebas.**
+  - `python tools/run_tests.py casas "solo=tri_"`: el primer intento falló porque `tri_e151`, `tri_e145` y `tri_41` no llegaban a 12 piezas.
+  - Con los postes, las juntas y el ladrillo desteñido que se ven en las fotos, `solo=tri_e151,tri_e145,tri_41` dio 4 ok, 0 fallos.
+  - Tras los últimos retoques, `solo=tri_e151,tri_41,tri_e129,tri_t1` dio 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tri_e151_tri_41_tri_e129_tri_t1_20261121_004155.log)).
+- **Pendiente.** El visto bueno del usuario a las hojas. Sin commit.
 
 ## Cómo mantener el registro
 

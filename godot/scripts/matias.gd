@@ -3,14 +3,14 @@ extends "res://scripts/obra.gd"
 ## picture of its front from Street View, November 2024), built by hand on Texturas's house of the map (matias_16,
 ## handed over as ["obra"] in casas_calles.gd); referencias/matias/, tools/matias/.
 ##
-## Two floors of red pressed brick, some of it darker, in a front of 6.9 m (Catastro's; its bricks, 25 cm a piece in his
+## Two floors of salmon facing brick, the courses even and the mortar pale, in a front of 6.9 m (Catastro's; its bricks, 25 cm a piece in his
 ## picture, give the same):
 ##   - below, a wide doorway behind two curtains printed with flowers, the house door behind a white curtain, a window
-##     behind a cage of white flat bars with its blind half down; over each opening a lintel of bricks on end, and over
-##     them all a band of bricks on end along the whole front;
-##   - a black cable along the front under the windows above; a little grey box by its east end;
-##   - above, two windows (the west one bigger) in raised frames of brick, their white blinds down, a little white railing
-##     on a white sill under each;
+##     behind a cage of white flat bars with its pale blind down; over each opening a lintel of bricks on end, and higher
+##     a band of bricks on end along the whole front (both the wall's own brick: they show only by their joints);
+##   - a black cable along the front under the windows above; two little white boxes by its east end;
+##   - above, two windows (the west one bigger) in raised frames of brick under lintels of bricks on end, their white
+##     blinds down to the sill, a little white railing on a white sill under each;
 ##   - a cornice of brick courses stepping out under the tiles.
 ## No house number (the game shows none).
 ##
@@ -30,24 +30,20 @@ func _material(key) -> Material:
 		return _mats[key]
 	var m: Material = null
 	match (String(key) if key is String else ""):
-		"ladrillo":         # red pressed brick, some darker
-			m = Tex.mat("brick_wall_006", Color(1.02, 0.9, 0.84))
+		"ladrillo":         # salmon facing brick, even courses, pale mortar (Street View 2024: about 185, 145, 115 in the shade)
+			m = Tex.mat("brick_wall_003@0.9", Color(1.0, 1.1, 1.3))
 		"llaga":            # the mortar behind the bricks on end
 			m = Tex.mat("granular_concrete", Color(0.78, 0.7, 0.62), false)
-		"cortina_flores":   # the wide doorway's curtains: pale, printed with grey-violet flowers, hanging in folds
-			m = _cloth(Color(0.9, 0.86, 0.8), true)
+		"cortina_flores":   # the wide doorway's curtains: cream, printed with big grey-mauve roses, hanging in folds
+			m = _cloth(Color(0.97, 0.9, 0.76), true)
 		"cortina_blanca":   # the door's curtain
-			m = _cloth(Color(0.95, 0.94, 0.9), false)
-		"persiana":         # the white blinds of the windows above (rolled down: their slats)
-			m = _slats(Color(0.95, 0.95, 0.93), Color(0.78, 0.78, 0.76))
-		"persiana_parda":   # the blind behind the bars below: pale brown slats
-			m = _slats(Color(0.72, 0.6, 0.46), Color(0.55, 0.45, 0.34))
+			m = _cloth(Color(1.0, 0.96, 0.86), false)
 		_:
 			return super(key)
 	_mats[key] = m
 	return m
 
-## a curtain's cloth: folds (light and shade in columns) and, if `flowers`, a print of little grey-violet flowers
+## a curtain's cloth: folds (light and shade in columns) and, if `flowers`, a print of big grey-mauve roses
 func _cloth(base: Color, flowers: bool) -> StandardMaterial3D:
 	var img := Image.create(96, 128, false, Image.FORMAT_RGB8)
 	for x in range(96):
@@ -57,36 +53,36 @@ func _cloth(base: Color, flowers: bool) -> StandardMaterial3D:
 	if flowers:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 16
-		for k in range(46):
-			var cx := rng.randi_range(4, 91)
-			var cy := rng.randi_range(4, 123)
-			var col := Color(0.55, 0.5, 0.66) if k % 3 != 0 else Color(0.48, 0.52, 0.5)
-			for p in range(5):                                            # five petals round a middle
-				var a := TAU * p / 5.0 + k
-				var px := cx + int(round(cos(a) * 2.6))
-				var py := cy + int(round(sin(a) * 2.6))
-				for dx in range(-1, 2):
-					for dy in range(-1, 2):
-						var qx := clampi(px + dx, 0, 95)
-						var qy := clampi(py + dy, 0, 127)
-						var fold := 0.86 + 0.14 * sin(qx / 96.0 * TAU * 6.0)
-						img.set_pixel(qx, qy, col * fold)
-			img.set_pixel(cx, cy, Color(0.75, 0.7, 0.55))
+		for k in range(12):                                                # (three across a curtain, four down, every other row moved half a step)
+			var row := int(k / 3.0)
+			var cx := 16 + (k % 3) * 32 + (16 if row % 2 == 1 else 0) + rng.randi_range(-2, 2)
+			var cy := 16 + row * 32 + rng.randi_range(-3, 3)
+			for leaf in [Vector2(-12, 7), Vector2(11, -6)]:                 # (two grey-green leaves under each rose)
+				_blot(img, cx + int(leaf.x), cy + int(leaf.y), 7.0, 4.0, Color(0.66, 0.68, 0.62), Color(0.74, 0.75, 0.7))
+			_blot(img, cx, cy, 13.0, 9.5, Color(0.56, 0.5, 0.47), Color(0.8, 0.75, 0.7))
 	var sm := StandardMaterial3D.new()
 	sm.albedo_texture = ImageTexture.create_from_image(img)
 	sm.roughness = 0.95
 	return sm
 
-## a blind's slats: light bands with a darker line between each
-func _slats(light: Color, dark: Color) -> StandardMaterial3D:
-	var img := Image.create(4, 32, false, Image.FORMAT_RGB8)
-	for y in range(32):
-		for x in range(4):
-			img.set_pixel(x, y, dark if y % 4 == 3 else light)
-	var sm := StandardMaterial3D.new()
-	sm.albedo_texture = ImageTexture.create_from_image(img)
-	sm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
-	return sm
+## an oval blot on a cloth (wrapping across it): a rose's petals in broken rings round a dark heart, or a plain leaf
+func _blot(img: Image, cx: int, cy: int, rx: float, ry: float, dark: Color, light: Color) -> void:
+	for dx in range(-int(rx), int(rx) + 1):
+		for dy in range(-int(ry), int(ry) + 1):
+			var r := sqrt((dx / rx) * (dx / rx) + (dy / ry) * (dy / ry))
+			var th := atan2(float(dy), float(dx))
+			var edge := 0.86 + 0.14 * cos(th * 5.0)                      # (the outline: five round petals)
+			if r > edge:
+				continue
+			var col := light.lerp(dark, 0.35 + 0.35 * cos(th * 5.0 + 1.2) * (1.0 - r))
+			if r < 0.5 * (0.8 + 0.2 * cos(th * 5.0 + PI)):              # (the petals inside, turned half a step)
+				col = light.lerp(dark, 0.6)
+			if r < 0.16:
+				col = dark
+			var qx := posmod(cx + dx, img.get_width())
+			var qy := posmod(cy + dy, img.get_height())
+			var fold := 0.86 + 0.14 * sin(qx / float(img.get_width()) * TAU * 6.0)
+			img.set_pixel(qx, qy, col * fold)
 
 func build(world, hd: Dictionary) -> void:
 	W = world
@@ -149,30 +145,30 @@ func _front() -> void:
 	var up_e := Rect2(4.8, 3.85, 0.95, 1.15)          # ...the east one
 	var holes: Array = [gate, dr, win, up_w, up_e]
 	masonry(0.0, L, -2.5, TOP, holes, [], "ladrillo")
-	box(0.0, -0.6, 0.0, gate.position.x, 0.85, 0.02, 0x9a958c)            # (a foot of cement where the brick meets the pavement)
-	box(gate.end.x, -0.6, 0.0, dr.position.x - gate.end.x, 0.85, 0.02, 0x9a958c)
-	box(dr.end.x, -0.6, 0.0, L - dr.end.x, 0.85, 0.02, 0x9a958c)
+	box(0.0, -0.6, 0.0, gate.position.x, 1.05, 0.02, 0x9a958c)            # (a foot of grey cement where the brick meets the pavement)
+	box(gate.end.x, -0.6, 0.0, dr.position.x - gate.end.x, 1.05, 0.02, 0x9a958c)
+	box(dr.end.x, -0.6, 0.0, L - dr.end.x, 1.05, 0.02, 0x9a958c)
 	# the openings below, their lintels of bricks on end
 	for r: Rect2 in [gate, dr, win]:
 		_sardinel(r.position.x - 0.12, r.end.x + 0.12, 2.2, 0.25)
-	_sardinel(0.0, L, 2.75, 0.25)                                         # the band along the whole front
+	_sardinel(0.0, L, 2.85, 0.25)                                         # the band along the whole front
 	# the wide doorway: two curtains, parted a little, a dark room behind
 	box(gate.position.x, 0.0, -DEEP - 0.6, gate.size.x, gate.size.y, 0.02, 0x2a2420)
 	for k in range(2):
-		var x0: float = gate.position.x + 0.04 + k * (gate.size.x / 2.0 + 0.02)
-		_curtain(Rect2(x0, 0.05, gate.size.x / 2.0 - 0.08, gate.size.y - 0.08), -DEEP + 0.12, "cortina_flores")
+		var x0: float = gate.position.x + 0.04 + k * (gate.size.x / 2.0 - 0.05)
+		_curtain(Rect2(x0, 0.05, gate.size.x / 2.0 - 0.03, gate.size.y - 0.08), -DEEP + 0.12 + 0.03 * k, "cortina_flores")
 	box(gate.position.x, gate.end.y - 0.06, -DEEP + 0.08, gate.size.x, 0.04, 0.04, 0x8a8a86)      # (the curtains' rail)
+	for x in [gate.position.x, gate.end.x - 0.07]:                                                # (its dark wooden jambs)
+		box(x, 0.0, -DEEP + 0.02, 0.07, gate.size.y, 0.06, 0x3a2a20)
 	openings += 1
 	# the door: a white curtain over the doorway
 	box(dr.position.x, 0.0, -DEEP - 0.5, dr.size.x, dr.size.y, 0.02, 0x2a2420)
 	_curtain(Rect2(dr.position.x + 0.03, 0.04, dr.size.x - 0.06, dr.size.y - 0.07), -DEEP + 0.14, "cortina_blanca")
 	box(dr.position.x, 0.0, -DEEP + 0.02, dr.size.x, 0.04, DEEP - 0.02, 0x8a8680)                  # (its threshold)
 	openings += 1
-	# the window below: its brown blind half down, a cage of white flat bars standing out a little
+	# the window below: its pale blind down (outside the glass and its frame), a cage of white flat bars standing out a little
 	window(win, 0x5a4636, 0x2a3640, 0)
-	quad(Vector3(win.position.x + 0.05, win.end.y - 0.85, -DEEP + 0.03), Vector3(win.end.x - 0.05, win.end.y - 0.85, -DEEP + 0.03),
-		Vector3(win.end.x - 0.05, win.end.y - 0.05, -DEEP + 0.03), Vector3(win.position.x + 0.05, win.end.y - 0.05, -DEEP + 0.03), "persiana_parda", Vector3(0, 0, 1),
-		[Vector2(0, 0.85 / 0.32), Vector2(1, 0.85 / 0.32), Vector2(1, 0), Vector2(0, 0)])
+	_blind(win, 0xd8ccb4)
 	_bars(win)
 	box(win.position.x - 0.06, win.position.y - 0.05, 0.0, win.size.x + 0.12, 0.05, 0.08, 0xd8d4cc)
 	openings += 1
@@ -181,25 +177,23 @@ func _front() -> void:
 		var fr := 0.12
 		box(r.position.x - fr, r.position.y - 0.02, 0.0, fr, r.size.y + fr + 0.02, 0.035, "ladrillo")
 		box(r.end.x, r.position.y - 0.02, 0.0, fr, r.size.y + fr + 0.02, 0.035, "ladrillo")
-		box(r.position.x - fr, r.end.y, 0.0, r.size.x + 2.0 * fr, fr, 0.035, "ladrillo")
-		_sardinel(r.position.x - fr, r.end.x + fr, r.end.y + fr, 0.24, 0.05)
-		window(r, 0x8a6a4a, 0x2a3640, 0)
-		quad(Vector3(r.position.x + 0.05, r.position.y + 0.04, -DEEP + 0.035), Vector3(r.end.x - 0.05, r.position.y + 0.04, -DEEP + 0.035),
-			Vector3(r.end.x - 0.05, r.end.y - 0.04, -DEEP + 0.035), Vector3(r.position.x + 0.05, r.end.y - 0.04, -DEEP + 0.035), "persiana", Vector3(0, 0, 1),
-			[Vector2(0, r.size.y / 0.32), Vector2(1, r.size.y / 0.32), Vector2(1, 0), Vector2(0, 0)])
+		_sardinel(r.position.x - fr, r.end.x + fr, r.end.y, 0.24, 0.05)       # (its lintel of bricks on end, straight on the opening)
+		window(r, 0x6a5040, 0x2a3640, 0)
+		_blind(r, 0xf1eee6)
 		box(r.position.x - 0.18, r.position.y - 0.06, 0.0, r.size.x + 0.36, 0.06, 0.24, 0xeeece6)
 		_railing(Rect2(r.position.x - 0.14, r.position.y, r.size.x + 0.28, 0.38), 0.2)
 		openings += 1
 	# the black cable along the front, its clips; the little grey box by its east end
-	var cy := 3.55
+	var cy := 3.72
 	for k in range(8):
 		var x0 := L * k / 8.0
 		var x1 := L * (k + 1) / 8.0
 		bar(Vector3(x0, cy - 0.03 * sin(PI * k / 8.0), 0.03), Vector3(x1, cy - 0.03 * sin(PI * (k + 1) / 8.0), 0.03), 0.025, 0.025, 0x1a1a1c)
 	for k in range(1, 8):
 		box(L * k / 8.0 - 0.015, cy - 0.04, 0.0, 0.03, 0.06, 0.05, 0x2a2a2c)
-	box(L - 0.42, 3.95, 0.0, 0.2, 0.26, 0.1, 0xb8b4aa)
-	box(L - 0.4, 3.97, 0.1, 0.16, 0.02, 0.005, 0x8a867e)
+	box(L - 0.62, 3.88, 0.0, 0.15, 0.2, 0.08, 0xe8e6e0)                  # (two little white boxes, the bigger one by the end)
+	box(L - 0.42, 3.84, 0.0, 0.2, 0.28, 0.1, 0xe8e6e0)
+	box(L - 0.4, 3.86, 0.1, 0.16, 0.02, 0.005, 0xa8a49c)
 	# the cornice: three courses of brick stepping out, under the tiles
 	var at := TOP - 0.36
 	var outv := 0.0
@@ -212,11 +206,11 @@ func _front() -> void:
 	yard.append(spot(0.0, 0.3))
 	yard.append(spot(L, 0.3))
 
-## a band of bricks on end (a "sardinel"): each brick a little proud of its mortar, red in three shades
+## a band of bricks on end (a "sardinel"): each brick a little proud of its mortar, in three shades of the wall's own brick
 func _sardinel(x0: float, x1: float, y: float, tall: float, proud := 0.02) -> void:
 	box(x0, y, 0.0, x1 - x0, tall, proud * 0.5, "llaga")
 	var n := maxi(2, int((x1 - x0) / 0.075))
-	var cols := [0x9e5a42, 0xb06a4c, 0x8a4c38]
+	var cols := [0x926d59, 0x9a7662, 0x866550]
 	for i in range(n):
 		var a := lerpf(x0, x1, float(i) / n)
 		var b := lerpf(x0, x1, float(i + 1) / n)
@@ -234,6 +228,19 @@ func _curtain(r: Rect2, z: float, key) -> void:
 			[Vector2(float(i) / n, 1), Vector2(float(i + 1) / n, 1), Vector2(float(i + 1) / n, 0), Vector2(float(i) / n, 0)])
 	pieces += 1
 
+## a roller blind let down to the sill in a window, in flat colour with its slats: just outside its glass and frame
+func _blind(r: Rect2, col: int) -> void:
+	var z := -0.07                                                   # (in the outer part of the reveal, over the window behind)
+	var a := Vector2(r.position.x + 0.035, r.position.y)
+	var b := Vector2(r.end.x - 0.035, r.end.y)
+	box(a.x, a.y, z, b.x - a.x, b.y - a.y, 0.02, col)
+	var slat: int = Color.hex((col << 8) | 0xff).darkened(0.14).to_rgba32() >> 8
+	for i in range(1, int((b.y - a.y) / 0.06)):                     # (its slats)
+		box(a.x, b.y - i * 0.06, z + 0.02, b.x - a.x, 0.01, 0.004, slat)
+	box(a.x, a.y, z, b.x - a.x, 0.035, 0.035, slat)                 # (its bottom slat, a little proud)
+	for x in [r.position.x, r.end.x - 0.035]:                       # (its guides up the sides)
+		box(x, r.position.y, z - 0.01, 0.035, r.size.y, 0.035, 0x6a5040)
+
 ## the cage of white flat bars before the window below
 func _bars(r: Rect2) -> void:
 	var out := 0.1
@@ -241,10 +248,10 @@ func _bars(r: Rect2) -> void:
 	var x1 := r.end.x + 0.05
 	var y0 := r.position.y - 0.04
 	var y1 := r.end.y + 0.04
-	var n := 7
+	var n := 9
 	for i in range(n + 1):
 		box(x0 + (x1 - x0) * i / n - 0.02, y0, out - 0.012, 0.04, y1 - y0, 0.012, 0xe8e8e4)
-	for y in [y0, y1 - 0.03, (y0 + y1) / 2.0]:
+	for y in [y0, y1 - 0.03]:
 		box(x0, y, out - 0.02, x1 - x0, 0.03, 0.02, 0xe8e8e4)
 	for x in [x0, x1 - 0.03]:
 		for y in [y0, y1 - 0.03]:

@@ -386,6 +386,22 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
 - **`tri_7` y `tri_7d`:** el zócalo rojo sale más anaranjado que en la foto.
 - **Sin hacer:** el 18 (caseta de 14 m²).
 
+## Calle del Triunfo (afueras)
+
+- **Toda la calle:** en el juego es de asfalto con aceras; en la realidad, aquí es un camino de tierra (es cosa del mapa, no de las casas).
+- **Ladrillo:** el viejo de `tri_26` y `tri_41` sale más anaranjado y más nuevo que el rojo pardo de las fotos.
+- **`tri_e147`:** en la realidad, el trozo de ladrillo es la punta alta de una nave (unos 6 m) y la tapia gris es baja (unos 2,6 m). En el juego todo tiene la misma altura.
+- **`tri_39`:** el trozo de la derecha es más alto en la realidad (lleva una ventana arriba); en el juego sale a la misma altura.
+- **`tri_x1`, `tri_e143`, `tri_e129`:** solo se pone la tapia de la calle. Las naves que asoman detrás, con sus tejados de chapa, no salen.
+- **`tri_e129`:** el barro de la tapia encalada es una franja lisa; en la foto se ven los bloques de tapial.
+- **`tri_41`, `tri_e151`:** las zonas de ladrillo desteñido y los postes se pusieron para llegar al mínimo de piezas. Están en la foto, pero simplificados.
+- **Sin hacer:**
+  - el 35: un bloque sale por delante de la fachada;
+  - el molino viejo de Reyes Católicos: la tapia dobla con la calle, mejor a mano. Su nombre y su pintura están en el otro lado, y no se ponen;
+  - el 11: el Catastro le da 0 plantas;
+  - el 27: un soportal de 2,8 m;
+  - el 18.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

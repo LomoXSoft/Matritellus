@@ -480,6 +480,42 @@
    "role": "Vecino obsesionado con el jamón asao de los jueves del Henry: se pasa la semana esperando a que llegue el jueves. Piel algo morena, cejas gruesas, pelo negro, ojos marrones, sin barba.",
    "where": "Da vueltas por las calles del convento de las clarisas (Santa Ana). Los jueves de 8:00 a 21:00, a la puerta de la Cocina de Henry. Está siempre en la riña del jamón: es el primero que saca el arma (el cuchillo de carnicero).",
    "notes": "Los jueves está eufórico; los demás días, triste, cuenta los días que faltan. Se queja de la campana del convento, que toca cada hora todos los días. Pedido por el usuario el 17/11/2026."
+  },
+  {
+   "id": "tomasa",
+   "name": "Tomasa Malvora",
+   "foto": true,
+   "pos": [
+    1,
+    2
+   ],
+   "role": "Mujer mayor que fuma a escondidas de sus hijos. Te pide que le compres un paquete de tabaco en los chinos del Arroyuelo (6 €) y te da diez euros a escondidas. Pelo blanco, gafas, pendientes y colgante.",
+   "where": "Da vueltas cerca de los chinos del Arroyuelo mientras están abiertos; al hacerle el recado te espera fuera.",
+   "notes": "«Yo no tengo ningún problema, ¿eh? Yo controlo. Lo dejo cuando quiera… mañana si eso.» Si le dices que no, se enfada (−5 de confianza). Pedida por el usuario el 20/11/2026 (hecha con Codex)."
+  },
+  {
+   "id": "hijos_tomasa",
+   "name": "Los hijos de la Tomasa",
+   "foto": false,
+   "pos": [
+    0,
+    1
+   ],
+   "role": "Solo se les nombra.",
+   "where": "—",
+   "notes": "Le vigilan el dinero al céntimo pa que no lo gaste en vicios."
+  },
+  {
+   "id": "chino",
+   "name": "El chino del Arroyuelo",
+   "foto": true,
+   "pos": [
+    0,
+    2
+   ],
+   "role": "El tendero de los chinos del Arroyuelo. Habla en infinitivo y te avisa de que no robes, que él vigila.",
+   "where": "Dentro de los chinos del Arroyuelo, en la caja, en las horas de la tienda.",
+   "notes": "«¡Hola, pasar! Pero no robar nada, ¿eh? ¡Yo vigilar!» Pedido por el usuario el 20/11/2026 (hecho con Codex)."
   }
  ],
  "links": [
@@ -746,6 +782,30 @@
    "label": "cliente de los jueves",
    "detail": "Todos los jueves a su puerta, por el jamón asao.",
    "source": "feliciano_jueves"
+  },
+  {
+   "a": "tomasa",
+   "b": "hijos_tomasa",
+   "kind": "familia",
+   "label": "hijos",
+   "detail": "Sus hijos le vigilan el dinero pa que no lo gaste en vicios; si la pillan con tabaco, «le arman un pollo».",
+   "source": "tomasa_ask, tomasa_done"
+  },
+  {
+   "a": "tomasa",
+   "b": "chino",
+   "kind": "negocio",
+   "label": "su tabaco (por persona interpuesta)",
+   "detail": "No entra en los chinos por si la pillan sus hijos: el paquete se lo compras tú allí.",
+   "source": "tomasa_ask, chino_buy"
+  },
+  {
+   "a": "tu",
+   "b": "tomasa",
+   "kind": "trato",
+   "label": "el recado del tabaco",
+   "detail": "Le compras un paquete de tabaco en los chinos (6 €); te da diez euros a escondidas y te pide que no se lo digas a sus hijos.",
+   "source": "tomasa_done, tomasa_after"
   }
  ],
  "cabos": [
@@ -753,6 +813,7 @@
   "La hija / el hijo del Fonsi, la prima segunda de la Josefa, el abuelo de Kevin-José, la panadera y la madre del Henry no tienen nombre.",
   "De la familia del Alberto en la plataforma (nueve) no se conoce a nadie todavía.",
   "Don Anselmo, el teniente Torrezón, el tío Gerardo y la cabra no tienen parentescos ni tratos dichos en los diálogos (aunque todos tienen su manera de firmar, o de no firmar, por el puente).",
-  "La Chiki: no se sabe de quién es hija ni dónde vive (es hermana de Don Luis; los dos descienden de Nazario, no se dice cómo). La madre del Alberto (dueña de la hucha) no tiene nombre."
+  "La Chiki: no se sabe de quién es hija ni dónde vive (es hermana de Don Luis; los dos descienden de Nazario, no se dice cómo). La madre del Alberto (dueña de la hucha) no tiene nombre.",
+  "Los hijos de la Tomasa y el chino del Arroyuelo no tienen nombre."
  ]
 }

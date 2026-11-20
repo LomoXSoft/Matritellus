@@ -10486,7 +10486,16 @@ func _run() -> void:
 		who["repartidor"] = g.sabotaje.MAN           # (he is only about while Don Luis's mission lasts)
 		for id in g.recress.LOOKS:                    # (and these only for the tournament at the Recress)
 			who[id] = g.recress.LOOKS[id]
+		var T = load("res://scripts/tomasa.gd")       # (and these two only by los chinos del Arroyuelo, while it is open)
+		who["tomasa"] = T.TOMASA_LOOK
+		who["chino"] = T.CHINO_LOOK
+		var solo := PackedStringArray()               # (--solo=tomasa,chino: only those photos, the others stay as they are)
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--solo="):
+				solo = arg.substr(7).split(",")
 		for id in who:
+			if not solo.is_empty() and not solo.has(id):
+				continue
 			var vp: SubViewport = Portrait.viewport(who[id], Vector2i(192, 236))
 			add_child(vp)
 			for k in range(4):

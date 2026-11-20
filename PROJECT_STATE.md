@@ -6,6 +6,7 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
+- **Matías Pérez 16, retocada con Street View (Edificios Especiales, 21/11; aprobada: «Visto bueno»).** La casa ya iba en la 0.0.18 (`matias.gd`). Ahora tiene el ladrillo salmón a su tamaño, los sardineles del tono del muro, las persianas bajadas y visibles, las cortinas de rosas, la reja de nueve barrotes, dos cajitas blancas y el cable a la altura de los alféizares. `matias`: 2 ok. Hojas en `guion/fotos/matias/`. [Detalle](TRASPASO_CLAUDE.md#matías-pérez-16-retocada-con-street-view-2111).
 - **Cámaras al conducir, Tomasa Malvora, chinos del Arroyuelo, fumadores y HUD dev (20/11).** 3 modos de cámara en coche (`V` / cruceta izq. / R3: 3.ª persona, 1.ª persona sin cabeza desde encima de hombros, cinemática tipo GTA con saltos cada ≥5 s o si se aleja), slow-motion + cámara cinemática al saltar por los aires con el coche, interior completo de los chinos del Arroyuelo (`chinos_dentro.gd`) con dependiente hablando en infinitivo, misión de Tomasa Malvora (`tomasa.gd`) con paquete de tabaco giratorio a 6 €, tabaco en el 5 % de los adultos/mayores (0 % niños) y opción de desarrollador para ocultar/mostrar el HUD (`ºª` / `Select`). [Detalle y pruebas](TRASPASO_CLAUDE.md#cámaras-al-conducir-tomasa-malvora-fumadores-y-hud-dev-2011).
 - **Tanda de 20 mejoras jugables (20/11).** Rendimiento al pegar carteles, rampas lanzaderas de coches, cinemática nocturna del Galaxy Recress limpia, botón «Salir» en Tokken 9, Rally 9 a 3 vueltas con ruedas corregidas/hitbox dinámica/nitro de alcance, Katakumba69 por diálogo (máquinas contra la CPU), orientación de piezas y perros en el ajedrez, rondas de ocio de 12 NPCs únicos, velocidad diagonal radial, medidor de sospecha + furgoneta rápida con murmullos + arreglo de captura fuera de la furgoneta en el kebab, frases de golpe divididas (bate / atropello / ambas con «¡Ostia!»), conductores uniformados de policía y Guardia Civil, repintado y borrado de búsqueda en taller, pulsar Acción para entrar en interiores, selector/deselector de misión en el mapa grande, pickups 3D flotantes con halo (`pickups.gd`), inventario estilo Animal Crossing con 2 pestañas (`inventario.gd`) y confirmación de salida con ratón en menús. [Detalle y pruebas](TRASPASO_CLAUDE.md#tanda-de-20-mejoras-jugables-2011).
 - **Hit The VIP.** La versión local 0.0.18 incluye la recreativa de boxeo contra Fonsi en el Galaxy Recress. [Ubicación, controles y pruebas](TRASPASO_CLAUDE.md#hit-the-vip-en-el-galaxy-recress).
@@ -82,10 +83,22 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Sin hacer: el 18, una caseta de 14 m² con 2,4 m de frente.
   - Bake (en X:, avisando a Pretil): 17 casas nuevas. Ninguna con parte por delante de su frente. Nada más cambia.
   - `casas`: OK. Hojas en `guion/fotos/tanda34/triunfo_1..3.jpg`.
-  - Queda el tramo de las afueras, unos 23 edificios (x 260 a 455, z -940 a -590), casi todos naves.
+  - El tramo de las afueras está en la entrada del 21/11.
 - **Sin publicar (Texturas, 17/11): Matías Pérez 16 (`matias_16`) pasada a Pretil como `["obra"]`, por orden del usuario («Márcala ya»).** Su línea vieja está en las notas compartidas (`matias_16_antes_de_pretil.md`). `calles.json` no cambia: sigue horneada.
-  - Hasta que Pretil la construya a mano, en el juego es un hueco en la calle. Su sesión está parada por el límite semanal hasta el 20/11 a las 22:00.
+  - Pretil la levanta a mano en `matias.gd`, y sale en la 0.0.18: lo comprobó con la prueba `matias` (2 ok). Solo sale como hueco en las hojas de casas, que dibujan únicamente `casas.gd`.
   - `casas solo=matias_`: OK.
+- **Sin publicar (Texturas, 21/11): calle del Triunfo, tramo de las afueras, 16 naves (`tri_*`).** Son almacenes y naves de la calle y de la Avenida de Europa, con su espalda o su costado en el Triunfo: tapias de ladrillo nuevo con portones de chapa, naves de bloque gris, una tapia vieja encalada con el barro a la vista y una nave moderna de paneles.
+  - Comparadas con las fotos del Catastro. Para cuatro (`tri_e147`, `tri_x1`, `tri_e143`, `tri_e129`) la foto del Catastro está hecha desde la Avenida de Europa, así que se usó Street View.
+  - Tres tapias lisas (`tri_e151`, `tri_e145`, `tri_41`) no llegaban al mínimo de piezas del test. Llevan lo que se ve en las fotos: los postes de delante, las juntas de los paneles y zonas de ladrillo desteñido.
+  - Sin hacer:
+    - el 35 (`4500005VJ5740S`): un bloque suyo sale 6 m por delante de la fachada;
+    - el molino viejo de Reyes Católicos (`4699012VJ5649N`): su tapia de 87 m dobla con la calle, y recta queda metida en la calzada. Mejor a mano;
+    - el 11 (`4498016VJ5649N`): el Catastro le da 0 plantas y el horneado no lo construye;
+    - el 27: un soportal con 2,8 m de frente;
+    - el 18: una caseta de 14 m²;
+    - Pajaritos 3: es de otra calle.
+  - Bake (avisando a Pretil): 16 casas nuevas. Ninguna con parte por delante de su frente. Nada más cambia: calles, nodos, relieve, árboles (2956) y holguras.
+  - `casas solo=tri_`: OK tras los arreglos. Hojas en `guion/fotos/tanda34/triunfo_4..6.jpg`.
 - **Pendiente:**
   - Texturas:
     - **La calle de la Cruz (`cruz_*`) salió en la 0.0.13 con 31 casas.** Después, ya en X:, quité `cruz_13` y `cruz_17`, cuyo frente quedaba metido en la manzana, y quedaron 29. A `cruz_vg9` y `cruz_21` les puse alero de teja. Rehorneado sin más cambios, y `casas` OK. Las hojas `guion/fotos/tanda34/cruz_1..5.jpg` se mandaron al usuario el 17/11, que dio su «Visto bueno».

@@ -1,0 +1,387 @@
+<title>Misiones de Matritellus</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one column; the flowchart in a wide scrolling card, then one card per mission, grouped by who gives them.
+   Colours follow guion/relaciones.html (paper, ink) and the game's dialogue colours: people red, places blue, objects green. */
+:root {
+  --paper: #f8f5ec; --card: #fffdf7; --ink: #2a221c; --soft: #6d5f52; --line: #d9cfbd;
+  --persona: #c0392b; --lugar: #1f6fc8; --objeto: #23883e; --mini: #a8791a; --mini-bg: #f6ecd2; --sec-bg: #e9f0f7;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --mono: Consolas, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1d1a17; --card: #26221e; --ink: #f1eadc; --soft: #b3a696; --line: #453d35;
+    --persona: #ff7a66; --lugar: #7fb2dc; --objeto: #5fd47a; --mini: #e0b354; --mini-bg: #3a301f; --sec-bg: #233140;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1d1a17; --card: #26221e; --ink: #f1eadc; --soft: #b3a696; --line: #453d35;
+  --persona: #ff7a66; --lugar: #7fb2dc; --objeto: #5fd47a; --mini: #e0b354; --mini-bg: #3a301f; --sec-bg: #233140;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 16px/1.55 var(--font); }
+main { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px; }
+h1 { font-size: 30px; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h2 { font-size: 21px; margin: 18px 0 0; text-wrap: balance; }
+h3 { font-size: 17px; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.sub { color: var(--soft); max-width: 70ch; }
+.p { color: var(--persona); font-weight: 600; }
+.l { color: var(--lugar); font-weight: 600; }
+.o { color: var(--objeto); font-weight: 600; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; color: var(--soft); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.k { width: 22px; height: 14px; border-radius: 4px; display: inline-block; border: 2px solid; }
+.k.hist { background: var(--ink); border-color: var(--ink); }
+.k.sec { background: var(--sec-bg); border-color: var(--lugar); }
+.k.mini { background: var(--mini-bg); border-color: var(--mini); border-radius: 9px; }
+.k.des { background: var(--paper); border-color: var(--soft); border-style: dashed; }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.rule { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 14.5px; min-width: 0; }
+.rule b { display: block; margin-bottom: 2px; }
+
+.chart { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; overflow-x: auto; }
+.chart .hint { font-size: 13px; color: var(--soft); margin: 2px 4px 8px; }
+#flow { min-height: 120px; }
+#flow svg { display: block; margin: 0 auto; max-width: none; }
+#flow .node { cursor: pointer; }
+#flow .node:hover rect, #flow .node:hover polygon, #flow .node:hover path { filter: brightness(1.06); }
+#flow .node:focus-visible { outline: 2px solid var(--lugar); }
+.fallback { color: var(--soft); font-size: 14px; padding: 8px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; scroll-margin-top: 16px; }
+.card.hist { border-top: 4px solid var(--ink); }
+.card.sec { border-top: 4px solid var(--lugar); }
+.card.flash { box-shadow: 0 0 0 3px var(--lugar); }
+.card .tag { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); font-weight: 600; }
+.card dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 14.5px; }
+.card dt { color: var(--soft); }
+.card dd { margin: 0; min-width: 0; }
+.card ol { margin: 0; padding-left: 20px; font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 13px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px; background: var(--paper); color: var(--ink); text-decoration: none; }
+a.chip:hover { border-color: var(--lugar); }
+a.chip:focus-visible { outline: 2px solid var(--lugar); outline-offset: 1px; }
+
+.tablewrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 640px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--soft); font-weight: 600; font-size: 13px; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.foot { font-size: 13px; color: var(--soft); }
+code { font-family: var(--mono); font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<main>
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <h1>Misiones de Matritellus</h1>
+    <p class="sub">Versión 0.0.18, leído del código el 21/11/2026. Quién da cada misión, cuándo se puede hacer y qué abre al acabarla. Pulsa un recuadro del diagrama para ir a su ficha.</p>
+  </header>
+
+  <div class="legend" aria-label="Leyenda">
+    <span><i class="k hist"></i>Historia principal</span>
+    <span><i class="k sec"></i>Misión secundaria</span>
+    <span><i class="k mini"></i>Minijuego</span>
+    <span><i class="k des"></i>Lo que se abre</span>
+    <span><span class="p">Personas</span>, <span class="l">sitios</span> y <span class="o">objetos</span> con los colores del diálogo</span>
+  </div>
+
+  <section class="rules" aria-label="Reglas generales">
+    <div class="rule"><b>Una cosa cada vez</b>Con una misión principal en marcha (pasado su primer paso) no empieza ninguna secundaria ni minijuego. Si había una secundaria a medias, se cancela; el torneo del Recress guarda en qué etapa iba.</div>
+    <div class="rule"><b>Puntos Cívicos</b>Empiezan al volver con Alberto con las firmas. Principales: 5. Secundarias: 3. Minijuegos: 1 la primera victoria del día. Lo ganado antes se paga en ese momento.</div>
+    <div class="rule"><b>Llamadas</b>Al acabar cualquier misión vuelve a llamarte quien rechazaste por teléfono. También desde Agenda → Vecinos.</div>
+  </section>
+
+  <section class="chart" aria-label="Diagrama de flujo de las misiones">
+    <p class="hint">Desliza de lado si no cabe en la pantalla.</p>
+    <div id="flow"><p class="fallback">Cargando el diagrama…</p></div>
+  </section>
+
+  <h2>Historia principal</h2>
+  <div class="cards">
+    <article class="card hist" id="m-aceite">
+      <span class="tag">Misión 1</span>
+      <h3>La crisis del aceite</h3>
+      <dl><dt>La da</dt><dd><span class="p">Paca</span>, al empezar la partida</dd>
+      <dt>Premio</dt><dd>5 € por botella entregada, +10 de confianza con Paca</dd></dl>
+      <ol><li>Habla con <span class="p">Paca</span>: te deja el coche.</li>
+      <li><span class="p">Loli</span> te abre la <span class="l">Cooperativa</span>.</li>
+      <li>Carga las <span class="o">botellas</span> en el patio.</li>
+      <li>Llévalas al <span class="l">kiosco</span> de <span class="p">Eusebio</span> en 150 segundos.</li></ol>
+      <div class="chips"><a class="chip" href="#m-velatorio">Abre: El velatorio</a></div>
+    </article>
+    <article class="card hist" id="m-velatorio">
+      <span class="tag">Misión 2</span>
+      <h3>El velatorio</h3>
+      <dl><dt>La da</dt><dd><span class="p">Maruja</span></dd>
+      <dt>Premio</dt><dd>20 €, +10 de confianza con Maruja</dd></dl>
+      <ol><li>Recoge a <span class="p">Maruja</span> en el coche.</li>
+      <li>Llévala al <span class="l">tanatorio</span>, donde espera <span class="p">Venancio</span>.</li></ol>
+      <div class="chips"><a class="chip" href="#m-noche">Abre: A casica</a></div>
+    </article>
+    <article class="card hist" id="m-noche">
+      <span class="tag">Interludio · no sale en el registro</span>
+      <h3>A casica, que se hace de noche</h3>
+      <dl><dt>Qué es</dt><dd>Vuelve a <span class="l">casa</span> y acuéstate. <span class="p">Paca</span> te da las buenas noches y amanece.</dd></dl>
+      <div class="chips"><a class="chip" href="#m-movil">Abre: El móvil de la Josefa</a></div>
+    </article>
+    <article class="card hist" id="m-movil">
+      <span class="tag">Misión 3</span>
+      <h3>El móvil de la Josefa</h3>
+      <dl><dt>La da</dt><dd><span class="p">Paca</span> te llama por la mañana</dd>
+      <dt>Premio</dt><dd>+2500 y −2485 € (la broma de las pesetas), +10 de confianza con Josefa</dd></dl>
+      <ol><li>Habla con <span class="p">Josefa</span>: se le ha roto el <span class="o">móvil</span>.</li>
+      <li>Llévaselo a <span class="p">Fonsi</span> al <span class="l">V.I.P.</span> (Calle de Santa Ana) y habla con él: pide 605 € o un combate de boxeo.</li>
+      <li>Vuelve con <span class="p">Josefa</span>, que te manda con Alberto.</li></ol>
+      <div class="chips"><a class="chip" href="#m-puente">Abre: El puente</a><a class="chip" href="#mini">Combate de boxeo (si ganas a Fonsi)</a><a class="chip" href="#m-menu">Negocio informática → El menú de la Josefa</a></div>
+    </article>
+    <article class="card hist" id="m-puente">
+      <span class="tag">Misión 4</span>
+      <h3>El puente de Arroyuelo Medio</h3>
+      <dl><dt>La da</dt><dd><span class="p">Alberto</span>, en el puente</dd>
+      <dt>Premio</dt><dd>10 €; empiezan los Puntos Cívicos: 5 por las firmas, 5 por la misión y lo que tuvieras pendiente</dd></dl>
+      <ol><li>Recoge 5 firmas de vecinos antes de que cambie la luz. Los tres primeros a los que preguntas dicen que no.</li>
+      <li>Vuelve con <span class="p">Alberto</span>: él y <span class="p">Chiki</span> pasan a tu Agenda.</li>
+      <li>Gasta 10 Puntos Cívicos en desbloquear el <span class="l">puente</span>.</li></ol>
+      <div class="chips"><a class="chip" href="#m-chiki">Las pintadas de las peñas</a><a class="chip" href="#m-recress">Un torneo en los Galaxy Recress</a><a class="chip" href="#m-fin">Fin de lo hecho</a></div>
+    </article>
+    <article class="card hist" id="m-fin">
+      <span class="tag">Fin de lo hecho</span>
+      <h3>Hasta aquí llega lo que hay hecho</h3>
+      <dl><dt>Qué es</dt><dd>Pantalla de «continuará» y, con cualquier tecla, juego libre. Las secundarias siguen abiertas.</dd></dl>
+    </article>
+  </div>
+
+  <h2>La Josefa y los restaurantes</h2>
+  <div class="cards">
+    <article class="card sec" id="m-menu">
+      <span class="tag">Secundaria</span>
+      <h3>El menú de la Josefa</h3>
+      <dl><dt>La da</dt><dd><span class="p">Josefa</span>, en su puerta (Calle de Alemania 12)</dd>
+      <dt>Cuándo</dt><dd>Con el negocio informática abierto (tras volver con el móvil arreglado) y sin otra misión en marcha</dd>
+      <dt>Premio</dt><dd>20 €, +10 de confianza, 3 PC (más 1 PC de la riña, la primera del día)</dd></dl>
+      <ol><li>Coge el <span class="o">bate</span>.</li>
+      <li>En la <span class="l">Cocina de Henry</span> (Calle de la Palma) gánate el <span class="o">jamón asao</span> a batazos en la riña; <span class="p">Feliciano</span> siempre está.</li>
+      <li>Llévaselo a <span class="p">Josefa</span>, sin prisa.</li></ol>
+      <div class="chips"><a class="chip" href="#m-luis">Negocio restaurantes → Don Luis</a><a class="chip" href="#m-jueves">El jamón de los jueves</a><a class="chip" href="#mini">Recoger el jamón asao</a><span class="chip">Te quedas el bate</span><span class="chip">Comida de Henry y Luis</span></div>
+    </article>
+    <article class="card sec" id="m-luis">
+      <span class="tag">Secundaria</span>
+      <h3>En el amor y en kebab</h3>
+      <dl><dt>La da</dt><dd><span class="p">Don Luis</span>, en el <span class="l">Kebab Luis</span> (Calle de los Segadores)</dd>
+      <dt>Cuándo</dt><dd>Con los restaurantes abiertos. La primera charla es la propuesta; luego, la opción del mostrador</dd>
+      <dt>Premio</dt><dd>30 €, +10 de confianza, 3 PC y un <span class="o">kebab</span></dd></dl>
+      <ol><li>Sigue al camión de reparto sin acercarte ni alejarte demasiado (medidor de sospecha).</li>
+      <li>En cada parada, cuando se da la vuelta, tienes 30 s en las cajas: <span class="l">Kebab Deluxe</span>, <span class="l">Tele Dürum</span> y <span class="l">ShawarMadridejos</span>.</li>
+      <li>Si te pilla, Don Luis te llama y lo repites. Al acabar, vuelve con él.</li></ol>
+      <div class="chips"><span class="chip">Don Luis pasa a tu Agenda</span><span class="chip">No abre ninguna misión</span></div>
+    </article>
+    <article class="card sec" id="m-jueves">
+      <span class="tag">Secundaria · se repite</span>
+      <h3>El jamón de los jueves</h3>
+      <dl><dt>La da</dt><dd>Un vecino conocido al azar te llama (ni la cabra ni Henry)</dd>
+      <dt>Cuándo</dt><dd>Los jueves de 8:00 a 12:00, una vez al día, con los restaurantes abiertos y sin persecución</dd>
+      <dt>Premio</dt><dd>20 €, +10 de confianza, 3 PC</dd></dl>
+      <ol><li>Recoge el <span class="o">jamón</span> en la <span class="l">Cocina de Henry</span>; si hay riña, a batazos.</li>
+      <li>Llévaselo a quien te llamó.</li></ol>
+    </article>
+  </div>
+
+  <h2>Alberto, la Chiki y el alcalde</h2>
+  <div class="cards">
+    <article class="card sec" id="m-chiki">
+      <span class="tag">Secundaria</span>
+      <h3>Las pintadas de las peñas</h3>
+      <dl><dt>La da</dt><dd><span class="p">Chiki</span>, en el puente</dd>
+      <dt>Cuándo</dt><dd>Después de volver con Alberto con las firmas</dd>
+      <dt>Premio</dt><dd>+50 de confianza, 3 PC</dd></dl>
+      <ol><li>Te da el <span class="o">spray</span> y ya puedes pintar paredes.</li>
+      <li>Una pista al día. Pintar el logo de los Nietos de Marzo da +1 de confianza; tapar uno, −1.</li>
+      <li>Cuando todas las paredes son tuyas, te llama y se acaba.</li></ol>
+      <div class="chips"><span class="chip">No tiene marca en el mapa</span><span class="chip">A 100 de confianza cuenta su secreto</span></div>
+    </article>
+    <article class="card sec" id="m-recress">
+      <span class="tag">Secundaria · línea de Civismo</span>
+      <h3>Un torneo en los Galaxy Recress</h3>
+      <dl><dt>La da</dt><dd><span class="p">Alberto</span> en el puente, o te llama 12 horas de juego después del puente</dd>
+      <dt>Cuándo</dt><dd>Con el puente desbloqueado. Si la rechazas, se puede volver a coger</dd>
+      <dt>Premio</dt><dd>200 €, 3 PC</dd></dl>
+      <ol><li>El <span class="p">alcalde</span>, en la puerta del <span class="l">Ayuntamiento</span>, pide 100 €. Sin el dinero, la misión queda en pausa.</li>
+      <li>La de la <span class="l">copistería</span> (Calle del Teniente Infante) te da 5 <span class="o">carteles</span>.</li>
+      <li>Pégalos en 5 escaparates con Acción.</li>
+      <li><span class="p">Alberto</span> te llama: todo listo.</li>
+      <li>El torneo: la final es <span class="p">Katakumba69</span> contra DoomAssasin78, que es el alcalde. Luego, doble o nada.</li>
+      <li>Tokken 9 contra el alcalde hasta ganarle. Campeón, y la escena de noche del alcalde y su mujer.</li></ol>
+      <div class="chips"><a class="chip" href="#mini">Recress abierto 15:00–02:00</a><a class="chip" href="#mini">Tokken 9 · RALLY 9 · Hit The VIP</a><a class="chip" href="#m-ajedrez">Partidas en la cabeza</a></div>
+    </article>
+    <article class="card sec" id="m-ajedrez">
+      <span class="tag">Secundaria</span>
+      <h3>Partidas en la cabeza</h3>
+      <dl><dt>La da</dt><dd>El <span class="p">alcalde</span>, en la puerta del <span class="l">Ayuntamiento</span></dd>
+      <dt>Cuándo</dt><dd>Después del torneo del Recress</dd>
+      <dt>Premio</dt><dd>«Como una puñetera regadera» da +5 de confianza; la respuesta sarcástica, nada. Sin PC</dd></dl>
+      <ol><li>Vista desde su ventana con las piezas imaginadas en la plaza.</li>
+      <li>Una pregunta, y te enseña el juego.</li></ol>
+      <div class="chips"><a class="chip" href="#mini">Minijuego Ajedrez humano, los 4 niveles</a></div>
+    </article>
+  </div>
+
+  <h2>Sueltas</h2>
+  <div class="cards">
+    <article class="card sec" id="m-tomasa">
+      <span class="tag">Secundaria · desde el principio</span>
+      <h3>Un paquete pa la Tomasa</h3>
+      <dl><dt>La da</dt><dd><span class="p">Tomasa Malvora</span>, junto a los <span class="l">chinos del Arroyuelo</span> (San José con Santo Domingo)</dd>
+      <dt>Cuándo</dt><dd>Con los chinos abiertos: de lunes a viernes de 7 a 21, sábado y domingo de 6 a 2. No depende de la historia</dd>
+      <dt>Premio</dt><dd>10 €, +10 de confianza, 3 PC. Decirle que no: −5</dd></dl>
+      <ol><li>Entra en los chinos y compra el <span class="o">tabaco</span> en el pasillo de la derecha (6 €). El chino te vigila.</li>
+      <li>Dáselo a <span class="p">Tomasa</span>. Desde ese día fuma.</li></ol>
+      <div class="chips"><span class="chip">No abre nada</span></div>
+    </article>
+  </div>
+
+  <h2 id="mini">Minijuegos</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Minijuego</th><th>Cómo se abre</th><th>Dónde se juega</th><th>Premio</th></tr></thead>
+      <tbody>
+        <tr><td><b>Combate de boxeo</b></td><td>Ganar a Fonsi en El móvil de la Josefa, o después en el mostrador</td><td><span class="l">V.I.P.</span> y Agenda</td><td class="num">1 PC la primera del día</td></tr>
+        <tr><td><b>Recoger el jamón asao</b></td><td>Acabar la riña de El menú de la Josefa</td><td><span class="l">Cocina de Henry</span>: jueves 8–21 con los restaurantes abiertos; y Agenda (sin PC)</td><td class="num">1 PC la primera del día</td></tr>
+        <tr><td><b>Ajedrez humano</b></td><td>Partidas en la cabeza</td><td>Los dos tableros de la <span class="l">Plaza del Ayuntamiento</span> y Agenda</td><td class="num">4 / 6 / 8 / 12 PC por victoria, sin tope</td></tr>
+        <tr><td><b>Tokken 9</b></td><td>Ganar el torneo del Recress</td><td>Cabinas del <span class="l">Galaxy Recress</span>, contra la CPU</td><td class="num">Sin PC (racha y récord)</td></tr>
+        <tr><td><b>Reto a Katakumba69</b></td><td>Ganar el torneo del Recress</td><td>Hablando con él en el Recress</td><td class="num">+5 confianza la primera, luego +1</td></tr>
+        <tr><td><b>RALLY 9</b></td><td>Ganar el torneo del Recress</td><td>El asiento rojo de la entrada del Recress, 3 vueltas</td><td class="num">Sin premio</td></tr>
+        <tr><td><b>Hit The VIP</b></td><td>Ganar el torneo del Recress</td><td>Última máquina de la fila de la canasta</td><td class="num">Comparte récord y PC diario con el boxeo; no abre el boxeo</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Sistemas sin misión</h2>
+  <div class="cards">
+    <article class="card"><h3>Cartas desde Correa</h3><p>En <span class="l">Correa</span>, de lunes a viernes de 8 a 20 (<span class="p">Diurno</span> hasta las 14, luego <span class="p">Nocturno</span>). Una carta al día a un vecino conocido; te llama al día siguiente: +5 si es amable, +3 normal, −3 si es borde.</p></article>
+    <article class="card"><h3>Padrón Municipal</h3><p>Tu nombre, después del creador. Los vecinos con nombre te llaman por él a partir de 50 de confianza; el resto, a mitad de la historia.</p></article>
+    <article class="card"><h3>Gacha</h3><p>1 € la bola en la máquina del <span class="l">Tele Dürum</span>. Figuras de los vecinos con nombre, en la Agenda, página «Colección».</p></article>
+    <article class="card"><h3>Chismes y secretos</h3><p>Después de cada misión el pueblo habla de ella (menos la de Tomasa). A 100 de confianza cuentan su secreto Dolores, Katakumba69 y Chiki.</p></article>
+    <article class="card"><h3>Sin hacer todavía</h3><p>Trabajos (encargos repetidos que solo pagan dinero): ninguno escrito. La plaza de toros restaurada no está ligada a ninguna misión.</p></article>
+  </div>
+
+  <p class="foot">Fuentes: <code>missions.gd</code>, <code>game.gd</code>, <code>recress.gd</code>, <code>sabotaje.gd</code>, <code>motin.gd</code>, <code>pintadas.gd</code>, <code>ajedrez_humano.gd</code>, <code>tomasa.gd</code>, <code>cartas.gd</code> y <code>loc.gd</code> en X:\MatritellusGPT.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script>
+(function () {
+  var box = document.getElementById('flow');
+  function tok(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function L(title, who) { return '"<b>' + title + '</b>' + (who ? '<br/><span>' + who + '</span>' : '') + '"'; }
+  function source() {
+    var ink = tok('--ink'), paper = tok('--paper'), card = tok('--card'), soft = tok('--soft');
+    return [
+      'flowchart TD',
+      'ini([' + L('Empiezas', 'creador y Padrón') + ']):::des',
+      'aceite[' + L('La crisis del aceite', 'Paca') + ']:::hist',
+      'velatorio[' + L('El velatorio', 'Maruja') + ']:::hist',
+      'noche[' + L('A casica, que se hace de noche', 'a casa y a dormir') + ']:::hist',
+      'movil[' + L('El móvil de la Josefa', 'Paca llama · Josefa · Fonsi') + ']:::hist',
+      'puente[' + L('El puente de Arroyuelo Medio', 'Alberto') + ']:::hist',
+      'fin[' + L('Hasta aquí lo hecho', 'juego libre') + ']:::hist',
+      'box([' + L('Combate de boxeo', 'minijuego') + ']):::mini',
+      'inf([' + L('Negocio: informática', '') + ']):::des',
+      'menu[' + L('El menú de la Josefa', 'Josefa') + ']:::sec',
+      'jamon([' + L('Recoger el jamón asao', 'minijuego') + ']):::mini',
+      'rest([' + L('Negocio: restaurantes', 'te quedas el bate') + ']):::des',
+      'luis[' + L('En el amor y en kebab', 'Don Luis') + ']:::sec',
+      'jueves[' + L('El jamón de los jueves', 'te llama un vecino') + ']:::sec',
+      'pc([' + L('Puntos Cívicos', '') + ']):::des',
+      'chiki[' + L('Las pintadas de las peñas', 'Chiki') + ']:::sec',
+      'recress[' + L('Un torneo en los Galaxy Recress', 'Alberto') + ']:::sec',
+      'sala([' + L('Galaxy Recress abierto', '15:00 a 02:00') + ']):::des',
+      'tokken([' + L('Tokken 9', 'y el reto a Katakumba69') + ']):::mini',
+      'rally([' + L('RALLY 9', 'minijuego') + ']):::mini',
+      'hit([' + L('Hit The VIP', 'minijuego') + ']):::mini',
+      'ajedrez[' + L('Partidas en la cabeza', 'el alcalde') + ']:::sec',
+      'ajm([' + L('Ajedrez humano', 'minijuego, 4 niveles') + ']):::mini',
+      'tomasa[' + L('Un paquete pa la Tomasa', 'Tomasa Malvora') + ']:::sec',
+      'ini --> aceite',
+      'aceite --> velatorio',
+      'velatorio --> noche',
+      'noche -->|"por la mañana"| movil',
+      'movil -->|"Josefa te manda con Alberto"| puente',
+      'puente -->|"10 PC al puente"| fin',
+      'movil -->|"ganas a Fonsi"| box',
+      'movil -->|"vuelves con Josefa"| inf',
+      'inf --> menu',
+      'menu -->|"acabas la riña"| jamon',
+      'menu -->|"entregas el jamón"| rest',
+      'rest --> luis',
+      'rest -->|"jueves 8 a 12"| jueves',
+      'puente -->|"vuelves con las firmas"| pc',
+      'puente -->|"vuelves con las firmas"| chiki',
+      'puente -->|"puente abierto, o te llama a las 12 h"| recress',
+      'recress --> sala',
+      'sala --> tokken',
+      'sala --> rally',
+      'sala --> hit',
+      'recress -->|"habla con el alcalde"| ajedrez',
+      'ajedrez --> ajm',
+      'ini -.->|"con los chinos abiertos"| tomasa',
+      'classDef hist fill:' + ink + ',stroke:' + ink + ',color:' + paper + ',stroke-width:2px',
+      'classDef sec fill:' + tok('--sec-bg') + ',stroke:' + tok('--lugar') + ',color:' + ink + ',stroke-width:2px',
+      'classDef mini fill:' + tok('--mini-bg') + ',stroke:' + tok('--mini') + ',color:' + ink + ',stroke-width:2px',
+      'classDef des fill:' + paper + ',stroke:' + soft + ',color:' + ink + ',stroke-width:2px,stroke-dasharray:5 4'
+    ].join('\n');
+  }
+  var CARD = { aceite: 'm-aceite', velatorio: 'm-velatorio', noche: 'm-noche', movil: 'm-movil', puente: 'm-puente', fin: 'm-fin',
+    menu: 'm-menu', luis: 'm-luis', jueves: 'm-jueves', chiki: 'm-chiki', recress: 'm-recress', ajedrez: 'm-ajedrez', tomasa: 'm-tomasa',
+    box: 'mini', jamon: 'mini', tokken: 'mini', rally: 'mini', hit: 'mini', ajm: 'mini', sala: 'mini', inf: 'm-menu', rest: 'm-luis', pc: 'm-puente' };
+  function go(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ block: 'start' });
+    if (el.classList.contains('card')) {
+      el.classList.add('flash');
+      setTimeout(function () { el.classList.remove('flash'); }, 1400);
+    }
+  }
+  var n = 0;
+  function draw() {
+    if (!window.mermaid) {
+      box.innerHTML = '<p class="fallback">El diagrama no se ha podido cargar. Las fichas de abajo tienen lo mismo.</p>';
+      return;
+    }
+    var ink = tok('--ink'), card = tok('--card'), soft = tok('--soft');
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'base',
+      themeVariables: { background: card, primaryColor: card, primaryTextColor: ink, primaryBorderColor: soft, lineColor: soft,
+        textColor: ink, edgeLabelBackground: card, tertiaryColor: card, fontFamily: tok('--font'), fontSize: '14px' },
+      flowchart: { htmlLabels: true, curve: 'basis', nodeSpacing: 28, rankSpacing: 46, useMaxWidth: false, padding: 10 } });
+    n += 1;
+    mermaid.render('flowsvg' + n, source()).then(function (r) {
+      box.innerHTML = r.svg;
+      box.querySelectorAll('g.node').forEach(function (g) {
+        var m = /^flowchart-(.+)-\d+$/.exec(g.id || '');
+        var target = m && CARD[m[1]];
+        if (!target) return;
+        g.setAttribute('tabindex', '0');
+        g.setAttribute('role', 'link');
+        g.addEventListener('click', function () { go(target); });
+        g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(target); } });
+      });
+    }).catch(function () {
+      box.innerHTML = '<p class="fallback">El diagrama no se ha podido dibujar. Las fichas de abajo tienen lo mismo.</p>';
+    });
+  }
+  draw();
+  try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw); } catch (e) {}
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+</script>
