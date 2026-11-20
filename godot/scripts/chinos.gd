@@ -33,6 +33,7 @@ extends "res://scripts/obra.gd"
 
 const HOUSE := "sanjose_1"
 const NAME := "ALIMENTACIÓN"
+const DentroS = preload("res://scripts/chinos_dentro.gd")
 const POSTER := "res://assets/chinos/poster_roster.png"         # the user's poster, redrawn by tools/chinos/poster.py
 const SLAB_UP := 2.97                           # the slab over the street at the west end (measured: 2.96 to 2.99 m on both streets)
 const TOP := 2.8                                # the top of the walls, over the slab
@@ -71,6 +72,7 @@ var np: Vector2                 # out of it
 var PNb: Vector2                # the balcony's two outer corners
 var PSb: Vector2
 var door: Vector2               # in front of the shop's door, on the map
+var tienda                      # its inside, a set apart (chinos_dentro.gd)
 var posts: Array = []           # where the two road signs stand, on the map
 var is_open := false
 var poster := false              # whether the poster is on the door (its picture was found)
@@ -206,6 +208,11 @@ func build(world, hd: Dictionary) -> void:
 	home()
 	_commit()
 	_states()
+	var mid_pt: Vector2 = PS + dp * (float(_sf["mid"]) - float(_sf["leaf"]) / 2.0)
+	var out_v: Vector3 = transform.basis * Vector3(np.x, 0.0, np.y)
+	tienda = DentroS.new()
+	tienda.build(world, NAME, spot(mid_pt.x + np.x * 0.15, mid_pt.y + np.y * 0.15), spot(mid_pt.x + np.x * 1.45, mid_pt.y + np.y * 1.45), atan2(out_v.x, out_v.z))
+	tienda.open = is_open
 
 # ---------------- pieces every wall has ----------------
 ## a course of bricks stood on end, standing a little proud of the wall being built
@@ -755,6 +762,8 @@ func _states() -> void:
 
 func set_open(on: bool) -> void:
 	is_open = on
+	if tienda != null:
+		tienda.open = on
 	if _shut != null:
 		_shut.visible = not on
 		_open.visible = on

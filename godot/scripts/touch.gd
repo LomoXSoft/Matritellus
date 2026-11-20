@@ -38,7 +38,7 @@ func _ready() -> void:
 	_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pad.draw.connect(_draw_pad)
 	add_child(_pad)
-	for i in range(8):                       # up to eight buttons at once; what each one is changes with the moment
+	for i in range(10):                      # up to ten buttons at once; what each one is changes with the moment
 		var b := TouchScreenButton.new()
 		b.shape = CircleShape2D.new()
 		b.shape_centered = true
@@ -96,6 +96,8 @@ func _wanted() -> Array:
 			# (ajedrez) chess on the square: a finger picks the squares on the board itself; these are Vista, Soltar, II
 			var aj = g.get("ajedrez")
 			return aj.touch_buttons() if aj != null and aj.has_method("touch_buttons") else []
+	if g.get("hud_hidden") == true and (menu == null or not menu.visible) and not g.get("map_open"):
+		return []
 	if g.get("inventario") != null and g.inventario.open:
 		return []
 	if g.get("map_open"):
@@ -119,6 +121,7 @@ func _wanted() -> Array:
 			out.append(["Turbo", "run", ""])
 		elif g.has_method("_has_autopilot") and g._has_autopilot(c):
 			out.append(["Piloto" if es else "Autopilot", "run", ""])
+		out.append(["Cámara" if es else "Camera", "cam_mode", "top"])
 		out.append(["Radio", "radio", "top"])
 	else:
 		if prompt != "":

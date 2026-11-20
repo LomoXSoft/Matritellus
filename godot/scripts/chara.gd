@@ -158,7 +158,9 @@ func sit(o: Dictionary, driving: bool) -> Node3D:
 	_fr.visible = false
 	# everything from the neck down leans back about the hips; everything above goes with the neck, and stays upright
 	var torso := Node3D.new()
+	torso.name = "torso"
 	var head := Node3D.new()
+	head.name = "head"
 	for n in inner.get_children():
 		if n == _fl or n == _fr or n == _hl or n == _hr or n == _phone or n == neck or not (n is Node3D):
 			continue
@@ -351,7 +353,63 @@ func set_look(o: Dictionary) -> void:
 	_pendant(int(o.get("pendant", 0)), int(o.get("kerchief", 0xd23b3b)))
 	if int(o.get("panuelo", 0)) == 1:
 		_panuelo(int(o.get("pena", 0)), int(o.get("kerchief", 0xd23b3b)))
+	if bool(o.get("smoke", false)):
+		_cigarette()
 	Parts.thin(vis)                              # (eyes, buttons and earrings are not drawn from across the square)
+
+## A lit cigarette at the corner of the mouth (5 % of adult/elderly neighbours, never kids, plus Tomasa once she gets hers).
+static var _ember_mat: StandardMaterial3D
+static var _smoke_mesh: SphereMesh
+func _cigarette() -> void:
+	var cig := Node3D.new()
+	cig.name = "cigarette"
+	cig.position = Vector3(0.12, 1.19, 0.47)
+	cig.rotation = Vector3(0.16, 0.22, -0.14)
+	neck.add_child(cig)
+	var add_bit := func(col: int, z: float, length: float, rad := 0.017) -> MeshInstance3D:
+		var m := Parts.part("cyl", col, Vector3(0.0, 0.0, z), Vector3(rad, length, rad))
+		m.rotation.x = PI / 2.0
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		cig.add_child(m)
+		return m
+	add_bit.call(0xd99b4a, 0.03, 0.06, 0.018)        # orange filter butt
+	add_bit.call(0xf4f2ec, 0.125, 0.13, 0.017)       # white paper tube
+	add_bit.call(0x4a4846, 0.20, 0.024, 0.016)       # grey ash
+	if _ember_mat == null:
+		_ember_mat = StandardMaterial3D.new()
+		_ember_mat.albedo_color = Color(1.0, 0.38, 0.08)
+		_ember_mat.emission_enabled = true
+		_ember_mat.emission = Color(1.0, 0.34, 0.06)
+		_ember_mat.emission_energy_multiplier = 2.6
+	var ember: MeshInstance3D = add_bit.call(0xff5514, 0.218, 0.016, 0.015)
+	ember.material_override = _ember_mat
+	var puff := CPUParticles3D.new()
+	puff.position = Vector3(0.0, 0.01, 0.22)
+	puff.amount = 4
+	puff.lifetime = 1.1
+	puff.explosiveness = 0.0
+	puff.randomness = 0.35
+	puff.direction = Vector3(0.0, 1.0, 0.0)
+	puff.spread = 22.0
+	puff.gravity = Vector3(0.0, 0.18, 0.0)
+	puff.initial_velocity_min = 0.16
+	puff.initial_velocity_max = 0.32
+	puff.scale_amount_min = 0.55
+	puff.scale_amount_max = 1.25
+	if _smoke_mesh == null:
+		_smoke_mesh = SphereMesh.new()
+		_smoke_mesh.radius = 0.035
+		_smoke_mesh.height = 0.07
+		_smoke_mesh.radial_segments = 6
+		_smoke_mesh.rings = 3
+		var sm := StandardMaterial3D.new()
+		sm.albedo_color = Color(0.86, 0.86, 0.88, 0.38)
+		sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_smoke_mesh.material = sm
+	puff.mesh = _smoke_mesh
+	puff.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	cig.add_child(puff)
 
 ## One foot, shod: 0 trainers · 1 boots · 2 alpargatas (canvas on a rope sole, ribbons round the ankle) · 3 flip-flops
 func _foot(x: float, hex: int, kind: int, skin: int) -> Node3D:

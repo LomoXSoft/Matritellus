@@ -7136,6 +7136,233 @@ func _mejoras_checks(pictures := false) -> void:
 	var qc: Dictionary = g._menu_page("quit_confirm")
 	_check(main_has_quit and qc["sub"] == "¿Tás seguro? Mía que se estaba poniendo divertío.", "main menu has Quit and pause Quit asks '¿Tás seguro? Mía que se estaba poniendo divertío.'")
 
+## Verification of the 5 new improvements (20 Nov 2026):
+##   1) 3 driving camera modes (3rd person, 1st person with head hidden above shoulders, GTA strategic cinematic jumping on >5s or far)
+##   2) Tomasa Malvora + interior of los chinos del Arroyuelo + infinitive shopkeeper + spinning 6 € tobacco pack
+##   3) 5 % smokers in non-kid population (0 % kids)
+##   4) Developer option to hide/show HUD via ºª (keyboard) or Select (gamepad)
+##   5) Slow-motion + cinematic camera while airborne in a car
+func _mejoras2_checks(pictures := false) -> void:
+	g.phase = "free"
+	g.set_target(null, false)
+	g.weekday = 0
+	g.set_time(12.0)
+	await _frames(6)
+
+	# 1) Three driving camera modes (3rd person, 1st person POV with head hidden, GTA cinematic)
+	var car = g.paca_car
+	var r: Dictionary = MapData.nearest_road(g.places["home"]["p"], true)
+	var u: Vector2 = r["u"]
+	car.place(r["p"], atan2(u.x, u.y))
+	g._enter_car(car)
+	g.set_car_cam(0)
+	await _frames(8)
+	var head0: Node3D = car._rider_nodes[0].find_child("head", true, false) as Node3D
+	var fp_head_visible_0: bool = head0 != null and head0.visible
+	# Switch to 1st person
+	g.cycle_car_cam()
+	await _frames(8)
+	var fp_head_hidden_1: bool = head0 != null and not head0.visible
+	var fp_near_ok: bool = g.cam.near <= 0.06
+	var fp_inside_car: bool = g.cam.global_position.distance_to(car.global_position) < 2.2
+	if pictures:
+		await _shot("mejora2_cam_fp")
+	_check(g.car_cam == 1 and fp_head_visible_0 and fp_head_hidden_1 and fp_near_ok and fp_inside_car,
+		"driving 1st-person POV hides driver head (%s -> %s), sits inside cabin (dist=%.2f m, near=%.2f)" % [fp_head_visible_0, fp_head_hidden_1, g.cam.global_position.distance_to(car.global_position), g.cam.near])
+	# Switch to GTA cinematic
+	g.cycle_car_cam()
+	await _frames(10)
+	var cine_p1: Vector3 = g._cine_pos
+	var cine_head_back: bool = head0 != null and head0.visible
+	if pictures:
+		await _shot("mejora2_cam_cine")
+	# Force >= 5 s elapsed -> must jump to next strategic point
+	g._cine_t = g.CINE_MIN_TIME + 0.1
+	await _frames(4)
+	var cine_p2: Vector3 = g._cine_pos
+	# Move car far away (> CINE_MAX_DIST) -> must also jump
+	car.place(r["p"] + u * 55.0, atan2(u.x, u.y))
+	await _frames(4)
+	var cine_p3: Vector3 = g._cine_pos
+	_check(g.car_cam == 2 and cine_head_back and cine_p1.distance_to(cine_p2) > 2.0 and cine_p2.distance_to(cine_p3) > 2.0,
+		"GTA cinematic camera restores head (%s) and jumps on >=5s (%.1f m) and when car gets far (%.1f m)" % [cine_head_back, cine_p1.distance_to(cine_p2), cine_p2.distance_to(cine_p3)])
+	# Back to 3rd person
+	g.cycle_car_cam()
+	await _frames(4)
+
+	# 2) Airborne car slow-motion + cinematic camera
+	car.place(r["p"], atan2(u.x, u.y))
+	await _frames(4)
+	car.global_position.y += 2.6
+	car.linear_velocity = Vector3(u.x * 16.0, 5.5, u.y * 16.0)
+	car.air_time = 0.28
+	car._ramp_cool = 0.5
+	var saw_slow := false
+	var min_scale := 1.0
+	for _i in range(28):
+		await _frames(1)
+		if g.air_cine:
+			saw_slow = true
+		min_scale = minf(min_scale, Engine.time_scale)
+		if saw_slow and min_scale < 0.65 and pictures:
+			await _shot("mejora2_air_slowmo")
+			pictures = false # avoid retaking every frame; restored below
+	pictures = shots or OS.get_cmdline_user_args().has("--window")
+	# Land cleanly and confirm time_scale returns to 1.0
+	car.place(r["p"], atan2(u.x, u.y))
+	car.linear_velocity = Vector3.ZERO
+	car.air_time = 0.0
+	for _i in range(45):
+		await _frames(1)
+	_check(saw_slow and min_scale < 0.65 and not g.air_cine and absf(Engine.time_scale - 1.0) < 0.05,
+		"airborne car activates slow-mo + cinematic camera (min_scale=%.2f) and restores 1.00 on landing (now=%.2f, air_cine=%s)" % [min_scale, Engine.time_scale, g.air_cine])
+	g._exit_car()
+	await _frames(4)
+
+	# 3) Tomasa Malvora + Los chinos del Arroyuelo interior + infinitive shopkeeper + spinning 6 EUR tobacco
+	var ch = g.world.chinos
+	var T = g.tomasa
+	_check(ch != null and ch.get("tienda") != null and T != null and T.n != null and T.keeper != null,
+		"los chinos del Arroyuelo has an interior (chinos_dentro), Tomasa Malvora, and El chino shopkeeper")
+	if ch != null and ch.tienda != null and T != null:
+		# Closed at 03:00 on Monday -> Tomasa away
+		g.weekday = 0
+		g.set_time(3.0)
+		ch.set_open(ch.open_at(0, 3.0))
+		T._sync_presence(true)
+		var away_closed: bool = T.n.away and not ch.tienda.open
+		# Open at 12:00 on Monday -> Tomasa near los chinos
+		g.set_time(12.0)
+		ch.set_open(ch.open_at(0, 12.0))
+		T._sync_presence(true)
+		var here_open: bool = not T.n.away and ch.tienda.open and T.n.p.distance_to(ch.door) < 25.0
+		_check(away_closed and here_open, "Tomasa walks near los chinos only while open (away_at_3=%s, present_at_12=%s)" % [away_closed, here_open])
+		# Talk to Tomasa -> decline ("No") -> she gets angry & trust drops
+		g.money = 50
+		g.folk.add("tomasa", 10)
+		var tr_before: int = g.folk.trust("tomasa")
+		g.player.p = T.n.p + Vector2(1.2, 0.0)
+		g.player.sync()
+		g.talk_to(T.n)
+		while g.dlg != null:
+			g.dialog_advance()
+			await _frames(1)
+		var has_yes_no: bool = g._ask != null and (g._ask["options"] as Array).size() == 2
+		if has_yes_no:
+			g._ask_pick(1) # No
+		var no_line: String = String(g.dlg["lines"][0]) if g.dlg != null else ""
+		while g.dlg != null:
+			g.dialog_advance()
+			await _frames(1)
+		var tr_after_no: int = g.folk.trust("tomasa")
+		_check(has_yes_no and tr_after_no < tr_before and no_line != "",
+			"saying No to Tomasa angers her and drops trust (%d -> %d)" % [tr_before, tr_after_no])
+		# Talk again -> accept ("Sí")
+		g.talk_to(T.n)
+		while g.dlg != null:
+			g.dialog_advance()
+			await _frames(1)
+		g._ask_pick(0) # Yes
+		while g.dlg != null:
+			g.dialog_advance()
+			await _frames(1)
+		var accepted_ok: bool = T.stage() == "buy" and g.side != null and g.side["id"] == "tomasa"
+		# Enter los chinos del Arroyuelo by pressing Action on the green arrow
+		var at_door: Vector2 = g.entradas.spot(ch.tienda, false)
+		g.player.p = at_door
+		g.player.sync()
+		g._door_cool = 0.0
+		await _frames(4)
+		g.interact()
+		await _frames(8)
+		var entered_chinos: bool = g.indoors and g.inside_of == ch.tienda
+		# Talk to El chino -> infinitive verbs warning not to steal
+		g.talk_to(T.keeper)
+		var chino_text := " ".join(g.dlg["lines"]) if g.dlg != null else ""
+		while g.dlg != null:
+			g.dialog_advance()
+			await _frames(1)
+		var chino_ok: bool = chino_text.to_lower().contains("robar") and (chino_text.to_lower().contains("mirar") or chino_text.to_lower().contains("vigilar"))
+		# Walk up to spinning tobacco pack in aisle -> verify Comprar prompt (6 €)
+		g.player.p = ch.tienda.tobacco_spot + Vector2(0.0, -1.25)
+		g.player.h = 0.0
+		g.player.sync()
+		await _frames(10)
+		var can_buy_ok: bool = T.can_buy() and g.hud.prompt.text.contains("Comprar") and g.hud.prompt.text.contains("6")
+		if pictures:
+			await _shot("mejora2_chinos_tabaco")
+		var money_before: int = g.money
+		g.interact()
+		await _frames(6)
+		var bought_ok: bool = g.money == money_before - 6 and T.has_tobacco() and g.inventario.key_items().any(func(it): return it["id"] == "tabaco")
+		# Leave shop & deliver to Tomasa
+		g.player.p = g.entradas.spot(ch.tienda, true)
+		g.player.sync()
+		g._door_cool = 0.0
+		await _frames(4)
+		g.interact()
+		await _frames(6)
+		g.player.p = T.n.p + Vector2(1.2, 0.0)
+		g.player.sync()
+		g.talk_to(T.n)
+		var done_text := " ".join(g.dlg["lines"]) if g.dlg != null else ""
+		while g.dlg != null:
+			g.dialog_advance()
+			await _frames(1)
+		var finished_ok: bool = T.done() and g.side == null and done_text.to_lower().contains("hijos") and done_text.to_lower().contains("controlo") and bool(T.n.look_data.get("smoke", false))
+		_check(accepted_ok and entered_chinos and chino_ok and can_buy_ok and bought_ok and finished_ok,
+			"Tomasa tobacco errand works end-to-end (accept=%s, chinos=%s, chino_inf=%s, buy_prompt=%s, bought=%s, done=%s)" % [accepted_ok, entered_chinos, chino_ok, can_buy_ok, bought_ok, finished_ok])
+
+	# 4) 5 % smokers in non-kid population (0 % kids) + visual cigarette on face
+	var adult_smokes := 0
+	for _k in range(1000):
+		var lk: Dictionary = g._neighbour_look(["adult_m", "adult_f", "old_m", "old_f"][_k % 4])
+		if bool(lk.get("smoke", false)):
+			adult_smokes += 1
+	var kid_smokes := 0
+	for _k in range(400):
+		if bool(g._neighbour_look("kid").get("smoke", false)):
+			kid_smokes += 1
+	var smoker = g.spawn_neighbour(g.places["home"]["p"] + Vector2(0.0, 2.5), true, {"shirt": 0x3b5fa8, "hair": 0x2a1c14, "smoke": true, "voice_i": 0})
+	smoker.h = PI
+	smoker.sync()
+	var has_cig: bool = smoker.find_child("cigarette", true, false) != null
+	if pictures:
+		g.cam_fixed = [MapData.at(smoker.p + Vector2(0.35, -1.65), 1.55), MapData.at(smoker.p, 1.32)]
+		g.cam_pos = g.cam_fixed[0]
+		g.cam_look = g.cam_fixed[1]
+		await _frames(12)
+		await _shot("mejora2_fumador")
+		g.cam_fixed = null
+	smoker.queue_free()
+	g.npcs.erase(smoker)
+	_check(adult_smokes >= 25 and adult_smokes <= 85 and kid_smokes == 0 and has_cig,
+		"~5%% of non-kid population smokes (%d/1000), 0 kids (%d/400), cigarette 3D attached (%s)" % [adult_smokes, kid_smokes, has_cig])
+
+	# 5) Developer HUD hide/show option (ºª on keyboard / Select on gamepad)
+	var prev_dev: bool = bool(Settings.data.get("dev", false))
+	Settings.data["dev"] = true
+	var dev_has_hud: bool = g._menu_page("dev")["items"].any(func(it): return it["text"] == Loc.t("dev_hud"))
+	g.dev_hud_key = false
+	g._dev_hud_key() # turn ON
+	var k_ev := InputEventKey.new()
+	k_ev.physical_keycode = KEY_QUOTELEFT
+	k_ev.pressed = true
+	g._unhandled_input(k_ev)
+	await _frames(3)
+	var hid_by_key: bool = g.hud_hidden and not g.hud.play_ui.visible
+	var pad_ev := InputEventJoypadButton.new()
+	pad_ev.button_index = JOY_BUTTON_BACK
+	pad_ev.pressed = true
+	g._unhandled_input(pad_ev)
+	await _frames(3)
+	var shown_by_select: bool = not g.hud_hidden and g.hud.play_ui.visible
+	g._dev_hud_key() # turn OFF
+	var select_free_off: bool = not g._is_hud_toggle_event(pad_ev)
+	Settings.data["dev"] = prev_dev
+	_check(dev_has_hud and hid_by_key and shown_by_select and select_free_off,
+		"developer HUD toggle works with ºª key (%s) and Select button (%s), restores cleanly when off (%s)" % [hid_by_key, shown_by_select, select_free_off])
+
 ## The rounds of the neighbours with a name of their own (rondas.gd; the user, 17 Nov 2026): with no mission for you, the
 ## old go to church, the grown-ups to the bars, the children to the parks, by the clock; wanted, back to their spot.
 func _rondas_checks() -> void:
@@ -7429,7 +7656,7 @@ func _palabros_checks() -> void:
 ## they wrote them (aj_q_no, guion/ajedrez.md). A key ending in "_" is a prefix.
 const HABLA_FINA := ["alcalde", "alcalde_", "carta_bien_alcalde", "carta_mal_alcalde", "aj_m_", "aj_c_", "aj_unlocked",
 	"obj_", "s_", "tk_you_", "day_name_", "title_sub", "credits", "pad_plaque", "rec_bet_title", "carta_para", "t_stopfirst",
-	"food_sold_henry", "aj_q_no"]
+	"food_sold_henry", "aj_q_no", "chino_", "firma_si_chino", "firma_no_chino"]
 
 
 func _habla_fina(k: String) -> bool:
@@ -7955,8 +8182,10 @@ func _recress_checks() -> void:
 		g.player.p = E.spot(CT, false) + back * 4.5     # (far enough for the arrow to arm)
 		g.player.sync()
 		await _frames(10)
-		g.player.p = E.spot(CT, false)
+		g.player.p = E.spot(CT, false)                  # (on to it, then press Action to enter: entradas.gd since 20 Nov)
 		g.player.sync()
+		await _frames(4)
+		g.interact()
 		var w := 0
 		while g.inside_of != CT and w < 40:
 			await _frames(1)
@@ -9822,6 +10051,17 @@ func _run() -> void:
 		await _frames(20)
 		await _mejoras_checks(shots)
 		print("MEJORAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--mejoras2"):      # verification of the 5 new improvements (3 driving cameras, air slow-mo, Tomasa+chinos, 5% smokers, dev HUD toggle)
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		g.phase = "free"
+		shots = shots or OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _mejoras2_checks(shots)
+		print("MEJORAS2 %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--colores"):       # just the colours of names, places and mission objects in dialogue
@@ -13462,6 +13702,13 @@ func _run() -> void:
 		print("TITULO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--trailer"):       # the 60s 4:5 cinematic trailer director (trailer.gd)
+		shots = true
+		g.menu.close()
+		g.phase = "trailer"
+		if not g.has_node("TrailerDirector"):
+			g.add_child(load("res://scripts/trailer.gd").new())
+		return
 	if OS.get_cmdline_user_args().has("--pausa"):         # just the pause: the car stops where it is, the sound waits, and both go on afterwards
 		g.menu.close()
 		g.phase = "free"
@@ -14290,15 +14537,19 @@ func _run() -> void:
 	if g.casa != null:
 		var door_at: Vector2 = g.entradas.spot(g.casa, false)
 		g.player.p = door_at + (g.places["home"]["p"] - door_at).normalized() * 4.5
+		g.player.sync()
 		await _frames(5)
 		g.player.p = door_at
+		g.player.sync()
+		g._door_cool = 0.0
 		await _frames(4)
-		g.interact()
+		g.entradas.enter()
 		var waited := 0
 		while not g.indoors and waited < 90:
 			await _frames(1)
 			waited += 1
 		g.player.p = g.casa.bed_spot
+		g.player.sync()
 		await _frames(10)
 	_check(g._can_nap(), "at home you can lie down whenever you like (by the bed, indoors)")
 	day_before = g.weekday
@@ -14306,7 +14557,9 @@ func _run() -> void:
 	await _frames(150)
 	if g.indoors:                                # (you wake in your room: out again for what follows, by the arrow at the door)
 		g.player.p = g.entradas.spot(g.casa, true)
-		await _frames(3)
+		g.player.sync()
+		g._door_cool = 0.0
+		await _frames(4)
 		g.entradas.leave()
 		var out_t := 0
 		while g.indoors and out_t < 90:

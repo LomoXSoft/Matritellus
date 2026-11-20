@@ -219,6 +219,16 @@ func key_items() -> Array:
 			"qty": G.bottles,
 			"key": true,
 		})
+	# Tobacco pack for Tomasa Malvora
+	if G.get("tomasa") != null and G.tomasa.has_tobacco():
+		out.append({
+			"id": "tabaco",
+			"icon": "tabaco",
+			"name": Loc.t("inv_n_tabaco"),
+			"desc": Loc.t("inv_d_tabaco"),
+			"qty": 1,
+			"key": true,
+		})
 	return out
 
 func _current_list() -> Array:
@@ -503,6 +513,12 @@ func _draw_icon(kind: String, c: Vector2, r: float) -> void:
 			draw_rect(Rect2(c + Vector2(-9, -8), Vector2(18, 22)), Color("d8c53a"))
 			draw_rect(Rect2(c + Vector2(-9, -8), Vector2(18, 22)), INK, false, 1.8)
 			draw_rect(Rect2(c + Vector2(-4, -15), Vector2(8, 7)), Color("5a7a1e"))
+		"tabaco":
+			draw_rect(Rect2(c + Vector2(-10, -12), Vector2(20, 26)), Color("f4f2ec"))
+			draw_rect(Rect2(c + Vector2(-10, -12), Vector2(20, 10)), Color("c82420"))
+			draw_rect(Rect2(c + Vector2(-10, -3), Vector2(20, 3)), GOLD)
+			draw_rect(Rect2(c + Vector2(-10, -12), Vector2(20, 26)), INK, false, 1.8)
+			draw_line(c + Vector2(5, -12), c + Vector2(5, -18), Color("d99b4a"), 3.0)
 		_:
 			draw_circle(c, 12.0, GOLD)
 			draw_circle(c, 12.0, INK, false, 2.0)

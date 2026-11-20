@@ -59,6 +59,11 @@ func givers() -> Array:
 		for n in G.ajedrez.givers(free_hands):
 			if n != null and not (n in out):
 				out.append(n)
+	# Tomasa Malvora (tomasa.gd): waiting outside los chinos del Arroyuelo while open
+	if G.get("tomasa") != null:
+		for n in G.tomasa.givers(free_hands):
+			if n != null and not (n in out):
+				out.append(n)
 	return out.filter(func(n): return n != null and is_instance_valid(n))
 
 ## the photo of one of them, for the map (null until it has been taken)

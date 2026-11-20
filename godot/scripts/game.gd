@@ -55,6 +55,7 @@ const CasaS = preload("res://scripts/casa_dentro.gd")
 const CaballeteS = preload("res://scripts/caballete.gd")
 const PickupsS = preload("res://scripts/pickups.gd")
 const InventarioS = preload("res://scripts/inventario.gd")
+const TomasaS = preload("res://scripts/tomasa.gd")
 
 ## A whole day lasts 48 minutes of play: two minutes an hour. The day of the week moves on at midnight.
 const DAY_SECONDS := 48.0 * 60.0
@@ -297,6 +298,21 @@ var llamadas                    # the switchboard: who rings you, and when they 
 var marcas                      # who has a mission for you: photo on the map, green arrow over the head (marcas.gd)
 var pickups                     # 3D floating spinning glowing item pickups (pickups.gd)
 var inventario                  # Animal Crossing-style pocket inventory (inventario.gd)
+var tomasa                      # Tomasa Malvora & los chinos del Arroyuelo shopkeeper (tomasa.gd)
+# Driving camera modes: 0 = third person, 1 = first person (driver POV), 2 = GTA cinematic
+var car_cam := 0
+var _fp_yaw := 0.0
+var _fp_pitch := 0.0
+var _cine_pos := Vector3.ZERO
+var _cine_t := 0.0
+var _cine_style := 0
+var _cine_blocked_t := 0.0
+var _cine_ready := false
+# Stunt-jump air slow-motion + cinematic camera
+var air_cine := false
+var _air_cine_pos := Vector3.ZERO
+var _air_land_t := 0.0
+var _air_side := 1.0
 var entradas                    # the green arrows into the small shops, and back out (entradas.gd)
 var recress                     # "Un torneo en los Galaxy Recress", the Civismo line's second mission (recress.gd)
 var rally
@@ -637,6 +653,13 @@ func _boot_done() -> void:
 	apply_graphics()
 	var testing := OS.get_cmdline_user_args().has("--selftest")
 	cam_pos = Vector3(_start["p"].x, 60, _start["p"].y + 80)
+	if not testing and (OS.get_cmdline_user_args().has("--trailer") or has_node("TrailerDirector")):
+		save_prefix = "user://selftest_save_"
+		phase = "trailer"
+		menu.close()
+		if not has_node("TrailerDirector"):
+			add_child(load("res://scripts/trailer.gd").new())
+		return
 	if testing:
 		save_prefix = "user://selftest_save_"         # never touch the real saves
 		phase = "title"
@@ -1008,6 +1031,8 @@ func _neighbour_look(voice: String) -> Dictionary:
 	if o.get("hat", "") == "cap" and randf() < 0.55:     # the cap the bank gives away: half the province has one
 		o["hat_color"] = 0x1f8a55
 		o["emblem"] = 0xf2c230
+	if voice != "kid" and randf() < 0.05:                # 5 % of non-kid neighbours carry a lit cigarette
+		o["smoke"] = true
 	return o
 
 ## an anonymous neighbour standing at an exact spot (used by terrazas); still = they stay put
@@ -1559,6 +1584,8 @@ func _setup_places_and_actors() -> void:
 	pickups = PickupsS.new()
 	add_child(pickups)
 	pickups.setup(self)
+	tomasa = TomasaS.new()
+	tomasa.setup(self)
 	rally = RallyS.new()
 	add_child(rally)
 	rally.setup(self)
@@ -1816,6 +1843,7 @@ func _menu_page(id: String) -> Dictionary:
 		"dev":                                       # the developer's tools (dev_* below)
 			var yes := func(on: bool) -> String: return Loc.t("s_yes") if on else Loc.t("s_no")
 			items.append({"text": Loc.t("dev_fps"), "value": yes.call(hud.fps_label.visible), "left": _dev_fps, "right": _dev_fps, "size": 21})
+			items.append({"text": Loc.t("dev_hud"), "value": yes.call(dev_hud_key), "left": _dev_hud_key, "right": _dev_hud_key, "size": 21})
 			items.append({"text": Loc.t("dev_money"), "do": _dev_money, "size": 21})
 			items.append({"text": Loc.t("dev_minigames"), "do": _dev_minigames, "size": 21})
 			items.append({"text": Loc.t("dev_heat"), "value": yes.call(not dev_no_heat), "left": _dev_heat, "right": _dev_heat, "size": 21})
@@ -2004,8 +2032,45 @@ func _map_nav(dt: float) -> void:
 # the pause menu. Tools for trying the game out from inside it.
 var dev_no_heat := false                # the police take no notice of anything
 var dev_trust := false                  # +100 trust with whoever you talk to
+var dev_hud_key := false                # developer option: Select (pad) / ºª (keyboard) toggles HUD
+var hud_hidden := false
+var _fps_was_on := false
 func _dev_fps() -> void:
 	hud.fps_label.visible = not hud.fps_label.visible
+	_fps_was_on = hud.fps_label.visible
+
+func _dev_hud_key() -> void:
+	dev_hud_key = not dev_hud_key
+	if not dev_hud_key and hud_hidden:
+		set_hud_hidden(false)
+
+func _is_hud_toggle_event(e: InputEvent) -> bool:
+	if not Settings.data.get("dev", false):
+		return false
+	if e is InputEventKey and e.pressed and not e.echo:
+		if e.physical_keycode == KEY_QUOTELEFT or e.keycode in [KEY_QUOTELEFT, KEY_SECTION, 0xBA] or e.unicode in [0xBA, 0xAA]:
+			return true
+	if dev_hud_key and e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_BACK:
+		return true
+	return false
+
+func set_hud_hidden(on: bool) -> void:
+	if on == hud_hidden:
+		return
+	hud_hidden = on
+	if on:
+		_fps_was_on = hud.fps_label.visible
+		hud.play_ui.visible = false
+		hud.fps_label.visible = false
+		arrow.visible = false
+		beacon.visible = false
+	else:
+		if phase in ["play", "free", "talking", "boxing"]:
+			hud.play_ui.visible = true
+		hud.fps_label.visible = _fps_was_on
+		beacon.visible = track_pick == "auto" and target != null and _raw_beacon
+	if Touch.on:
+		Touch._context_tick()
 
 func _dev_money() -> void:
 	money += 1000
@@ -2047,6 +2112,8 @@ func _close_pause() -> void:
 ## The pause stops the world, not just the game's own clock: the physics (the cars rolled on with whatever speed they
 ## had) and every sound of it, the radio and the engine included (the user, 14 November 2026). The menu's beeps sound.
 func _hold_world(on: bool) -> void:
+	if on:
+		_stop_air_cine(true)
 	PhysicsServer3D.set_active(not on)
 	CarS.held = on                             # (nor do the cars push themselves meanwhile: car.gd held)
 	Sfx.hold(on)
@@ -2465,10 +2532,12 @@ func start_game(from_step := 0) -> void:
 	llamadas.reset()
 	gacha.close()                     # (a ball half out of a machine when another game is loaded: put away)
 	recress.load_state()
+	if tomasa != null:
+		tomasa.restore()
 	if stats.has("puente") and not stats.has("puente_h"):
 		stats["puente_h"] = llamadas.now()        # (a game saved before this was kept: Alberto's call counts from now)
 	hud.hide_overlay()
-	hud.play_ui.visible = true
+	hud.play_ui.visible = not hud_hidden
 	hud.fade.modulate.a = 0.0
 	phase = "play"
 	indoors = false
@@ -2498,7 +2567,7 @@ func set_target(p, with_beacon: bool) -> void:
 	target = p
 	_raw_beacon = with_beacon
 	var gt = _guide_target()
-	beacon.visible = track_pick == "auto" and p != null and with_beacon
+	beacon.visible = track_pick == "auto" and p != null and with_beacon and not hud_hidden
 	if p != null:
 		beacon.position = MapData.at(p)
 	if gt == null:
@@ -3499,6 +3568,8 @@ func talk_to(n, chat_only := false) -> void:
 	if n.id == "feliciano" and feliciano != null:   # (his Thursday, how far off it is, or the convent's bell: feliciano.gd)
 		feliciano.talk(n)
 		return
+	if n.id in ["tomasa", "chino"] and tomasa != null and (phase == "play" or phase == "free") and tomasa.talk(n):
+		return
 	var who: String = n.shown_name() if n.id != "" else Loc.t("generic_names")[int(n.display_name)]
 	var key: String = n.lines_key
 	match n.id:
@@ -3697,6 +3768,13 @@ func _enter_car(c) -> void:
 	c.doze(false)
 	cuartel_coche.entered(c)                     # (the Tricornios' own, from their door: stealing it, as in _steal)
 	c.seat(Creator.look(look_sel))               # you, at the wheel
+	c.set_driver_head_visible(car_cam != 1)
+	_fp_yaw = 0.0
+	_fp_pitch = 0.0
+	_cine_ready = false
+	_cine_t = 0.0
+	_cine_blocked_t = 0.0
+	cam.near = 0.05 if car_cam == 1 else 0.3
 	if phase == "play" and si < steps.size() and steps[si].has("passenger"):
 		var with_you = named[steps[si]["passenger"]]
 		if with_you.visible and with_you.p.distance_to(c.p) < 14.0:       # ...and whoever you are taking, beside you
@@ -3728,8 +3806,12 @@ func _exit_car() -> void:
 		hud.toast(Loc.t("t_stopfirst"), 1.6)
 		return
 	# Only a successful exit changes the driver, passengers and controls.
+	_stop_air_cine(true)
 	_nitro_latch = false
 	_autopilot_off("")
+	c.set_driver_head_visible(true)
+	cam.near = 0.3
+	cam.fov = float(Settings.data["fov"])
 	c.seat({})
 	if not c.riders[1].is_empty():               # whoever came with you gets out too, on the other side
 		c.seat({}, 1)
@@ -3776,6 +3858,7 @@ func _damage(c, amount: float) -> void:
 
 ## caught by Los Pitufos: half your money gone, back to the last control point
 func busted() -> void:
+	_stop_air_cine(true)
 	var lost := (money - money / 2) if money < 200 else 100          # half of what you carry, or a flat hundred once you carry 200
 	money -= lost
 	_refresh_counts()
@@ -4161,9 +4244,13 @@ func _unhandled_input(e: InputEvent) -> void:
 		if (phase == "creator" or phase == "armario") and dragging:
 			_face_turn += e.relative.x * 0.012
 		elif (phase == "play" or phase == "free" or phase == "talking") and not paused and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			# free look: the mouse orbits the camera in any direction
-			cam_yaw -= e.relative.x * 0.004
-			cam_pitch = clampf(cam_pitch + e.relative.y * 0.004, -0.3, 1.5)
+			if in_car != null and car_cam == 1 and not air_cine:
+				_fp_yaw = clampf(_fp_yaw - e.relative.x * 0.0035, -1.25, 1.25)
+				_fp_pitch = clampf(_fp_pitch - e.relative.y * 0.003, -0.35, 0.45)
+			else:
+				# free look: the mouse orbits the camera in any direction
+				cam_yaw -= e.relative.x * 0.004
+				cam_pitch = clampf(cam_pitch + e.relative.y * 0.004, -0.3, 1.5)
 			_look_idle = 0.0
 		return
 	var accept: bool = e.is_action_pressed("m_accept") or e.is_action_pressed("interact")
@@ -4224,8 +4311,15 @@ func _unhandled_input(e: InputEvent) -> void:
 		else:
 			_open_pause()
 		return
+	if _is_hud_toggle_event(e) and not map_open and (phase == "play" or phase == "free" or phase == "talking"):
+		set_hud_hidden(not hud_hidden)
+		get_viewport().set_input_as_handled()
+		return
 	if e.is_action_pressed("map"):
 		_set_map(not map_open)
+		return
+	if e.is_action_pressed("cam_mode") and in_car != null and not map_open and dlg == null and not cine_lock and (phase == "play" or phase == "free"):
+		cycle_car_cam()
 		return
 	if e.is_action_pressed("inventory") and in_car == null and not map_open and dlg == null and not cine_lock and not motin.busy() and (phase == "play" or phase == "free"):
 		inventario.toggle()
@@ -4299,6 +4393,8 @@ func interact() -> void:
 		_exit_car()
 	elif sabotaje.can_act():
 		sabotaje.act()
+	elif tomasa != null and tomasa.can_buy():
+		tomasa.buy()
 	elif recress.shop_near(player.p) != null:
 		recress.stick(recress.shop_near(player.p))
 	elif recress.can_play(player.p):
@@ -4578,6 +4674,8 @@ func _update_audio(dt: float) -> void:
 func _physics_process(delta: float) -> void:
 	if not _booted:
 		return
+	if phase == "trailer":
+		return
 	var dt := minf(delta, 0.05)
 	_prof_t = Time.get_ticks_usec()
 	if phase == "rally":
@@ -4721,13 +4819,21 @@ func _physics_process(delta: float) -> void:
 	var cl := 0.0 if frozen else Input.get_axis("cam_right", "cam_left")
 	var swipe: Vector2 = Touch.take_look()          # a finger dragged on the right of a touch screen turns the camera as a mouse does
 	if swipe != Vector2.ZERO and not frozen:
-		cam_yaw -= swipe.x * Touch.LOOK_PER_PX
-		cam_pitch = clampf(cam_pitch + swipe.y * Touch.LOOK_PER_PX * 0.8, -0.3, 1.5)
+		if in_car != null and car_cam == 1 and not air_cine:
+			_fp_yaw = clampf(_fp_yaw - swipe.x * Touch.LOOK_PER_PX * 0.85, -1.25, 1.25)
+			_fp_pitch = clampf(_fp_pitch - swipe.y * Touch.LOOK_PER_PX * 0.7, -0.35, 0.45)
+		else:
+			cam_yaw -= swipe.x * Touch.LOOK_PER_PX
+			cam_pitch = clampf(cam_pitch + swipe.y * Touch.LOOK_PER_PX * 0.8, -0.3, 1.5)
 		_look_idle = 0.0
 	var stick := Controls.look_stick()
 	if stick != Vector2.ZERO and not frozen:        # right stick: look around
-		cam_yaw -= stick.x * 2.8 * dt
-		cam_pitch = clampf(cam_pitch + stick.y * 1.8 * dt, -0.3, 1.5)
+		if in_car != null and car_cam == 1 and not air_cine:
+			_fp_yaw = clampf(_fp_yaw - stick.x * 2.4 * dt, -1.25, 1.25)
+			_fp_pitch = clampf(_fp_pitch - stick.y * 1.5 * dt, -0.35, 0.45)
+		else:
+			cam_yaw -= stick.x * 2.8 * dt
+			cam_pitch = clampf(cam_pitch + stick.y * 1.8 * dt, -0.3, 1.5)
 		_look_idle = 0.0
 
 	# --- player / car ---
@@ -4836,6 +4942,8 @@ func _physics_process(delta: float) -> void:
 	marcas.tick(dt, pp)
 	if pickups != null:
 		pickups.tick(dt, pp)
+	if tomasa != null:
+		tomasa.tick(dt, pp)
 	recress.tick(dt, pp)
 	sabotaje.tick(dt, pp)
 	motin.tick(dt, pp)
@@ -4894,7 +5002,7 @@ func _physics_process(delta: float) -> void:
 			MapData.update_route(map_p)
 		else:
 			MapData.clear_route()
-	arrow.visible = guide != null and (phase == "play" or side != null or track_pick.begins_with("giver:")) and not indoors and dlg == null and not cine_lock      # (not while somebody is talking, nor in a scene, nor when deselected on map)
+	arrow.visible = guide != null and (phase == "play" or side != null or track_pick.begins_with("giver:")) and not indoors and dlg == null and not cine_lock and not hud_hidden      # (not while somebody is talking, nor in a scene, nor when deselected on map, nor when HUD hidden)
 	if guide != null:
 		# Straight at the place itself, walls or no walls: the minimap already shows the streets (the user, 15 November
 		# 2026; it used to point down the next street of the route, nose up to the sky)
@@ -4917,7 +5025,9 @@ func _physics_process(delta: float) -> void:
 		arrow_far.text = ("%d m" % int(round(left / 5.0) * 5.0)) if left >= 12.0 else ""      # (on top of it: the arrow pointing down says enough)
 
 	_mark("route and arrow")
-	_update_camera(dt, pp, speed, cl)
+	var real_dt: float = minf(delta / maxf(Engine.time_scale, 0.05), 0.05)
+	_update_air_cine(real_dt)
+	_update_camera(real_dt if (air_cine or car_cam == 2) else dt, pp, speed, cl)
 	_mark("camera")
 
 	# --- HUD ---
@@ -4977,6 +5087,10 @@ func _physics_process(delta: float) -> void:
 	if not frozen and sabotaje.can_act():
 		pr = sabotaje.prompt()
 		about = null
+	var buy_tab: bool = not frozen and in_car == null and tomasa != null and tomasa.can_buy()
+	if buy_tab:
+		pr = Loc.t("p_buy_tobacco") % tomasa.PRICE
+		about = null
 	if not frozen and _can_unlock():
 		pr = Loc.t("p_puente") % int(steps[si].get("cost", 10))
 		about = null
@@ -4990,7 +5104,10 @@ func _physics_process(delta: float) -> void:
 	var under: bool = about == null
 	if pr != "":                                 # (indoors too, now that you are seen in there: entradas.gd's camera)
 		var spot: Vector3
-		if about == null:
+		if buy_tab:
+			spot = tomasa.buy_spot()
+			under = false
+		elif about == null:
 			spot = in_car.global_position if in_car != null else player.global_position
 		elif about == near_npc:
 			spot = about.global_position + Vector3(0, 2.3 * float(about.look_data.get("scale", 1.0)), 0)
@@ -5164,6 +5281,9 @@ func _side_drop() -> void:
 	if side["id"] == "recress":
 		recress.abort()
 		return
+	if side["id"] == "tomasa":
+		tomasa.abort()
+		return
 	var what: String = side["id"]
 	side = null
 	police.muted = false
@@ -5205,6 +5325,9 @@ func _side_show() -> void:
 	if side["id"] == "recress":
 		recress.show()
 		return
+	if side["id"] == "tomasa":
+		tomasa.show()
+		return
 	var menu_job: bool = side["id"] == "menu"
 	if side["stage"] == "fetch":
 		hud.set_objective(_tag(), Loc.t("obj_menu_fetch" if menu_job else "obj_ham_fetch"))
@@ -5242,7 +5365,7 @@ func side_bump() -> void:
 	pass
 
 func _side_tick(dt: float, pp: Vector2) -> void:
-	if side["id"] == "luis" or side["id"] == "recress":
+	if side["id"] == "luis" or side["id"] == "recress" or side["id"] == "tomasa":
 		return
 	if side["stage"] == "fetch":
 		if motin.in_the_way():                   # there is a crowd after the same ham: it has to be fought for (motin.gd)
@@ -5615,8 +5738,141 @@ func _clear_lens(on: bool, hide_player := true) -> void:
 			still.append(n)
 	_cam_hid = still
 
+const CINE_MAX_DIST := 36.0             # GTA cinematic cam jumps if car gets further than this
+const CINE_MIN_TIME := 5.0              # ...or at least 5 seconds have elapsed on the current shot
+const AIR_SLOW_SCALE := 0.38            # slow-motion factor during airborne car jumps
+
+func cycle_car_cam() -> void:
+	set_car_cam((car_cam + 1) % 3, true)
+
+func set_car_cam(mode: int, notify := false) -> void:
+	car_cam = posmod(mode, 3)
+	_fp_yaw = 0.0
+	_fp_pitch = 0.0
+	_cine_ready = false
+	_cine_t = 0.0
+	_cine_blocked_t = 0.0
+	if in_car != null:
+		in_car.set_driver_head_visible(car_cam != 1 or air_cine)
+	cam.near = 0.05 if (car_cam == 1 and in_car != null and not air_cine) else 0.3
+	if notify:
+		Sfx.beep(720.0 + car_cam * 120.0, 0.04, 1, -18.0)
+		if not hud_hidden:
+			hud.toast(Loc.t("cam_mode_%d" % car_cam), 2.0)
+
+func _stop_air_cine(instant := false) -> void:
+	air_cine = false
+	_air_land_t = 0.0
+	if instant:
+		Engine.time_scale = 1.0
+		if cam != null:
+			cam.fov = float(Settings.data.get("fov", 55.0))
+	if in_car != null and is_instance_valid(in_car):
+		in_car.set_driver_head_visible(car_cam != 1)
+		if cam != null:
+			cam.near = 0.05 if car_cam == 1 else 0.3
+
+func _update_air_cine(real_dt: float) -> void:
+	var can_air: bool = in_car != null and not indoors and not paused and not menu.visible and not map_open \
+		and mending == null and dlg == null and not cine_lock and cam_fixed == null and (phase == "play" or phase == "free")
+	if not can_air:
+		if air_cine or Engine.time_scale < 0.999:
+			_stop_air_cine(true)
+		return
+	var c = in_car
+	var ground_y: float = MapData.foot(c.p)
+	var air_h: float = c.global_position.y - ground_y
+	var launched: bool = c.airborne() and not c.flipped() and (
+		(c._ramp_cool > 0.0 and c.air_time >= 0.12 and air_h >= 0.65) or
+		(c.air_time >= 0.22 and air_h >= 1.15 and (c.vel.length() >= 7.0 or c.linear_velocity.y > 1.8)))
+	if not air_cine:
+		if launched:
+			air_cine = true
+			_air_land_t = 0.0
+			_air_side = -_air_side
+			_air_cine_pos = _pick_air_cine_spot(c)
+			c.set_driver_head_visible(true)
+			cam.near = 0.3
+	else:
+		if not c.airborne() or c.vel.length() < 2.0:
+			_air_land_t += real_dt
+			if _air_land_t >= 0.22 or c.vel.length() < 1.5:
+				air_cine = false
+				c.set_driver_head_visible(car_cam != 1)
+				cam.near = 0.05 if car_cam == 1 else 0.3
+		else:
+			_air_land_t = 0.0
+			if _air_cine_pos.distance_to(c.global_position) > 36.0:
+				_air_cine_pos = _pick_air_cine_spot(c)
+	var want_scale: float = AIR_SLOW_SCALE if air_cine else 1.0
+	if absf(Engine.time_scale - want_scale) > 0.002:
+		Engine.time_scale = move_toward(Engine.time_scale, want_scale, real_dt * (3.5 if air_cine else 4.8))
+	else:
+		Engine.time_scale = want_scale
+	var base_fov: float = float(Settings.data.get("fov", 55.0))
+	var want_fov: float = base_fov - 8.0 if air_cine else base_fov
+	if absf(cam.fov - want_fov) > 0.05:
+		cam.fov = lerpf(cam.fov, want_fov, 1.0 - exp(-6.0 * real_dt))
+	else:
+		cam.fov = want_fov
+
+func _cam_spot_clear(from: Vector3, to: Vector3) -> Vector3:
+	var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to, 1))
+	if hit.is_empty():
+		return to
+	var dist := from.distance_to(to)
+	if dist < 0.1:
+		return to
+	var frac := clampf((from.distance_to(hit["position"]) - 0.8) / dist, 0.22, 1.0)
+	return from.lerp(to, frac)
+
+func _pick_air_cine_spot(c) -> Vector3:
+	var dir2: Vector2 = c.vel.normalized() if c.vel.length() > 1.5 else Vector2(sin(c.h), cos(c.h))
+	var right2 := Vector2(-dir2.y, dir2.x) * _air_side
+	var focus: Vector3 = c.global_position + Vector3(0.0, 0.9, 0.0)
+	for mult in [1.0, -1.0]:
+		var cand2: Vector2 = c.p + dir2 * 11.5 + right2 * (7.5 * mult)
+		var gy: float = MapData.height(cand2)
+		var cand := Vector3(cand2.x, maxf(gy + 1.5, c.global_position.y - 0.4), cand2.y)
+		var cleared := _cam_spot_clear(focus, cand)
+		if cleared.distance_to(focus) >= 4.5:
+			cleared.y = maxf(cleared.y, MapData.height(Vector2(cleared.x, cleared.z)) + 0.8)
+			return cleared
+	var fallback: Vector3 = c.global_position - Vector3(dir2.x * 9.0, -2.2, dir2.y * 9.0)
+	fallback.y = maxf(fallback.y, MapData.height(Vector2(fallback.x, fallback.z)) + 1.0)
+	return fallback
+
+func _pick_cine_spot(c) -> Vector3:
+	var spd: float = c.vel.length()
+	var dir2: Vector2 = c.vel.normalized() if spd > 2.0 else Vector2(sin(c.h), cos(c.h))
+	var right2 := Vector2(-dir2.y, dir2.x)
+	var focus: Vector3 = c.global_position + Vector3(0.0, 1.1, 0.0)
+	var lead: float = clampf(spd * 1.45, 11.0, 26.0)
+	# Strategic GTA-style roadside/corner/low/high camera angles
+	var presets: Array = [
+		[lead, 5.4, 2.0],               # roadside ahead-right: car rockets past
+		[lead * 0.92, -5.4, 2.2],       # roadside ahead-left
+		[lead * 0.85, 8.2, 7.2],        # high sweeping street corner
+		[lead * 0.68, -4.2, 0.95],      # dramatic low-angle kerbside
+	]
+	for tries in range(presets.size()):
+		var p_idx: int = (_cine_style + tries) % presets.size()
+		var pr: Array = presets[p_idx]
+		var cand2: Vector2 = c.p + dir2 * float(pr[0]) + right2 * float(pr[1])
+		var gy: float = MapData.height(cand2)
+		var cand := Vector3(cand2.x, gy + float(pr[2]), cand2.y)
+		var cleared := _cam_spot_clear(focus, cand)
+		if cleared.distance_to(focus) >= 4.2:
+			cleared.y = maxf(cleared.y, MapData.height(Vector2(cleared.x, cleared.z)) + 0.65)
+			_cine_style = (p_idx + 1) % presets.size()
+			return cleared
+	_cine_style = (_cine_style + 1) % presets.size()
+	var fb2: Vector2 = c.p - dir2 * 10.5 + right2 * 4.5
+	return Vector3(fb2.x, MapData.height(fb2) + 3.2, fb2.y)
+
 func _update_camera(dt: float, pp: Vector2, speed: float, _cl: float) -> void:
 	if cam_fixed != null:                        # standing outside, watching the shutter
+		cam.near = 0.3
 		cam_pos = cam_pos.lerp(cam_fixed[0], 1.0 - exp(-3.5 * dt))
 		cam_look = cam_look.lerp(cam_fixed[1], 1.0 - exp(-6.0 * dt))
 		cam.position = cam_pos
@@ -5625,6 +5881,7 @@ func _update_camera(dt: float, pp: Vector2, speed: float, _cl: float) -> void:
 		_clear_lens(true)
 		return
 	if motin.fighting():                         # the riot: close in over your right shoulder
+		cam.near = 0.3
 		var mf := Vector2(sin(cam_yaw), cos(cam_yaw))
 		var hand_side := Vector2(mf.y, -mf.x)
 		var over: Vector2 = pp - mf * 3.8 + hand_side * 1.35
@@ -5653,10 +5910,73 @@ func _update_camera(dt: float, pp: Vector2, speed: float, _cl: float) -> void:
 		first_person = false
 		player.vis.visible = true
 	if entradas.camera(dt, pp):
+		cam.near = 0.3
 		shake = maxf(0.0, shake - dt * 2.2)
 		comida.tilt(cam)
 		return
-	# The camera orbits the player at cam_yaw / cam_pitch (mouse) and cam_zoom (wheel).
+	# --- Stunt-jump airborne slow-motion cinematic camera ---
+	if in_car != null and air_cine:
+		cam.near = 0.3
+		var car_focus: Vector3 = in_car.global_position + Vector3(0.0, 0.75, 0.0)
+		var drift: Vector3 = Vector3(in_car.linear_velocity.x, 0.0, in_car.linear_velocity.z) * (dt * 0.14)
+		_air_cine_pos += drift
+		_air_cine_pos.y = maxf(_air_cine_pos.y, MapData.height(Vector2(_air_cine_pos.x, _air_cine_pos.z)) + 0.85)
+		cam_pos = _air_cine_pos
+		cam_look = cam_look.lerp(car_focus, 1.0 - exp(-14.0 * dt)) if cam_look.distance_to(car_focus) < 30.0 else car_focus
+		shake = maxf(0.0, shake - dt * 2.2)
+		cam.position = cam_pos + Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * (shake * 0.4)
+		if cam.position.distance_to(cam_look) > 0.1:
+			cam.look_at(cam_look)
+		comida.tilt(cam)
+		return
+	# --- Driving Mode 1: First-person POV (inside car, driver's head hidden, view from above shoulders) ---
+	if in_car != null and car_cam == 1:
+		cam.near = 0.05
+		in_car.set_driver_head_visible(false)
+		if _look_idle > 1.4:
+			var rec := 1.0 - exp(-4.5 * dt)
+			_fp_yaw = lerpf(_fp_yaw, 0.0, rec)
+			_fp_pitch = lerpf(_fp_pitch, 0.0, rec)
+		var pov: Transform3D = in_car.driver_pov()
+		var look_b := Basis(Vector3.UP, _fp_yaw) * Basis(Vector3.RIGHT, _fp_pitch)
+		var fp_b := (pov.basis * look_b).orthonormalized()
+		shake = maxf(0.0, shake - dt * 2.2)
+		var jitter := Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * (shake * 0.09)
+		cam.global_transform = Transform3D(fp_b, pov.origin + jitter)
+		cam_pos = pov.origin
+		cam_look = pov.origin - fp_b.z * 8.0
+		comida.tilt(cam)
+		return
+	# --- Driving Mode 2: GTA-style strategic cinematic camera ---
+	if in_car != null and car_cam == 2:
+		cam.near = 0.3
+		in_car.set_driver_head_visible(true)
+		var car_3d: Vector3 = in_car.global_position + Vector3(0.0, 0.95, 0.0)
+		_cine_t += dt
+		if _cine_ready:
+			var los := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(_cine_pos, car_3d, 1))
+			_cine_blocked_t = (_cine_blocked_t + dt) if not los.is_empty() else 0.0
+		if not _cine_ready or _cine_pos.distance_to(car_3d) > CINE_MAX_DIST or _cine_t >= CINE_MIN_TIME or _cine_blocked_t > 0.4:
+			_cine_pos = _pick_cine_spot(in_car)
+			_cine_ready = true
+			_cine_t = 0.0
+			_cine_blocked_t = 0.0
+			cam_pos = _cine_pos
+			cam_look = car_3d
+		else:
+			cam_pos = _cine_pos
+			var vel_lead: Vector3 = Vector3(in_car.linear_velocity.x, 0.0, in_car.linear_velocity.z) * 0.14
+			cam_look = cam_look.lerp(car_3d + vel_lead, 1.0 - exp(-10.0 * dt))
+		shake = maxf(0.0, shake - dt * 2.2)
+		cam.position = cam_pos + Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * (shake * 0.25)
+		if cam.position.distance_to(cam_look) > 0.1:
+			cam.look_at(cam_look)
+		comida.tilt(cam)
+		return
+	# --- Default Mode 0: Third-person orbit camera ---
+	cam.near = 0.3
+	if in_car != null:
+		in_car.set_driver_head_visible(true)
 	var dist := ((10.5 + speed * 0.12) if in_car != null else (4.4 if indoors else 7.5)) * cam_zoom
 	var flat := dist * cos(cam_pitch)
 	var height := maxf(0.45, 1.6 + dist * sin(cam_pitch))

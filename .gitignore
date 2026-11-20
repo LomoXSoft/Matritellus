@@ -13,3 +13,5 @@ __pycache__/
 .claude/settings.local.json
 # self-test logs (tools/run_tests.py)
 logs/
+# the trailer's song (a WAV of a real song, 28 MB: kept on this machine only)
+trailer song/

@@ -79,6 +79,7 @@ var _glows: Array = []     # on a model: the lamps that show only when they are 
 var _pipe_at = null        # on a model: where its upright exhaust ends
 var riders: Array = [{}, {}]      # the looks of whoever is at the wheel and of whoever sits beside them ({} = nobody)
 var _rider_nodes: Array = [null, null]
+var _fp_hide_head := false        # true in first-person driving mode: hide driver's head so POV sits above shoulders
 static var _glass: StandardMaterial3D
 var dozing := false        # parked and far from anybody: taken out of the physics until somebody comes near
 var _heads: Array = []     # [mesh, its daytime material]
@@ -147,6 +148,38 @@ func seat(o: Dictionary, place := 0) -> void:
 		n.position = at + Vector3(0, GROUND, 0)
 	inner.add_child(n)
 	_rider_nodes[place] = n
+	if place == 0 and _fp_hide_head:
+		set_driver_head_visible(false)
+
+## Shows or hides only the driver's head (keeps shoulders, hands on wheel, and steering wheel visible for 1st-person POV).
+func set_driver_head_visible(on: bool) -> void:
+	_fp_hide_head = not on
+	var rn: Node3D = _rider_nodes[0]
+	if rn == null or not is_instance_valid(rn):
+		return
+	var head := rn.find_child("head", true, false)
+	if head is Node3D:
+		(head as Node3D).visible = on
+
+## World-space transform for first-person driving POV, right above the driver's shoulders looking forward out the windscreen.
+func driver_pov() -> Transform3D:
+	var b := global_transform.basis.orthonormalized()
+	var cam_b := Basis(-b.x, b.y, -b.z).orthonormalized()
+	var size: float = float(model.get_meta("rider")) if model != null else RIDER
+	var local_eye: Vector3
+	var rn: Node3D = _rider_nodes[0]
+	if rn != null and is_instance_valid(rn):
+		# Eye level above the shoulders, looking cleanly over the steering wheel and dashboard out the windscreen
+		local_eye = rn.position + Vector3(0.0, 1.54 * size, 0.24 * size)
+		if kind == "edison":
+			# Edison's texture has opaque black glass; place POV cleanly at the windscreen lip so road is unobstructed
+			local_eye.z += 0.85
+			local_eye.y += 0.04
+	else:
+		var sill: float = float(spec["wheel"]) + 0.15 + float(spec["body"])
+		local_eye = Vector3(0.0, sill + 0.35, float(spec["cab_z"]) + 0.25)
+	var world_eye: Vector3 = inner.to_global(local_eye) if inner != null else to_global(local_eye)
+	return Transform3D(cam_b, world_eye)
 
 ## Somebody sitting, their seat at the node's own origin (`driving`: hands out on a wheel). It is the person
 ## themselves, as they walk about the town (chara.gd) -- the same face, hair, hat and clothes -- only smaller: the
@@ -302,11 +335,6 @@ func setup(kind_: String, hex: int, pos: Vector2, heading: float) -> void:
 	center_of_mass = Vector3(0, 0.25, 0)          # low, so it corners flat instead of rolling over
 	angular_damp = 0.6
 	continuous_cd = true
-	if _slip_mat == null:
-		_slip_mat = PhysicsMaterial.new()
-		_slip_mat.friction = 0.06
-		_slip_mat.bounce = 0.04
-	physics_material_override = _slip_mat
 
 	var by := wr + 0.15 + bh / 2.0
 	var top := by + bh / 2.0 + cab

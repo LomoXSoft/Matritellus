@@ -42,7 +42,7 @@ func speaker(v, fem_speaker: bool):
 ## menciona en rojo, de lugares (recreativos, puente...) en azul y de objetos de misión (carteles, firmas...) en verde".
 ## So every unique neighbour's name (and the mayor's office) in red; PLACES in blue; OBJECTS in green, as a line's
 ## own *mission object* marks are -- each as a whole word, and never inside something already marked.
-const NAMES := ["Niño Negro Gordo de Pueblo", "Dolores Fuertes D'Varriga", "Don Luis", "Paca", "Loli", "Eusebio", "Maruja", "Venancio", "Gerardo", "Anselmo", "Torrezón",
+const NAMES := ["Niño Negro Gordo de Pueblo", "Dolores Fuertes D'Varriga", "Tomasa Malvora", "Tomasa", "Don Luis", "Paca", "Loli", "Eusebio", "Maruja", "Venancio", "Gerardo", "Anselmo", "Torrezón",
 	"Kevin-José", "Eufrasia", "Julián", "Josefa", "Fonsi", "Alberto", "Henry", "Chiki", "Diurno", "Nocturno", "Dolores", "Feliciano", "Katakumba69",
 	"Luis", "alcalde", "Alcalde"]
 const PLACES := {
@@ -51,17 +51,17 @@ const PLACES := {
 		"Cooperativa", "cooperativa", "kiosco", "tanatorio", "funeraria", "Casa Grande", "Pizzería Toti", "Toti", "Universidad Comunal", "Papelería Rocas",
 		"Banco Cantabria", "Copistería Sancho Panza", "copistería", "IES Valdeacero", "recinto ferial", "mercadillo", "plaza de toros", "molino", "convento",
 		"ermita", "iglesia", "cuartel de la Guardia Civil", "cuartel de los Tricornios", "puente", "piscina", "Ahorros Rurales",
-		"mercao", "centro de salud", "ruta del colesterol", "Recress", "Cocina"],
+		"chinos del Arroyuelo", "mercao", "centro de salud", "ruta del colesterol", "Recress", "Cocina"],
 	"en": ["Galaxy Recress", "arcade", "Cocina de Henry", "Henry's kitchen", "V.I.P.", "Correa", "Mercamona", "Todopizza", "Tele Dürum", "Kebab Deluxe",
 		"Kebab Luis", "ShawarMadridejos", "Merkocarry", "MasAhorro", "Petril", "town hall", "Town Hall", "Cooperativa", "cooperative", "kiosk", "funeral home",
 		"Casa Grande", "Pizzería Toti", "Toti", "Universidad Comunal", "Papelería Rocas", "Banco Cantabria", "Copistería Sancho Panza", "copy shop",
 		"IES Valdeacero", "fairground", "market", "bullring", "windmill", "convent", "hermitage", "chapel", "church", "Civil Guard barracks",
-		"bridge", "pool", "Ahorros Rurales", "Plaza del Ayuntamiento", "health centre", "cholesterol route", "Recress", "Cocina"]}
+		"bridge", "pool", "Ahorros Rurales", "Arroyuelo grocer’s", "Arroyuelo grocer's", "Plaza del Ayuntamiento", "health centre", "cholesterol route", "Recress", "Cocina"]}
 const OBJECTS := {
 	"es": ["jamón asao", "jamón", "firmas", "firma", "carteles", "cartel", "menú", "palé del aceite", "aceite", "cajas", "móvil de la Josefa",
-		"teléfono de la Josefa", "teléfono a la Josefa", "móvil arreglao", "azafrán", "spray", "espray"],
+		"teléfono de la Josefa", "teléfono a la Josefa", "móvil arreglao", "azafrán", "spray", "espray", "tabaco"],
 	"en": ["roast ham", "ham", "signatures", "signature", "posters", "poster", "menu", "pallet of oil", "oil", "boxes", "Josefa’s phone",
-		"Josefa's phone", "fixed phone", "saffron", "spray can", "spray"]}
+		"Josefa's phone", "fixed phone", "saffron", "spray can", "spray", "tobacco"]}
 ## Where a word of PLACES or OBJECTS means something else, that bit is left without colour (Worldbuilding, 17 Nov 2026):
 ## the boxer's dental bridge, the mayor's dog's pool, the ham of Paca's will, oil in a recipe, the town hall as the
 ## council and not the building, «¿me la firmas?» (to sign), Consuegra's market. The exact words of the texts, es and en.
@@ -330,6 +330,7 @@ const TX := {
 	"s_dev": {"es": "Modo desarrollador", "en": "Developer mode"},
 	"m_dev": {"es": "Desarrollador", "en": "Developer"},
 	"dev_fps": {"es": "Mostrar FPS", "en": "Show FPS"},
+	"dev_hud": {"es": "Botón ocultar HUD (ºª / Select)", "en": "Hide HUD button (ºª / Select)"},
 	"dev_money": {"es": "+1.000 €", "en": "+1,000 €"},
 	"dev_minigames": {"es": "Desbloquear minijuegos", "en": "Unlock minigames"},
 	"dev_heat": {"es": "Policía", "en": "Police"},
@@ -359,6 +360,7 @@ const TX := {
 	"k_run": {"es": "Correr", "en": "Run"},
 	"k_handbrake": {"es": "Saltar / freno de mano", "en": "Jump / handbrake"},
 	"k_radio": {"es": "Cambiar de emisora", "en": "Next radio station"},
+	"k_cam_mode": {"es": "Cambiar cámara (coche)", "en": "Switch camera (car)"},
 	"k_map": {"es": "Mapa", "en": "Map"},
 	"k_inventory": {"es": "Mochila / Inventario", "en": "Bag / Inventory"},
 	"k_pause": {"es": "Pausa", "en": "Pause"},
@@ -2237,4 +2239,77 @@ const TX := {
 	"gacha_on": {"es": "<interact> Seguir", "en": "<interact> Carry on"},
 	"log_gacha": {"es": "COLECCIÓN", "en": "COLLECTION"},
 	"log_gacha_how": {"es": "Bolas a %d € en la máquina del Tele Dürum (y en las que vayan saliendo por el pueblo). En cada bola, un vecino en figurita. Los que te faltan, en negro.", "en": "Balls at %d € from the machine at the Tele Dürum (and any others that turn up in town). In each one, a neighbour as a little figure. The ones you’re missing are in black."},
+	# Driving camera modes (3rd person, 1st person, GTA cinematic)
+	"cam_mode_0": {"es": "Cámara: Tercera persona", "en": "Camera: Third person"},
+	"cam_mode_1": {"es": "Cámara: Primera persona", "en": "Camera: First person"},
+	"cam_mode_2": {"es": "Cámara: Cinemática", "en": "Camera: Cinematic"},
+	# Tomasa Malvora & Los chinos del Arroyuelo
+	"n_tomasa": {"es": "Tomasa Malvora", "en": "Tomasa Malvora"},
+	"n_chino": {"es": "El chino del Arroyuelo", "en": "Arroyuelo shopkeeper"},
+	"inv_n_tabaco": {"es": "Paquete de tabaco", "en": "Pack of cigarettes"},
+	"inv_d_tabaco": {"es": "Comprao en los chinos del Arroyuelo pa Tomasa Malvora. Seis euros el vicio.", "en": "Bought at the Arroyuelo grocer’s for Tomasa Malvora. Six euros a pack."},
+	"tomasa_title": {"es": "Un paquete pa la Tomasa", "en": "A pack for Tomasa"},
+	"obj_tomasa_buy": {"es": "Entra en los chinos del Arroyuelo y compra tabaco (%d €).", "en": "Go into the Arroyuelo grocer’s and buy tobacco (%d €)."},
+	"obj_tomasa_give": {"es": "Llévale el tabaco a Tomasa Malvora, fuera de los chinos.", "en": "Bring the tobacco to Tomasa Malvora outside the grocer’s."},
+	"tomasa_tag_buy": {"es": "Comprar · %d €", "en": "Buy · %d €"},
+	"p_buy_tobacco": {"es": "<interact> Comprar tabaco (%d €)", "en": "<interact> Buy tobacco (%d €)"},
+	"tomasa_no_money": {"es": "No tiés %d € pa pagar el tabaco.", "en": "You don’t have %d € for the tobacco."},
+	"tomasa_ask": {
+		"es": ["¡Eh, {hijo|hija}, ven pacá! ¿Me haces un favorcico?",
+			"Es que me apetece un cigarrico y no puedo entrar a los chinos del Arroyuelo… Si me pillan mis hijos me arman un pollo.",
+			"¿Me entras tú a comprar un paquete de *tabaco*? Te espero aquí mismo."],
+		"en": ["Hey, {lad|love}, come here a second! Could you do me a little favour?",
+			"I’m dying for a fag and I can’t go into the Arroyuelo grocer’s myself… if my kids catch me they’ll kick up a right fuss.",
+			"Could you pop in and buy me a pack of *tobacco*? I’ll wait right here."]},
+	"tomasa_ask_q": {"es": "¿Me compras el *tabaco* en los chinos del Arroyuelo?", "en": "Will you buy me the *tobacco* at the Arroyuelo grocer’s?"},
+	"tomasa_opt_yes": {"es": "Sí, ahora te lo traigo", "en": "Yes, I’ll grab it now"},
+	"tomasa_opt_no": {"es": "No, paso", "en": "No, forget it"},
+	"tomasa_yes": {
+		"es": ["¡Ay, qué {majo|maja}! Entra ahí mismo, a los chinos del Arroyuelo, que el *tabaco* está en el pasillo de la derecha. Aquí te espero."],
+		"en": ["Oh, bless you! Head right into the Arroyuelo grocer’s, the *tobacco* is down the right aisle. I’ll wait right here."]},
+	"tomasa_no": {
+		"es": ["¡Menuda juventud! ¡Ni un recaíco a una mujer mayor! ¡Enga, tira pa'llá, {desagradecío|desagradecía}!"],
+		"en": ["Kids these days! Not even a tiny favour for an old woman! Go on, get lost then!"]},
+	"tomasa_wait": {
+		"es": ["Aquí sigo esperando, {hijo|hija}. Entra a los chinos del Arroyuelo y tráeme el *tabaco*, que cuesta seis euros."],
+		"en": ["Still waiting right here, {lad|love}. Pop into the Arroyuelo grocer’s and fetch the *tobacco*, it’s six euros."]},
+	"tomasa_done": {
+		"es": ["¡Ay, {bendito|bendita} seas! ¡Dame ese *tabaco*, que me tiemblan hasta las pestañas!",
+			"Es que mis hijos me vigilan el dinero al céntimo pa que no gaste en vicios, ¿sabes?",
+			"Pero yo no tengo ningún problema, ¿eh? ¡Ni gota! Yo controlo. Lo dejo cuando quiera… mañana si eso.",
+			"Toma diez euricos a escondías, y chitón."],
+		"en": ["Oh, bless your heart! Hand over that *tobacco*, even my eyelashes are shaking!",
+			"My kids watch every penny of my money so I don’t spend it on vices, you see.",
+			"Not that I’ve got a problem, mind! None at all! I’m in total control. I can quit whenever I want… tomorrow maybe.",
+			"Here’s ten euros on the quiet, and mum’s the word."]},
+	"tomasa_after": {
+		"es": [["No le digas na a mis hijos, ¿eh? Que yo controlo de sobra."],
+			["Un cigarrico al sol en el Arroyuelo alarga la vida, digan lo que digan los médicos."]],
+		"en": [["Don’t say a word to my kids, eh? I’ve got it completely under control."],
+			["A little smoke in the sun by the Arroyuelo adds years to your life, whatever the doctors say."]]},
+	"tomasa_busy": {
+		"es": ["Cuando acabes lo que llevas entre manos, acércate por aquí que te quería pedir un favorcico."],
+		"en": ["When you’re done with what you’re up to, come back over here, I wanted to ask you a little favour."]},
+	"chino_enter": {
+		"es": ["¡Hola, pasar! Pero no robar nada, ¿eh? ¡Yo vigilar!",
+			"¡Buenas! Mirar con ojo, no tocar bolsillo. ¡Yo vigilar todo!"],
+		"en": ["Hello, come in! But no steal anything, eh? I watch!",
+			"Hello! Look with eye, no put in pocket. I watch everything!"]},
+	"chino_paid": {"es": "¡Gracias! Pagar bien, así gustar. ¡Volver pronto!", "en": "Thank you! Pay good, I like. Come back soon!"},
+	"chino_buy": {
+		"es": ["¿Buscar tabaco? Estar en pasillo de derecha, seis euros.",
+			"Coger, pagar y no robar nada. Yo mirar por cámara y por ojo, ¿eh?"],
+		"en": ["Look for tobacco? Be in right aisle, six euros.",
+			"Take, pay and no steal anything. I watch by camera and by eye, eh?"]},
+	"chino_idle": {
+		"es": [["Hola, pasar, pasar. Pero tú no robar nada, ¿eh? Yo vigilar todo el rato."],
+			["Si querer comprar, pagar aquí en caja. No meter cosas en bolsillo, que yo ver todo."],
+			["Tener bebida fría, chuches, bazar y tabaco. Mirar tranquilo, pero no robar nada. ¡Yo vigilar!"]],
+		"en": [["Hello, come in, come in. But you no steal anything, eh? I watch all the time."],
+			["If want buy, pay here at till. No put things in pocket, I see everything."],
+			["Have cold drink, sweets, bazar and tobacco. Look quiet, but no steal anything. I watch!"]]},
+	"firma_si_tomasa": {"es": "Trae pacá, que te firmo. Por ese puente pasaba yo de moza a esconderme pa fumar el primero.", "en": "Bring it here, I’ll sign. I used to walk past that bridge as a lass to sneak my first smoke."},
+	"firma_no_tomasa": {"es": "Ahora no puedo firmar na, {hijo|hija}, que me ven mis hijos con un boli y piensan que estoy gastando en vicios.", "en": "I can’t sign a thing right now, {lad|love}, if my kids spot me with a pen they’ll think I’m spending on vices."},
+	"firma_si_chino": {"es": "Vale, firmar aquí. Puente viejo ser bonito, pero tú no robar boli del mostrador, ¿eh?", "en": "Okay, sign here. Old bridge be nice, but you no steal pen from counter, eh?"},
+	"firma_no_chino": {"es": "No poder firmar ahora, estar vigilar tienda y cámara. Volver otro día y comprar algo.", "en": "No can sign now, be watching shop and camera. Come back other day and buy something."},
 }

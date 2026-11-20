@@ -112,6 +112,8 @@ func wanted(n) -> bool:
 		return true
 	if id in AFTER_PROTEST and not G._protest_over:
 		return true
+	if id == "josefa" and not G.negocio("informatica"):
+		return true
 	if id == "alcalde":
 		if G.recress != null and (G.recress.cine or G.recress.active() or G.recress.stage() == "dinero"):
 			return true

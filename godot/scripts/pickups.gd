@@ -49,6 +49,7 @@ const COLORS := {
 	"movil": Color(0.25, 0.92, 0.52),
 	"kebab": Color(1.0, 0.62, 0.18),
 	"azafran": Color(0.72, 0.34, 0.98),
+	"tabaco": Color(0.98, 0.78, 0.24),
 }
 
 var G
@@ -121,6 +122,22 @@ func spawn(kind: String, pos: Vector2, opts := {}) -> Dictionary:
 	spin.add_child(mesh_root)
 	root.add_child(spin)
 
+	var caption: String = String(opts.get("caption", ""))
+	if caption != "":
+		var lbl := Label3D.new()
+		lbl.text = caption
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.font_size = 54
+		lbl.pixel_size = 0.0042
+		lbl.outline_size = 14
+		lbl.modulate = Color("fff6e0")
+		lbl.outline_modulate = Color("2b1b10")
+		lbl.position = Vector3(0.0, 1.82, 0.0)
+		root.add_child(lbl)
+
+	if bool(opts.get("indoors", false)):
+		_set_layer(root, 1 << 10)
+
 	add_child(root)
 	var rec := {
 		"kind": kind,
@@ -131,11 +148,30 @@ func spawn(kind: String, pos: Vector2, opts := {}) -> Dictionary:
 		"halo_mat": hmat,
 		"label": String(opts.get("label", _default_label(kind))),
 		"on_take": opts.get("on_take", Callable()),
+		"auto": bool(opts.get("auto", true)),
 		"age": 0.0,
 		"collected": false,
 	}
 	items.append(rec)
 	return rec
+
+func _set_layer(n: Node, mask: int) -> void:
+	if n is MeshInstance3D:
+		(n as MeshInstance3D).layers = mask
+	for c in n.get_children():
+		_set_layer(c, mask)
+
+func take_tag(tag: String) -> bool:
+	for it in items.duplicate():
+		if String(it.get("tag", "")) == tag:
+			_collect(it)
+			return true
+	return false
+
+func remove_tag(tag: String) -> void:
+	for it in items.duplicate():
+		if String(it.get("tag", "")) == tag:
+			_remove(it)
 
 func _default_label(kind: String) -> String:
 	var k := "inv_n_" + kind
@@ -206,6 +242,14 @@ func _build_mesh(kind: String) -> Node3D:
 			holder.add_child(Parts.part("cyl", 0xd8dce0, Vector3(0.0, -0.06, 0.0), Vector3(0.18, 0.40, 0.18)))
 			holder.add_child(Parts.part("cyl", 0xe5be7a, Vector3(0.0, 0.16, 0.0), Vector3(0.17, 0.12, 0.17)))
 			holder.add_child(Parts.part("ball", 0x5aa84f, Vector3(0.0, 0.22, 0.0), Vector3(0.15, 0.08, 0.15)))
+		"tabaco":
+			# Classic red-and-white hard cigarette pack with gold trim and one cigarette peeking out
+			holder.add_child(Parts.part("box", 0xf4f2ec, Vector3(0.0, -0.08, 0.0), Vector3(0.28, 0.26, 0.13)))
+			holder.add_child(Parts.part("box", 0xc82420, Vector3(0.0, 0.13, 0.0), Vector3(0.286, 0.16, 0.136)))
+			holder.add_child(Parts.part("box", 0xe6b422, Vector3(0.0, 0.045, 0.0), Vector3(0.292, 0.03, 0.142)))
+			holder.add_child(Parts.part("box", 0x26262b, Vector3(0.0, -0.10, 0.068), Vector3(0.20, 0.06, 0.008)))
+			holder.add_child(Parts.part("cyl", 0xf4f2ec, Vector3(0.07, 0.27, 0.0), Vector3(0.022, 0.16, 0.022)))
+			holder.add_child(Parts.part("cyl", 0xd99b4a, Vector3(0.07, 0.36, 0.0), Vector3(0.023, 0.05, 0.023)))
 		_:
 			holder.add_child(Parts.part("ball", 0xf2c230, Vector3.ZERO, Vector3(0.32, 0.32, 0.32)))
 	return holder
@@ -246,5 +290,5 @@ func tick(dt: float, pp: Vector2) -> void:
 		spin.rotation.y += dt * 2.5
 		spin.position.y = 1.02 + sin(_t * 3.0 + float(it["age"])) * 0.10
 		(it["halo_mat"] as ShaderMaterial).set_shader_parameter("pulse", _t * 4.5)
-		if can_take and float(it["age"]) > 0.25 and (it["p"] as Vector2).distance_to(pp) < REACH:
+		if bool(it.get("auto", true)) and can_take and float(it["age"]) > 0.25 and (it["p"] as Vector2).distance_to(pp) < REACH:
 			_collect(it)
