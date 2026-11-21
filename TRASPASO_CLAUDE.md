@@ -1028,6 +1028,20 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Prueba:** modo `--descanso`, 2 ok, también en la completa detrás de los trabajos. `mejoras2`, 12 ok.
 - **Diagrama:** la tarjeta de los pitillos y una de dormir nuevas.
 
+### Publicación de la 0.0.19 en GitHub (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario: «Cuando termine Pretil, visto bueno a todo y 0.0.19».
+- **Congelado.** Pretil y Texturas, desde que avisaron de que habían terminado.
+- **Prueba completa:** 920 ok, 0 fallos (`logs/selftest_full_20261121_144541.log`). Después, `herencia` 12 ok y `casa` 4 ok, con el último retoque de Pretil en las fachadas, que solo cambia comentarios respecto a la versión probada.
+- **Commits:**
+  - `af9420f`: todo lo aprobado, de Sistemas, Pretil y Texturas.
+  - «Matritellus 0.0.19»: número de versión, notas y los `.uid` de los scripts nuevos.
+- **Etiqueta:** `v0.0.19`.
+- **Paquetes:** `tools/make_apk.py 0.0.19` (versión 0.0.19, código 19, firmado y verificado), `tools/make_installer.py` y `tools/make_linux.py`.
+  - Están en `dist/v0.0.19/`, con [sus SHA-256](dist/v0.0.19/SHA256SUMS.txt) comprobados.
+  - Subidos a la release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.19
+- **Sin probar:** no se ha probado en móvil ni en Steam Machine.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
