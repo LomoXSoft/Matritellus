@@ -56,6 +56,8 @@ const CaballeteS = preload("res://scripts/caballete.gd")
 const PickupsS = preload("res://scripts/pickups.gd")
 const InventarioS = preload("res://scripts/inventario.gd")
 const TomasaS = preload("res://scripts/tomasa.gd")
+const FondoCasaS = preload("res://scripts/fondo_casa.gd")
+const TrabajosS = preload("res://scripts/trabajos.gd")
 const FumarS = preload("res://scripts/fumar.gd")
 
 ## A whole day lasts 48 minutes of play: two minutes an hour. The day of the week moves on at midnight.
@@ -299,6 +301,8 @@ var marcas                      # who has a mission for you: photo on the map, g
 var pickups                     # 3D floating spinning glowing item pickups (pickups.gd)
 var inventario                  # Animal Crossing-style pocket inventory (inventario.gd)
 var tomasa                      # Tomasa Malvora & los chinos del Arroyuelo shopkeeper (tomasa.gd)
+var trabajos                    # paid work, over and over: El de las faenas on the square, and Henry's orders (trabajos.gd)
+var fondo_casa                  # the house you inherit, a "de fondo" line: the tax debt, the cash machine, Edmundo Monedero (fondo_casa.gd)
 var fumar                       # a pitillo: six hours up in smoke, looking at the sky (fumar.gd)
 # Driving camera modes: 0 = third person, 1 = first person (driver POV), 2 = GTA cinematic
 var car_cam := 0
@@ -1587,6 +1591,10 @@ func _setup_places_and_actors() -> void:
 	pickups.setup(self)
 	tomasa = TomasaS.new()
 	tomasa.setup(self)
+	fondo_casa = FondoCasaS.new()
+	fondo_casa.setup(self)
+	trabajos = TrabajosS.new()
+	trabajos.setup(self)
 	fumar = FumarS.new()
 	fumar.setup(self)
 	rally = RallyS.new()
@@ -1856,8 +1864,13 @@ func _menu_page(id: String) -> Dictionary:
 			items.append({"text": Loc.t("m_back"), "do": _goto.bind("pause"), "size": 21})
 			return {"title": Loc.t("m_dev").to_upper(), "items": items, "back": "pause", "foot": Loc.t("m_foot")}
 		"dev_missions":
+			items.append(_plain(Loc.t("dev_sec_main"), 15))
 			for m in Missions.main_missions():
 				items.append({"text": Loc.t(m["title"]), "do": _dev_jump.bind(int(m["first"])), "size": 19})
+			for group in DEV_OTHERS:                 # every other mission (the user, 21 Nov 2026: "que incluya todas las misiones")
+				items.append(_plain(Loc.t(group[0]), 15))
+				for e in group[1]:
+					items.append({"text": Loc.t(e[1]), "do": _dev_side.bind(e[0]), "size": 19})
 			items.append({"text": Loc.t("m_back"), "do": _goto.bind("dev"), "size": 19})
 			return {"title": Loc.t("dev_mission").to_upper(), "items": items, "back": "dev", "foot": Loc.t("m_foot")}
 		"controls":
@@ -1888,7 +1901,7 @@ func _menu_page(id: String) -> Dictionary:
 				else:
 					items.append(_plain(opts[k][0], 20))
 			return {"title": _choice.get("title", ""), "items": items, "foot": Loc.t("m_foot")}
-		"log", "log_side", "log_games", "log_folk", "log_gacha", "log_radio":
+		"log", "log_side", "log_bg", "log_games", "log_folk", "log_gacha", "log_radio":
 			return _agenda_page(id)
 		"pause":
 			items.append({"text": Loc.t("m_resume"), "do": _close_pause})
@@ -2076,7 +2089,7 @@ func set_hud_hidden(on: bool) -> void:
 		Touch._context_tick()
 
 func _dev_money() -> void:
-	money += 1000
+	money += 10000                               # (10.000 since 21 Nov 2026: the house costs tens of thousands)
 	_refresh_counts()
 
 func _dev_minigames() -> void:
@@ -2099,6 +2112,106 @@ func _dev_jump(first: int) -> void:
 	_close_pause()
 	_save(first)
 	start_game(first)
+
+## The developer's page lists every mission, not only the story's: [section, [[id, title key], ...]]
+const DEV_OTHERS := [
+	["dev_sec_side", [["menu", "josefa_menu_title"], ["luis", "luis_title"], ["jueves", "ham_title"], ["chiki", "chiki_title"],
+		["recress", "rec_title"], ["ajedrez", "aj_title"], ["tomasa", "tomasa_title"]]],
+	["dev_sec_bg", [["casa", "casa_title"], ["obras", "dev_obras"]]],
+	["dev_sec_jobs", [["faenas", "n_faenas"], ["pedido", "faena_title_pedido"]]],
+]
+
+## Straight to a mission off the story: the story done (free roam after the bridge), whatever that mission needs
+## opened and not yet done, the time it wants, and you beside whoever gives it. Saved as it is, like a jump in the story.
+func _dev_side(id: String) -> void:
+	_close_pause()
+	if in_car != null:
+		in_car.set_speed(Vector2.ZERO)
+		_exit_car()
+	if indoors:
+		entradas.leave()
+	side = null
+	stats["puente"] = true
+	if not stats.has("puente_h"):
+		stats["puente_h"] = llamadas.now() - 3.0
+	if not stats.has("casa"):                    # (the house's own line stays quiet unless it is the one asked for)
+		stats["casa"] = {"st": "propia", "debe": 0, "estado": 0, "obra": -1, "obra_dia": -1, "offered": true}
+	var rec: Dictionary = stats.get("recress", {"stage": "", "posters": []})
+	var who := ""
+	var day := 1                                 # a Tuesday: no ham, the shops and the bank open
+	var hour := 11.0
+	match id:
+		"menu":
+			stats.erase("menu_done")
+			stats.erase("menu_seen")
+			who = "josefa"
+		"luis":
+			stats["menu_done"] = true
+			stats.erase("luis_done")
+			who = "luis"
+			hour = 13.0
+		"jueves":
+			stats["menu_done"] = true
+			stats.erase("thu")
+			day = 3
+			hour = 8.5
+		"chiki":
+			for k in ["chiki_tags", "tags_done", "tag_hints", "tag_hint_day", "painted"]:
+				stats.erase(k)
+			who = "chiki"
+		"recress":
+			rec["stage"] = ""
+			who = "alberto"
+		"ajedrez":
+			rec["stage"] = "hecho"
+			stats.erase("ajedrez")
+			who = "alcalde"
+		"tomasa":
+			stats["tomasa"] = ""
+			who = "tomasa"
+		"casa":
+			stats["casa"] = {"st": "paca", "debe": 0, "estado": 0, "obra": -1, "obra_dia": -1}
+			who = "paca"
+		"obras":
+			stats["casa"] = {"st": "propia", "debe": 0, "estado": 0, "obra": -1, "obra_dia": -1, "offered": true}
+			hour = 10.0
+		"faenas":
+			who = "faenas"
+		"pedido":
+			stats["menu_done"] = true
+			who = "henry"
+	stats["recress"] = rec
+	weekday = day
+	set_time(hour)
+	var at := _idx("tbc")
+	_save(at)
+	start_game(at)
+	_protest_over = true
+	var spot: Vector2 = home_spot
+	if id == "obras":                            # (Edmundo is in the bank: you at its arrow, outside)
+		var bs = world.get("bancosancho")
+		if bs != null:
+			spot = entradas.spot(bs.banco, false) if bs.get("banco") != null else bs.bank_door
+	elif who != "" and named.has(who):
+		var n = named[who]
+		var off: Vector2 = (_pavement(n.p) - n.p)
+		spot = n.p + (off.normalized() * 1.4 if off.length() > 0.3 else Vector2(1.4, 0.0))
+	if in_car != null:                           # (continuing a game puts you in Paca's car: out, and on foot where it starts)
+		in_car.set_speed(Vector2.ZERO)
+		_exit_car()
+	player.p = spot
+	player.sync()
+	cam_pos = MapData.at(spot - Vector2(sin(player.h), cos(player.h)) * 4.0, 2.2)
+	if id == "jueves":
+		_weekly_call()                           # (it rings now)
+	hud.toast(Loc.t("dev_side_done") % Loc.t(_dev_title(id)), 3.0)
+
+func _dev_title(id: String) -> String:
+	for group in DEV_OTHERS:
+		for e in group[1]:
+			if e[0] == id:
+				return e[1]
+	return id
 
 func _open_pause() -> void:
 	paused = true
@@ -2517,6 +2630,12 @@ func _cine_camera() -> void:
 	cam_pos = cam.position
 	cam_look = look
 
+## [found, all] of the saffron hidden in special places (flowers with "hidden": the silo's, Pretil's...)
+func hidden_saffron() -> Array:
+	var all: Array = flowers.filter(func(f): return f.get("hidden", false))
+	var found: Array = stats.get("saffron_hidden", [])
+	return [all.filter(func(f): return String(f.get("id", "")) in found).size(), all.size()]
+
 ## What the calendar leaf calls this time of day. The night runs to midnight; from midnight to dawn it is the
 ## madrugada, already of the next day -- with no clock on the screen, "night" alone after midnight left you not knowing
 ## which night it was (the user, 15 November 2026). Only the words: the game itself still calls it all "night".
@@ -2546,6 +2665,13 @@ func start_game(from_step := 0) -> void:
 	recress.load_state()
 	if tomasa != null:
 		tomasa.restore()
+	if fondo_casa != null:
+		fondo_casa.restore()
+	for f in flowers:                            # the saffron hidden in special places: gone if this game has had it
+		if f.get("hidden", false):
+			f["gone"] = String(f.get("id", "")) in stats.get("saffron_hidden", [])
+			if is_instance_valid(f["node"]):
+				f["node"].visible = not f["gone"]
 	if stats.has("puente") and not stats.has("puente_h"):
 		stats["puente_h"] = llamadas.now()        # (a game saved before this was kept: Alberto's call counts from now)
 	hud.hide_overlay()
@@ -3109,8 +3235,25 @@ func _retry() -> void:
 	phase = "play"
 	begin_step(si)
 
+## Sleep has a cooldown of 24 game hours (the user, 21 Nov 2026), counted from when you went to bed: sleep at ten one
+## night and you can again at ten the next. The story's bedtime is never held back.
+const SLEEP_EVERY := 24.0
+
+func _nap_ready() -> bool:
+	if steps[si]["type"] == "sleep":
+		return true
+	return not stats.has("slept_h") or llamadas.now() - float(stats["slept_h"]) >= SLEEP_EVERY
+
+## when you can sleep again, as the calendar leaf would say it ("LUNES · 22:00")
+func _nap_when() -> String:
+	var at: float = float(stats.get("slept_h", 0.0)) + SLEEP_EVERY
+	var mins := int(floor(fmod(at, 24.0) * 60.0))
+	var days_on := int(floor(at / 24.0)) - int(day_n)
+	return Loc.t("wd_%d" % posmod(weekday + days_on, 7)).to_upper() + " · %02d:%02d" % [mins / 60, mins % 60]
+
 ## to bed: the screen goes dark and it is the next morning
 func _go_to_sleep() -> void:
+	stats["slept_h"] = llamadas.now()
 	phase = "ending"
 	set_target(null, false)
 	var tw := create_tween()
@@ -3258,11 +3401,11 @@ func _stat_lines() -> Array:
 # ---------- the log, and the minigames you open along the way ----------
 ## The Agenda: six pages (main missions, side missions, minigames, neighbours, the figures out of the gumball machines,
 ## the radio). The first row turns the page.
-const AGENDA := ["log", "log_side", "log_games", "log_folk", "log_gacha", "log_radio"]
+const AGENDA := ["log", "log_side", "log_bg", "log_games", "log_folk", "log_gacha", "log_radio"]
 
 func _agenda_page(id: String) -> Dictionary:
 	var n: int = AGENDA.find(id)
-	var titles := ["log_main", "log_side", "log_games", "log_folk", "log_gacha", "log_radio"]
+	var titles := ["log_main", "log_side", "log_bg_title", "log_games", "log_folk", "log_gacha", "log_radio"]
 	var items: Array = [{"text": Loc.t("log_page") % [n + 1, AGENDA.size()], "value": Loc.t(titles[n]), "size": 20,
 		"left": _goto.bind(AGENDA[(n + AGENDA.size() - 1) % AGENDA.size()]), "right": _goto.bind(AGENDA[(n + 1) % AGENDA.size()])}]
 	match n:
@@ -3284,14 +3427,14 @@ func _agenda_page(id: String) -> Dictionary:
 			if stats.has("puente"):                  # Alberto's (the Civismo line)
 				var rs: String = recress.stage()
 				items.append(_plain("%s  ·  %s" % [Loc.t("rec_title"), Loc.t("log_done") if recress.done() else (Loc.t("log_now") if recress.active() else (Loc.t("log_rec_money") if rs == "dinero" else Loc.t("log_rec_open")))], 17))
-			if pintadas.unlocked():                  # La Chiki's
-				items.append(_plain("%s  ·  %s" % [Loc.t("chiki_title"), Loc.t("log_done") if pintadas.done() else Loc.t("log_chiki_open")], 17))
 			if ajedrez.available() or ajedrez.done():     # (ajedrez) the mayor's, after the Recress
 				items.append(_plain("%s  ·  %s" % [Loc.t(AjedrezS.TITLE), Loc.t("log_done") if ajedrez.done() else Loc.t("log_aj_open")], 17))
 			if stats.has("ham_seen"):
 				items.append(_plain("%s  ·  %s" % [Loc.t("ham_title"), Loc.t("log_now") if side != null and side["id"] == "ham" else Loc.t("log_ham") % int(stats.get("ham_done", 0))], 17))
 			elif items.size() == 1:
 				items.append(_plain(Loc.t("log_none"), 15))
+			if trabajos != null and (trabajos.earned() > 0 or trabajos.active()):     # the jobs (trabajos.gd)
+				items.append(_plain("%s  ·  %s" % [Loc.t("log_trabajos"), Loc.t("log_now") if trabajos.active() else Loc.t("log_trabajos_cash") % trabajos._eur(trabajos.earned())], 17))
 			if negocio("restaurantes"):
 				items.append(_plain(Loc.t("log_thu"), 14))
 			var known: Array = Missions.BUSINESSES.keys().filter(func(b): return negocio(b)).map(func(b): return Loc.t(Missions.BUSINESSES[b]))
@@ -3299,7 +3442,27 @@ func _agenda_page(id: String) -> Dictionary:
 				items.append(_plain(Loc.t("log_negocios") % " · ".join(known), 14))
 			if pc_on():
 				items.append(_plain(Loc.t("log_pc") % pc, 14))
-		2:
+		2:                                           # "de fondo": what runs alongside the game all the time (the user, 21 Nov 2026)
+			var any := false
+			var line: Array = fondo_casa.agenda() if fondo_casa != null else []
+			if not line.is_empty():                  # the house (fondo_casa.gd)
+				items.append(_plain("%s  ·  %s" % [line[0], line[1]], 17))
+				any = true
+			if pintadas.unlocked():                  # La Chiki's walls
+				var mine: int = props.tags.filter(func(t): return int(t["owner"]) == int(look_sel[11])).size()
+				items.append(_plain("%s  ·  %s" % [Loc.t("chiki_title"), Loc.t("log_done") if pintadas.done() else Loc.t("log_chiki_walls") % [mine, props.tags.size()]], 17))
+				any = true
+			var hid: Array = hidden_saffron()
+			if saffron > 0 or hid[1] > 0:            # the saffron, and how much of what is hidden
+				var txt: String = Loc.t("log_saffron") % saffron
+				if hid[1] > 0:
+					txt += "  ·  " + Loc.t("log_saffron_hidden") % [hid[0], hid[1]]
+				items.append(_plain("%s  ·  %s" % [Loc.t("log_saffron_title"), txt], 17))
+				any = true
+			if not any:
+				items.append(_plain(Loc.t("log_bg_none"), 15))
+			items.append(_plain(Loc.t("log_bg_how"), 12))
+		3:
 			for mg in Missions.MINIGAMES:
 				var info: Dictionary = Missions.MINIGAMES[mg]
 				var open: int = int(unlocked.get(mg, 0))
@@ -3315,7 +3478,7 @@ func _agenda_page(id: String) -> Dictionary:
 					items.append({"text": Loc.t("log_level") % [Loc.t(info["title"]), lv + 1, foe], "do": _play_minigame.bind(mg, lv), "size": 19})
 				items.append(_plain(Loc.t("log_best") % [int(stats.get(mg + "_wins", 0)), int(stats.get(mg + "_fights", 0)), int(stats.get(mg + "_best", 0))], 15))
 				items.append(_plain(Loc.t("log_opened") % Loc.t(info["unlock"]), 13))
-		3:
+		4:
 			for r in recalls:                        # somebody you said no to on the phone: ring them
 				if named.has(r["npc"]):
 					items.append({"text": Loc.t("log_call_back") % named[r["npc"]].shown_name(), "do": _call_back.bind(r), "size": 19})
@@ -3327,11 +3490,11 @@ func _agenda_page(id: String) -> Dictionary:
 				var t: int = folk.trust(who)
 				items.append({"text": named[who].shown_name(), "meter": t / 100.0, "gold": folk.golden(who), "value_text": str(t), "plain": true})
 			items.append(_plain(Loc.t("log_folk_how"), 12))
-		4:                                           # the figures: everyone who can come out of a ball, in black until they have
+		5:                                           # the figures: everyone who can come out of a ball, in black until they have
 			items.append(_plain(Loc.t("gacha_count") % [gacha.owned(), GachaS.FIGURES.size()], 17))
 			items.append({"text": "", "grid": gacha.cells(), "cols": 8, "plain": true})
 			items.append(_plain(Loc.t("log_gacha_how") % GachaS.PRICE, 12))
-		5:                                           # the dial: every station, what it says it is and what it plays
+		6:                                           # the dial: every station, what it says it is and what it plays
 			for k in range(Ambience.stations.size()):
 				var st: Dictionary = Ambience.stations[k]
 				var tunes: Array = []
@@ -3566,6 +3729,10 @@ func talk_to(n, chat_only := false) -> void:
 	if n.id == "feliciano" and feliciano != null:   # (his Thursday, how far off it is, or the convent's bell: feliciano.gd)
 		feliciano.talk(n)
 		return
+	if trabajos != null and (phase == "play" or phase == "free") and trabajos.talk(n):      # (trabajos.gd: El de las faenas, Henry's orders, handing one over)
+		return
+	if n.id in ["paca", "edmundo"] and fondo_casa != null and (phase == "play" or phase == "free") and fondo_casa.talk(n):
+		return
 	if n.id in ["tomasa", "chino"] and tomasa != null and (phase == "play" or phase == "free") and tomasa.talk(n):
 		return
 	var who: String = n.shown_name() if n.id != "" else Loc.t("generic_names")[int(n.display_name)]
@@ -3704,6 +3871,10 @@ func _food_offer(n) -> void:
 		options.append([Loc.t("food_job"), func():
 			phase = back
 			sabotaje.talk(n, true)])
+	if n.id == "henry" and trabajos != null and trabajos.henry_can():      # (any day but Thursday: an order to take to somebody, trabajos.gd)
+		options.append([Loc.t("food_pedido"), func():
+			phase = back
+			trabajos.henry_offer(n)])
 	options.append([Loc.t("food_talk"), _food_chat.bind(n, back)])
 	ask(n, n.shown_name(), Loc.t("ask_food_" + n.id) if Loc.TX.has("ask_food_" + n.id) else Loc.t("food_q_" + n.id), options)
 
@@ -4405,6 +4576,8 @@ func interact() -> void:
 		rally.start()
 	elif recress.at_machine(player.p):
 		recress.free_play(player.p)
+	elif fondo_casa != null and fondo_casa.atm_near(player.p) != null:      # (a cash machine: fondo_casa.gd)
+		fondo_casa.use_atm(fondo_casa.atm_near(player.p))
 	elif gacha.near(player.p) != null:
 		gacha.play(gacha.near(player.p))
 	elif entradas.exit_here() != null:           # on the green arrow by a set's door, inside: out (entradas.gd)
@@ -4431,7 +4604,11 @@ func interact() -> void:
 	elif near_tag != null:
 		_paint(near_tag)
 	elif _can_nap():
-		_go_to_sleep()
+		if _nap_ready():
+			_go_to_sleep()
+		else:
+			hud.toast(Loc.t("t_nap_wait") % _nap_when(), 3.5)
+			Sfx.beep(196.0, 0.12, 1, -14.0)
 
 ## Take a car off a neighbour who is driving it: the driver ends up on the ground, anybody watching has
 ## something to say, and Los Pitufos take a very dim view (three quarters of the bar in one go).
@@ -4905,9 +5082,20 @@ func _physics_process(delta: float) -> void:
 		comida.pose(player)
 		motin.pose(player)
 		for i in range(flowers.size() - 1, -1, -1):
+			if flowers[i].get("gone", false):
+				continue
 			if flowers[i]["p"].distance_squared_to(player.p) < 1.6:
-				flowers[i]["node"].queue_free()
-				flowers.remove_at(i)
+				if flowers[i].get("hidden", false):      # one hidden in a special place (the user, 21 Nov 2026): it counts once, saved
+					flowers[i]["gone"] = true
+					flowers[i]["node"].visible = false
+					var found: Array = stats.get("saffron_hidden", [])
+					if not (String(flowers[i].get("id", "")) in found):
+						found.append(String(flowers[i].get("id", "")))
+					stats["saffron_hidden"] = found
+					hud.toast(Loc.t("t_saffron_hidden") % [hidden_saffron()[0], hidden_saffron()[1]], 4.0)
+				else:
+					flowers[i]["node"].queue_free()
+					flowers.remove_at(i)
 				saffron += 1
 				money += 6
 				_refresh_counts()
@@ -4945,6 +5133,10 @@ func _physics_process(delta: float) -> void:
 		pickups.tick(dt, pp)
 	if tomasa != null:
 		tomasa.tick(dt, pp)
+	if fondo_casa != null:
+		fondo_casa.tick(dt)
+	if trabajos != null:
+		trabajos.tick(dt, pp)
 	recress.tick(dt, pp)
 	sabotaje.tick(dt, pp)
 	motin.tick(dt, pp)
@@ -5048,6 +5240,8 @@ func _physics_process(delta: float) -> void:
 			pr = Loc.t("r9_play")
 		elif recress.can_play(pp) or recress.at_machine(pp):
 			pr = Loc.t("p_rec_play")
+		elif fondo_casa != null and fondo_casa.atm_near(pp) != null:
+			pr = fondo_casa.atm_prompt()
 		elif gacha.near(pp) != null:
 			pr = gacha.prompt()
 		elif entradas.exit_here() != null:
@@ -5068,7 +5262,7 @@ func _physics_process(delta: float) -> void:
 		elif near_tag != null:
 			pr = Loc.t("p_paint")
 		elif _can_nap():
-			pr = Loc.t("p_nap")
+			pr = Loc.t("p_nap") if _nap_ready() else Loc.t("p_nap_wait") % _nap_when()
 	var about = null                             # who or what the prompt is about: a neighbour, a car... or nobody but you
 	if not frozen and in_car == null and gacha.near(pp) == null and not ajedrez.on_board(pp) and entradas.enter_here() == null and entradas.exit_here() == null:     # (at a door or gumball machine or chessboard, prompt is about that)
 		if near_npc != null:
@@ -5278,6 +5472,9 @@ func _side_drop() -> void:
 	if side["id"] == "tomasa":
 		tomasa.abort()
 		return
+	if side["id"] == "trabajo":
+		trabajos.abort()
+		return
 	var what: String = side["id"]
 	side = null
 	police.muted = false
@@ -5322,6 +5519,9 @@ func _side_show() -> void:
 	if side["id"] == "tomasa":
 		tomasa.show()
 		return
+	if side["id"] == "trabajo":
+		trabajos.show()
+		return
 	var menu_job: bool = side["id"] == "menu"
 	if side["stage"] == "fetch":
 		hud.set_objective(_tag(), Loc.t("obj_menu_fetch" if menu_job else "obj_ham_fetch"))
@@ -5359,7 +5559,7 @@ func side_bump() -> void:
 	pass
 
 func _side_tick(dt: float, pp: Vector2) -> void:
-	if side["id"] == "luis" or side["id"] == "recress" or side["id"] == "tomasa":
+	if side["id"] == "luis" or side["id"] == "recress" or side["id"] == "tomasa" or side["id"] == "trabajo":
 		return
 	if side["stage"] == "fetch":
 		if motin.in_the_way():                   # there is a crowd after the same ham: it has to be fought for (motin.gd)
@@ -5819,6 +6019,78 @@ func _cam_spot_clear(from: Vector3, to: Vector3) -> Vector3:
 		return to
 	var frac := clampf((from.distance_to(hit["position"]) - 0.8) / dist, 0.22, 1.0)
 	return from.lerp(to, frac)
+
+## A scene's camera that glides from about `want_a` to about `want_b` looking at `at`, with no house between it and what
+## it shows (the user, 21 Nov 2026: "La cámara de la Chiki cuando te enseña los grafitis y la de Alberto cuando enseña el
+## pueblo muchas veces acaba clippeada entre edificios y no se ve el objetivo"). The two places are tried as they are,
+## then turned round `at` a little either way, and a little higher; each end is pulled in short of the first wall
+## between it and `at`. The first pair, in that order, that keeps at least `keep` of the distance at both ends and has
+## nothing across the glide is the one: straight on from closer beats from the side further off, which in a narrow
+## street looked along the wall and hardly showed the painting on it. If none does, the pair that stands furthest out.
+## Each place keeps its height over its own ground. [from_a, from_b]
+func scene_shot(at: Vector3, want_a: Vector3, want_b: Vector3, keep := 0.45) -> Array:
+	var space := get_world_3d().direct_space_state
+	var best: Array = [want_a, want_b]
+	var best_m := -1.0
+	for turn in [0.0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2]:
+		for lift in [0.0, 3.0]:
+			var a := _shot_turned(at, want_a, turn, lift)
+			var b := _shot_turned(at, want_b, turn, lift)
+			var fa := _shot_clear(space, at, a)
+			var fb := _shot_clear(space, at, b)
+			var a2 := _shot_room(space, at.lerp(a, fa), at)
+			var b2 := _shot_room(space, at.lerp(b, fb), at)
+			var glide := _shot_open(space, a2, b2)
+			if fa >= keep and fb >= keep and glide:
+				return [a2, b2]
+			if not glide:
+				b2 = a2.lerp(at, 0.12)               # (the glide would cross a corner: a slow push in instead)
+			var m := minf(at.distance_to(a2), at.distance_to(b2))
+			if m > best_m + 0.5:
+				best_m = m
+				best = [a2, b2]
+	return best
+
+func _shot_turned(at: Vector3, want: Vector3, turn: float, lift: float) -> Vector3:
+	var flat := Vector2(want.x - at.x, want.z - at.z).rotated(turn)
+	var p := Vector2(at.x, at.z) + flat
+	return Vector3(p.x, MapData.height(p) + (want.y - MapData.height(Vector2(want.x, want.z))) + lift, p.y)
+
+## how much of the way from `at` out to `to` is clear of houses and walls (1 = all of it; short of a wall, 0.6 m off it)
+func _shot_clear(space: PhysicsDirectSpaceState3D, at: Vector3, to: Vector3) -> float:
+	var d := at.distance_to(to)
+	if d < 0.5:
+		return 1.0
+	var dir := (to - at) / d
+	var start := at + dir * 0.4                  # (off the wall the thing shown is painted on)
+	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(start, to, 1))
+	if hit.is_empty():
+		return 1.0
+	return clampf((at.distance_to(hit["position"]) - 0.6) / d, 0.0, 1.0)
+
+## a camera place moved off a wall right beside it (in an alley, a wall filled half the picture), if from there it
+## still sees `at`
+func _shot_room(space: PhysicsDirectSpaceState3D, p: Vector3, at: Vector3) -> Vector3:
+	var look := Vector2(at.x - p.x, at.z - p.z)
+	if look.length() < 0.5:
+		return p
+	var right := Vector2(-look.y, look.x).normalized()
+	var q := p
+	for side in [1.0, -1.0]:
+		var to: Vector3 = q + Vector3(right.x, 0.0, right.y) * float(side) * 1.8
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(q, to, 1))
+		if not hit.is_empty():
+			q -= Vector3(right.x, 0.0, right.y) * float(side) * (1.8 - q.distance_to(hit["position"]))
+	if q != p and _shot_clear(space, at, q) < 1.0:
+		return p
+	return q
+
+## nothing between two camera places, looked at both ways (a ray that starts inside a house does not see its walls)
+func _shot_open(space: PhysicsDirectSpaceState3D, a: Vector3, b: Vector3) -> bool:
+	if a.distance_to(b) < 0.05:
+		return true
+	return space.intersect_ray(PhysicsRayQueryParameters3D.create(a, b, 1)).is_empty() \
+		and space.intersect_ray(PhysicsRayQueryParameters3D.create(b, a, 1)).is_empty()
 
 func _pick_air_cine_spot(c) -> Vector3:
 	var dir2: Vector2 = c.vel.normalized() if c.vel.length() > 1.5 else Vector2(sin(c.h), cos(c.h))

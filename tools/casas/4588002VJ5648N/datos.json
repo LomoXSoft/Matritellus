@@ -1,0 +1,174 @@
+{
+ "rc": "4588002VJ5648N",
+ "record": {
+  "address": "CL ROSA SALVADOR 4 Suelo 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Obras de urbanización y jardineria, suelos sin edificar",
+  "built_m2": "",
+  "year": "",
+  "units": [],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4588002VJ5648N_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 56.2,
+   "ring": [
+    [
+     135.4,
+     301.91
+    ],
+    [
+     138.32,
+     302.39
+    ],
+    [
+     140.08,
+     309.96
+    ],
+    [
+     135.68,
+     310.61
+    ],
+    [
+     131.36,
+     311.25
+    ],
+    [
+     131.43,
+     304.84
+    ],
+    [
+     135.09,
+     304.74
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      135.4,
+      301.91
+     ],
+     "b": [
+      138.32,
+      302.39
+     ],
+     "len": 2.96,
+     "out": [
+      0.162,
+      -0.987
+     ],
+     "street": "Calle de la Rosa del Salvador",
+     "to_centre": 0.72
+    },
+    {
+     "a": [
+      138.32,
+      302.39
+     ],
+     "b": [
+      140.08,
+      309.96
+     ],
+     "len": 7.77,
+     "out": [
+      0.974,
+      -0.226
+     ],
+     "street": "Calle de la Rosa del Salvador",
+     "to_centre": 4.68
+    },
+    {
+     "a": [
+      140.08,
+      309.96
+     ],
+     "b": [
+      135.68,
+      310.61
+     ],
+     "len": 4.45,
+     "out": [
+      0.146,
+      0.989
+     ],
+     "street": "",
+     "to_centre": 8.82
+    },
+    {
+     "a": [
+      135.68,
+      310.61
+     ],
+     "b": [
+      131.36,
+      311.25
+     ],
+     "len": 4.37,
+     "out": [
+      0.147,
+      0.989
+     ],
+     "street": "",
+     "to_centre": 9.6
+    },
+    {
+     "a": [
+      131.36,
+      311.25
+     ],
+     "b": [
+      131.43,
+      304.84
+     ],
+     "len": 6.41,
+     "out": [
+      -1.0,
+      -0.011
+     ],
+     "street": "Calle de la Rosa del Salvador",
+     "to_centre": 6.78
+    },
+    {
+     "a": [
+      131.43,
+      304.84
+     ],
+     "b": [
+      135.09,
+      304.74
+     ],
+     "len": 3.66,
+     "out": [
+      -0.027,
+      -1.0
+     ],
+     "street": "Calle de la Rosa del Salvador",
+     "to_centre": 3.47
+    },
+    {
+     "a": [
+      135.09,
+      304.74
+     ],
+     "b": [
+      135.4,
+      301.91
+     ],
+     "len": 2.85,
+     "out": [
+      -0.994,
+      -0.109
+     ],
+     "street": "Calle de la Rosa del Salvador",
+     "to_centre": 1.95
+    }
+   ],
+   "ground": [
+    -7.86,
+    -7.22
+   ]
+  }
+ ]
+}

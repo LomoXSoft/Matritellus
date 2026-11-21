@@ -27,6 +27,7 @@ extends "res://scripts/obra.gd"
 ## hermitage); +z across it, southwards (to the Paseo); y = 0 the ground there.
 
 const CristopradoS = preload("res://scripts/cristoprado.gd")
+const Chara = preload("res://scripts/chara.gd")   # (the statue of the fountain: one of the game's own figures, in marble)
 
 const O := Vector2(132.6, 441.6)
 const U := Vector2(0.94236986, 0.33457292)
@@ -59,13 +60,13 @@ const TREES: Array = [
 	[71.0, 7.4, "platano", 13.0], [86.0, -6.9, "palmera", 7.0],
 	[90.3, -7.8, "trasmocho", 10.5], [91.1, 4.7, "platano", 12.0], [96.4, 5.0, "platano", 12.0], [99.2, -7.6, "olmo", 10.5],
 	[104.0, -8.4, "trasmocho", 11.0], [105.6, 5.2, "platano", 12.5], [107.4, 8.0, "platano", 10.0], [113.4, -8.6, "platano", 16.0],
-	[113.5, 6.0, "platano", 11.0], [120.2, 7.4, "platano", 12.0], [126.6, -8.6, "sauce", 9.0], [131.0, 7.8, "platano", 12.0],
-	[138.8, 7.4, "platano", 12.0], [142.5, -7.0, "platano", 12.0], [147.4, 9.8, "platano", 13.5], [156.2, 10.6, "olmo", 9.0]]
+	[113.5, 6.0, "platano", 11.0], [120.2, 7.4, "platano", 12.0], [125.0, -8.4, "sauce", 9.0], [131.0, 7.8, "platano", 12.0],
+	[138.8, 7.4, "platano", 12.0], [131.2, -8.5, "palmera", 6.5], [142.5, -7.0, "platano", 12.0], [147.4, 9.8, "platano", 13.5], [156.2, 10.6, "olmo", 9.0]]
 const LAMPS_N: Array = [3.0, 19.0, 35.0, 51.0, 83.0, 99.0, 115.0, 131.0, 147.0]
 const LAMPS_S: Array = [11.0, 27.0, 43.0, 59.0, 91.0, 107.0, 123.0, 139.0, 155.0]
-const BENCHES_N: Array = [7.0, 23.0, 31.0, 45.0, 57.0, 89.0, 95.0, 111.0, 119.0, 127.0, 135.0]
+const BENCHES_N: Array = [7.0, 23.0, 31.0, 45.0, 57.0, 89.0, 95.0, 111.0, 119.0, 135.0]     # (none at 127: the fountain)
 const BENCHES_S: Array = [25.0, 39.0, 49.0, 87.0, 101.0, 117.0, 129.0]
-const BINS: Array = [[15.0, -1.0], [53.0, -1.0], [97.0, -1.0], [125.0, -1.0], [33.0, 1.0], [85.0, 1.0], [115.0, 1.0]]
+const BINS: Array = [[15.0, -1.0], [53.0, -1.0], [97.0, -1.0], [121.0, -1.0], [33.0, 1.0], [85.0, 1.0], [115.0, 1.0]]
 
 var V := Vector2(-U.y, U.x)
 var trees_n := 0                   # how many trees it planted (the self-test)
@@ -118,6 +119,18 @@ func _material(key) -> Material:
 			m = W._tmat(0x6f9a3e, "leaf", 1.0)
 		"seto":             # the box of the beds
 			m = W._tmat(0x4f7a3a, "leaf", 0.8)
+		"roca":             # the monolith's rough stone, weathered
+			m = W._tmat(0xa1957f, "earth", 1.2)
+		"toba":             # the fountain's tufa, pale grey
+			m = W._tmat(0xc2bdb1, "earth", 0.8)
+		"agua":             # the fountain's water: clean (as the user wanted the plaza's)
+			var wm := StandardMaterial3D.new()
+			wm.albedo_color = Color(0.36, 0.62, 0.78)
+			wm.roughness = 0.15
+			wm.emission_enabled = true
+			wm.emission = Color(0.3, 0.55, 0.7)
+			wm.emission_energy_multiplier = 0.25
+			m = wm
 		"farol":            # the lanterns' glass (game.gd's lights warm it at dusk)
 			var fm := StandardMaterial3D.new()
 			fm.albedo_color = Color(0.98, 0.94, 0.8)
@@ -160,7 +173,7 @@ func build(world) -> void:
 	_west()
 	_trees()
 	_furniture()
-	_rockery()
+	_fountain()
 	_clear_map_trees()
 	_commit()
 
@@ -560,25 +573,10 @@ func _railing(s0: float, s1: float) -> void:
 	yard.append(spot(s1, vn(s1) - 0.17))
 
 # ---------------- the west end ----------------
-## The millstones before the house of the arches, its bed of box; the bed of cypresses with its low railing, the tall
-## lamp; the stone and the carved trunk on the slate; the round planter of rubble round the tree beside them.
+## The stone press before the house of the arches, its bed of box; the bed of cypresses with its low railing, the tall
+## lamp; the monolith with its bench and trough, and the round seat with its table, on the slate south of the walk.
 func _west() -> void:
-	# the millstone on edge and the cone of stone beside it, on a round base of two slabs (moved east until clear of the corner's streets)
-	var ms := Vector2(-3.0, -9.0)
-	while car_dist(spot(ms.x, ms.y)) < 1.7 and ms.x < 6.0:
-		ms.x += 0.5
-	if ms.x < 6.0:
-		var g := ground(ms.x, ms.y) + LIFT_PLAZA
-		drum(Vector3(ms.x, g, ms.y), 1.45, 1.45, 0.1, "granito", 20)
-		drum(Vector3(ms.x + 0.15, g + 0.1, ms.y), 1.2, 1.2, 0.08, "granito", 18)
-		var keep := _xf
-		_xf = Transform3D(Basis(Vector3.RIGHT, PI / 2.0).rotated(Vector3.UP, -0.8), Vector3(ms.x - 0.35, g + 0.18 + 0.78, ms.y - 0.1))
-		drum(Vector3(0, -0.15, 0), 0.78, 0.78, 0.3, "granito", 20)                # (the millstone, upright: its axis across)
-		drum(Vector3(0, 0.15, 0), 0.16, 0.16, 0.02, 0x8f8a82, 10)               # (its eye)
-		_xf = keep
-		drum(Vector3(ms.x + 0.55, g + 0.18, ms.y + 0.25), 0.62, 0.05, 0.95, "granito", 3)       # (the cone, three-sided)
-		solid(Vector3(ms.x, g + 0.6, ms.y), Vector3(2.2, 1.2, 1.6))
-		yard.append(spot(ms.x, ms.y))
+	_press()
 	# the bed of box before the house's east part
 	var bx0 := 4.5
 	var bx1 := 12.0
@@ -620,49 +618,8 @@ func _west() -> void:
 		solid(Vector3(tl.x, gt + 2.0, tl.y), Vector3(0.3, 4.0, 0.3))
 		yard.append(spot(r0.x, r0.y))
 		yard.append(spot(r1.x, r1.y))
-	# the stone and the carved trunk, on their bases
-	var st := Vector2(12.2, 3.3)
-	var gs := ground(st.x, st.y) + LIFT_PLAZA
-	cbox(Vector3(st.x, gs + 0.1, st.y), Vector3(1.0, 0.2, 0.8), "granito")
-	var keep2 := _xf
-	_xf = Transform3D(Basis(Vector3.UP, 0.4).rotated(Vector3(0, 0, 1), 0.08), Vector3(st.x, gs + 0.2, st.y))
-	box(-0.3, 0.0, -0.22, 0.6, 1.15, 0.44, 0xd9d2c2)
-	box(-0.24, 1.15, -0.18, 0.42, 0.45, 0.36, 0xd9d2c2)
-	ball(Vector3(-0.02, 1.7, 0.0), 0.2, 0xd9d2c2, 0.9, 8, 5)
-	_xf = keep2
-	solid(Vector3(st.x, gs + 0.9, st.y), Vector3(0.9, 1.8, 0.7))
-	yard.append(spot(st.x, st.y))
-	var tr := Vector2(14.3, 3.0)
-	var gw := ground(tr.x, tr.y) + LIFT_PLAZA
-	cbox(Vector3(tr.x, gw + 0.12, tr.y), Vector3(1.9, 0.24, 0.8), "granito")
-	bar(Vector3(tr.x - 0.85, gw + 0.5, tr.y + 0.05), Vector3(tr.x + 0.55, gw + 0.56, tr.y - 0.05), 0.56, 0.5, 0x8b7f70)        # (the log, lying)
-	bar(Vector3(tr.x + 0.45, gw + 0.45, tr.y), Vector3(tr.x + 0.95, gw + 1.25, tr.y - 0.1), 0.42, 0.38, 0x8b7f70)           # (its end raised, carved)
-	bar(Vector3(tr.x - 0.2, gw + 0.7, tr.y), Vector3(tr.x - 0.45, gw + 1.15, tr.y + 0.12), 0.18, 0.16, 0x7a6e60)            # (a stub of a limb)
-	solid(Vector3(tr.x, gw + 0.6, tr.y), Vector3(1.9, 1.2, 0.8))
-	yard.append(spot(tr.x, tr.y))
-	# the round planter of rubble round the tree
-	var pc := Vector2(17.2, 4.0)
-	var gp := ground(pc.x, pc.y) + LIFT_PLAZA
-	var rr := 1.35
-	var sides := 20
-	for i in range(sides):
-		var a0 := TAU * i / sides
-		var a1 := TAU * (i + 1) / sides
-		var p0 := pc + Vector2(cos(a0), sin(a0)) * rr
-		var p1 := pc + Vector2(cos(a1), sin(a1)) * rr
-		var nn := Vector3(cos((a0 + a1) / 2.0), 0, sin((a0 + a1) / 2.0))
-		quad(Vector3(p0.x, gp - 0.1, p0.y), Vector3(p1.x, gp - 0.1, p1.y), Vector3(p1.x, gp + 0.42, p1.y), Vector3(p0.x, gp + 0.42, p0.y), "mamposteria", nn)
-		var q0 := pc + Vector2(cos(a0), sin(a0)) * (rr - 0.3)
-		var q1 := pc + Vector2(cos(a1), sin(a1)) * (rr - 0.3)
-		quad(Vector3(q0.x, gp + 0.44, q0.y), Vector3(q1.x, gp + 0.44, q1.y), Vector3(p1.x, gp + 0.44, p1.y), Vector3(p0.x, gp + 0.44, p0.y), "granito", Vector3.UP)
-		quad(Vector3(p0.x, gp + 0.42, p0.y), Vector3(p1.x, gp + 0.42, p1.y), Vector3(p1.x, gp + 0.44, p1.y), Vector3(p0.x, gp + 0.44, p0.y), "granito", nn)
-		tri(Vector3(pc.x, gp + 0.36, pc.y), Vector3(q0.x, gp + 0.36, q0.y), Vector3(q1.x, gp + 0.36, q1.y), "tierra", Vector3.UP)
-	pieces += 1
-	for k in range(5):
-		var a := TAU * k / 5.0 + 0.4
-		ball(Vector3(pc.x + cos(a) * 0.75, gp + 0.5, pc.y + sin(a) * 0.75), 0.26, "seto", 0.8, 8, 4)
-	solid(Vector3(pc.x, gp + 0.25, pc.y), Vector3(2.2, 0.5, 2.2))
-	yard.append(spot(pc.x, pc.y))
+	_monolith()
+	_mesa()
 
 # ---------------- trees ----------------
 ## the planes, elms, poplars, the acacia, the willow, the palm (none on the walk, the asphalt or past the square)
@@ -919,23 +876,329 @@ func _lamp2(at: Vector2) -> void:
 	solid(o + Vector3(0, 2.0, 0), Vector3(0.32, 4.0, 0.32))
 	yard.append(spot(at.x, at.y))
 
-# ---------------- the rockery ----------------
-## stones heaped in the north lawn by the willow, three urns of stone with their plants
-func _rockery() -> void:
-	var c := Vector2(122.2, -8.0)
+# ---------------- the pieces of stone (the user, 21 November 2026, with four pictures of March 2013: "Faltan varias
+# cosas. La prensa de piedra, el monolito de piedra, la mesa de piedra, la fuente") ----------------
+
+## a rough stone: a ball pulled out of round by a fixed noise (`salt`), its faces flat, so it reads as rock
+func _lump(mid: Vector3, rad: Vector3, key, salt: int, rough := 0.22, sides := 10, rings := 6) -> void:
+	pieces += 1
+	var rows: Array = []
+	for j in range(rings + 1):
+		var t := PI * j / rings - PI / 2.0
+		var row: Array = []
+		for i in range(sides):
+			var a := TAU * i / sides
+			var k: float = (1.0 + rough * _noise(i, j, salt)) if (j > 0 and j < rings) else 1.0
+			var ky := 1.0 + 0.5 * rough * _noise(j, i, salt + 7)
+			row.append(mid + Vector3(cos(a) * cos(t) * rad.x * k, sin(t) * rad.y * ky, sin(a) * cos(t) * rad.z * k))
+		rows.append(row)
+	for j in range(rings):
+		for i in range(sides):
+			var a: Vector3 = rows[j][i]
+			var b: Vector3 = rows[j][(i + 1) % sides]
+			var c: Vector3 = rows[j + 1][(i + 1) % sides]
+			var d: Vector3 = rows[j + 1][i]
+			var n := (c - a).cross(d - b)
+			var out := (a + b + c + d) / 4.0 - mid
+			if n.length() < 0.000001:
+				n = out
+			if n.dot(out) < 0.0:
+				n = -n
+			quad(a, b, c, d, key, n.normalized())
+
+func _noise(i: int, j: int, salt: int) -> float:
+	var h := sin(float(i) * 12.9898 + float(j) * 78.233 + float(salt) * 37.719) * 43758.5453
+	return (h - floor(h)) * 2.0 - 1.0
+
+## a curved low wall about c (in the frame) from angle a0 to a1 (radians from +x towards +z), between radii r0 and r1,
+## from y0 to y1; its top in `cap`, its ends closed unless it goes all round
+func _arc(c: Vector2, r0: float, r1: float, a0: float, a1: float, y0: float, y1: float, key, cap, n := 12) -> void:
+	pieces += 1
+	for i in range(n):
+		var t0 := lerpf(a0, a1, float(i) / n)
+		var t1 := lerpf(a0, a1, float(i + 1) / n)
+		var d0 := Vector2(cos(t0), sin(t0))
+		var d1 := Vector2(cos(t1), sin(t1))
+		var o0 := c + d0 * r1
+		var o1 := c + d1 * r1
+		var i0 := c + d0 * r0
+		var i1 := c + d1 * r0
+		var nm := Vector3(cos((t0 + t1) / 2.0), 0, sin((t0 + t1) / 2.0))
+		quad(Vector3(o0.x, y0, o0.y), Vector3(o1.x, y0, o1.y), Vector3(o1.x, y1, o1.y), Vector3(o0.x, y1, o0.y), key, nm)
+		if r0 > 0.01:
+			quad(Vector3(i0.x, y0, i0.y), Vector3(i1.x, y0, i1.y), Vector3(i1.x, y1, i1.y), Vector3(i0.x, y1, i0.y), key, -nm)
+		quad(Vector3(i0.x, y1, i0.y), Vector3(i1.x, y1, i1.y), Vector3(o1.x, y1, o1.y), Vector3(o0.x, y1, o0.y), cap, Vector3.UP)
+	if a1 - a0 < TAU - 0.01:
+		for e in [[a0, -1.0], [a1, 1.0]]:
+			var ea: float = e[0]
+			var d := Vector2(cos(ea), sin(ea))
+			var tn: Vector2 = Vector2(-d.y, d.x) * float(e[1])
+			var p := c + d * r0
+			var q := c + d * r1
+			quad(Vector3(p.x, y0, p.y), Vector3(q.x, y0, q.y), Vector3(q.x, y1, q.y), Vector3(p.x, y1, p.y), key, Vector3(tn.x, 0, tn.y))
+
+## solids along an arc (for people and cars to run into), a box to each step
+func _arc_solids(c: Vector2, r: float, a0: float, a1: float, y: float, tall: float, thick: float, n: int) -> void:
+	for i in range(n):
+		var t := lerpf(a0, a1, (i + 0.5) / n)
+		var p := c + Vector2(cos(t), sin(t)) * r
+		solid(Vector3(p.x, y + tall / 2.0, p.y), Vector3(r * (a1 - a0) / n + 0.05, tall, thick), -t - PI / 2.0)
+
+## The stone press of the corner, as it was in March 2013 (by 2024 an upright millstone and a cone of stone stood there):
+## a round plinth of rubble under its coping, the bed stone on it, three cones of stone lying on it round an iron pole,
+## each on its axle with the iron plate of its eye, and the ring of iron that joins the axles' ends. Moved east until
+## clear of the corner's streets as the game lays them.
+func _press() -> void:
+	var ms := Vector2(-3.0, -9.0)
+	while car_dist(spot(ms.x, ms.y)) < 1.9 and ms.x < 6.0:
+		ms.x += 0.5
+	if ms.x >= 6.0:
+		return
+	var g := ground(ms.x, ms.y) + LIFT_PLAZA
+	drum(Vector3(ms.x, g - 0.25, ms.y), 1.55, 1.55, 0.67, "mamposteria", 22)
+	drum(Vector3(ms.x, g + 0.42, ms.y), 1.62, 1.62, 0.07, "granito", 22)              # (its coping)
+	drum(Vector3(ms.x, g + 0.49, ms.y), 1.27, 1.27, 0.15, "granito", 22)              # (the bed stone)
+	var yb := g + 0.64
+	var ends: Array = []
+	for k in range(3):
+		var a := 1.6 + TAU * k / 3.0                                                   # (one pointing at the house, as in the picture)
+		var d := Vector2(cos(a), sin(a))
+		var p0 := Vector3(ms.x + d.x * 0.2, yb + 0.24, ms.y + d.y * 0.2)
+		var p1 := Vector3(ms.x + d.x * 1.08, yb + 0.56, ms.y + d.y * 1.08)
+		var ax := (p1 - p0).normalized()
+		var ln := p0.distance_to(p1)
+		var keep := _xf
+		_xf = Transform3D(Basis(Quaternion(Vector3.UP, ax)), p0)
+		drum(Vector3.ZERO, 0.24, 0.56, ln, "granito", 18)                              # (the cone, its big end out)
+		drum(Vector3(0, ln, 0), 0.19, 0.19, 0.025, 0x2e2c2a, 12)                        # (the iron plate of its eye)
+		var dn := _xf.basis.inverse() * Vector3.DOWN                                   # (and its rust, run down the face)
+		var sd := Vector2(dn.x, dn.z).normalized()
+		var pr := Vector2(-sd.y, sd.x) * 0.045
+		var q0 := sd * 0.17
+		var q1 := sd * 0.5
+		quad(Vector3(q0.x - pr.x, ln + 0.006, q0.y - pr.y), Vector3(q0.x + pr.x, ln + 0.006, q0.y + pr.y),
+				Vector3(q1.x + pr.x * 1.5, ln + 0.006, q1.y + pr.y * 1.5), Vector3(q1.x - pr.x * 1.5, ln + 0.006, q1.y - pr.y * 1.5), 0x6b3c24, Vector3.UP)
+		_xf = keep
+		ends.append(p1 + ax * 0.09)
+	drum(Vector3(ms.x, yb, ms.y), 0.045, 0.04, 2.3, IRON, 8)                            # (the pole)
+	for e in ends:
+		bar(Vector3(ms.x, yb + 0.2, ms.y), e, 0.045, 0.045, IRON)                       # (the axles)
+	var rr := 1.3
+	var ry := yb + 0.6
+	for i in range(18):                                                                  # (the ring)
+		var t0 := TAU * i / 18.0
+		var t1 := TAU * (i + 1) / 18.0
+		bar(Vector3(ms.x + cos(t0) * rr, ry, ms.y + sin(t0) * rr), Vector3(ms.x + cos(t1) * rr, ry, ms.y + sin(t1) * rr), 0.035, 0.035, IRON)
+	for e in ends:
+		var f: Vector3 = e
+		var h := Vector2(f.x - ms.x, f.z - ms.y).normalized() * rr
+		bar(f, Vector3(ms.x + h.x, ry, ms.y + h.y), 0.035, 0.035, IRON)
+	solid(Vector3(ms.x, g + 0.7, ms.y), Vector3(2.5, 1.6, 2.5))
+	solid(Vector3(ms.x, g + 0.7, ms.y), Vector3(2.5, 1.6, 2.5), PI / 4.0)
+	yard.append(spot(ms.x, ms.y))
+
+## The monolith on the slate south of the walk (March 2013): a tall rough stone, broad at its foot and spreading east, a
+## smear of red paint on it; a long bench of granite beside it at the walk's edge and a trough of stone for plants.
+func _monolith() -> void:
+	var mo := Vector2(12.4, 1.7)
+	if _on_road(mo.x, mo.y, 1.5):
+		return
+	var g := ground(mo.x, mo.y) + LIFT_PLAZA
+	var keep := _xf
+	_xf = Transform3D(Basis(Vector3.UP, -0.25), Vector3(mo.x, g, mo.y))
+	_lump(Vector3(0.25, 0.16, 0.0), Vector3(0.85, 0.3, 0.55), "roca", 3, 0.25)           # (its foot, spreading)
+	_lump(Vector3(0.8, 0.1, 0.08), Vector3(0.45, 0.2, 0.34), "roca", 5, 0.3)
+	_lump(Vector3(-0.05, 0.85, 0.0), Vector3(0.45, 0.72, 0.4), "roca", 11, 0.2)          # (its body)
+	_lump(Vector3(-0.13, 1.47, 0.03), Vector3(0.34, 0.45, 0.31), "roca", 17, 0.22)
+	_lump(Vector3(-0.06, 1.95, 0.0), Vector3(0.22, 0.26, 0.23), "roca", 23, 0.25)        # (its head)
+	cbox(Vector3(-0.02, 0.95, -0.4), Vector3(0.13, 0.32, 0.04), 0xb02a26)                 # (the red paint)
+	_xf = keep
+	solid(Vector3(mo.x + 0.15, g + 1.0, mo.y), Vector3(1.3, 2.0, 1.0))
+	yard.append(spot(mo.x, mo.y))
+	_stone_bench(Vector2(10.4, vc(10.4) + WALK_HALF + 0.55))
+	var tg := Vector2(10.6, 1.3)                                                           # the trough
+	var gt := ground(tg.x, tg.y) + LIFT_PLAZA
+	cbox(Vector3(tg.x, gt + 0.2, tg.y), Vector3(1.05, 0.4, 0.58), "granito")
+	cbox(Vector3(tg.x, gt + 0.405, tg.y), Vector3(0.85, 0.02, 0.4), "tierra")
+	for k in range(3):
+		ball(Vector3(tg.x - 0.28 + k * 0.28, gt + 0.5, tg.y + (0.05 if k == 1 else -0.04)), 0.12, 0x6a6242, 1.3, 6, 4)    # (its dry plants)
+	solid(Vector3(tg.x, gt + 0.2, tg.y), Vector3(1.05, 0.4, 0.58))
+	yard.append(spot(tg.x, tg.y))
+
+## The stone table (March 2013): a round seat of rubble under a coping of stone, open to the east and the west, its
+## south half (towards the Paseo) with a back; in the middle the table, a round stone on a foot that widens upwards.
+func _mesa() -> void:
+	var c := Vector2(17.9, 1.2)
 	if _on_road(c.x, c.y, 2.0):
 		return
-	var g := ground(c.x, c.y) + LIFT_LAWN
-	var rocks: Array = [[0.0, 0.0, 0.75], [0.9, 0.4, 0.5], [-0.8, 0.3, 0.55], [0.4, -0.7, 0.45], [-0.5, -0.6, 0.5], [1.4, -0.3, 0.35], [-1.4, -0.1, 0.4], [0.2, 0.9, 0.38]]
-	for r in rocks:
-		ball(Vector3(c.x + r[0], g + float(r[2]) * 0.35, c.y + r[1]), r[2], 0x8d877c, 0.7, 7, 4)
-	for u in [Vector2(0.1, 0.0), Vector2(-1.1, 0.5), Vector2(1.2, 0.2)]:
-		var p: Vector2 = c + u
-		var y: float = g + (0.55 if u.length() < 0.5 else 0.25)
-		drum(Vector3(p.x, y, p.y), 0.12, 0.2, 0.32, "granito", 10)
-		ball(Vector3(p.x, y + 0.42, p.y), 0.2, "seto", 0.8, 8, 4)
-	solid(Vector3(c.x, g + 0.4, c.y), Vector3(2.8, 0.8, 1.8))
+	var g := ground(c.x, c.y) + LIFT_PLAZA
+	var gap := 0.42
+	_arc(c, 1.1, 1.5, gap, PI - gap, g - 0.15, g + 0.44, "mamposteria", "granito", 10)            # (south: the seat...)
+	_arc(c, 1.3, 1.5, gap, PI - gap, g + 0.44, g + 0.8, "mamposteria", "granito", 10)             # (...and its back)
+	_arc(c, 1.1, 1.5, PI + gap, TAU - gap, g - 0.15, g + 0.44, "mamposteria", "granito", 10)      # (north: the seat)
+	drum(Vector3(c.x, g - 0.05, c.y), 0.28, 0.4, 0.72, "granito", 16)
+	drum(Vector3(c.x, g + 0.67, c.y), 0.55, 0.55, 0.09, "granito", 20)
+	_arc_solids(c, 1.3, gap, PI - gap, g, 0.8, 0.4, 4)
+	_arc_solids(c, 1.3, PI + gap, TAU - gap, g, 0.44, 0.4, 4)
+	solid(Vector3(c.x, g + 0.38, c.y), Vector3(0.8, 0.76, 0.8))
 	yard.append(spot(c.x, c.y))
+
+## The fountain of the east part (March 2013, before the willow and the palm): a pond of clean water ringed by a low
+## wall of tufa, pillars of tufa round it with white bowls of plants on them and chains hung between them, a heap of tufa
+## in the middle with a white statue on it; slate round it, to the walk's band.
+func _fountain() -> void:
+	var cx := 128.3
+	var north := -99.0                   # (the north edge as the game has it: the lane runs ~2 m nearer than the real one)
+	for i in range(-3, 4):
+		north = maxf(north, vn(cx + i * 0.8))
+	var walk := vc(cx) - WALK_HALF - 0.3             # (it may take some of the slate band, never the walk)
+	var r := minf(2.25, (walk - north - 0.4) / 2.0)  # (the outside of its wall)
+	if r < 1.5:
+		return
+	var c := Vector2(cx, clampf(vc(cx) - WALK_HALF - BAND - 0.4 - r, north + 0.4 + r, walk - r))
+	if car_dist(spot(c.x, c.y)) < r + 0.2:
+		return
+	var f := r / 2.25
+	var pts: Array = []
+	for k in range(28):
+		var a := TAU * k / 28.0
+		var p := c + Vector2(cos(a), sin(a)) * (r + 0.75)
+		p.y = clampf(p.y, vn(p.x) + 0.2, vc(p.x) - WALK_HALF - BAND)
+		pts.append(p)
+	_lay(pts, "losas", LIFT_LAWN + 0.012)
+	var g := ground(c.x, c.y) + LIFT_LAWN + 0.012
+	drum(Vector3(c.x, g - 0.1, c.y), r - 0.4, r - 0.4, 0.3, "agua", 24)                # (the water, a hand under the wall's top)
+	_arc(c, r - 0.45, r, 0.0, TAU, g - 0.1, g + 0.28, "toba", "toba", 24)                # the low wall...
+	for k in range(20):                                                                  # (...rough with tufa)
+		var a := TAU * k / 20.0 + 0.12 * _noise(k, 1, 31)
+		_lump(Vector3(c.x + cos(a) * (r - 0.23), g + 0.3, c.y + sin(a) * (r - 0.23)), Vector3(0.3, 0.15 + 0.05 * _noise(k, 2, 31), 0.26), "toba", 40 + k, 0.3, 8, 4)
+	var posts: Array = []
+	for k in range(8):                                                                   # the pillars, their bowls
+		var a := 0.2 + TAU * k / 8.0
+		var p := c + Vector2(cos(a), sin(a)) * (r - 0.2)
+		_lump(Vector3(p.x, g + 0.33, p.y), Vector3(0.23, 0.32, 0.22), "toba", 60 + k, 0.3, 9, 5)
+		_lump(Vector3(p.x, g + 0.76, p.y), Vector3(0.18, 0.26, 0.17), "toba", 70 + k, 0.3, 9, 5)
+		drum(Vector3(p.x, g + 0.97, p.y), 0.13, 0.27, 0.2, 0xeeebe4, 14)
+		drum(Vector3(p.x, g + 1.15, p.y), 0.24, 0.24, 0.015, "tierra", 12)
+		ball(Vector3(p.x, g + 1.27, p.y), 0.19, "seto", 0.7, 8, 4)
+		posts.append(p)
+	for k in range(8):                                                                   # the chains, hung between them
+		var a: Vector2 = posts[k]
+		var b: Vector2 = posts[(k + 1) % 8]
+		var prev := Vector3(a.x, g + 0.7, a.y)
+		for i in range(1, 7):
+			var t := i / 6.0
+			var q := a.lerp(b, t)
+			var cur := Vector3(q.x, g + 0.7 - 0.2 * sin(PI * t), q.y)
+			bar(prev, cur, 0.025, 0.025, 0x2a2826)
+			prev = cur
+	_lump(Vector3(c.x, g + 0.25, c.y), Vector3(0.85, 0.45, 0.8) * f, "toba", 81, 0.3)    # the heap in the middle
+	_lump(Vector3(c.x + 0.05, g + 0.7, c.y - 0.03), Vector3(0.6, 0.4, 0.55) * f, "toba", 82, 0.3)
+	_lump(Vector3(c.x - 0.03, g + 1.1, c.y), Vector3(0.4, 0.36, 0.38), "toba", 83, 0.3)
+	_lump(Vector3(c.x, g + 1.45, c.y + 0.02), Vector3(0.26, 0.24, 0.25), "toba", 84, 0.3)
+	for k in range(6):                                                                   # (stones in the water)
+		var a := 0.5 + TAU * k / 6.0
+		_lump(Vector3(c.x + cos(a) * 1.25 * f, g + 0.18, c.y + sin(a) * 1.25 * f), Vector3(0.24, 0.17, 0.21), "toba", 90 + k, 0.3, 8, 4)
+	_statue(Vector3(c.x, g + 1.62, c.y), g + 0.2, f)                                     # the statue on it, its water running down
+	solid(Vector3(c.x, g + 0.5, c.y), Vector3(1.9 * r, 1.0, 1.9 * r))
+	solid(Vector3(c.x, g + 0.5, c.y), Vector3(1.9 * r, 1.0, 1.9 * r), PI / 4.0)
+	yard.append(spot(c.x, c.y))
+
+## The statue of the fountain. First the user said (21 November 2026): "la estatua de la fuente es de una mujer
+## desnuda con un jarrón de donde sale el agua que cae a la fuente". Then: "vamos a sustituirlo por una figura de
+## mármol de una mujer al estilo de nuestros personajes. Igual que con la estatua de bronce del fraile". So she is one
+## of the game's own figures (chara.gd, as santaana.gd's friar), a woman with her hair up and nothing on, cast whole
+## in white marble. She holds the pitcher on her left shoulder with that hand, her head leant towards it, and the other
+## hand before her (Street View, March 2013). From the pitcher's mouth the water falls by her side onto the heap and runs
+## down the tufa into the pond. `pond` is the water's height; `f` is how much the heap was shrunk to fit. She faces the
+## walk (+z in this frame).
+const STATUE_SCALE := 0.55               # (the game's people stand ~1.9 m: the real statue is about a metre)
+var statue: Node3D
+func _statue(at: Vector3, pond: float, f: float) -> void:
+	var keep := _xf
+	_xf = Transform3D(Basis.IDENTITY, at)
+	drum(Vector3(0, -0.02, 0), 0.2, 0.18, 0.1, 0xeeebe4, 12)                             # (its little base)
+	_xf = keep
+	var tone := 0xeeebe4
+	var who = Chara.new()
+	who.setup({"shirt": tone, "skin": tone, "hair": tone, "shoes": tone, "socks": tone, "hair_style": 1, "face": 0, "brows": 0,
+			"top": 0, "eye_color": tone, "lashes": 1, "shoe_type": 3})
+	var pivot := Vector3(0, 0.95, 0)                    # her head leant a little towards the pitcher
+	var tilt := Basis(Vector3(0, 0, 1), -0.12)
+	who.neck.transform = Transform3D(tilt, pivot - tilt * pivot)
+	who._hr.position = Vector3(0.54, 0.98, 0.1)          # the hand under the pitcher, on her left
+	who._hl.position = Vector3(-0.26, 0.6, 0.31)         # the other before her
+	var figure: Node3D = who.vis
+	who.remove_child(figure)
+	who.free()
+	var jar := Vector3(0.7, 1.12, 0.02)                  # the pitcher, its mouth tipped out and down
+	var d := Vector3(0.75, -0.55, 0.3).normalized()
+	var turn := Quaternion(Vector3.UP, d)
+	for piece in [["ball", jar, Vector3(0.17, 0.22, 0.17)], ["cyl", jar + d * 0.25, Vector3(0.07, 0.14, 0.07)],
+			["cyl", jar + d * 0.325, Vector3(0.095, 0.03, 0.095)]]:
+		var m := Parts.part(piece[0], tone, piece[1], piece[2])
+		m.quaternion = turn
+		figure.add_child(m)
+	var marble := StandardMaterial3D.new()
+	marble.albedo_color = Color(0.94, 0.93, 0.9)
+	marble.roughness = 0.35
+	marble.rim_enabled = true
+	marble.rim = 0.25
+	marble.emission_enabled = true                       # (so that it reads as white stone in the willow's shade too)
+	marble.emission = Color(0.42, 0.41, 0.39)
+	marble.emission_energy_multiplier = 0.25
+	var todo: Array = [figure]
+	while not todo.is_empty():
+		var n: Node = todo.pop_back()
+		if n is MeshInstance3D:
+			(n as MeshInstance3D).material_override = marble
+			(n as MeshInstance3D).visible = true
+		todo.append_array(n.get_children())
+	var foot := Vector3(0, 0.08, 0)
+	statue = Node3D.new()
+	statue.position = at + foot
+	statue.scale = Vector3.ONE * STATUE_SCALE
+	statue.add_child(figure)
+	add_child(statue)
+	pieces += 1
+	# the water: a thread falling from the mouth onto the heap, then running down the tufa to the pond
+	_xf = Transform3D(Basis.IDENTITY, at)
+	var mouth := foot + (jar + d * 0.34) * STATUE_SCALE
+	var top := 0.0
+	var fall: Array = []
+	for i in range(6):
+		var t := i / 5.0
+		fall.append(Vector3(mouth.x + 0.1 * t, lerpf(mouth.y, top + 0.02, t * t), mouth.z + 0.04 * t))
+	for i in range(5):
+		_limb(fall[i], fall[i + 1], 0.01, 0.014, 0xdff0f6, 6)
+	var heap: Array = [[-1.37, 0.85 * f, 0.45 * f, 0.0], [-0.92, 0.6 * f, 0.4 * f, 0.05], [-0.52, 0.4, 0.36, -0.03], [-0.17, 0.26, 0.24, 0.0]]
+	var run: Array = [fall[5]]           # (the heap's stones as _fountain lays them: their middle's height, x and y radii, x offset)
+	var y: float = fall[5].y - 0.08
+	var x: float = fall[5].x
+	while y > pond - at.y + 0.04:
+		for hp in heap:
+			var q: float = (y - float(hp[0])) / float(hp[2])
+			if absf(q) < 1.0:
+				x = maxf(x, float(hp[3]) + float(hp[1]) * sqrt(1.0 - q * q) + 0.04)
+		run.append(Vector3(x, y, 0.05))
+		y -= 0.08
+	run.append(Vector3(x + 0.05, pond - at.y + 0.01, 0.05))
+	for i in range(run.size() - 1):
+		_limb(run[i], run[i + 1], 0.016, 0.02, "agua", 6)
+	_xf = keep
+
+## a round piece from a to b (in the frame being built), ra thick at a and rb at b
+func _limb(a: Vector3, b: Vector3, ra: float, rb: float, key, sides := 8) -> void:
+	var run := b - a
+	if run.length() < 0.001:
+		return
+	if run.normalized().y < -0.999:          # (straight down: from the other end, the turn from UP is not defined)
+		_limb(b, a, rb, ra, key, sides)
+		return
+	var keep := _xf
+	_xf = keep * Transform3D(Basis(Quaternion(Vector3.UP, run.normalized())), a)
+	drum(Vector3.ZERO, ra, rb, run.length(), key, sides)
+	_xf = keep
 
 # ---------------- the map's own trees ----------------
 ## the trees the map plants in the park go (this plants its own where the orthophoto has them)

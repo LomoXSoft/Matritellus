@@ -42,6 +42,8 @@ const MatiasS = preload("res://scripts/matias.gd")
 const CristopradoS = preload("res://scripts/cristoprado.gd")
 const ResidenciaS = preload("res://scripts/residencia.gd")
 const PaseoS = preload("res://scripts/paseo.gd")
+const SiloS = preload("res://scripts/silo.gd")
+const CasaFueraS = preload("res://scripts/casa_fuera.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
@@ -137,6 +139,8 @@ var matias                      # the house of the Calle de Matías Pérez, buil
 var cristoprado                 # the hermitage of the Cristo del Prado, built by hand (cristoprado.gd)
 var residencia                  # the old people's home beside it, built by hand (residencia.gd)
 var paseo                       # the long park of the Paseo del Cristo, from the Calle de los Arcos to the hermitage (paseo.gd)
+var casa_fuera                  # the house you inherit, Calle de Alemania 5, in its six states (casa_fuera.gd: set_state)
+var silo                        # the Silo del Tío Anaranjao, its wall and gate on the Calle de San Agustín (silo.gd; its inside: silo_dentro.gd)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
@@ -150,7 +154,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -250,6 +254,17 @@ func _build_residencia() -> void:
 		return
 	residencia = ResidenciaS.new()     # (the old people's home of the Cristo del Prado: residencia.gd)
 	residencia.build(self)
+
+func _build_casa_fuera() -> void:
+	for hd in MapData.houses:        # (the house you inherit, in its six states: casa_fuera.gd, on its house of the map)
+		if String(hd["id"]) == CasaFueraS.HOUSE:
+			casa_fuera = CasaFueraS.new()
+			casa_fuera.build(self, hd)
+			return
+
+func _build_silo() -> void:
+	silo = SiloS.new()               # (the Silo del Tío Anaranjao: silo.gd, its wall found at load along the pavement; no rebake)
+	silo.build(self)
 
 func _build_paseo() -> void:
 	paseo = PaseoS.new()             # (the park of the Paseo del Cristo: paseo.gd, laid over the map's ground, grass and footway; no rebake)

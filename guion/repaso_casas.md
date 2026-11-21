@@ -476,6 +476,126 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
   - Bajada del Rollo 4: derribada (Street View de 2026: solar con valla de obra); en el juego sigue la casa genérica del Catastro;
   - Prolongación 28: da al Camino de Consuegra, no a esta calle; sale genérica junto al 26.
 
+## Calle de la Rosa del Salvador
+
+- **El lado par, del 20 al final:** la calle del mapa va 3 o 4 m más al sur que la de verdad y pasa por encima de las fachadas del Catastro. Los frentes van donde el horneado dejaba la pared genérica, y `clear` 6 quita lo de la parcela que queda bajo la calzada.
+- **Cajas hechas a mano (`rc: null`):** el Catastro no da plantas al 9 ni al 18 (el juego dejaba un hueco). Tampoco a la entrada del garaje de la trasera de Sevilla 7 (`rsa_10g`). El cobertizo del 34 (`rsa_34`) se hace igual, porque su parcela queda bajo la calle.
+- **Traseras de casas de otras calles:**
+  - `rsa_s7`, `rsa_s9`, `rsa_24` y `rsa_36` son de casas de la calle de Sevilla, y `rsa_44` de una de la calle del Cristo.
+  - Llevan `reach`, así que lo que tienen en la otra calle sigue siendo casa genérica.
+  - En las hojas, la foto del Catastro de estas casas es la de su fachada de la otra calle.
+- **`rsa_24`:** el único Street View de ese punto es de 2013; el de 2024 del 22 enseña la misma tapia.
+- **`rsa_30`:** el trozo marrón de la ventana con reja es de una planta; en el juego todo el frente tiene dos.
+- **El 38:** la puerta gris con cenefa entre el 36 y el 40 no tiene sitio en los frentes del Catastro y no sale.
+- **`rsa_15`:** la cenefa de rombos blancos son dos tiras blancas lisas.
+- **`rsa_33`:** el ladrillo claro sale más tostado.
+- **`rsa_3`:** reformada; se ha seguido Street View (2024), con aplacado de piedra gris arriba.
+- **`rsa_5`:** la foto del Catastro es de la casa de al lado; se ha seguido Street View.
+- **Sin hacer:**
+  - las esquinas con el Cristo (Cristo 34, 38 y 40) y Sevilla 35: quedan para la calle del Cristo;
+  - en el lado impar, entre el 21 y el 27 y entre el 27 y el 33: son traseras de casas de la calle de Granada ya hechas (`gra_30`, `gra_38`) y un trozo sin plantas en el Catastro.
+
+## Calle de Sevilla
+
+- **Parcelas que dan también a la Rosa del Salvador** (`sev_7`, `sev_9`, `sev_19`, `sev_29`): su trasera es una entrada `rsa_*` con `reach`. Desde el 21/11, `house_of` de `bake_godot.py` pasa a la siguiente entrada de la misma referencia cuando la parte cae fuera del `reach` de la primera.
+- **Cambiadas desde las fotos del Catastro; se ha seguido Street View (2024):**
+  - el 8: casa nueva de 2022; solo se ve en parte, y la puerta es supuesta;
+  - el bloque del 6 (`sev_x6`): ahora enfoscado en terracota, antes ladrillo visto;
+  - el 18 D: pintado de rojo;
+  - el 10: con cenefas verdes;
+  - el 32: verde menta.
+- **`sev_34`:** la foto del Catastro es de otra casa (una esquina); se ha seguido Street View.
+- **`sev_7`:** el portal hondo con escalones sale como una puerta lisa.
+- **`sev_21`:** el mirador redondo sale plano; la escalera de fuera sí está.
+- **`sev_31`:** las ventanas en cajón del piso de arriba salen planas, con marco gris.
+- **`sev_20`:** el Catastro le da dos plantas y la foto enseña tres; lleva tres.
+- **Sin hacer:** Cristo 44 (en la esquina con el Cristo), Cristo 41, 43 y 45 y Doctor Fleming 25: quedan para la calle del Cristo.
+
+## Calle del Cristo (de la Mayordomía a la Travesía del Cristo)
+
+- **Fotos del Catastro cambiadas de casa al final del lado impar:** la del 45 es la parte norte del 41, y la del 35 es de otra casa. Se han seguido las placas que se ven en Street View (2024).
+- **Tiendas:** la pastelería del 5 y la tienda de electricidad de la esquina del 38 llevan solo lo que venden (PASTELERIA, ELECTRICIDAD), sin el nombre. El letrero del 38 sale como una tira amarilla estrecha.
+- **`cri_9`:** el Catastro le da una y dos plantas; la foto enseña tres, y lleva tres. Los arcos de ladrillo sobre los miradores blancos no salen.
+- **`cri_x11`:** el bloque amarillo con tiendas abajo; los escaparates salen sin letrero.
+- **`cri_23`:** reformada; se ha seguido Street View, con su cenefa de rombos blancos.
+- **`cri_xb`:** el bloque de pisos de la curva lleva un frente recto de 28 m. Su trozo norte, de ladrillo y con una cochera gris, queda como pared lateral con ventanas lisas.
+- **`cri_41`:** los cajones de piedra del ladrillo salen como ladrillo liso.
+- **`cri_x37`:** es una tira de 2 m del Catastro; lleva el mismo aspecto que la casa de al lado (`cri_x39`).
+- **`cri_24`:** el Catastro le da tres plantas y en la foto solo se ven dos; lleva tres.
+- **Sin hacer:**
+  - el 3 es la nave de la Mayordomía, hecha a mano (`mayordomia.gd`);
+  - Paz 1 y Doctor Fleming 22 dan a sus calles;
+  - al sur de la Travesía del Cristo empiezan el parque, la ermita y la Residencia de Edificios Especiales.
+
+## Calle del Doctor Fleming
+
+- **Fotos del Catastro viejas** (hacia 2010): se ha seguido Street View (2024) donde la casa ha cambiado:
+  - el 3 y el 4 están hechos de nuevo (el 3, de ladrillo claro con alero de canecillos y una galería arriba; el 4, blanco con un cajón de madera en la ventana);
+  - el 1, el 21 y el 21 D están pintados de blanco.
+- **`fle_23`:** es la tapia de la trasera de Sevilla 34; solo lleva su parte de una planta, y las de dos siguen siendo de `sev_34`.
+- **`fle_6`:** la tapia con portón de una parcela del Paseo del Cristo (`reach` 6); su casa del Paseo queda como está.
+- **`fle_25`:** la tapia de la esquina lleva la pintada de una peña donde la foto tiene un grafiti.
+- **`fle_4`:** el cajón de madera de la ventana de arriba sale como un parche marrón plano.
+- **`fle_10`:** los escaparates de abajo salen como huecos de tienda lisos; la puerta de madera de cuarterones sale lisa.
+- **Sin hacer:** Paseo del Cristo 2 y 48 (dan al Paseo, junto al parque de Edificios Especiales).
+
+## Calle de la Vega
+
+- **Las adosadas del lado sur** (`veg_x1`, `veg_x3`, `veg_x5`, `veg_x7`): el Catastro da cada hilera como una sola parcela sin número, de cuatro o dos casas. Cada entrada pinta sus casas una a una (garaje bajo el porche, escalera, un color por casa), con colores tomados de Street View (2024). La verja de hierro y el murete de ladrillo de delante no salen; el ladrillo del semisótano sale más naranja.
+- **`veg_3d`:** el almacén de 2007 no tiene foto en el Catastro; se ha seguido Street View: tapia larga de ladrillo con ventanucos.
+- **`veg_6`:** el cuerpo de tres plantas llega a la calle; las tiras de una planta de delante van dentro del mismo frente.
+- **`veg_sap25`:** la esquina con la calle de Santiago Apóstol; su cara a Santiago queda genérica.
+- **Fotos del Catastro del lado norte:** se ha comprobado con Street View que siguen igual (el 26, el 16, el 14, el 12, el 8 y el 6).
+
+## Calle de los Ángeles
+
+- **Esquinas de otras calles que dan a esta:** Camino de Toledo 1 (`ang_tol1`), Virgen de la Paloma 1 (`ang_vp1`) y el almacén de Bajada del Florido 25 (`ang_bf25`, que no tiene fachada a la Bajada).
+- **`ang_25`:** solo lleva su casilla de la puerta verde; la tapia larga del patio, sin edificio en el Catastro, sigue genérica.
+- **`ang_19`:** el portón entre pilares de ladrillo; su frente es el de la pared genérica, porque el del Catastro es un muro 7 m más adentro.
+- **`ang_21`:** en Street View (2024) está enfoscado y con puerta verde; en la foto del Catastro era de ladrillo.
+- **`ang_14`:** el zócalo pintado en recuadros marrones con rayas blancas sale como una franja lisa.
+- **`ang_x12`:** el bloque de tres plantas de la esquina; el portón del muro de abajo sale en la misma fachada.
+- **Sin hacer:** las casas de 2007 de las calles de las Ciencias (10 y 11) y Don Pedro I (26) y la de Silos de la Magdalena 5, que solo tienen un costado a esta calle.
+
+## Calle de la Virgen de la Paloma
+
+- **Cambiadas desde las fotos del Catastro (2010–2015); se ha seguido Street View (2024):**
+  - la tapia del 3, de ladrillo en el Catastro, está enfoscada de blanco con albardilla de ladrillo;
+  - la tapia del 13 tiene un portón de chapa nuevo;
+  - de las dos casas de `vpa_x21`, la del lado del 23 está reformada en salmón y ladrillo, con persiana gris enmarcada en azulejo.
+- **Dos parcelas partidas por plantas (`only`):** la casa alta de ladrillo de `vpa_x18` (su cuarto piso, retranqueado, queda como bloque detrás) y su tapia gris (`vpa_x18g`); la esquina del 20 (`vpa_20`, dos plantas) y su parte baja (`vpa_20g`).
+- **`vpa_x18`:** las piezas de piedra blanca alrededor de los huecos salen como recercados lisos.
+- **`vpa_tol17`:** es el costado de una casa del Camino de Toledo; en el juego queda como una torre estrecha.
+- **`vpa_9`:** el balcón corrido de barandilla roja sale; el tejadillo de encima, no.
+
+## Calle de Pizarro
+
+- **El lado impar (sur):** las fachadas del Catastro quedan 2,5 m más atrás de la calle del mapa que las del lado par; el juego ya tenía allí sus paredes, así que van en su sitio.
+- **`piz_x9`:** la tapia gris con portón y la casa rosa del toldo verde son una parcela; la tapia sale de dos plantas como la casa.
+- **`piz_5d`:** de 2022, sin foto en el Catastro; se ha seguido Street View (2024).
+- **`piz_4` y `piz_4b`:** se ha comprobado con Street View cuál es cuál: el 4 es el salmón con el portón enmarcado en azulejo; el 4 B, el blanco con zócalo de granito y toldos verdes.
+- **`piz_va1`:** solo es el trozo de 5 m de la tapia de Virgen de África 1 que da a Pizarro; la tapia larga de tapial de la foto sigue genérica.
+- **`piz_va8`:** la foto del Catastro es de la casa de al lado (el 11); lleva una casa baja tostada.
+- **`piz_13`:** el ocre sale más claro que en la foto, que está a la sombra.
+
+## Travesía del Rollo y tramo norte de la Bajada del Rollo
+
+- **Las pareadas de 1995 de la Travesía** (Bajada del Rollo 30 a 44 en el Catastro): son como las de la Prolongación del Florido. El frente va paralelo a la calle en la cara del cuerpo de dos plantas, con `strip` 2,5 para quitar el porche; la verja de ladrillo y hierro de delante sale pintada en la planta baja, no como una verja suelta en la acera.
+- **Travesía 3:** una parcela con dos casas en la esquina (crema con recercados marrones, y ladrillo sobre piedra con un portón viejo) y una tapia larga de bloques a lo largo de la Travesía: dos entradas con `only` (`rol_tr3h`, `rol_tr3w`). La tapia tiene huecos bajo el remate; salen como cuadros oscuros.
+- **`rol_br3`:** reformada; en Street View (2024) está pintada de gris claro con zócalo de piedra (crema en la foto del Catastro). A su lado, la Bajada del Rollo 4 sigue derribada (solar vallado) y queda genérica.
+- **Bajada del Rollo 10 (2001):** se quitó tras mirar las hojas; su frente caía en un patio detrás del 8 y no a la calle. Sigue genérica.
+- **`rol_br19`:** la banda y el arco de mampostería salen como franjas de piedra lisa.
+- **Sin hacer:** Rollo 17 y 19 y Bajada del Rollo 28 (dan a otras calles), Nalda 25 y la Travesía 2 (un costado sin fachada propia).
+
+## Calle del Rollo y calle del Socorro
+
+- **Calle del Rollo:** las ocho casas del 17 al 47 del lado norte. Rollo 1 y Avenida de Juan Carlos I 50 quedan fuera porque son parcelas de la ermita de la Caridad, hecha a mano (`CARIDAD_RCS`).
+  - `rro_17` y `rro_45` llevan el frente de la pared genérica: el del Catastro era una tira de 1,8 m y una pared interior.
+  - `rro_47`: el ladrillo dibujado de puntas sale como ladrillo oscuro liso.
+- **Calle del Socorro:** el bloque de pisos de ladrillo del 2 y el 2 B no tiene foto en el Catastro; se ha seguido Street View (2024). El 2 B lleva dos entradas (`only`): el bloque de tres plantas y su patio de una (`soc_2y`).
+  - `soc_3`: la celosía de listones de madera sale como un panel marrón liso.
+  - Sin hacer: El Cerro 2 y Consuegra 2, que solo tienen un costado a esta calle.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

@@ -736,6 +736,15 @@ func _verja(pts: Array) -> void:
 	var last: Vector2 = pts[pts.size() - 1]
 	yard.append(spot(last.x, last.y))
 
+## a sloping face of stone (the calvario's cap): like roof() but without UVs, for a material laid by its own triplanar
+## mapping whose other pieces have none (a mesh cannot mix vertices with and without them)
+func _slope(pts: Array, key) -> void:
+	var nrm: Vector3 = ((pts[1] as Vector3) - pts[0]).cross((pts[2] as Vector3) - pts[0]).normalized()
+	if nrm.y < 0.0:
+		nrm = -nrm
+	quad(pts[0], pts[1], pts[2], pts[3], key, nrm)
+	pieces += 1
+
 ## The calvario in the park to the west: a long block of rubble with quoins of ashlar and a sloping cap, three crosses of
 ## stone on it on their stepped bases, the middle one the tallest.
 func _calvario() -> void:
@@ -756,10 +765,10 @@ func _calvario() -> void:
 				box(qx0, j * 0.45, qz0, 0.43, 0.43, 0.33, "sillar")
 	# the cap: sloping to every side from a flat top
 	var top := H + 0.32
-	roof([Vector3(-L / 2.0 - 0.05, H, Wd / 2.0 + 0.05), Vector3(L / 2.0 + 0.05, H, Wd / 2.0 + 0.05), Vector3(L / 2.0 - 0.5, top, 0.25), Vector3(-L / 2.0 + 0.5, top, 0.25)], "caliza")
-	roof([Vector3(L / 2.0 + 0.05, H, -Wd / 2.0 - 0.05), Vector3(-L / 2.0 - 0.05, H, -Wd / 2.0 - 0.05), Vector3(-L / 2.0 + 0.5, top, -0.25), Vector3(L / 2.0 - 0.5, top, -0.25)], "caliza")
-	roof([Vector3(L / 2.0 + 0.05, H, Wd / 2.0 + 0.05), Vector3(L / 2.0 + 0.05, H, -Wd / 2.0 - 0.05), Vector3(L / 2.0 - 0.5, top, -0.25), Vector3(L / 2.0 - 0.5, top, 0.25)], "caliza")
-	roof([Vector3(-L / 2.0 - 0.05, H, -Wd / 2.0 - 0.05), Vector3(-L / 2.0 - 0.05, H, Wd / 2.0 + 0.05), Vector3(-L / 2.0 + 0.5, top, 0.25), Vector3(-L / 2.0 + 0.5, top, -0.25)], "caliza")
+	_slope([Vector3(-L / 2.0 - 0.05, H, Wd / 2.0 + 0.05), Vector3(L / 2.0 + 0.05, H, Wd / 2.0 + 0.05), Vector3(L / 2.0 - 0.5, top, 0.25), Vector3(-L / 2.0 + 0.5, top, 0.25)], "caliza")
+	_slope([Vector3(L / 2.0 + 0.05, H, -Wd / 2.0 - 0.05), Vector3(-L / 2.0 - 0.05, H, -Wd / 2.0 - 0.05), Vector3(-L / 2.0 + 0.5, top, -0.25), Vector3(L / 2.0 - 0.5, top, -0.25)], "caliza")
+	_slope([Vector3(L / 2.0 + 0.05, H, Wd / 2.0 + 0.05), Vector3(L / 2.0 + 0.05, H, -Wd / 2.0 - 0.05), Vector3(L / 2.0 - 0.5, top, -0.25), Vector3(L / 2.0 - 0.5, top, 0.25)], "caliza")
+	_slope([Vector3(-L / 2.0 - 0.05, H, -Wd / 2.0 - 0.05), Vector3(-L / 2.0 - 0.05, H, Wd / 2.0 + 0.05), Vector3(-L / 2.0 + 0.5, top, 0.25), Vector3(-L / 2.0 + 0.5, top, -0.25)], "caliza")
 	flat(PackedVector2Array([Vector2(-L / 2.0 + 0.5, -0.25), Vector2(L / 2.0 - 0.5, -0.25), Vector2(L / 2.0 - 0.5, 0.25), Vector2(-L / 2.0 + 0.5, 0.25)]), top, "caliza")
 	for k in [[-1.25, 2.3], [0.0, 2.9], [1.25, 2.3]]:
 		var x: float = k[0]

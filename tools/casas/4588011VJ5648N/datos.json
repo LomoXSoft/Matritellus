@@ -1,0 +1,118 @@
+{
+ "rc": "4588011VJ5648N",
+ "record": {
+  "address": "CL ROSA SALVADOR 18 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Industrial",
+  "built_m2": "19",
+  "year": "1978",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "",
+    "m2": "19"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4588011VJ5648N_part1",
+   "floors": 0,
+   "below": 0,
+   "area": 38.9,
+   "ring": [
+    [
+     225.15,
+     329.88
+    ],
+    [
+     219.42,
+     326.84
+    ],
+    [
+     222.11,
+     321.33
+    ],
+    [
+     226.97,
+     322.47
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      225.15,
+      329.88
+     ],
+     "b": [
+      219.42,
+      326.84
+     ],
+     "len": 6.49,
+     "out": [
+      -0.469,
+      0.883
+     ],
+     "street": "",
+     "to_centre": 7.9
+    },
+    {
+     "a": [
+      219.42,
+      326.84
+     ],
+     "b": [
+      222.11,
+      321.33
+     ],
+     "len": 6.13,
+     "out": [
+      -0.899,
+      -0.439
+     ],
+     "street": "Calle de la Rosa del Salvador",
+     "to_centre": 4.33
+    },
+    {
+     "a": [
+      222.11,
+      321.33
+     ],
+     "b": [
+      226.97,
+      322.47
+     ],
+     "len": 4.99,
+     "out": [
+      0.228,
+      -0.974
+     ],
+     "street": "Calle de la Rosa del Salvador",
+     "to_centre": 1.06
+    },
+    {
+     "a": [
+      226.97,
+      322.47
+     ],
+     "b": [
+      225.15,
+      329.88
+     ],
+     "len": 7.63,
+     "out": [
+      0.971,
+      0.239
+     ],
+     "street": "Calle de la Rosa del Salvador",
+     "to_centre": 4.63
+    }
+   ],
+   "ground": [
+    -6.23,
+    -5.84
+   ]
+  }
+ ]
+}

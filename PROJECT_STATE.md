@@ -6,7 +6,9 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
-- **Parque del Paseo del Cristo (Edificios Especiales, 21/11; pendiente del visto bueno de Luis).** Hecho a mano (`paseo.gd`), sin rehorneado: se tiende sobre el suelo, el césped y la senda del mapa, y se recorta al asfalto del juego. Va de la esquina de la Calle de los Arcos a la placita de la ermita, unos 165 m. Lleva el paseo de baldosa con sus cuadros rojos, apuntado a la puerta de la ermita, las bandas de losas de pizarra, los céspedes con sus árboles, la acera ajedrezada, la plaza de ladrillo con la muela, el parterre de cipreses, la plaza del cruce, la tapia blanca, el murete con verja, la rocalla y el sauce, bancos de hierro y 22 faroles. Quita al cargar los 13 árboles del mapa que caían dentro. `paseo`: 3 ok. Hojas en `guion/fotos/paseo/`. [Detalle](TRASPASO_CLAUDE.md#parque-del-paseo-del-cristo-2111).
+- **Modelados de la línea de la casa (Edificios Especiales, 21/11; aprobados por Luis).** Encargo de Luis por Sistemas, que hace los sistemas. El cajero modelado del Banco Cantabria (`bancosancho.gd`); su interior visitable por la flecha, con la mesa del encargado (`banco_dentro.gd`); y la casa de la Calle de Alemania en seis estados, de heredada a segunda planta: fuera `casa_fuera.gd` (seis fachadas, una visible) y dentro `casa_dentro.gd` + `casa_estado.gd` (`set_state(n)` en los dos). `casa`: 4 ok; `bancosancho`: 5 ok. Hojas en `guion/fotos/casa/`. [Detalle](TRASPASO_CLAUDE.md#modelados-de-la-línea-de-la-casa-el-cajero-el-interior-del-banco-y-la-casa-en-seis-estados-2111).
+- **Silo del Tío Anaranjao (Edificios Especiales, 21/11; cerrado por Luis).** El Silo del Tío Colorao real (C. San Agustín 9), con el nombre de Luis. Fuera (`silo.gd`, sin rehorneado): la tapia blanca con teja siguiendo la acera, el portón claveteado con su cartel, rejas, y el patio con el caño y las chimeneas; el portón queda abierto y se ve la bajada. Dentro (`silo_dentro.gd`, decorado aparte por la flecha verde): la escalera empedrada, el patio hundido a 4,6 m, la cuadra, la leñera y dos viviendas, nueve estancias amuebladas de unos 4 m de alto, con la cámara bajo la bóveda, y una flor de azafrán escondida en la última alcoba. `silo`: 6 ok; `entradas`: 4 ok. Hojas en `guion/fotos/silo/`. [Detalle](TRASPASO_CLAUDE.md#silo-del-tío-anaranjao-2111).
+- **Parque del Paseo del Cristo (Edificios Especiales, 21/11; aprobado por Luis).** Hecho a mano (`paseo.gd`), sin rehorneado: se tiende sobre el suelo, el césped y la senda del mapa, y se recorta al asfalto del juego. Va de la esquina de la Calle de los Arcos a la placita de la ermita, unos 165 m. Lleva el paseo de baldosa con sus cuadros rojos, apuntado a la puerta de la ermita, las bandas de losas de pizarra, los céspedes con sus árboles, la acera ajedrezada, la plaza de ladrillo con la prensa de piedra, el parterre de cipreses, el monolito, la mesa de piedra, la plaza del cruce, la tapia blanca, el murete con verja, la fuente de rocalla con su figura de mármol (una de las nuestras, como el fraile de bronce), el sauce, bancos de hierro y 22 faroles. Quita al cargar los 13 árboles del mapa que caían dentro. `paseo`: 3 ok. Hojas en `guion/fotos/paseo/`. [Detalle](TRASPASO_CLAUDE.md#parque-del-paseo-del-cristo-2111).
 - **Residencia de mayores del Cristo del Prado (Edificios Especiales, 21/11; aprobada con el ala rehecha).** Hecha a mano (`residencia.gd`) con rehorneado: el edificio 4587301 del Catastro ya no se levanta. Lleva el bloque de tres plantas de ladrillo con mampostería, la entrada con el medio punto y la escalinata, el cuerpo redondo con la puerta de la Residencia y el ala baja. La fachada del ala a la placita se rehízo con las fotos 360 de Luis: un solo porche, y la fachada 2,85 m detrás de la línea del Catastro, según la ortofoto. `residencia`: 2 ok. Hojas en `guion/fotos/residencia/`. [Detalle](TRASPASO_CLAUDE.md#residencia-de-mayores-del-cristo-del-prado-2111).
 - **Ermita del Cristo del Prado (Edificios Especiales, 21/11; aprobada con el murete de piedra y la acera de la esquina).** Hecha a mano (`cristoprado.gd`) con rehorneado: el Catastro la tiene junto a la Residencia como un solo edificio, y solo se quitan las partes de la ermita. Lleva la fachada con su portada de piedra y el campanario, la nave, el crucero, la cabecera, la acera del Paseo con el ajedrezado y el calvario del parque. `cristoprado`: 2 ok. Hojas en `guion/fotos/cristoprado/`. [Detalle](TRASPASO_CLAUDE.md#ermita-del-cristo-del-prado-2111).
 - **Matías Pérez 16, retocada con Street View (Edificios Especiales, 21/11; aprobada: «Visto bueno»).** La casa ya iba en la 0.0.18 (`matias.gd`). Ahora tiene el ladrillo salmón a su tamaño, los sardineles del tono del muro, las persianas bajadas y visibles, las cortinas de rosas, la reja de nueve barrotes, dos cajitas blancas y el cable a la altura de los alféizares. `matias`: 2 ok. Hojas en `guion/fotos/matias/`. [Detalle](TRASPASO_CLAUDE.md#matías-pérez-16-retocada-con-street-view-2111).
@@ -181,6 +183,99 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Sin hacer: Bajada del Rollo 4 (derribada; en el juego queda la casa genérica) y la Prolongación 28 (da al Camino de Consuegra).
   - Bake (avisando a Pretil): 39 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras siguen igual. Sin partes por delante ni fachadas escondidas.
   - `casas` de las 39: 3 ok y 1 fallo (`flo_x3t`, pocas piezas); arreglado, 4 ok, y 4 ok tras los cambios de color. Hojas en `guion/fotos/tanda34/florido_sur_1..7.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). En el commit `ad86143`. La Bajada del Rollo 4 sigue genérica: el usuario no pidió el solar.
+- **Sin publicar (Texturas, 21/11): calle de la Rosa del Salvador, 35 entradas `rsa_*`.**
+  - Casas de los 60 a los 2000, de ladrillo y de enfoscado, almacenes y un bloque de pisos.
+  - Comparadas con las fotos del Catastro (2019). Con Street View (noviembre de 2024; el 24, de 2013) donde no hay foto, la foto es de otra fachada o la casa ha cambiado: 1, 3, 5, 4, 8, las traseras de Sevilla 7 y 9, 16, 22, 24, 26, 28, 30, 32, 34, 36, 40, 42 y 44.
+  - Lado par del 20 al final: la calle del mapa pasa sobre las fachadas del Catastro. Los frentes son los de la pared genérica que dejaba el horneado, con `clear` 6.
+  - Cuatro cajas a mano (`rc: null`): el 9 y el 18 (el Catastro no les da plantas y eran un hueco), la entrada del garaje de la trasera de Sevilla 7 (`rsa_10g`) y el cobertizo del 34.
+  - Traseras de casas de las calles de Sevilla y del Cristo con `reach` (`rsa_s7`, `rsa_s9`, `rsa_24`, `rsa_36`, `rsa_44`): su lado de la otra calle sigue genérico.
+  - Al compararlas se arreglaron las puertas del 1 y del 4 (las tapaba un parche) y los tonos del 6, el 15, el 21 y el 32.
+  - Sin hacer: las esquinas con el Cristo (Cristo 34, 38, 40) y Sevilla 35, para la calle del Cristo. En el lado impar quedan trozos genéricos entre el 21 y el 27 y entre el 27 y el 33: son traseras de casas de Granada ya hechas y un trozo sin plantas.
+  - Bake (avisando a Pretil): 35 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) iguales. Una holgura de la propia calle pasa de 2,3 a 2,1 m (nodo 310). Sin partes por delante (salvo las que quita `clear`) ni fachadas escondidas.
+  - `casas` de las 35: 4 ok, 0 fallos; y 4 ok tras los arreglos. Hojas en `guion/fotos/tanda34/rosa_salvador_1..6.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»).
+- **Sin publicar (Texturas, 21/11): calle de Sevilla, 36 entradas `sev_*`.**
+  - Casas de los 60 a los 2000, casi todas de dos plantas, enfoscadas o de ladrillo, un bloque de pisos y dos casas nuevas (el 8, de 2022, y el 31, de 2018).
+  - La calle del mapa coincide con el Catastro: frentes de `house_street` (el 21, a mano por delante de su escalera).
+  - Comparadas con las fotos del Catastro. Street View (noviembre de 2024) en el 5, el 7, el 15, el 21, el 31 y el 33, y en el lado par en el 6, el 8, el 10, el 18 y el 18 D, el 22, el 24, el 32 y el 34. Algunas han cambiado (el 8 es nueva; el 6, el 18 D, el 10 y el 32, de color) y se ha seguido Street View.
+  - Cuatro parcelas dan también a la Rosa del Salvador (`sev_7`, `sev_9`, `sev_19`, `sev_29`). Para que su fachada de Sevilla no quede genérica, `tools/bake_godot.py` (`house_of`) prueba la siguiente entrada de la misma referencia cuando la parte cae fuera del `reach` de la primera. Las referencias con una sola entrada hornean igual.
+  - Al compararlas se arreglaron los tonos del 13 y del 22.
+  - Sin hacer: Cristo 44 (esquina), Cristo 41, 43, 45 y Doctor Fleming 25, para la calle del Cristo.
+  - Bake (avisando a Pretil): 36 casas nuevas, ninguna quitada. Cuatro de la Rosa (`rsa_6`, `rsa_8`, `rsa_s7`, `rsa_36`) solo cambian en las aristas que tapan las casas nuevas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `casas` de las 36 y esas cuatro: 4 ok, 0 fallos; y 4 ok tras los arreglos. Hojas en `guion/fotos/tanda34/sevilla_1..6.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 21/11): calle del Cristo, de la Mayordomía a la Travesía del Cristo, 32 entradas `cri_*`.**
+  - Casas viejas encaladas o de tapial, casas de ladrillo de los 70 a 2006, dos bloques de pisos (el amarillo con tiendas del 11 y el de la curva hacia Fleming), una pastelería y una tienda de electricidad (sin nombre en los letreros).
+  - La calle del mapa coincide con el Catastro: frentes de `house_street`.
+  - Comparadas con las fotos del Catastro, y con Street View (noviembre de 2024) en el 5, el 9 y el 11, el 23, el 29, el 35 al 45, el bloque de la curva y el 38 y el 40. Al final del lado impar las fotos del Catastro están cambiadas de casa; se han seguido las placas de Street View.
+  - Al compararlas se aclaró el amarillo del bloque del 11.
+  - Sin hacer: el 3 (la nave de la Mayordomía, hecha a mano), Paz 1 y Doctor Fleming 22 (dan a sus calles), y todo lo que queda al sur de la Travesía del Cristo (el parque, la ermita y la Residencia de Edificios Especiales).
+  - Bake (avisando a Pretil): 32 casas nuevas, ninguna quitada. `argentina_42` y `argentina_b029` solo cambian en las aristas tapadas. Calles, nodos, relieve y árboles (2954) iguales. Una holgura del cruce con la Cruz pasa de 4,7 a 4,2 m.
+  - `casas` de las 32 y esas dos: 4 ok, 0 fallos; y 4 ok tras el arreglo. Hojas en `guion/fotos/tanda34/cristo_1..6.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 21/11): calle del Doctor Fleming, 24 entradas `fle_*`.**
+  - Casas de los 60 a los 80, enfoscadas en beige, tostado o salmón, algunas de ladrillo; dos casas nuevas (el 3 y el 4) y un bloque de ladrillo de tres plantas (el 10).
+  - La calle del mapa coincide con el Catastro: frentes de `house_street` (el 10, el de la pared genérica).
+  - Fotos del Catastro viejas: Street View (noviembre de 2024) en el 1, el 3, el 7, el 9, el 17 al 23 y en el 4, el 6, el 8, el 10 y el 12. Se ha seguido Street View en las casas cambiadas (el 3 y el 4, nuevas; el 1, el 21 y el 21 D, blancas).
+  - `fle_23` (trasera de Sevilla 34, solo la parte de una planta) y `fle_6` (tapia de una parcela del Paseo del Cristo, `reach` 6).
+  - Al compararlas se dieron más piezas a la tapia de la esquina (`fle_25`).
+  - Sin hacer: Paseo del Cristo 2 y 48 (dan al Paseo, junto al parque).
+  - Bake (avisando a Pretil): 24 casas nuevas, ninguna quitada. `sev_26` y `sev_28` solo cambian en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `casas` de las 24 y esas dos: 3 ok y 1 fallo (`fle_25`, pocas piezas); arreglado, 4 ok. Hojas en `guion/fotos/tanda34/fleming_1..4.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 21/11): calle de la Vega, 16 entradas `veg_*`.**
+  - Lado sur: cuatro hileras de adosadas (doce casas, garaje en semisótano, escalera al porche) y un almacén largo de ladrillo de 2007. Lado norte: casas viejas bajas de tapial y almacenes, un bloque estrecho de tres plantas y una casa de 2006.
+  - La calle del mapa coincide con el Catastro: frentes de `house_street`.
+  - Comparadas con las fotos del Catastro y con Street View (noviembre de 2024) en toda la calle; el almacén del 3 no tiene foto en el Catastro.
+  - Cada hilera de adosadas es una sola parcela del Catastro; su entrada pinta cada casa con su color.
+  - Al compararlas se bajaron los ventanucos del almacén del 3.
+  - Bake (avisando a Pretil): 16 casas nuevas, ninguna quitada. `sap_19` solo cambia en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `casas` de las 16 y `sap_19`: 4 ok, 0 fallos; y 4 ok tras el arreglo. Hojas en `guion/fotos/tanda34/vega_1..3.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»).
+- **Sin publicar (Texturas, 21/11): calle de los Ángeles, 17 entradas `ang_*`.**
+  - Casas de los 60 y 70 enfoscadas en beige y tostado, casas bajas de ladrillo, almacenes y tapias con portones, un bloque de tres plantas y una casa de 2005.
+  - La calle del mapa coincide con el Catastro: frentes de `house_street` (el 19 y el 25, de la pared genérica).
+  - Comparadas con las fotos del Catastro, y con Street View (noviembre de 2024) en el 2, el 4, el 10, el bloque del 12, el 14, el 16, el 21, el 25 y el 26.
+  - Entran tres esquinas de otras calles: Camino de Toledo 1, Virgen de la Paloma 1 y Bajada del Florido 25.
+  - Sin hacer: las casas de 2007 de Ciencias 10 y 11, Don Pedro I 26 y Silos de la Magdalena 5 (solo un costado a esta calle).
+  - Bake (avisando a Pretil): 17 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) iguales. Una holgura de la calle pasa de 2,3 a 2,2 m.
+  - `casas` de las 17: 4 ok, 0 fallos. La primera vez no arrancó porque `fondo_casa.gd` (de Sistemas, a medio escribir) no compilaba; a las 13:10 ya compilaba. Hojas en `guion/fotos/tanda34/angeles_1..3.jpg`.
+  - Visto bueno del usuario el 21/11 («Visto bueno y siguiente cuando puedas»), dado antes de ver las hojas.
+- **Sin publicar (Texturas, 21/11): calle de la Virgen de la Paloma, 20 entradas `vpa_*`.**
+  - Casas de los 60 a 2007: de ladrillo, encaladas con zócalo azul o rojo, tostadas con recercados marrones; tapias con portones y una casa alta de ladrillo con galería de arcos.
+  - La calle del mapa coincide con el Catastro: frentes de `house_street`.
+  - Comparadas con las fotos del Catastro, y con Street View (noviembre de 2024) en el 3, el 5, el 9, el 13, el 14, el 16, el 21, el 23 y el 25. Han cambiado la tapia del 3, la del 13 y una de las dos casas del 21.
+  - Dos parcelas van en dos entradas cada una (`only`): `vpa_x18` / `vpa_x18g` y `vpa_20` / `vpa_20g`.
+  - Al compararlas se dieron más piezas a la tapia del 3.
+  - Bake (avisando a Pretil): 20 entradas nuevas, ninguna quitada. `ang_vp1` solo cambia en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `casas` de las 20 y `ang_vp1`: 3 ok y 1 fallo (`vpa_3`, pocas piezas); arreglado, 4 ok. Hojas en `guion/fotos/tanda34/paloma_1..4.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 21/11): calle de Pizarro, 16 entradas `piz_*`.**
+  - Casas de los 60 a 2007 enfoscadas en salmón, ocre, blanco o tostado; tapias con portones; una casa de 2022.
+  - La calle del mapa coincide con el Catastro: frentes de `house_street`.
+  - Comparadas con las fotos del Catastro (2010–2018), y con Street View (noviembre de 2024) en el 3, el 5 A, el 5 D (sin foto en el Catastro), el 7, el 9, el 4, el 4 B, el 6 y la tapia de Virgen de África 1.
+  - Entran tres costados de otras calles: Los Ángeles 16 B, Virgen de África 1 y Virgen de África 8.
+  - Al compararlas se apagó el ocre del 13.
+  - Bake (avisando a Pretil): 16 casas nuevas, ninguna quitada. `vpa_13` solo cambia en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `casas` de las 16 y `vpa_13`: 4 ok, 0 fallos; y 4 ok tras el arreglo. Hojas en `guion/fotos/tanda34/pizarro_1..3.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»).
+- **Sin publicar (Texturas, 21/11): Travesía del Rollo y tramo norte de la Bajada del Rollo, 21 entradas `rol_*`.**
+  - En la Travesía: ocho pareadas de 1995 como las de la Prolongación del Florido (frente en la cara de dos plantas, `floors` 2, `strip` 2,5), un almacén de esquina, la parcela del 3 en dos entradas (`only`: las dos casas de la esquina y la tapia larga de bloques), el 4 y la tapia del 1. En la Bajada del Rollo: nueve casas del 3 al 19, con el bloque de tres plantas de la esquina y la de Monjas 23.
+  - Comparadas con las fotos del Catastro (2010–2015) y con Street View (noviembre de 2024) en las pareadas, el 3 y el 4 de la Travesía y el 3 y el 8 de la Bajada. El 3 de la Bajada está reformado; el 4 sigue derribado y genérico.
+  - Sin hacer: Rollo 17 y 19, Bajada del Rollo 28, Nalda 25, la Travesía 2 y la Bajada del Rollo 10 (su frente caía en un patio; se quitó tras ver las hojas).
+  - Bake (avisando a Pretil): 22 entradas nuevas; luego otro para quitar `rol_br10`. `monjas_21`, `monjas_5` y `rol_br8` solo cambian en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `casas`: el primer intento no arrancó porque `casa_dentro.gd` (de Edificios Especiales, a medio escribir) no cargaba; a las 14:05 sí: 4 ok, 0 fallos; y 4 ok tras quitar `rol_br10`. Hojas en `guion/fotos/tanda34/rollo_1..4.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»).
+- **Sin publicar (Texturas, 21/11): calle del Rollo (8 `rro_*`) y calle del Socorro (8 `soc_*`).**
+  - En el Rollo, casas de ladrillo y enfoscadas de los 70 y 80 (del 17 al 47). En el Socorro, un bloque de pisos de ladrillo de tres plantas, casas bajas de 1900 a 2011 y dos nuevas (el 3, de 2018, y el 3 A).
+  - Frentes de `house_street`, salvo `rro_17` y `rro_45`, de la pared genérica.
+  - Comparadas con las fotos del Catastro; Street View (noviembre de 2024) en el bloque del Socorro, que no tiene foto.
+  - Fuera: Rollo 1 y Juan Carlos I 50 (son de la Caridad, hecha a mano), El Cerro 2 y Consuegra 2 (solo un costado).
+  - Al compararlas se oscureció el ladrillo del bloque del Socorro.
+  - Bake (avisando a Pretil): 16 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `casas` de las 16: 4 ok, 0 fallos; y 4 ok tras el arreglo. Hojas en `guion/fotos/tanda34/rollo_socorro_1..3.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos un poco»).
 - **Pendiente:**
   - Texturas:
     - **La calle de la Cruz (`cruz_*`) salió en la 0.0.13 con 31 casas.** Después, ya en X:, quité `cruz_13` y `cruz_17`, cuyo frente quedaba metido en la manzana, y quedaron 29. A `cruz_vg9` y `cruz_21` les puse alero de teja. Rehorneado sin más cambios, y `casas` OK. Las hojas `guion/fotos/tanda34/cruz_1..5.jpg` se mandaron al usuario el 17/11, que dio su «Visto bueno».

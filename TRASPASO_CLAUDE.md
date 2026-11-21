@@ -371,7 +371,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Vistas con `vistas=`: hay plantas en los solares y los caminos, y ninguna en la plaza.
 - **Hojas.** `guion/fotos/suelo/suelo_1.jpg` (Catastro, antes y ahora en dos casas del Triunfo) y `suelo_2.jpg` (solar, matas de cerca, camino de tierra y las afueras desde arriba).
 - **Sin probar en el móvil.** La primera vez que se abra, la carga tardará unos segundos más.
-- **Aprobado** por el usuario el 21/11: «Mucho mejor. Visto bueno y siguiente». Sin commit.
+- **Aprobado** por el usuario el 21/11: «Mucho mejor. Visto bueno y siguiente». En el commit `ad86143` (Sistemas, 21/11, sin push).
 
 ### Calle de los Cipreses: 33 casas (21/11)
 
@@ -390,7 +390,15 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Con las pilastras y el portón de su foto, `solo=cip_t60` dio 4 ok, 0 fallos.
   - Tras los once arreglos, `solo=cip_t58,…,cip_10` dio 4 ok, 0 fallos ([log](logs/selftest_casas_solo_cip_t58_cip_sb47_cip_x1_cip_34_cip_26_cip_39_cip__20261121_021512.log)).
 - **Plantas secas.** El mapa ha cambiado, así que la caché de `matojos.gd` se rehace sola la próxima vez que arranque (unos 4,7 s).
-- **Aprobada** por el usuario el 21/11: «Visto bueno y siguiente». Sin commit.
+- **Aprobada** por el usuario el 21/11: «Visto bueno y siguiente». En el commit `ad86143` (Sistemas, 21/11, sin push).
+
+### Arreglo: errores de UV en el calvario (21/11)
+
+21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Aviso de Sistemas tras el commit ad86143: al cargar salían 6 errores del motor («Condition "!first && !(format & Mesh::ARRAY_FORMAT_TEX_UV)"») desde `roof()` en `cristoprado.gd` `_calvario`.
+
+- **Causa.** El remate del calvario usaba `roof()`, que pone UV, con el material `caliza`. Las demás piezas de ese material no llevan UV, y una misma malla no puede mezclar vértices con y sin UV.
+- **Arreglo.** `_slope()` en `cristoprado.gd`: las cuatro caras inclinadas sin UV. `caliza` es triplanar y no las necesita. Se ve igual.
+- **Prueba.** `python tools/run_tests.py cristoprado`: 2 ok, 0 fallos, y ningún error de UV en el log ([log](logs/selftest_cristoprado_20261121_083749.log)). Sin commit.
 
 ### Residencia de mayores del Cristo del Prado (21/11)
 
@@ -437,6 +445,128 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - **Hojas**: `01_street_view_y_juego.jpg`, rehecha, y `03_ala_fotos_360.jpg`, nueva.
 - **Aprobada** por Luis el 21/11 («Visto bueno»), con la corrección del ala. Sin commit.
 
+### Modelados de la línea de la casa: el cajero, el interior del banco y la casa en seis estados (21/11)
+
+21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Encargo de Luis pasado por Sistemas: «Que Pretil haga los modelados y tú los sistemas de juegos». Son tres cosas: los seis estados de la casa de la Calle de Alemania 5, un cajero modelado delante de cada banco y el interior visitable del Banco Cantabria.
+
+- **Hecho: el cajero del Banco Cantabria** (`godot/scripts/bancosancho.gd`, `_cajero()`). Antes era un dibujo en la pared. Ahora es un cajero modelado en su marco rojo: la pantalla encendida («Bienvenido / Introduzca su tarjeta»), las teclas de los lados, la repisa del teclado, las ranuras de la tarjeta (con su luz verde), el recibo y los billetes, la visera roja con su luz y las pantallas laterales.
+  - **Para Sistemas**: `G.world.bancosancho.cajero_spot` (dónde se pone el jugador, en el mapa, a 0,8 m de la pared), `cajero_face` (hacia dónde mira, como `out_h`) y `cajero_at` (la pantalla, en el mundo).
+- **Hecho: el interior del Banco Cantabria** (`godot/scripts/banco_dentro.gd`, nuevo). Es un decorado aparte en (−1840, 1320), al que se entra por la flecha verde de la puerta de cristal, en horario del banco.
+  - Una sucursal de pueblo, de 9 × 10 m, que no copia ninguna real: baldosa clara y paredes blancas con la banda roja del banco y su nombre al fondo.
+  - A la izquierda, las sillas de espera, la mesa de folletos, el expositor y una planta.
+  - Al fondo, el mostrador de caja tras su cristal, con dos puestos, los postes y la cinta roja de la cola, los archivadores y la puerta redonda de la cámara acorazada.
+  - A la derecha, el rincón del encargado tras una mampara baja de cristal: su mesa con pantalla, papeles, teléfono y placa, su sillón, dos sillas para quien venga, el archivador y el calendario.
+  - Sin personajes: al encargado lo pone Sistemas.
+  - **Para Sistemas**: `G.world.bancosancho.banco`, con `manager_spot` y `manager_h` (dónde está el encargado y hacia dónde mira), `client_spot` y `client_h` (dónde se pone el jugador ante su mesa), `counter_front` (ante la caja) y `open` (lo mantiene `set_open`).
+- **Hecho: las seis fachadas de la casa** (Calle de Alemania 5). Sistemas eligió el camino: seis fachadas como nodos aparte y solo una visible.
+  - `godot/scripts/casa_fachada.gd` (nuevo): una fachada hecha a mano con el kit de `obra.gd`, según el estado.
+    - 0, heredada: cal vieja desconchada hasta el adobe, puerta y portón de tablas grises, tejado con tramos caídos.
+    - 1, arreglada: encalada, puerta y ventana verdes con reja, tejado entero, un farol y un geranio.
+    - 2, primera ampliación: zócalo añil, huecos enmarcados en blanco (también el portón, ya de dos hojas).
+    - 3, habitación a la izquierda: una ventanita con reja en ese extremo, un poyo junto a la puerta y otro farol.
+    - 4, habitación a la derecha: otra ventana con reja, el portón pasa a ser puerta de garaje con marco de ladrillo y tejadillo, y aparece la cornisa de ladrillo bajo el alero.
+    - 5, segunda planta: tres balcones con barandilla de hierro, la banda añil, la cornisa y una chimenea.
+  - `godot/scripts/casa_fuera.gd` (nuevo): las seis juntas. Oculta las demás, les quita la colisión y da a las luces del pueblo solo los faroles de la visible.
+  - **Para Sistemas**: `G.world.casa_fuera.set_state(n)` con n de 0 a 5; además `state`, `door`, `openings()` y `top()`.
+  - La puerta de la calle no se mueve en ningún estado (a 2,14 m del extremo izquierdo, de 1,0 × 2,1): `HOME_DOOR`, la placa del Padrón, la flecha y la pintada de la peña siguen en su sitio.
+  - El SPEC `alemania_5` se queda en `casas.gd`, porque `casa_dentro.gd` lo lee para situar la puerta.
+- **Hecho: el interior de la casa en seis estados.**
+  - `godot/scripts/casa_estado.gd` (nuevo): la casa por dentro tras cada obra (estados 1 a 5), cada una un interior entero.
+    - 1, arreglada: la misma sala, con mesa y sillas, cortinas, una planta y lámpara.
+    - 2, primera ampliación: la sala crece hacia la derecha (de 6 a 10 m), con cocina en la pared del fondo, comedor y aparador.
+    - 3, habitación a la izquierda: un baño.
+    - 4, habitación a la derecha: un salón con sofá, sillón, televisión y librería.
+    - 5, segunda planta: una puerta al fondo, la escalera detrás y arriba un estudio con puertas a la terraza.
+  - `godot/scripts/casa_dentro.gd` (de Sistemas, solo añadidos): la sala actual es el estado 0. `set_state(n)` oculta sus paredes y le quita la colisión, y muestra la casa del estado pedido.
+  - La cama, el armario, la pintada sobre la cama, `bed_spot`, `wardrobe_spot`, `in_door` e `in_spawn` no cambian en ningún estado. Por eso la casa crece hacia la derecha y por puertas en las paredes.
+  - La planta de arriba no está encima de la baja, sino más al fondo, subiendo su escalera: dos pisos no pueden compartir un punto del mapa (`MapData.decks`). Dentro del decorado no se nota.
+  - **Para Sistemas**: `G.casa.set_state(n)`, `state`, `rooms()`, `room_at(pp)` (para la cámara de `entradas.gd`), y en el estado 5 `back_door` (ante la puerta del fondo, en la sala) y `back_spawn` (arriba, al final de la escalera). Se sube andando: no hace falta transporte.
+- **Sin personajes** en ningún estado.
+- **Azafrán escondido** (acuerdo con Sistemas): las flores de sitios especiales llevan `"id"` y `"hidden": true` en `G.flowers`. La del silo ya lo lleva (`"id": "silo"`).
+- **Archivos**: `godot/scripts/bancosancho.gd` (el cajero, `BancoS`, `var banco`, y `banco.open` en `set_open`), `godot/scripts/banco_dentro.gd`, `godot/scripts/casa_fachada.gd`, `godot/scripts/casa_fuera.gd`, `tools/casa/hojas.py` y la clave del azafrán en `godot/scripts/silo_dentro.gd`.
+  - Compartidos, con el aviso dado: `casas_calles.gd` (de Texturas: la línea `"alemania_5": ["obra"]`), `world.gd` (`CasaFueraS`, `var casa_fuera` y el paso «the house you inherit», tras el del silo), `casa_dentro.gd` (los añadidos de los estados) y `selftest.gd` (el modo `--casa`, y `_casa_fuera_checks()` y `_casa_dentro_checks()` en la prueba completa).
+  - Nuevo también `godot/scripts/casa_estado.gd`.
+  - Compartido, con el aviso dado a Sistemas: `entradas.gd`, una línea en `shops()` para `bancosancho.banco`.
+- **Pruebas.** `python tools/run_tests.py bancosancho`: 5 ok, 0 fallos ([log](logs/selftest_bancosancho_20261121_133253.log)), ya con el interior del banco.
+  - Antes daba 1 fallo ajeno al cajero: la prueba esperaba entrar en la copistería solo con pisar la flecha. Lo arregló Sistemas.
+  - Después de esa prueba solo he bajado el brillo de los carteles del interior; no la he repetido.
+  - La entrada al banco por la flecha no la he probado yo: la pasa Sistemas con `herencia`.
+  - `python tools/run_tests.py casa`: 4 ok, 0 fallos ([log](logs/selftest_casa_20261121_140527.log)), con fachadas e interior.
+    - Un primer intento falló por el límite de mi propia comprobación: la puerta está a 1,54 m del punto `HOME_DOOR`, que es un sitio de la calle junto a ella, y pedía 1,5.
+    - Otro no arrancó: había llamado `_shell` a una variable y ya existía una función con ese nombre en `casa_dentro.gd`.
+  - `python tools/run_tests.py entradas`: 4 ok ([log](logs/selftest_entradas_20261121_141529.log)).
+  - `python tools/run_tests.py padron`: 9 ok ([log](logs/selftest_padron_20261121_141814.log)): la placa con el nombre sigue sobre la puerta con la fachada hecha a mano.
+  - `python tools/run_tests.py silo`: 6 ok ([log](logs/selftest_silo_20261121_134920.log)), con el azafrán ya marcado.
+- **Hojas para Luis.** `guion/fotos/casa/01_fachadas.jpg` y `02_interiores.jpg` (`tools/casa/hojas.py`).
+- **Fachadas aprobadas por Luis** («Las fachadas están increíbles»), con un cambio: faltaban plantas en la última.
+  - Hecho en `casa_fachada.gd` (`_plants()`, `_climber()`, `_tuft()`, `_shrub()`), solo en el estado 5:
+    - tres macetas de geranios colgadas por fuera de la barandilla de cada balcón, la del centro con una gitanilla que cae;
+    - cuatro macetas colgadas en la pared, entre los balcones;
+    - una fila de macetas al pie de la fachada, una sobre el poyo y dos macetones verdes;
+    - tres macetas en cada alféizar en vez de una;
+    - una buganvilla que sale de un macetón en el extremo derecho, sube hasta el alero y tiende un brazo sobre el garaje.
+  - Ninguna planta es sólida ni cambia la puerta, los faroles o `openings()`.
+  - En `selftest.gd`, una foto más en el modo `--casa`: `casa_5_plantas`.
+  - `python tools/run_tests.py casa`: 4 ok, 0 fallos ([log](logs/selftest_casa_20261121_142420.log)).
+  - Hoja: `guion/fotos/casa/03_plantas.jpg`.
+- **Capturas sueltas a petición de Luis**: `guion/fotos/casa/estados/fachada_N_*.jpg`, una por estado, de frente.
+  - En `selftest.gd` (modo `--casa`), la vista de frente oculta a los vecinos y al jugador para que nadie tape la fachada; la vista desde la calle los deja.
+  - `python tools/run_tests.py casa`: 4 ok, 0 fallos ([log](logs/selftest_casa_20261121_142809.log)).
+- **Segunda corrección de Luis a las fachadas**: «La cornisa de ladrillo añádela en la 4 y mantenla en la 5 mejor. Demasiadas flores en la 5. Quita la enredadera de la 5 y reduce un poco las flores».
+  - La cornisa de ladrillo pasa de «desde el estado 2» a «desde el estado 4»: los estados 2 y 3 quedan con el alero de tejas sin más.
+  - En el estado 5: fuera la buganvilla (`_climber()`, `_tuft()` y `_rnd()` borradas). Dos macetas colgadas por balcón en vez de tres y sin gitanilla, dos en la pared en vez de cuatro, una por alféizar en vez de tres, y cinco al pie de la fachada en vez de siete. Quedan el poyo con su maceta y los dos macetones verdes.
+  - `python tools/run_tests.py casa`: 4 ok, 0 fallos ([log](logs/selftest_casa_20261121_143252.log)).
+  - Capturas y hojas rehechas (`guion/fotos/casa/`).
+- **Tercera corrección de Luis**: «En las fotos que has pasado la cornisa de ladrillo del garaje aparece antes de la 4 y desaparece en la 4 y la 5. Quiero lo contrario».
+  - Yo había entendido mal la anterior: Luis hablaba del marco de ladrillo con tejadillo del portón, no de la cornisa del alero.
+  - Hecho en `casa_fachada.gd`: el portón de los estados 2 y 3 lleva marco blanco, como la puerta y la ventana; la puerta de garaje de los estados 4 y 5 lleva el marco de ladrillo con su tejadillo (antes llevaba el blanco).
+  - Las dos macetas de la derecha y el macetón junto al garaje se apartan un poco para no pisar el ladrillo.
+  - La cornisa del alero se queda como en la corrección anterior (desde el estado 4).
+  - `python tools/run_tests.py casa`: 4 ok, 0 fallos ([log](logs/selftest_casa_20261121_144321.log)).
+  - Capturas y hojas rehechas.
+- **Visto bueno de Luis a todo el encargo** (cajero, interior del banco, fachadas e interiores de la casa): «Quitando eso visto bueno a todo lo tuyo» y, minutos después, «Ahora sí, visto bueno».
+  - Queda aprobado lo que muestran las últimas capturas enviadas: cornisa del alero desde el estado 4, ladrillo y tejadillo del garaje en los estados 4 y 5, y la fachada 5 sin enredadera.
+  - Entre sus dos mensajes devolví la cornisa del alero al estado 2 (leí el primero como «eso no») y, al llegar el segundo, la restauré al estado 4 para que el juego coincida con las fotos aprobadas. Si Luis la quiere desde el estado 2 es una línea: `state >= 4` por `state >= 2` en `_front()`, donde dice «the eaves».
+  - Prueba final: `python tools/run_tests.py casa`, 4 ok, 0 fallos ([log](logs/selftest_casa_20261121_145538.log)).
+  - Sin commit: lo hace Sistemas con la 0.0.19.
+- **Sin commit.**
+
+### Silo del Tío Anaranjao (21/11)
+
+21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Luis, tras aprobar el parque: «Pasamos al siguiente proyecto que es algo más complejo. […] el silo del tío colorao (que lo llamaremos silo del tío anaranjao). Aparte de la fachada quiero que se pueda visitar por dentro (hay varias fotos 360 por dentro), con sus muebles y utensilios de como vivía antes la gente bajo tierra en la mancha». Mandó el enlace de Google Maps y una captura del mapa. Las fotos no se guardan en el repositorio.
+
+- **Hecho.** El Silo del Tío Colorao real (C. San Agustín 9), con el nombre de Luis. Detalle, planta y trampas en `referencias/silo/LEEME.md`.
+  - **Fuera** (`godot/scripts/silo.gd`, sin horneado): la tapia blanca con albardilla de teja siguiendo la acera en curva, el portón claveteado, el cartel «SILO DEL TÍO ANARANJAO», cinco rejas, y dentro el patio de tierra con el caño visto desde arriba y dos chimeneas.
+  - **Dentro** (`godot/scripts/silo_dentro.gd`, un decorado aparte en (1560, −1120) al que se entra por la flecha verde del portón): la bajada con escalones y rampa empedrada, el patio hundido, la cuadra, la leñera y dos viviendas. En total, nueve estancias con sus muebles y utensilios. Sin personajes.
+- **La cámara.** Las estancias eran pequeñas y bajas, y la cámara de esquina quedaba pegada a la cabeza. La primera solución (quitar la tierra de encima y mirar desde arriba) no le gustó a Luis: ver la corrección de abajo.
+- **Fuentes.** El recorrido virtual de 38 fotos 360 de 2019, las diez fotos del sitio, Street View de 2024 y la ortofoto. Herramientas nuevas en `tools/silo/` (`cerca360.py`, `tour360.py`, `baja360.py`, `hojas360.py`, `fotos.py`, `manzana.py`, `hojas.py`).
+- **Archivos compartidos**, con el aviso dado a Sistemas y a Texturas:
+  - `world.gd`: `SiloS`, `var silo` y el paso «the Silo del Tío Anaranjao» tras el parque del Paseo;
+  - `entradas.gd`: `world.silo.dentro` en `shops()`, y `camera()` usa `place.room_at(pp)` si el decorado lo tiene (los demás decorados no cambian);
+  - `selftest.gd`: el modo `--silo` y `_silo_checks()` en la prueba completa, tras `_paseo_checks`.
+- **Pruebas.**
+  - `python tools/run_tests.py silo`: 5 ok, 0 fallos ([log](logs/selftest_silo_20261121_125531.log)).
+  - `python tools/run_tests.py entradas`: 4 ok, 0 fallos ([log](logs/selftest_entradas_20261121_125808.log)).
+  - La prueba completa no se ha pasado.
+  - El primer intento falló al entrar: sobre la flecha hay que pulsar el botón de acción. Ya está corregido en la prueba.
+- **Hojas para Luis.** `guion/fotos/silo/01_fuera.jpg`, `02_bajada_patio_y_cuadra.jpg`, `03_primera_casa.jpg` y `04_segunda_casa.jpg`: las fotos reales al lado del juego.
+- **Aprobado** por Luis el 21/11, con tres cambios ya hechos.
+  - Sus palabras: «Visto bueno pero no me gusta que parezca que está al aire libre, podrías hacer la cueva un poco más profunda y colocar la cámara de tal manera que no se note que el modelo no tiene techo. También podrías dejar las puertas abiertas para que se vea un poco el modelo de la entrada desde fuera». Y después: «Deja el cable negro. Pero revisa las puertas, tienen una textura de suelo clippeada y las paredes interiores atraviesan las puertas».
+  - **La cueva, más honda** (`silo_dentro.gd`): el patio queda 4,6 m bajo el corral (antes 2,8). Las estancias miden unos 4 m de alto, con bóveda, así que la cámara cuelga a 3,6 m por debajo del techo y solo ve paredes blancas. Ya no se quita ninguna tapa de tierra.
+    - La bajada es ahora una escalera larga de 23 peldaños empedrados, sin rampa: con esa hondura la rampa salía demasiado empinada.
+    - En la escalera la cámara baja detrás del jugador, unos peldaños más arriba (`room_at`).
+    - El cable de las bombillas se queda negro.
+  - **El portón, abierto** (`silo.gd`): las dos hojas abren hacia dentro y desde la calle se ve el rellano empedrado y los primeros peldaños, que se van oscureciendo. No se cruza andando: se entra por la flecha.
+  - **El arreglo del portón**: el caño de fuera iba torcido (con el rumbo del real) y nivelado a la cota más alta del patio, así que el suelo y los muretes atravesaban las hojas. Ahora sale recto del portón, es más ancho que él y va pegado al terreno tramo a tramo.
+  - **Pruebas**: `python tools/run_tests.py silo`, 5 ok y 0 fallos ([log](logs/selftest_silo_20261121_132656.log)). Hojas rehechas.
+- **Cerrado** por Luis el 21/11: «El silo está perfecto. Añade un azafrán en una de las habitaciones pequeñas y lo damos por cerrado. (Pasale a sistemas que sería buena idea esconder azafrán en ubicaciones especiales)».
+  - **El azafrán** (`silo_dentro.gd`, `_saffron`): una flor de azafrán en una macetita de barro, junto a la pared de la última alcoba (la de la cama azul, al fondo de la segunda casa). Es el coleccionable del juego, igual que los de las calles: al acercarse se recoge (+1 azafrán, +6 €). La maceta se queda.
+    - El decorado la añade él mismo a `G.flowers` (`{"node", "p"}`), sin tocar `game.gd`. Su sitio queda en `silo.dentro.saffron_spot`.
+    - Como las demás flores, vuelve a estar ahí cada vez que se arranca el juego.
+  - **Idea de Luis pasada a Sistemas**: esconder azafrán en ubicaciones especiales.
+  - **Pruebas**: `python tools/run_tests.py silo`, 6 ok y 0 fallos ([log](logs/selftest_silo_20261121_133743.log)); la comprobación nueva recoge la flor.
+- **Sin commit.**
+
 ### Parque del Paseo del Cristo (21/11)
 
 21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Luis, tras aprobar la Residencia: «Visto bueno. Podemos continuar con el parque largo empedrado que hay al lado del paseo del cristo (tiene su propia linea en street view, sin nombre)». Mandó una foto de noviembre de 2024 de la esquina oeste y el mapa con la flecha. Las capturas no se guardan en el repositorio.
@@ -445,12 +575,11 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - **El paseo central**: baldosa clara de 40 cm con un cuadro rojo en marco rojo cada 15 m. Apunta a la puerta de la ermita (a 0,01 m). A cada lado, una banda de losas de pizarra irregulares (`tools/paseo/losas.py` → `godot/assets/paseo/losas.png`).
   - **Los céspedes** con bordillo, y la acera ajedrezada roja y crema a lo largo del Paseo.
   - **Al oeste**:
-    - la plaza de ladrillo, con la muela de pie y el cono de piedra sobre su base redonda;
+    - la plaza de ladrillo, con la prensa de piedra (ver la corrección de abajo);
     - el seto de boj ante la casa de los arcos;
     - el parterre de cipreses con su verjita, el álamo y la farola alta;
-    - la piedra y el tronco tallado sobre su base;
-    - la jardinera redonda de mampostería alrededor de la acacia.
-  - **Al norte**: la tapia blanca de los huertos, con su albardilla de teja. Después, el murete de mampostería con pilares de ladrillo y verja, ante los patios y el callejón. La rocalla con sus macetones y el sauce llorón.
+    - el monolito con su banco de granito y su pilón, y la mesa de piedra con su asiento redondo.
+  - **Al norte**: la tapia blanca de los huertos, con su albardilla de teja. Después, el murete de mampostería con pilares de ladrillo y verja, ante los patios y el callejón. La fuente de rocalla, entre el sauce llorón y una palmera.
   - **La plaza de losas del cruce**, con faroles de dos brazos. Al este, las losas alrededor del calvario (el de `cristoprado.gd`), los bancos de granito y los bolardos ante la placita.
   - **Lo demás**:
     - 33 árboles donde la ortofoto tiene sus copas: plátanos encalados, olmos y olmos trasmochos, álamos, la acacia, el sauce y una palmera;
@@ -474,7 +603,30 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.** `python tools/run_tests.py paseo`: 3 ok, 0 fallos ([log](logs/selftest_paseo_20261121_081505.log)).
   - El primer intento contaba las sendas peatonales como calles, y el borde del Paseo salía en la senda central. Ya está corregido.
 - **Hojas.** `guion/fotos/paseo/01_street_view_y_juego.jpg` (13 puntos de Street View al lado del juego) y `02_en_el_juego.jpg` (la foto de Luis al lado del juego, y el parque).
-- **Pendiente.** El visto bueno de Luis. Sin commit.
+- **Commit** `ad86143` de Sistemas (sin push), con la ermita y la Residencia.
+- **Corrección: las piezas de piedra (21/11, mañana).**
+  - Luis mandó cuatro capturas de Street View de marzo de 2013, de la línea propia del parque: «Faltan varias cosas. La prensa de piedra, el monolito de piedra, la mesa de piedra, la fuente». Las capturas no se guardan en el repositorio.
+  - **Todo en `paseo.gd`**, con piezas nuevas del kit: `_lump` (una piedra tosca de caras planas, con ruido fijo), `_arc` (un murete curvo con albardilla) y `_arc_solids`.
+    - **La prensa** (`_press`), en la esquina ante la casa de los arcos. Lleva un zócalo redondo de mampostería con albardilla, la solera, tres rulos cónicos de granito con la chapa de hierro del ojo y su churrete de óxido, el eje de hierro, los brazos y el aro. Uno de los rulos mira a la casa, como en la foto. Sustituye a la muela de pie y el cono de 2024.
+    - **El monolito** (`_monolith`): una piedra alta y tosca de unos 2,1 m, ancha al pie y con una mancha de pintura roja. A su lado, un banco largo de granito al borde del paseo y un pilón de piedra con matas secas. Sustituye a la piedra y al tronco tallado.
+    - **La mesa de piedra** (`_mesa`): un asiento redondo de mampostería con albardilla, abierto al este y al oeste, con respaldo en la mitad sur y la mesa redonda sobre su pie en medio. Sustituye a la jardinera redonda.
+    - **La fuente de rocalla** (`_fountain`). Lleva el estanque de agua limpia (como la que Luis quiso para la plaza), el murete de toba, ocho pilares de toba con maceteros blancos y sus plantas, cadenas colgadas entre ellos, el montículo en medio con la estatua y losas alrededor hasta la banda del paseo. Sustituye a la rocalla de piedras sueltas.
+    - **La estatua** (`_statue`). Luis, al ver la hoja: «Muchísimo mejor. Solo cambiaría que la estatua de la fuente es de una mujer desnuda con un jarrón de donde sale el agua que cae a la fuente».
+      - Primero se hizo de piedra blanca, como en Street View (p14_n, 2013): una mujer desnuda de pie, con la cabeza inclinada hacia el cántaro que lleva al hombro izquierdo.
+      - Luis, después: «vamos a sustituirlo por una figura de mármol de una mujer al estilo de nuestros personajes. Igual que con la estatua de bronce del fraile».
+      - **Ahora es una figura del juego** (`chara.gd`), como el fraile de `santaana.gd`, pasada entera a mármol blanco: una mujer con moño, pestañas y nada de ropa, a 0,55 de tamaño (cerca de 1 m).
+      - Tiene la cabeza un poco inclinada hacia el cántaro, que lleva al hombro izquierdo con esa mano; la otra mano la tiene delante. El nodo es `paseo.statue`.
+      - Del cántaro cae un hilo de agua, que corre pegado a la rocalla hasta el estanque. Se hace con `_limb`, una pieza redonda de un punto a otro.
+      - `chara.gd` no pasa la comprobación de sintaxis suelta (le falta MapData), así que se ha probado en el juego.
+  - **Trampa de la fuente**: el callejón del norte pasa en el juego unos 2 m más al sur que el real, y la fuente no cabía. Ahora se coloca sola entre el borde norte tal como lo pone el juego y el paseo, y encoge si hace falta: queda con 2,08 m de radio exterior en lugar de 2,25.
+    - El sauce pasa a (125,0, −8,4) y la palmera nueva queda en (131,2, −8,5), a cada lado.
+    - Se quitan el banco norte de x = 127 y una papelera, que caían encima.
+  - **Archivos**: `godot/scripts/paseo.gd` y `tools/paseo/hojas.py`, con la hoja 03 (`piezas=`, las cuatro fotos al lado del juego). Ningún archivo compartido.
+  - **Pruebas**: `python tools/run_tests.py paseo`, 3 ok y 0 fallos ([log](logs/selftest_paseo_20261121_120228.log), ya con la figura de mármol), sin errores de formato en el registro.
+    - En el primer intento el monolito salió negro: los materiales nuevos no habían entrado en `_material`. Ya está corregido.
+    - Las vistas se llaman `ps_*`: con `pz_*` se leen en el marco de la plaza.
+  - **Hojas**: `guion/fotos/paseo/03_piezas_de_piedra.jpg`, nueva, con la estatua de cerca al lado de Street View; `01` y `02`, rehechas.
+- **Aprobado** por Luis el 21/11 («Visto bueno»), con las piezas de piedra y la figura de mármol. Las piezas y la figura, sin commit.
 
 ### Calle de las Viñas: 44 casas (21/11)
 
@@ -498,7 +650,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - `casas solo=vin_`: el primer intento falló porque `vin_rs67` no llegaba a 12 piezas.
   - Con la celosía de su foto, `solo=vin_rs67` dio 4 ok.
   - Tras los arreglos, `solo=vin_rs71,vin_x2,vin_12,vin_x4,vin_bv14,vin_4b,vin_4` dio 4 ok, 0 fallos ([log](logs/selftest_casas_solo_vin_rs71_vin_x2_vin_12_vin_x4_vin_bv14_vin_4b_vin_20261121_023910.log)).
-- **Aprobada** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+- **Aprobada** por el usuario el 21/11 («Visto bueno y siguiente»). En el commit `ad86143` (Sistemas, 21/11, sin push).
 
 ### Calle del Florido, tramo norte: 29 casas (21/11)
 
@@ -525,7 +677,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - `casas solo=flo_`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_flo__20261121_053430.log)).
   - Tras los arreglos de la comparación, `solo=flo_65,flo_66,flo_60,flo_58,flo_an15,flo_b10,flo_50,flo_50g,flo_48,flo_49` dio 4 ok, 0 fallos. El primer intento paró en un error de compilación de `residencia.gd`, que Edificios Especiales estaba editando; al terminar él, pasó.
   - `solo=flo_48`, con el friso en ladrillo oscuro: 4 ok ([log](logs/selftest_casas_solo_flo_48_20261121_054237.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En el mensaje de las hojas lo llamé «tramo sur» por error; es el extremo norte de la calle (en el mapa, z negativa es el norte). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En el mensaje de las hojas lo llamé «tramo sur» por error; es el extremo norte de la calle (en el mapa, z negativa es el norte). En el commit `ad86143` (Sistemas, 21/11, sin push).
 
 ### Calle del Florido, tramo medio, y Bajada del Florido: 34 casas (21/11)
 
@@ -543,7 +695,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 34: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_flo_41_flo_46_flo_39_flo_34_flo_37_flo_32_flo_35__20261121_055758.log)).
   - Tras los arreglos, `solo=flo_27,flo_23,flo_26,bfl_21,bfl_23`: 4 ok ([log](logs/selftest_casas_solo_flo_27_flo_23_flo_26_bfl_21_bfl_23_20261121_060251.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En el commit `ad86143` (Sistemas, 21/11, sin push).
 
 ### Calle del Florido, tramo sur, y Prolongación del Florido: 39 casas (21/11)
 
@@ -563,7 +715,318 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - `casas` de las 39: 3 ok, 1 fallo, porque `flo_x3t` tenía pocas piezas ([log](logs/selftest_casas_solo_flo_24_flo_15_flo_x4_flo_13_flo_11_flo_9_flo_22_f_20261121_075137.log)).
   - Con más hiladas, `solo=flo_x3t`: 4 ok ([log](logs/selftest_casas_solo_flo_x3t_20261121_075422.log)).
   - Tras los cambios de color: 4 ok ([log](logs/selftest_casas_solo_flo_x2_flo_p13_flo_p15_flo_p14_flo_p16_flo_p18_fl_20261121_075654.log)) y 4 ok ([log](logs/selftest_casas_solo_flo_p14_flo_p16_flo_p18_flo_p20_flo_p22_flo_p24_f_20261121_075815.log)).
-- **Pendiente.** El visto bueno del usuario a las hojas. Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). En el commit `ad86143` (Sistemas, 21/11, sin push). La Bajada del Rollo 4 sigue genérica.
+
+### Commit del Cristo del Prado, la Residencia, el Paseo, el suelo y las casas del Florido (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario: «Cuando terminen sus dos trabajos actuales haz commit».
+- Los trabajos son el parque del Paseo de Pretil y lo que tenía Texturas.
+- Prueba completa: 886 ok, 1 fallo. El fallo era solo el mínimo de fachadas de «houses meet their street»: pedía más de 5000 y quedan 4807, porque las casas hechas a mano sustituyen a las genéricas.
+- Los límites de verdad pasan: 6 fachadas raras, la peor 2,4 m por encima y 0,1 m por debajo.
+- El mínimo baja a 4000 en `selftest.gd`, con una nota.
+- Commit `ad86143`, sin push.
+- Queda: el tramo sur del Florido, a la espera del visto bueno del usuario. Y unos errores del motor al cargar: `set_uv` en `obra.gd` desde `cristoprado.gd` `_calvario`, el tejado. No hacen fallar la prueba; se lo he pasado a Pretil.
+
+### Calle de la Rosa del Salvador: 35 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y seguimos», tras aprobar el tramo sur del Florido).
+
+- **Hecho.** 35 entradas `rsa_*`. Fotos del Catastro (2019), y Street View de noviembre de 2024 (el 24, de 2013) donde no había foto, la foto era de otra fachada o la casa ha cambiado. Lo que queda fuera está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - Lado par del 20 al final: la calle del mapa va 3–4 m al sur de la real. Frentes de la pared genérica (`frente_gen.py`) con `clear` 6; el 4 y el 6 también (su frente del Catastro era una pared interior), con `clear` 3.
+  - Cajas a mano (`rc: null`): `rsa_9` y `rsa_18` (0 plantas en el Catastro: eran un hueco en el juego), `rsa_10g` (la parte de 0 plantas de la trasera de Sevilla 7) y `rsa_34` (el cobertizo; la parcela de Sevilla 27 queda bajo la calle).
+  - Traseras con `reach`: `rsa_s7`, `rsa_s9` (8 m), `rsa_24`, `rsa_44` (6 m) y `rsa_36` (8 m); `rsa_1` lleva `reach` 6 para dejar su bloque de tres plantas del fondo.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (35 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/rosa_salvador_1..6.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 07:51 (el del Florido sur), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 35 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) iguales. Solo la holgura del nodo 310 (Rosa del Salvador) pasa de 2,3 a 2,1 m.
+  - `precheck.py` antes de hornear: sin fachadas escondidas; partes por delante solo en las de `clear`.
+- **Pruebas.**
+  - `casas` de las 35: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_rsa_1_rsa_3_rsa_5_rsa_7_rsa_9_rsa_11_rsa_13_rsa_1_20261121_113502.log)).
+  - Tras arreglar puertas y tonos, `solo=rsa_1,rsa_4,rsa_6,rsa_15,rsa_21,rsa_32`: 4 ok ([log](logs/selftest_casas_solo_rsa_1_rsa_4_rsa_6_rsa_15_rsa_21_rsa_32_20261121_113959.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). Sin commit.
+
+### Calle de Sevilla: 36 casas, y `house_of` con `reach` en el horneado (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y continuar», tras aprobar la Rosa del Salvador).
+
+- **Hecho.** 36 entradas `sev_*`. Fotos del Catastro, y Street View de noviembre de 2024 donde no había foto, la foto era de otra fachada o la casa ha cambiado. Lo que queda fuera está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Cambio en `tools/bake_godot.py`.**
+  - `house_of(bid, floors, p)` salta una entrada cuyo `reach` deja fuera la parte `p` y prueba la siguiente con la misma referencia.
+  - Motivo: cuatro parcelas pasantes (Sevilla 7, 9, 19 y 29) ya tenían su trasera en la Rosa (`rsa_s7`, `rsa_s9`, `rsa_24`, `rsa_36`, con `reach`). Antes, la primera entrada era la única que contaba, y la fachada de Sevilla se quedaba genérica.
+  - Las referencias con una sola entrada hornean igual: el horneado no quitó ni movió ninguna casa.
+- **Archivos.** `tools/bake_godot.py`, `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (36 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/sevilla_1..6.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 11:34 (el de la Rosa), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 36 casas nuevas, ninguna quitada. `rsa_6`, `rsa_8`, `rsa_s7` y `rsa_36` cambian solo en qué aristas quedan tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 36 y las cuatro de la Rosa: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_sev_3_sev_5_sev_7_sev_9_sev_11_sev_13_sev_15_sev__20261121_120325.log)).
+  - Tras arreglar los tonos del 13 y del 22, `solo=sev_13,sev_22`: 4 ok ([log](logs/selftest_casas_solo_sev_13_sev_22_20261121_120630.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+
+### Las cámaras de las giras de la Chiki y de Alberto (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario: «La cámara de la Chiki cuando te enseña los grafitis y la de Alberto cuando enseña el pueblo muchas veces acaba clippeada entre edificios y no se ve el objetivo».
+
+- **Por qué pasaba.** Las dos ponían la cámara a una distancia fija de la calle más cercana.
+  - La Chiki, a 7 m de la pared hacia fuera. En una calle estrecha eso cae dentro de la casa de enfrente: con los sitios viejos, 22 de las 60 paredes no se veían.
+  - Alberto, a 7 m a lo largo de la calle. En una curva o al final de la calle eso cae en una casa.
+- **El arreglo.** Una función nueva en `game.gd`: `scene_shot(at, want_a, want_b)`, con `_shot_turned`, `_shot_clear`, `_shot_room` y `_shot_open`.
+  - Mira con rayos de la capa 1 (las paredes) desde el objetivo hacia cada punto, y deja la cámara 0,6 m antes de la primera pared.
+  - Prefiere de frente y más cerca, siempre que conserve al menos el 45 % de la distancia, antes que girada de lado.
+  - Si no, prueba a girarla poco a poco (±0,4, ±0,8, ±1,2 rad) y a subirla 3 m.
+  - La separa de una pared que tenga pegada al lado.
+  - Comprueba que el paso de un punto al otro no cruce ninguna esquina.
+- **Dónde se usa.**
+  - `pintadas.gd`: `tour_shot(t)`, que apunta al propio grafiti y sale según la cara de la pared (`t.n`).
+  - `recress.gd`: `_sad_corners()` y el paso por la puerta del Recress en `_pitch`.
+- **Prueba.**
+  - `selftest.gd`: `_tour_camera_checks()`, al principio de `_pintadas_checks`, así que entra en la prueba completa.
+  - Las 60 paredes se ven desde los dos extremos del paso, de frente (a menos de 63°), a 2,5 m o más y sin nada en medio. Los 5 rincones de Alberto, igual.
+  - Con `--shots` saca las fotos `gira_chiki_N_antes/ahora` y `gira_alberto_N`.
+  - `run_tests.py pintadas --headless`: 7 ok. `pintadas shots --window`: 7 ok, y las fotos están revisadas. `recress --headless`: 16 ok.
+  - Sin commit.
+
+### Calle del Cristo, de la Mayordomía a la Travesía del Cristo: 32 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y siguiente», tras aprobar la calle de Sevilla).
+
+- **Hecho.** 32 entradas `cri_*`. Fotos del Catastro, y Street View de noviembre de 2024 donde no había foto, la foto era de otra casa o la casa ha cambiado. Lo que queda fuera está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - Fuera:
+    - el 3 (4790711): es la nave de la Mayordomía, hecha a mano (`MERKOCARRY_RCS` en `bake_godot.py`);
+    - Paz 1 y Doctor Fleming 22: dan a sus calles;
+    - nada al sur de la Travesía del Cristo, donde empiezan el parque, la ermita y la Residencia de Edificios Especiales.
+  - Las fotos del Catastro del 35 y del 45 son de otras casas. Se han seguido las placas de Street View.
+  - Las tiendas llevan solo lo que venden (PASTELERIA, ELECTRICIDAD).
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (32 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/cristo_1..6.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 12:03 (el de Sevilla), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 32 casas nuevas, ninguna quitada. `argentina_42` y `argentina_b029` cambian solo en las aristas tapadas.
+  - Calles, nodos, relieve y árboles (2954) iguales. La holgura del nodo 225 (cruce del Cristo con la Cruz) pasa de 4,7 a 4,2 m.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 32 y las dos de Argentina: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_cri_5_cri_7_cri_9_cri_x11_cri_13_cri_15_cri_15d_c_20261121_122321.log)).
+  - Tras aclarar el amarillo, `solo=cri_x11`: 4 ok ([log](logs/selftest_casas_solo_cri_x11_20261121_122612.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+
+### Calle del Doctor Fleming: 24 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y siguiente», tras aprobar la calle del Cristo). Elegida con `faltan.py`: la calle cercana con más fachada genérica sin tocar (319 m), al sur de Sevilla.
+
+- **Hecho.** 24 entradas `fle_*`. Fotos del Catastro (viejas, hacia 2010), y Street View de noviembre de 2024 en casi toda la calle. Lo que queda fuera está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - `fle_23`: la tapia de una planta de la trasera de Sevilla 34; `sev_34` ya tomaba solo las partes de dos plantas, así que no se pisan.
+  - `fle_6`: la tapia con portón de Paseo del Cristo 1 (`reach` 6).
+  - Fuera: Paseo del Cristo 2 y 48, que dan al Paseo, junto al parque de Edificios Especiales.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (24 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/fleming_1..4.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 12:23 (el del Cristo), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 24 casas nuevas, ninguna quitada. `sev_26` y `sev_28` cambian solo en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 24 y las dos de Sevilla: 3 ok, 1 fallo, porque `fle_25` tenía pocas piezas ([log](logs/selftest_casas_solo_fle_1_fle_3_fle_5_fle_7_fle_9_fle_11_fle_13_fle_1_20261121_124038.log)).
+  - Con más parches y una hilada de albardilla, `solo=fle_25`: 4 ok ([log](logs/selftest_casas_solo_fle_25_20261121_124336.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+
+### Calle de la Vega: 16 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y siguiente», tras aprobar Doctor Fleming). Elegida con `faltan.py` (257 m de fachada genérica), junto al Florido y lejos del silo que está haciendo Edificios Especiales.
+
+- **Hecho.** 16 entradas `veg_*`. Fotos del Catastro y Street View de noviembre de 2024 en toda la calle. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - Las hileras de adosadas del lado sur (`veg_x1`, `veg_x3`: cuatro casas; `veg_x5`, `veg_x7`: dos) son una parcela cada una. `veg_write.py` (scratchpad, `row()`) pinta cada casa con garaje, escalera (`esc`) y su color con `paño`.
+  - `veg_6` lleva `floors` 1: su cuerpo de tres plantas llega a la calle y las tiras de una planta de delante entran en el mismo frente.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (16 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/vega_1..3.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 12:40 (el de Fleming), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 16 casas nuevas, ninguna quitada. `sap_19` cambia solo en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 16 y `sap_19`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_veg_x1_veg_x3_veg_x5_veg_x7_veg_3d_veg_sap25_veg__20261121_125239.log)).
+  - Tras bajar los ventanucos, `solo=veg_3d`: 4 ok ([log](logs/selftest_casas_solo_veg_3d_20261121_125440.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). Sin commit.
+
+### Calle de los Ángeles: 17 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y continuar», tras aprobar la Vega). Elegida con `faltan.py` (246 m de fachada genérica).
+
+- **Hecho.** 17 entradas `ang_*`. Fotos del Catastro, y Street View de noviembre de 2024 en la mitad de la calle. Lo que queda fuera está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - `ang_19`: frente de la pared genérica; el del Catastro es un muro 7 m más adentro.
+  - `ang_25`: frente recortado a su casilla (6 m de 22); lo demás es una tapia de patio sin edificio.
+  - Entran tres esquinas de otras calles (`ang_tol1`, `ang_vp1`, `ang_bf25`). Bajada del Florido 25 quedó fuera de la Bajada porque no tiene fachada allí.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (17 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/angeles_1..3.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 12:52 (el de la Vega), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 17 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) iguales. La holgura del nodo 1491 pasa de 2,3 a 2,2 m.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - El primer intento de `casas` paró en el arranque, por un error de sintaxis en `fondo_casa.gd:256` (archivo nuevo de Sistemas, a medio escribir; avisado). No se tocó.
+  - A las 13:10, ya corregido, `casas` de las 17: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_ang_tol1_ang_2_ang_4_ang_8_ang_10_ang_x12_ang_vp1_20261121_131024.log)).
+- **Visto bueno** del usuario el 21/11 («Visto bueno y siguiente cuando puedas»), antes de ver las hojas, que se le mandaron después. Sin commit.
+
+### Calle de la Virgen de la Paloma: 20 entradas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y siguiente cuando puedas»). Elegida con `faltan.py` (241 m de fachada genérica), junto a Los Ángeles.
+
+- **Hecho.** 20 entradas `vpa_*` (18 parcelas). Fotos del Catastro (2010–2015) y Street View de noviembre de 2024 en la mitad de la calle. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.** Dos parcelas con `only`: `vpa_x18` (3 plantas; la de 4 retranqueada queda como bloque normal) con `vpa_x18g` (1 planta), y `vpa_20` (2) con `vpa_20g` (1). Las esquinas `vpa_tol17` (Camino de Toledo 17) y la de Los Ángeles (`ang_vp1`, ya hecha) dan a esta calle.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (20 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/paloma_1..4.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 13:07 (el de Los Ángeles), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 20 entradas nuevas, ninguna quitada. `ang_vp1` cambia solo en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 20 y `ang_vp1`: 3 ok, 1 fallo, porque `vpa_3` tenía pocas piezas ([log](logs/selftest_casas_solo_vpa_3_vpa_5_vpa_9_vpa_11_vpa_13_vpa_x15_vpa_19_vp_20261121_131744.log)).
+  - Con una hilada de albardilla más, `solo=vpa_3`: 4 ok ([log](logs/selftest_casas_solo_vpa_3_20261121_131931.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+
+### Calle de Pizarro: 16 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y siguiente», tras aprobar la Virgen de la Paloma). Elegida con `faltan.py` (197 m de fachada genérica), entre Los Ángeles y la Virgen de la Paloma.
+
+- **Hecho.** 16 entradas `piz_*`. Fotos del Catastro y Street View de noviembre de 2024 en la mitad de la calle. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.** Los frentes del lado impar quedan 6 m del eje de la calle (2,5 m más que los del par), pero el juego ya tenía allí sus paredes genéricas: se han dejado los del Catastro. Tres costados de otras calles entran (`piz_an16b`, `piz_va1`, `piz_va8`).
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (16 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/pizarro_1..3.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 13:17 (el de la Virgen de la Paloma), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 16 casas nuevas, ninguna quitada. `vpa_13` cambia solo en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 16 y `vpa_13`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_piz_an16b_piz_3_piz_5a_piz_5d_piz_7_piz_x9_piz_va_20261121_133113.log)).
+  - Tras apagar el ocre, `solo=piz_13`: 4 ok ([log](logs/selftest_casas_solo_piz_13_20261121_133308.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). Sin commit.
+
+### Misiones de fondo (la casa de la Eufrasia, Edmundo Monedero, cajero) y Trabajos (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. Lo pidió el usuario. Los modelados los hace Pretil; los sistemas, Sistemas.
+
+**Misiones «de fondo».** Van a la vez que el resto del juego: no usan `G.side` ni el objetivo de la hoja. Están en la Agenda, en una página 3 nueva, «MISIONES DE FONDO» (`log_bg`). Ahora la Agenda tiene 7 páginas y 7 pestañas, más juntas (`menu.gd`). En esa página van:
+- la casa;
+- las pintadas de la Chiki, que salen de la página de encargos y cuentan «tuyas N de 60»;
+- el azafrán.
+
+**La casa** (`fondo_casa.gd`, nuevo):
+- **La llamada de la Paca.** 2 h de juego después de abrir el puente te llama la Paca: «ven a verme, ande siempre, al lao de casa».
+- **La deuda.** Allí te cuenta que la Eufrasia defraudaba a Hacienda y que la casa tiene una carga de **10.000 €**.
+  - El usuario escribió «tía Eusebia», pero en el juego la tía de la herencia es la **Eufrasia** (loc `paca_cutscene`), así que se queda Eufrasia. Hay que confirmárselo.
+- **El cajero.** Se paga a plazos en el cajero del Banco Cantabria: 100, 500, 1.000 o «To lo que llevo». Lo que no te llega sale en gris.
+  - El cajero es el modelado de Pretil: `bancosancho.cajero_spot`, `cajero_face` y `cajero_at`.
+- **Edmundo Monedero.** Cuando la deuda está pagada, te llama en un cuarto de hora. Es el director de sucursal, «usurero tipo Tom Nook»: vende productos y suelta verdades por lo bajini, con `((…))` en gris.
+  - Dónde está:
+    - De lunes a viernes, de 8:30 a 14:30, en la puerta del banco.
+    - Cuando Pretil haga el interior, dentro: `bancosancho.banco.manager_spot` y `manager_h`.
+  - Aspecto provisional: hombre adulto, camisa con cuello azul oscuro (top 11), corbata (pendant 6), gafas y piel pálida. No hay ninguna chaqueta de traje entre las prendas.
+- **Las obras.**
+  - Se contratan con Edmundo, y cada una tiene que estar pagada antes de que te ofrezca la siguiente.
+  - Están hechas a la mañana siguiente, a partir de las 7. Lo que cuestan se debe al banco y se paga en el cajero.
+  - Estados, con su precio:
+    1. Arreglada: 20.000 €.
+    2. Fachada nueva y más sitio dentro: 30.000 €.
+    3. Cuarto a la izquierda: 40.000 €.
+    4. Cuarto a la derecha: 50.000 €.
+    5. Segundo piso, con su puerta por detrás: 60.000 €.
+  - Cuando se cambia de estado se llama a `casa.set_state(n)` y `casa.dentro.set_state(n)`, si existen (Pretil).
+- **Lo que se guarda:** `stats.casa = {st, debe, estado, obra, obra_dia, offered}`.
+
+**Trabajos** (`trabajos.gd`, nuevo). Ocupan `G.side = {id: "trabajo", kind, stage…}`, y una misión de la historia los deja.
+- **El de las faenas** (`faenas`) es un NPC genérico en la Plaza del Ayuntamiento: `plaza.spot(6, 24)`. Da tres trabajos:
+  - **Reparto en coche.** Recoges un bulto y lo llevas a una casa a 250–800 m, contrarreloj. Paga 100–600 € según lo rápido y lo entero que llegue.
+  - **Taxi.** Un turno de 5 carreras: un vecino genérico a 40–150 m te hace señas, paras, se sube y lo llevas a 250–700 m. Cada carrera paga 100–500 €. Si te bajas del coche más de 10 s, se acaba el turno.
+  - **Jornal en el campo.** 30 rosas del azafrán en la viña o el surco grande más cercano, en 150 s. Paga 25 € por rosa y 50 € más si las coges todas.
+- **Henry**, cualquier día menos el jueves, te da un pedido para un vecino conocido; si conoces a menos de 3, para cualquier vecino con nombre del pueblo. Paga 30–150 € según lo caliente que llegue, y da +2 de confianza.
+- **Lo cobrado** se guarda en `stats.trabajos`, con una línea en la página de encargos.
+
+**Engranajes compartidos:**
+- `game.gd`: preloads, setup, tick, `talk_to`, cajero en `interact` y en el texto de la acción, `restore` en `start_game`, `_side_drop`/`_side_show`/`_side_tick` para "trabajo", y la Agenda.
+- `marcas.gd`: `givers`.
+- `loc.gd`: los textos.
+- `selftest.gd`:
+  - Modo `--herencia`, porque `--casa` ya existía: 11 comprobaciones.
+  - Modo `--trabajos`: 7 comprobaciones.
+  - Las dos entran en la prueba completa, detrás de `_pintadas_checks`.
+  - La comprobación de las páginas de la Agenda cambia de 6 a 7.
+
+**Arreglado de paso:** la prueba `bancosancho` entraba en la copistería solo con pisar la flecha. Ahora pulsa Acción, y ya da 5 ok.
+
+**Pruebas:** `herencia` 11 ok, `trabajos` 7 ok, `palabros` 3 ok, `bancosancho` 5 ok. Las fotos salen con `herencia shots` y `trabajos shots`. La prueba completa va después.
+
+**Diagrama de misiones:** `guion/misiones.html` y el artefacto (v3) tienen ahora las secciones «De fondo» y «Trabajos».
+
+**Pendiente:**
+- `guion/relaciones.html`: añadir a Edmundo y a El de las faenas.
+- Los modelados de Pretil: el interior del banco y los 6 estados de la casa.
+- Para las rosas del jornal se usa la bola morada de `pickups`; mejor una rosa de verdad.
+
+### Travesía del Rollo y tramo norte de la Bajada del Rollo: 21 entradas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y seguimos», tras aprobar Pizarro). Elegida con `faltan.py` (Travesía del Rollo, 170 m de fachada genérica), con lo que faltaba de la Bajada del Rollo al lado.
+
+- **Hecho.** 21 entradas `rol_*`. Fotos del Catastro y Street View de noviembre de 2024. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - Pareadas de 1995 (Bajada del Rollo 30 a 44 en el Catastro): `rol_write.py` (scratchpad) pone el frente paralelo a la Travesía en la cara del cuerpo de dos plantas, recortado en la medianera, con `floors` 2 y `strip` 2,5, como `sur_write.py` en la Prolongación del Florido.
+  - Travesía 3 en dos entradas con `only`: `rol_tr3h` (2 plantas, frente al tramo noreste) y `rol_tr3w` (1 planta, la tapia larga, `reach` 16).
+  - `rol_tr3h` y `rol_tr1` se adelantaron 1,7 y 1,9 m hasta la cara de su parte, porque `precheck.py` las daba por detrás.
+  - `rol_br10` se quitó tras ver las hojas: su frente estaba en un patio detrás de `rol_br8` (no lo cogió el aviso de fachadas escondidas).
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (21 entradas; respetada la línea `alemania_5` de Edificios Especiales); `godot/data/map.json`; las hojas `guion/fotos/tanda34/rollo_1..4.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado sobre el de las 13:31 (el de Pizarro) y otra vez para quitar `rol_br10`, avisando a Edificios Especiales antes y después de cada uno.
+  - Frente a las copias: 21 entradas nuevas, ninguna quitada de las de antes. `monjas_21`, `monjas_5` y `rol_br8` cambian solo en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+- **Pruebas.**
+  - A las 14:02 el juego no cargaba `casa_dentro.gd` (Edificios Especiales lo estaba editando; avisado, no se tocó).
+  - A las 14:05, `casas` de las 22 y las dos de Monjas: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_rol_b30_rol_b32_rol_b34_rol_b36_rol_b38_rol_b40_r_20261121_140557.log)).
+  - Tras quitar `rol_br10`, `solo=rol_br8,rol_br15a,rol_br17`: 4 ok ([log](logs/selftest_casas_solo_rol_br8_rol_br15a_rol_br17_20261121_140907.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). Sin commit.
+
+### Calle del Rollo y calle del Socorro: 16 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y seguimos», tras aprobar la Travesía y la Bajada del Rollo). Dos calles cortas en una tanda: el Rollo recoge las casas 17 y 19 que quedaron fuera de la Travesía; el Socorro sale de `faltan.py`.
+
+- **Hecho.** 8 entradas `rro_*` y 8 `soc_*`. Fotos del Catastro; Street View de noviembre de 2024 en el bloque del Socorro. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - Rollo 1 (3890801) y Juan Carlos I 50 (3890803) están en `CARIDAD_RCS` de `bake_godot.py`: fuera.
+  - `soc_2b` (3 plantas) y `soc_2y` (1 planta) comparten la parcela 4298527 con `only`.
+  - `soc_4` y `soc_6` llevan `reach` 6, para dejar como casas normales sus cuerpos de dos plantas del fondo.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (16 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/rollo_socorro_1..3.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 14:08 (el del Rollo sin `rol_br10`), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 16 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 16: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_rro_17_rro_19_rro_37_rro_39_rro_41_rro_43_rro_45__20261121_141632.log)).
+  - Tras oscurecer el ladrillo del bloque, `solo=soc_2,soc_2b`: 4 ok ([log](logs/selftest_casas_solo_soc_2_soc_2b_20261121_141825.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos un poco»). Sin commit. Pausa después de esta tanda.
+
+### «Saltar a misión» con todas las misiones (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario: «Actualiza el "ir a misión" del modo desarrollador para que incluya todas las misiones».
+- `game.gd`: la página `dev_missions` lista ahora la historia, como antes, y tres apartados más (`DEV_OTHERS`):
+  - **Secundarias:** el menú de la Josefa, Don Luis, el jamón de los jueves, las pintadas de la Chiki, el Recress, el ajedrez y la Tomasa.
+  - **De fondo:** la herencia y las obras con Edmundo.
+  - **Trabajos:** El de las faenas y los pedidos de Henry.
+- `_dev_side(id)` deja la historia hecha (paso `tbc`), con lo que pide esa misión abierto y sin hacer.
+  - La hora es la que le hace falta: el jueves a las 8:30 para el jamón, y la llamada suena ya.
+  - Te baja del coche de la Paca y te pone al lado de quien la da. Para las obras, en la flecha del banco.
+  - Guarda la partida, como los saltos de la historia.
+- Arreglado de paso: la Chiki no salía entre quienes dan misión, así que no tenía flecha verde con su encargo por estrenar y se iba de ronda. Ahora sí sale, con `pintadas.givers()` en `marcas.gd`.
+- Prueba: modo `--devmisiones` (solo suyo, porque pone el juego patas arriba), 2 ok: están las 11 y cada salto te deja junto a quien da la misión.
+  - `pintadas` 7 ok y `civicos` 39 ok.
+  - La prueba completa de las 14:05 dio 917 ok y 0 fallos; fue antes de este cambio.
+
+### Tres pitillos al día y 24 horas entre sueño y sueño (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario: «Los cigarros limitados a tres al día y el dormir tendrá un cooldown de 24 horas in-game».
+- **Pitillos** (`fumar.gd`): como mucho `PER_DAY` 3 en un día de juego, contando desde la medianoche.
+  - Se cuentan en `stats.pitillo_n` y `stats.pitillo_dia`.
+  - Con un cuarto, `why_not()` devuelve `fumar_day`: «Ya llevas tres pitillos hoy…». El pitillo no se gasta.
+  - El de la Tomasa no cuenta.
+- **Dormir** (`game.gd`): `SLEEP_EVERY` son 24 h, contadas desde que te acuestas. Se guarda en `stats.slept_h`, que pone `_go_to_sleep`. Así, quien se acuesta a las diez puede volver a hacerlo a las diez de la noche siguiente.
+  - Antes de tiempo, la cama dice «Sin sueño hasta el MARTES · 22:00», y al pulsar sale un aviso.
+  - La hora de dormir de la historia (paso `sleep`) nunca espera.
+- **Prueba:** modo `--descanso`, 2 ok, también en la completa detrás de los trabajos. `mejoras2`, 12 ok.
+- **Diagrama:** la tarjeta de los pitillos y una de dormir nuevas.
 
 ## Cómo mantener el registro
 

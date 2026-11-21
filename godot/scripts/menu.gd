@@ -413,7 +413,7 @@ func _unhandled_input(e: InputEvent) -> void:
 ## the left, a coloured tab for each page down the right, and the stain of somebody's coffee.
 func _draw_notebook() -> void:
 	var r := Rect2(_box.global_position - global_position, _box.size).grow_individual(118, 40, 84, 56)
-	var tabs := [Color("d9643a"), Color("e6b422"), Color("5aa84f"), Color("3b5fa8"), Color("c94f7c"), Color("8a4fb8")]
+	var tabs := [Color("d9643a"), Color("e6b422"), Color("2a9d8f"), Color("5aa84f"), Color("3b5fa8"), Color("c94f7c"), Color("8a4fb8")]
 	draw_set_transform(r.get_center(), deg_to_rad(-1.2), Vector2.ONE)
 	var o := -r.size / 2.0                               # (drawn round its own middle, a touch crooked)
 	draw_rect(Rect2(o + Vector2(12, 16), r.size + Vector2(8, 6)), Color(0, 0, 0, 0.32))
@@ -421,11 +421,11 @@ func _draw_notebook() -> void:
 	draw_rect(Rect2(o + Vector2(-10, -8), r.size + Vector2(22, 16)), Color("1f3f27"), false, 3.0)
 	for k in range(tabs.size()):                         # the tabs, sticking out of the right-hand edge
 		var here := k == _tab
-		var tr := Rect2(o.x + r.size.x - 4.0, o.y + 40.0 + k * 58.0, 44.0 if here else 30.0, 50.0)
+		var tr := Rect2(o.x + r.size.x - 4.0, o.y + 34.0 + k * 50.0, 44.0 if here else 30.0, 44.0)      # (seven since the "De fondo" page, 21 Nov 2026: closer together)
 		draw_rect(Rect2(tr.position + Vector2(2, 3), tr.size), Color(0, 0, 0, 0.25))
 		draw_rect(tr, tabs[k] if here else tabs[k].darkened(0.18))
 		draw_rect(tr, INK, false, 2.0)
-		draw_string(ThemeDB.fallback_font, tr.position + Vector2(tr.size.x - 19.0, 33.0), str(k + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("fff6e0"))
+		draw_string(ThemeDB.fallback_font, tr.position + Vector2(tr.size.x - 19.0, 30.0), str(k + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("fff6e0"))
 	for k in range(3):                                   # the pages underneath
 		draw_rect(Rect2(o + Vector2(3 - k, 3 - k) * 1.5, r.size), Color("e6dfcc"))
 	draw_rect(Rect2(o, r.size), Color("fbf7ea"))

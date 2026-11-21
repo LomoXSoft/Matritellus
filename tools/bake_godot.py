@@ -670,9 +670,12 @@ if os.path.exists(_calles):
 STRIP_RC = {hd['rc']: name for name, hd in HOUSES.items() if hd.get('strip') and hd.get('rc')}
 # "with": [<reference>, ...] on a house: other plots it takes in whole, where one building stands on several and
 # Catastro has one inside another's front (Calle de Roma 8 wraps round no. 10): one front, not two laid over each other
-def house_of(bid, floors):
+def house_of(bid, floors, p=None):
     for name, hd in HOUSES.items():
-        if (hd['rc'] == bid or bid in hd.get('with', ())) and (floors == hd['only'] if 'only' in hd else floors >= hd['floors']): return name
+        if (hd['rc'] == bid or bid in hd.get('with', ())) and (floors == hd['only'] if 'only' in hd else floors >= hd['floors']):
+            if p is not None and 'reach' in hd and LineString(hd['front']).distance(p) > hd['reach']:
+                continue                    # (out of this one's reach: a through plot's other front may be another entry's)
+            return name
     return None
 def house_frame(hd):
     (lx, lz), (rx, rz) = hd['front']
@@ -746,7 +749,7 @@ for pid, floors, v in raw:
     if bid == CRISTOPRADO_RC:               # (the hermitage of the Cristo del Prado: what of the parcel is the hermitage goes, the home stays)
         p = p.difference(cristoprado_built.buffer(0.05, join_style=2)).buffer(-0.2, join_style=2).buffer(0.2, join_style=2)
         if p.is_empty or p.area < 5: continue
-    hand = house_of(bid, floors)
+    hand = house_of(bid, floors, p)
     if hand and 'reach' in HOUSES[hand] and LineString(HOUSES[hand]['front']).distance(p) > HOUSES[hand]['reach']:
         hand = None                         # ("reach": <m> -- a block of a deep plot farther than that behind the front stays an ordinary part:
                                             #  up the hill at the back, it would lift the floor of the whole house; Travesía del Santo 8)

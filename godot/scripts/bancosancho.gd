@@ -21,6 +21,7 @@ extends "res://scripts/obra.gd"
 
 const HOUSE := "sfran_b004"
 const DentroS = preload("res://scripts/copisteria_dentro.gd")
+const BancoS = preload("res://scripts/banco_dentro.gd")
 const BANK := "Banco Cantabria"
 const SHOP := "Copistería Sancho Panza"
 const DIR := "res://assets/bancosancho/"
@@ -55,11 +56,15 @@ const BLIND := 0x7a6a5a
 
 var door: Vector2                         # before the copy shop's door, on the map (the Recress mission's copy shop)
 var bank_door: Vector2
+var cajero_spot: Vector2                  # the bank's cash machine: where you stand at it, on the map...
+var cajero_face := 0.0                    # ...which way you look there (a heading, as out_h: atan2(x, z))...
+var cajero_at: Vector3                    # ...and where its screen is, in the world
 var bank_open := true
 var shop_open := true
 var elec_open := true
 var outline: PackedVector2Array
 var tienda                                # the copy shop's inside, a set apart (copisteria_dentro.gd): what you go into from its glass door
+var banco                                 # the bank's inside, a set apart (banco_dentro.gd): what you go into from its glass door, in its hours
 var _rooms := {}                          # "banco"/"copia"/"elec" -> Node3D of what shows only while open
 var _shut := {}                           # ...and only while shut
 
@@ -102,6 +107,20 @@ func _material(key) -> Material:
 			sm.emission = Color(0.96, 0.95, 0.9)
 			sm.emission_energy_multiplier = 0.35
 			m = sm
+		"pantalla":         # the cash machine's screen, lit
+			var pm := StandardMaterial3D.new()
+			pm.albedo_color = Color(0.16, 0.36, 0.62)
+			pm.emission_enabled = true
+			pm.emission = Color(0.2, 0.45, 0.8)
+			pm.emission_energy_multiplier = 0.9
+			m = pm
+		"luz_verde":        # the light over its card slot
+			var vl := StandardMaterial3D.new()
+			vl.albedo_color = Color(0.3, 0.95, 0.4)
+			vl.emission_enabled = true
+			vl.emission = Color(0.3, 1.0, 0.4)
+			vl.emission_energy_multiplier = 1.6
+			m = vl
 		"luz":
 			var lm := StandardMaterial3D.new()
 			lm.albedo_color = Color(1.0, 0.98, 0.93)
@@ -129,6 +148,9 @@ func build(world) -> void:
 	W.add_child(self)
 	door = spot((GLASS_DOOR[0] + GLASS_DOOR[1]) / 2.0, 1.0)
 	bank_door = spot((BANK_DOOR[0] + BANK_DOOR[1]) / 2.0, 1.0)
+	cajero_spot = spot(CAJERO_X + CAJERO_W / 2.0, 0.8)
+	cajero_face = atan2(U.y, -U.x)                        # (into the wall: the frame's -z)
+	cajero_at = transform * Vector3(CAJERO_X + CAJERO_W / 2.0, 1.56, 0.1)
 	_upper_ti()
 	_upper_sf()
 	_corner()
@@ -144,6 +166,9 @@ func build(world) -> void:
 	var n := Vector2(-U.y, U.x)
 	tienda = DentroS.new()                                # (its door a little inside the glass: the arrow 1.1 m out stays on the narrow pavement)
 	tienda.build(world, spot(gx, -0.45), spot(gx, 1.2), atan2(n.x, n.y))
+	var bx: float = (BANK_DOOR[0] + BANK_DOOR[1]) / 2.0
+	banco = BancoS.new()                                  # (the same: its door a little inside the glass)
+	banco.build(world, spot(bx, -0.45), spot(bx, 1.2), atan2(n.x, n.y))
 	_tell_map()
 	set_open(open_at("banco", 0, 11.0), open_at("copia", 0, 11.0), open_at("elec", 0, 11.0))
 
@@ -328,11 +353,42 @@ func _bank() -> void:
 		box(x, 0.0, -0.3, 0.06, 2.55, 0.08, 0x2a2a2c)
 	box(BANK_DOOR[0], 2.48, -0.3, BANK_DOOR[1] - BANK_DOOR[0], 0.08, 0.08, 0x2a2a2c)
 	box(BANK_DOOR[0] - 0.55, 1.2, 0.0, 0.3, 0.3, 0.01, RED)
-	# the cash machine near the corner, in its red frame
-	box(0.35, 0.6, 0.0, 0.85, 1.4, 0.06, RED)
-	_picture(0.45, 1.1, 0.75, 1.86, 0.062, "cajero")
-	box(0.6, 0.95, 0.06, 0.45, 0.04, 0.12, 0x3a3c40)
+	_cajero()
 	_solid(0.0, g, -0.5, BANK_END, GF, 0.0)
+
+## The cash machine near the corner (the user, 21 November 2026, through Sistemas: a modelled one before each bank; it
+## was a picture on the wall): in its red frame, the dark face of the machine with its lit screen and the keys at its
+## sides, the shelf of the keypad, the slots of the card (a green light over it), the receipt and the notes; a red hood
+## over it with its light, and a screen at each side for whoever is at it. `cajero_spot` and `cajero_face` (build): where
+## you stand at it and which way you look; `cajero_at`: its screen.
+const CAJERO_X := 0.35
+const CAJERO_W := 0.85
+func _cajero() -> void:
+	var x0 := CAJERO_X
+	var w := CAJERO_W
+	box(x0, 0.6, 0.0, w, 1.4, 0.06, RED)
+	box(x0 + 0.07, 0.67, 0.06, w - 0.14, 1.26, 0.03, 0x3a3c42)                # the machine's face
+	box(x0 + 0.07, 1.83, 0.09, w - 0.14, 0.1, 0.006, RED)                      # the bank's band on it
+	box(x0 + 0.16, 1.36, 0.09, 0.53, 0.4, 0.015, "pantalla")                   # the screen
+	_text("Bienvenido", Vector3(x0 + w / 2.0, 1.62, 0.107), 30, 0xffffff, 0.0022)
+	_text("Introduzca su tarjeta", Vector3(x0 + w / 2.0, 1.49, 0.107), 30, 0xffffff, 0.0011)
+	for i in range(4):                                                          # the keys beside it
+		for sx in [x0 + 0.09, x0 + w - 0.14]:
+			box(sx, 1.4 + i * 0.09, 0.09, 0.05, 0.045, 0.012, 0x9a9ca0)
+	box(x0 + 0.1, 1.0, 0.09, w - 0.2, 0.05, 0.2, 0x55585e)                     # the keypad's shelf, its keys
+	for r in range(4):
+		for c in range(3):
+			box(x0 + 0.2 + c * 0.065, 1.05, 0.12 + r * 0.04, 0.045, 0.01, 0.028, 0xd2d4d6)
+		box(x0 + 0.42, 1.05, 0.12 + r * 0.04, 0.07, 0.01, 0.028, [0xc0392b, 0xe0b020, 0x2e9a4a, 0x8a8c90][r])
+	box(x0 + 0.5, 1.22, 0.09, 0.2, 0.022, 0.012, 0x101012)                     # the card's slot, its green light
+	box(x0 + 0.5, 1.25, 0.09, 0.2, 0.012, 0.01, "luz_verde")
+	box(x0 + 0.14, 1.22, 0.09, 0.22, 0.014, 0.012, 0x101012)                   # the receipt's
+	box(x0 + 0.12, 0.8, 0.09, w - 0.24, 0.07, 0.02, 0x121316)                  # the notes'
+	box(x0 + 0.12, 0.77, 0.09, w - 0.24, 0.03, 0.06, 0x767a80)
+	box(x0 - 0.04, 2.0, 0.0, w + 0.08, 0.07, 0.32, RED)                        # the hood, a light under it
+	box(x0 + 0.1, 1.985, 0.1, w - 0.2, 0.015, 0.12, "luz")
+	for sx in [x0 - 0.04, x0 + w + 0.01]:                                       # the screens at its sides
+		box(sx, 1.0, 0.0, 0.03, 1.0, 0.28, 0x2c2e33)
 
 ## the copy shop's stretch of bare brick: the flats' wooden door, its glass door, its window, each under a low arch
 func _brick() -> void:
@@ -622,6 +678,8 @@ func set_open(bank: bool, shop: bool, elec: bool) -> void:
 	elec_open = elec
 	if tienda != null:
 		tienda.open = shop
+	if banco != null:
+		banco.open = bank
 	for q in [["banco", bank, "sala_banco"], ["copia", shop, "sala_copia"], ["elec", elec, "sala_elec"]]:
 		if _rooms.has(q[0]):
 			(_rooms[q[0]] as Node3D).visible = q[1]

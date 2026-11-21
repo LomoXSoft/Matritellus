@@ -18,6 +18,7 @@ extends "res://scripts/obra.gd"
 const PropsS = preload("res://scripts/props.gd")
 const Casas = preload("res://scripts/casas.gd")
 const Creator = preload("res://scripts/creator.gd")
+const EstadoS = preload("res://scripts/casa_estado.gd")   # the house after each of its works (states 1 to 5; this room is state 0)
 
 const INSIDE := Vector2(-1800.0, -1450.0)       # where the set is (V.I.P.'s at (1800, -1350), the Recress's at (-1500, -1650), the Rocas's at (-1800, -1800): 350 m away)
 const HALF := 3.0                               # half its width
@@ -42,6 +43,11 @@ var open := true                # (your own house: always)
 var bed_spot: Vector2           # by the bed, where you lie down from
 var wardrobe_spot: Vector2      # in front of the wardrobe
 var props := 0                  # how many pieces of the kit were set out
+var state := 0                  # which of its six states it is in (set_state): 0 as inherited ... 5 with its upper floor
+var estados: Array = []         # the house after each work (casa_estado.gd), states 1 to 5 in order
+var back_door := Vector2.ZERO   # state 5: before the door at the back, in the room (ZERO in the others)
+var back_spawn := Vector2.ZERO  # state 5: at the top of the stairs behind it, on the upper floor
+var _base_meshes: Array = []    # this room's own walls, floor and ceiling (the house as inherited): hidden from state 1 on
 var pena := -1                  # whose graffiti is on the wall now
 var G
 var _tag: MeshInstance3D
@@ -111,6 +117,7 @@ func build(game, world, at: Vector2, out: Vector2, heading: float) -> void:
 	level = top + 0.03
 	var deck := PackedVector2Array([INSIDE + Vector2(-HALF - 0.6, -0.6), INSIDE + Vector2(HALF + 0.6, -0.6), INSIDE + Vector2(HALF + 0.6, D + 0.6), INSIDE + Vector2(-HALF - 0.6, D + 0.6)])
 	MapData.decks.append({"o": INSIDE + Vector2(0.0, D / 2.0), "poly": deck, "r2": (HALF + 2.0) * (HALF + 2.0) + (D / 2.0 + 2.0) * (D / 2.0 + 2.0), "top": level})
+	_state_decks()
 	transform = Transform3D(Basis.IDENTITY, Vector3(INSIDE.x, level, INSIDE.y))
 	W.add_child(self)
 	in_door = INSIDE + Vector2(0.0, 0.45)
@@ -122,8 +129,12 @@ func build(game, world, at: Vector2, out: Vector2, heading: float) -> void:
 	_bulb()
 	home()
 	_commit()
+	for c in get_children():                         # (what was just made into meshes: the room as inherited)
+		if c is MeshInstance3D:
+			_base_meshes.append(c)
 	_graffiti()
 	_indoors(self)
+	_states()
 	set_pena(int(G.look_sel[11]) if G != null and G.get("look_sel") != null and G.look_sel.size() > 11 else 0)
 
 ## whose graffiti is on the back wall: the peña you have chosen (it follows the creator, and a loaded game)
@@ -159,6 +170,100 @@ func set_pena(i: int) -> void:
 	(_tag.mesh as QuadMesh).size = Vector2(w, TAG_H)
 	if _front != null:
 		_front_size()
+
+# ---------------- the house's six states ----------------
+## The floors of the house once it has grown (the user's works, through Sistemas, 21 November 2026): the stairs behind
+## the back door, the upper floor at their top (further back, not overhead: two floors cannot share a spot), and the
+## ground floor of all its rooms. They are there from the start; the walls of each state say how far you get.
+func _state_decks() -> void:
+	var st: Rect2 = EstadoS.STAIRS
+	var up: Rect2 = EstadoS.UPPER
+	var a := INSIDE + st.position + Vector2(-0.1, -0.1)
+	MapData.decks.append({"o": INSIDE + st.position, "poly": PackedVector2Array([a, a + Vector2(st.size.x + 0.2, 0), a + Vector2(st.size.x + 0.2, st.size.y + 0.2), a + Vector2(0, st.size.y + 0.2)]),
+		"r2": st.size.length_squared() + 4.0, "top": level, "grad": Vector2(0.0, EstadoS.UP / st.size.y)})
+	var b := INSIDE + up.position + Vector2(-0.6, -0.3)
+	MapData.decks.append({"o": b, "poly": PackedVector2Array([b, b + Vector2(up.size.x + 1.2, 0), b + Vector2(up.size.x + 1.2, up.size.y + 0.9), b + Vector2(0, up.size.y + 0.9)]),
+		"r2": (up.size + Vector2(2, 2)).length_squared(), "top": level + EstadoS.UP})
+	var g := INSIDE + Vector2(EstadoS.LEFT.position.x - 0.6, -0.6)
+	var gw: float = EstadoS.RIGHT.end.x + 0.6 - (EstadoS.LEFT.position.x - 0.6)
+	MapData.decks.append({"o": g, "poly": PackedVector2Array([g, g + Vector2(gw, 0), g + Vector2(gw, D + 1.2), g + Vector2(0, D + 1.2)]), "r2": gw * gw + 80.0, "top": level})
+
+## the five houses after their works, built once in this same place and hidden; then the house as inherited
+func _states() -> void:
+	var lend := {"dia": _material("dia"), "solids": [
+		[Vector3(BED.x, 0.3, BED.z - BED_L / 2.0), Vector3(BED_W, 0.6, BED_L)],
+		[Vector3(BED.x + BED_W / 2.0 + 0.4, 0.3, D - 0.3), Vector3(0.5, 0.6, 0.5)],
+		[Vector3(WARDROBE.x + 0.31, 1.0, WARDROBE.z), Vector3(0.62, 2.0, WARDROBE_W)]]}
+	for n in range(1, 6):
+		var e = EstadoS.new()
+		e.build(W, transform, n, lend)
+		estados.append(e)
+	state = -1
+	set_state(0)
+
+## Which of its six states the house is in (Sistemas: G.stats["casa"]["estado"], on loading a game and the morning a
+## work is done): 0 as inherited (this room) · 1 done up · 2 enlarged · 3 a bathroom on the left · 4 a sitting room on
+## the right · 5 an upper floor behind the door at the back. The bed, the wardrobe, the street door and the graffiti
+## over the bed are where they were in all of them.
+func set_state(n: int) -> void:
+	n = clampi(n, 0, 5)
+	if n == state:
+		return
+	state = n
+	for m in _base_meshes:
+		(m as MeshInstance3D).visible = n == 0
+	if body != null:
+		body.collision_layer = 1 if n == 0 else 0
+	for i in range(estados.size()):
+		var e = estados[i]
+		var on: bool = i + 1 == n
+		e.visible = on
+		if e.body != null:
+			(e.body as StaticBody3D).collision_layer = 1 if on else 0
+	if n >= 5:
+		back_door = INSIDE + Vector2((EstadoS.BACK_DOOR.x + EstadoS.BACK_DOOR.y) / 2.0, D - 0.7)
+		back_spawn = INSIDE + Vector2((EstadoS.BACK_DOOR.x + EstadoS.BACK_DOOR.y) / 2.0, EstadoS.UPPER.position.y + 1.0)
+	else:
+		back_door = Vector2.ZERO
+		back_spawn = Vector2.ZERO
+
+## the rooms of the house as it is now: [name, x0, x1, z0, z1, the floor's height, the wall the camera hangs on]
+func rooms() -> Array:
+	if state >= 1 and state <= estados.size():
+		return estados[state - 1].rooms()
+	return [["sala", -HALF, HALF, 0.0, D, 0.0, "z0"]]
+
+## the room you are in, for entradas.gd's camera (the house has several once it has grown): the middle of the wall the
+## camera hangs on, which way it looks, how big the room is
+func room_at(pp: Vector2) -> Dictionary:
+	var p := pp - INSIDE
+	var best: Array = []
+	var bd := 1e9
+	for r in rooms():
+		var mid := Vector2((float(r[1]) + float(r[2])) / 2.0, (float(r[3]) + float(r[4])) / 2.0)
+		var half := Vector2((float(r[2]) - float(r[1])) / 2.0, (float(r[4]) - float(r[3])) / 2.0)
+		var q := (p - mid).abs() - half
+		var d := maxf(q.x, q.y)
+		if d < bd:
+			bd = d
+			best = r
+	var x0: float = best[1]
+	var x1: float = best[2]
+	var z0: float = best[3]
+	var z1: float = best[4]
+	var fwd := Vector2(0, 1)
+	var at := Vector2((x0 + x1) / 2.0, z0)
+	var half_w := (x1 - x0) / 2.0
+	var deep := z1 - z0
+	match String(best[6]):
+		"x0":
+			fwd = Vector2(1, 0); at = Vector2(x0, (z0 + z1) / 2.0); half_w = (z1 - z0) / 2.0; deep = x1 - x0
+		"x1":
+			fwd = Vector2(-1, 0); at = Vector2(x1, (z0 + z1) / 2.0); half_w = (z1 - z0) / 2.0; deep = x1 - x0
+	if String(best[0]) == "sala" and x1 - x0 > 2.0 * HALF + 0.5:      # (the enlarged room: the camera keeps to the side you are on)
+		at.x = clampf(p.x, x0 + HALF, x1 - HALF)
+		half_w = HALF
+	return {"o": INSIDE + at, "fwd": fwd, "side": Vector2(-fwd.y, fwd.x), "half": half_w, "deep": deep, "tall": TALL, "name": String(best[0])}
 
 ## standing by the bed (a nap: game.gd _can_nap) / in front of the wardrobe
 func bed_near(p: Vector2) -> bool:

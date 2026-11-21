@@ -64,6 +64,21 @@ func givers() -> Array:
 		for n in G.tomasa.givers(free_hands):
 			if n != null and not (n in out):
 				out.append(n)
+	# La Chiki, her walls still to be shown to you (pintadas.gd)
+	if G.get("pintadas") != null:
+		for n in G.pintadas.givers(free_hands):
+			if n != null and not (n in out):
+				out.append(n)
+	# jobs (trabajos.gd): El de las faenas, Henry on any day but Thursday, the fare waving you down, whoever an order is for
+	if G.get("trabajos") != null:
+		for n in G.trabajos.givers(free_hands):
+			if n != null and not (n in out):
+				out.append(n)
+	# the "de fondo" lines (fondo_casa.gd): Tia Paca when she has rung you, Edmundo Monedero when he has a step to sell
+	if G.get("fondo_casa") != null:
+		for n in G.fondo_casa.givers():
+			if n != null and not (n in out):
+				out.append(n)
 	return out.filter(func(n): return n != null and is_instance_valid(n))
 
 ## the photo of one of them, for the map (null until it has been taken)

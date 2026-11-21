@@ -77,6 +77,8 @@ func shops() -> Array:
 	var bs = G.world.get("bancosancho") if G.world != null else null
 	if bs != null and bs.get("tienda") != null:   # the Copistería Sancho Panza, the girl of the posters inside (its set: copisteria_dentro.gd)
 		out.append(bs.tienda)
+	if bs != null and bs.get("banco") != null:    # the Banco Cantabria next door, its manager at his desk (its set: banco_dentro.gd)
+		out.append(bs.banco)
 	var co = G.world.get("correos") if G.world != null else null
 	if co != null and co.get("tienda") != null:   # Correa, the post office of the Calle de Zaragoza (its set: correos_dentro.gd)
 		out.append(co.tienda)
@@ -87,6 +89,9 @@ func shops() -> Array:
 	var fe = G.world.get("ferial") if G.world != null else null
 	if fe != null and fe.get("aseos") != null:      # the public toilets by the fairground's Auditorio (their set: aseos_dentro.gd)
 		out.append(fe.aseos)
+	var si = G.world.get("silo") if G.world != null else null
+	if si != null and si.get("dentro") != null:    # the Silo del Tío Anaranjao, by its gate (its set: silo_dentro.gd, several rooms)
+		out.append(si.dentro)
 	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
 		out.append(G.casa)
 	return out
@@ -249,7 +254,7 @@ func camera(dt: float, pp: Vector2) -> bool:
 	if G.indoors:
 		var place = G.inside_of if G.inside_of != null else G.get("vip")
 		if place != null:
-			r = room(place)
+			r = place.room_at(pp) if place.has_method("room_at") else room(place)      # (a set of several rooms says which one you are in: silo_dentro.gd)
 	else:
 		r = town_room(pp)
 	if r.is_empty():

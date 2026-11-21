@@ -1,6 +1,6 @@
 """The sheets shown to the user of the park of the Paseo del Cristo (guion/fotos/paseo/).
 
-    python tools/paseo/hojas.py [SV_FOLDER] [foto=PHOTO.jpg]
+    python tools/paseo/hojas.py [SV_FOLDER] [foto=PHOTO.jpg] [piezas=P1.jpg,P2.jpg,P3.jpg,P4.jpg]
 
 01: Street View beside the game from the same spots (run first, SV_FOLDER made by tools/paseo/capturas.py:
     tools/run_tests.py "$(python tools/merkocarry/vistas.py SV_FOLDER c03_n c04_n c06_n c09_n c12_n c16_n p01_e p05_e
@@ -10,6 +10,9 @@
     square of the crossing path, from the east end, the slate close to, from the air, at night. With foto=, the
     user's own picture of the corner (21 November 2026, from Google Maps on the phone; NOT kept in the repository)
     goes first, beside the game's.
+03: with piezas=, the user's four pictures of March 2013 (21 November 2026, from Google Maps on the phone; NOT kept in
+    the repository: "Faltan varias cosas. La prensa de piedra, el monolito de piedra, la mesa de piedra, la fuente"),
+    each beside the game from about the same spot (tools/run_tests.py "vistas=ps_prensa:...", see referencias/paseo).
 """
 import os, sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -18,14 +21,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SHOTS = os.path.join(HERE, '..', '..', 'godot', 'shots')
 OUT = os.path.join(HERE, '..', '..', 'guion', 'fotos', 'paseo')
 os.makedirs(OUT, exist_ok=True)
-args = [a for a in sys.argv[1:] if not a.startswith('foto=')]
+args = [a for a in sys.argv[1:] if not a.startswith(('foto=', 'piezas='))]
 foto = ([a[5:] for a in sys.argv[1:] if a.startswith('foto=')] or [''])[0]
+piezas = ([a[7:].split(',') for a in sys.argv[1:] if a.startswith('piezas=')] or [[]])[0]
 sv = args[0] if args else ''
 try:
     font = ImageFont.truetype('arial.ttf', 17)
 except Exception:
     font = ImageFont.load_default()
 BLUR = {}                   # (in the 1600 x 1000 picture: passers-by)
+BLUR_PIEZAS = {1: [(40, 340, 100, 420)]}     # (in the user's phone pictures, 909 x 2000: a passer-by far off in the second)
 
 
 def fit(im, w, h):
@@ -84,3 +89,16 @@ rows += [('El paseo desde su arranque, hacia la ermita', shot('paseo_oeste')), (
          ('Las losas y un banco, de cerca', shot('paseo_losas')), ('Desde el aire', shot('paseo_aire')),
          ('De noche', shot('paseo_oeste_noche'))]
 sheet('02_en_el_juego.jpg', rows, 800, 450, 2)
+if piezas:
+    rows = []
+    for i, (f, what, n) in enumerate(zip(piezas, ('la prensa de piedra', 'el monolito, su banco y su pilón', 'la mesa de piedra',
+                                                   'la fuente'), ('ps_prensa', 'ps_monolito', 'ps_mesa', 'ps_fuente'))):
+        im = Image.open(f).convert('RGB')
+        for box in BLUR_PIEZAS.get(i, []):
+            im.paste(im.crop(box).filter(ImageFilter.GaussianBlur(10)), box)
+        rows.append(('Tu foto (marzo de 2013): ' + what, im.crop((0, 210, 909, 1000))))
+        rows.append(('El juego, desde cerca de allí', shot('vista_' + n)))
+    if sv:                  # (and the statue, close to: Street View's from the park's own line, the game's)
+        rows.append(('Street View (2013): la estatua, con su cántaro', street('p14_n').crop((200, 290, 400, 464))))
+        rows.append(('El juego: la estatua y su agua', shot('vista_ps_estatua')))
+    sheet('03_piezas_de_piedra.jpg', rows, 700, 610, 2)

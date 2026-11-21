@@ -157,13 +157,10 @@ func _tour_step(n, picks: Array, lines: Array, i: int, then: Callable) -> void:
 		G.cine_lock = false
 		then.call()
 		return
-	var p: Vector2 = picks[i]["p"]
-	var road: Vector2 = MapData.nearest_road(p)["p"]
-	var out: Vector2 = (road - p).normalized() if road.distance_to(p) > 0.5 else Vector2(0, 1)
-	var side := Vector2(-out.y, out.x)
-	var at := MapData.at(p, 1.6)
-	var from_a := MapData.at(p + out * 7.0 + side * 2.5, 2.3)
-	var from_b := MapData.at(p + out * 6.0 - side * 2.5, 1.9)
+	var shot := tour_shot(picks[i])
+	var from_a: Vector3 = shot[0]
+	var from_b: Vector3 = shot[1]
+	var at: Vector3 = shot[2]
 	G.cam_fixed = [from_a, at]
 	G.cam_pos = from_a
 	G.cam_look = at
@@ -172,6 +169,31 @@ func _tour_step(n, picks: Array, lines: Array, i: int, then: Callable) -> void:
 	_tween = create_tween()
 	_tween.tween_method(func(k: float): G.cam_fixed = [from_a.lerp(from_b, k), at], 0.0, 1.0, TOUR_SHOT)
 	G.say(n.shown_name(), [lines[i]], n.voice, _tour_step.bind(n, picks, lines, i + 1, then))
+
+## the camera on one wall of her scene: [from_a, from_b, at], a glide past it from the street. Out along the wall's own
+## facing when it is known, towards the nearest street otherwise; 7 m out was often inside the house across a narrow
+## street, so the places go through G.scene_shot, which keeps them where the wall is seen (21 Nov 2026).
+func tour_shot(t: Dictionary) -> Array:
+	var p: Vector2 = t["p"]
+	var out := Vector2.ZERO
+	if t.get("n") is Vector2:
+		out = (t["n"] as Vector2).normalized()
+	if out.length() < 0.5:
+		var road: Vector2 = MapData.nearest_road(p)["p"]
+		out = (road - p).normalized() if road.distance_to(p) > 0.5 else Vector2(0, 1)
+	var side := Vector2(-out.y, out.x)
+	var at := MapData.at(p, 1.6)
+	if t.get("node") is Node3D and is_instance_valid(t["node"]):
+		at = (t["node"] as Node3D).global_position         # (the painting itself, on its wall)
+	var s: Array = G.scene_shot(at, MapData.at(p + out * 7.0 + side * 2.5, 2.3), MapData.at(p + out * 6.0 - side * 2.5, 1.9))
+	return [s[0], s[1], at]
+
+## her mission for you, while it is still to be had: the green arrow over her (21 Nov 2026), and she waits where she is
+func givers(free_hands: bool) -> Array:
+	var n = G.named.get("chiki")
+	if free_hands and n != null and is_instance_valid(n) and not n.away and G._protest_over and not unlocked():      # (not "visible": far off, nobody is drawn)
+		return [n]
+	return []
 
 ## once a day: a wall she thinks she saw, and where
 func _hint(n) -> void:

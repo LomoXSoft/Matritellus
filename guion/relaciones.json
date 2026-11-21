@@ -516,6 +516,30 @@
    "role": "El tendero de los chinos del Arroyuelo. Habla en infinitivo y te avisa de que no robes, que él vigila.",
    "where": "Dentro de los chinos del Arroyuelo, en la caja, en las horas de la tienda.",
    "notes": "«¡Hola, pasar! Pero no robar nada, ¿eh? ¡Yo vigilar!» Pedido por el usuario el 20/11/2026 (hecho con Codex)."
+  },
+  {
+   "id": "edmundo",
+   "name": "Edmundo Monedero",
+   "foto": true,
+   "pos": [
+    8,
+    3
+   ],
+   "role": "Director de la sucursal del Banco Cantabria. Usurero a lo Tom Nook: siempre vendiéndote productos y préstamos «a interés bajo», y por lo bajini se le escapa la verdad («menudo prigao…»). Te vende las obras de la casa. Hombre adulto con traje y gafas, de piel pálida (aspecto provisional).",
+   "where": "En el Banco Cantabria, tras su mesa (de lunes a viernes, de 8:30 a 14:30).",
+   "notes": "Te llama en cuanto acabas de pagar una deuda para ofrecerte la siguiente obra. Pedido por el usuario el 21/11/2026 (nombre y aspecto suyos)."
+  },
+  {
+   "id": "faenas",
+   "name": "El de las faenas",
+   "foto": true,
+   "pos": [
+    4,
+    4
+   ],
+   "role": "Vecino genérico que da trabajos que se repiten: repartos en coche, taxi del pueblo y jornal en el campo.",
+   "where": "En la Plaza del Ayuntamiento.",
+   "notes": "Provisional: más adelante los trabajos se repartirán entre distintos vecinos (el usuario, 21/11/2026)."
   }
  ],
  "links": [
@@ -806,6 +830,30 @@
    "label": "el recado del tabaco",
    "detail": "Le compras un paquete de tabaco en los chinos (6 €); te da diez euros a escondidas y te pide que no se lo digas a sus hijos.",
    "source": "tomasa_done, tomasa_after"
+  },
+  {
+   "a": "tu",
+   "b": "edmundo",
+   "kind": "negocio",
+   "label": "te vende las obras",
+   "detail": "Después de pagar la deuda de la casa, te ofrece cada obra y la pagas en el cajero.",
+   "source": "casa_edm_call, casa_edm_offer_1..5"
+  },
+  {
+   "a": "tu",
+   "b": "faenas",
+   "kind": "negocio",
+   "label": "te da faena",
+   "detail": "Repartos, taxi y jornal en el campo, pagados.",
+   "source": "faenas_hello"
+  },
+  {
+   "a": "eufrasia",
+   "b": "paca",
+   "kind": "trato",
+   "label": "le cuenta lo de Hacienda",
+   "detail": "La Paca te cuenta que la Eufrasia defraudaba a Hacienda: la casa debe 10.000 €.",
+   "source": "casa_paca"
   }
  ],
  "cabos": [

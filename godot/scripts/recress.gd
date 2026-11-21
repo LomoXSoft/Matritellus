@@ -338,8 +338,9 @@ func _pitch(n, again: bool) -> void:
 	var road: Dictionary = MapData.nearest_road(door)            # (down the middle of the street: no tree, no wall in the way)
 	var along: Vector2 = (road["u"] as Vector2) * (1.0 if (road["u"] as Vector2).dot(sala.u) >= 0.0 else -1.0)
 	var mid: Vector2 = road["p"]
-	var from0 := MapData.at(mid + along * 13.0, 4.6)
-	var from1 := MapData.at(mid + along * 5.0 + (door - mid) * 0.2, 2.2)
+	var door_shot: Array = G.scene_shot(look, MapData.at(mid + along * 13.0, 4.6), MapData.at(mid + along * 5.0 + (door - mid) * 0.2, 2.2))
+	var from0: Vector3 = door_shot[0]
+	var from1: Vector3 = door_shot[1]
 	_beats.append(["say", a, Loc.t("alberto_rec_idea"), two[0], two[1], 42.0])
 	_beats.append(["pan", 0.1, from0, look, from1, look, 6.0, 46.0])
 	_beats.append(["say", a, Loc.t("alberto_rec_recress"), null, null, 46.0])
@@ -369,8 +370,9 @@ func _sad_corners() -> Array:
 		var road: Vector2 = r["p"]
 		var back: Vector2 = (road - target).normalized() if road.distance_to(target) > 1.0 else _back
 		var along: Vector2 = r["u"]
-		var off: float = road.distance_to(target)
-		out.append([MapData.at(road + back * 2.0 + along * 7.0, up), at, MapData.at(road + back * 1.0 - along * 5.0, up - 1.5), at])
+		# (7 m along the street went into a house where it bends or ends: G.scene_shot keeps both ends where `at` is seen)
+		var s: Array = G.scene_shot(at, MapData.at(road + back * 2.0 + along * 7.0, up), MapData.at(road + back * 1.0 - along * 5.0, up - 1.5))
+		out.append([s[0], at, s[1], at])
 	if not G.world.extra_ramps.is_empty():                       # a builder's skip full of rubble: a dirty corner
 		var sk: Array = G.world.extra_ramps[0]
 		add.call(sk[0] as Vector2, 0.8, Vector2(sin(float(sk[1]) + 1.2), cos(float(sk[1]) + 1.2)), 4.5)
