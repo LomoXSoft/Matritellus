@@ -7312,6 +7312,79 @@ func _mejoras2_checks(pictures := false) -> void:
 		var finished_ok: bool = T.done() and g.side == null and done_text.to_lower().contains("hijos") and done_text.to_lower().contains("controlo") and bool(T.n.look_data.get("smoke", false))
 		_check(accepted_ok and entered_chinos and chino_ok and can_buy_ok and bought_ok and finished_ok,
 			"Tomasa tobacco errand works end-to-end (accept=%s, chinos=%s, chino_inf=%s, buy_prompt=%s, bought=%s, done=%s)" % [accepted_ok, entered_chinos, chino_ok, can_buy_ok, bought_ok, finished_ok])
+		# the pitillo (the user, 21 Nov 2026): she asks you to have one with her; either answer, you smoke it, six hours
+		# go by with the camera at the sky, and she gives you three
+		var offered: bool = g._ask != null and (g._ask["options"] as Array).size() == 2
+		if offered:
+			g._ask_pick(1)                       # "No, que yo no fumo": you smoke it all the same
+		var no_text := " ".join(g.dlg["lines"]) if g.dlg != null else ""
+		while g.dlg != null:
+			g.dialog_advance()
+			await _frames(1)
+		var h0: float = g.clock
+		var smoking: bool = g.phase == "smoke"
+		var looked_up := false
+		var shot_sky := false
+		for _w in range(900):
+			if g.phase != "smoke":
+				break
+			looked_up = looked_up or (g.cam.global_transform.basis.z.y < -0.5)
+			if pictures and _w == 0:
+				await _shot("pitillo_tomasa")
+			if pictures and not shot_sky and g.fumar._t > g.fumar.UP + 2.5:
+				shot_sky = true
+				await _shot("pitillo_cielo")
+			await _frames(1)
+		var passed: float = fposmod(g.clock - h0, 24.0)
+		var pack_text := " ".join(g.dlg["lines"]) if g.dlg != null else ""
+		while g.dlg != null:
+			g.dialog_advance()
+			await _frames(1)
+		var three: bool = g.fumar.charges() == 3 and g.inventario.key_items().any(func(it): return it["id"] == "pitillo" and int(it["qty"]) == 3 and bool(it.get("usable", false)))
+		_check(offered and no_text.contains("cincuenta") and smoking and looked_up and absf(passed - 6.0) < 0.1 and three and pack_text.contains("pitillos") and (g.phase == "play" or g.phase == "free"),
+			"done the first time, Tomasa makes you smoke one with her (no: %s), six hours go by looking at the sky (%.2f h, up %s), and you keep three pitillos (%s)" % [no_text.left(40), passed, looked_up, three])
+		# more at the chinos: a pack of three on the tobacco shelf
+		g.set_time(12.0)
+		ch.set_open(ch.open_at(g.weekday, 12.0))
+		g.player.p = g.entradas.spot(ch.tienda, false)
+		g.player.sync()
+		g._door_cool = 0.0
+		await _frames(4)
+		g.interact()
+		await _frames(8)
+		g.player.p = ch.tienda.tobacco_spot + Vector2(0.0, -1.25)
+		g.player.sync()
+		await _frames(10)
+		var pit_prompt: bool = T.can_buy() and g.hud.prompt.text.contains("pitillos")
+		var m0: int = g.money
+		g.interact()
+		await _frames(6)
+		_check(g.indoors and pit_prompt and g.money == m0 - T.PRICE and g.fumar.charges() == 6, "the chinos sells pitillos, three for %d € (prompt %s, %d left)" % [T.PRICE, pit_prompt, g.fumar.charges()])
+		g.player.p = g.entradas.spot(ch.tienda, true)
+		g.player.sync()
+		g._door_cool = 0.0
+		await _frames(4)
+		g.interact()
+		await _frames(8)
+		# and one from the backpack, out in the street
+		g.inventario.show_bag()
+		g.inventario.tab = 1
+		var at := -1
+		var keys: Array = g.inventario.key_items()
+		for i in range(keys.size()):
+			if keys[i]["id"] == "pitillo":
+				at = i
+		g.inventario.sel = maxi(0, at)
+		g.inventario._refresh()
+		var h1: float = g.clock
+		var used: bool = at >= 0 and g.inventario.use_selected()
+		var went: bool = g.phase == "smoke" and not g.inventario.open
+		for _w in range(900):
+			if g.phase != "smoke":
+				break
+			await _frames(1)
+		_check(used and went and absf(fposmod(g.clock - h1, 24.0) - 6.0) < 0.1 and g.fumar.charges() == 5 and not g.indoors,
+			"from the backpack (Objetos clave → Usar) a pitillo makes six hours go by: %s, %d left" % [g.clock_text(), g.fumar.charges()])
 
 	# 4) 5 % smokers in non-kid population (0 % kids) + visual cigarette on face
 	var adult_smokes := 0
@@ -14453,7 +14526,8 @@ func _run() -> void:
 	await _firmas_checks()
 	_check(_at("tbc"), "that is as far as the story goes for now")
 	await _frames(340)
-	_check(g.phase == "end", "a to-be-continued screen comes up")
+	_check(g.phase != "end" and g.phase != "ending" and g.hud.fade.modulate.a < 0.05 and g.hud.obj_text.text == Loc.t("obj_free"),
+		"no to-be-continued screen any more: the town is yours, with more missions about (the user, 21 Nov 2026)")
 	await _shot("d1_end")
 	var saved: Dictionary = g._load_slot(g.slot)
 	_check(int(saved["si"]) == g._idx("alberto") and int(saved["weekday"]) == g.weekday and saved.has("clock") and int(saved["unlocked"]["box"]) == 1, "the save keeps the mission, the day of the week, the hour and what is unlocked")
@@ -14534,7 +14608,9 @@ func _run() -> void:
 	g.set_time(23.9)
 	g._advance_clock(120.0 * 0.3)
 	_check(g.weekday == (day_before + 1) % 7 and g.clock < 1.0 and g.moment == "night", "at midnight the day of the week moves on (two minutes an hour)")
-	_check(g._tag().ends_with(Loc.t("late")) and g._tag().begins_with(Loc.t("wd_%d" % g.weekday).to_upper()), "and from midnight to dawn the calendar says so: %s (the night before midnight, the madrugada after)" % g._tag())
+	var hm: String = g.clock_text()
+	_check(g._tag().ends_with(hm) and hm.begins_with("00:") and hm.length() == 5 and g._tag().begins_with(Loc.t("wd_%d" % g.weekday).to_upper()) and g.hud.day_key.ends_with("late"),
+		"and the calendar leaf shows the clock, hours and minutes, with the new day: %s (the user, 21 Nov 2026)" % g._tag())
 	g.set_time(12.0)
 	var before_h: float = g.clock
 	await _frames(60)

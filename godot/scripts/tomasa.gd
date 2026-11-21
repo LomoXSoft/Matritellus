@@ -9,6 +9,9 @@ extends RefCounted
 ##     won't spend it on vices, insists she has no problem and is totally in control, and lights up a cigarette.
 ##   - Inside los chinos, the shopkeeper ("El chino") speaks with infinitive verbs and warns you not to steal
 ##     anything because he is watching you.
+##   - (the user, 21 November 2026) Done for the first time, she asks you to have one with her. Yes or no, you smoke
+##     it -- the game showing you what a pitillo does (fumar.gd: six hours go by, the camera up at the sky) -- and
+##     she gives you three, a key item. From then on the tobacco shelf sells packs of three (buy).
 
 const PRICE := 6
 const PAY := 10
@@ -90,6 +93,8 @@ func restore() -> void:
 		lk["smoke"] = true
 		n.look_data = lk
 		n.set_look(lk)
+		if G.fumar != null and not G.fumar.known():       # (saved between handing her the pack and her three)
+			G.fumar.give(G.fumar.PACK)
 	if st == "buy" or st == "give":
 		G.side = {"id": "tomasa", "who": "tomasa", "stage": st}
 		if st == "buy":
@@ -160,12 +165,26 @@ func _spawn_tobacco() -> void:
 		"label": Loc.t("inv_n_tabaco"),
 	})
 
+## after her errand: packs of three on the same shelf
+func _spawn_pitillos() -> void:
+	var t = _tienda()
+	if t == null or G.pickups == null or G.fumar == null:
+		return
+	G.pickups.remove_tag("pitillos")
+	G.pickups.spawn("tabaco", t.tobacco_spot, {
+		"tag": "pitillos",
+		"auto": false,
+		"indoors": true,
+		"caption": Loc.t("pitillos_tag_buy") % [G.fumar.PACK, PRICE],
+		"label": Loc.t("inv_n_pitillo"),
+	})
+
 func in_shop() -> bool:
 	var t = _tienda()
 	return t != null and G.indoors and G.inside_of == t
 
 func can_buy() -> bool:
-	if not in_shop() or stage() != "buy":
+	if not in_shop() or not (stage() == "buy" or stage() == "done"):
 		return false
 	var t = _tienda()
 	if t == null:
@@ -178,8 +197,26 @@ func buy_spot() -> Vector3:
 		return Vector3.ZERO
 	return Vector3(t.tobacco_spot.x, MapData.foot(t.tobacco_spot) + 1.85, t.tobacco_spot.y)
 
+func buy_prompt() -> String:
+	if stage() == "done":
+		return Loc.t("p_buy_pitillos") % [G.fumar.PACK, PRICE]
+	return Loc.t("p_buy_tobacco") % PRICE
+
 func buy() -> void:
 	if not can_buy():
+		return
+	if stage() == "done":                       # a pack of three pitillos
+		if G.money < PRICE:
+			G.hud.toast(Loc.t("pitillos_no_money") % PRICE, 3.5)
+			Sfx.beep(196.0, 0.18, 1, -14.0)
+			return
+		G.money -= PRICE
+		G._refresh_counts()
+		G.fumar.give(G.fumar.PACK)
+		G.hud.toast(Loc.t("t_pitillos") % G.fumar.PACK, 3.0)
+		Sfx.jingle([659, 784, 1047], 0.08)
+		if keeper != null and is_instance_valid(keeper):
+			keeper.bark(Loc.t("chino_paid"), 3.6)
 		return
 	if G.money < PRICE:
 		G.hud.toast(Loc.t("tomasa_no_money") % PRICE, 3.5)
@@ -204,6 +241,8 @@ func tick(dt: float, _pp: Vector2) -> void:
 		if stage() == "buy":
 			_spawn_tobacco()
 			show()
+		elif stage() == "done":
+			_spawn_pitillos()
 	elif not inside_now and _was_in_shop and active():
 		show()
 	_was_in_shop = inside_now
@@ -339,6 +378,27 @@ func _finish(who) -> void:
 	lk["smoke"] = true
 	n.look_data = lk
 	n.set_look(lk)
-	n.still = false
-	G.say(who.shown_name(), Loc.t("tomasa_done"), who.voice, func():
-		G._show_step())
+	n.still = true                               # (she stays for the smoke with you)
+	G._show_step()                               # (her errand off the calendar leaf now: what the story wants instead)
+	G.say(who.shown_name(), Loc.t("tomasa_done"), who.voice, func(): _offer_smoke(who))
+
+## "¿te echas un pitillo conmigo?": yes or no, you have it with her (different words), then she gives you three
+func _offer_smoke(who) -> void:
+	var prev_phase: String = G.phase
+	G.ask(who, who.shown_name(), Loc.t("tomasa_cig_q"), [
+		[Loc.t("tomasa_cig_opt_yes"), func():
+			G.phase = prev_phase
+			_smoke_with(who, "tomasa_cig_yes")],
+		[Loc.t("tomasa_cig_opt_no"), func():
+			G.phase = prev_phase
+			_smoke_with(who, "tomasa_cig_no")],
+	])
+
+func _smoke_with(who, lines_key: String) -> void:
+	G.say(who.shown_name(), Loc.t(lines_key), who.voice, func():
+		G.fumar.start(func():
+			G.fumar.give(G.fumar.PACK)
+			G.hud.toast(Loc.t("t_pitillos") % G.fumar.PACK, 3.5)
+			Sfx.jingle([659, 784, 1047], 0.1)
+			n.still = false
+			G.say(who.shown_name(), Loc.t("tomasa_cig_pack"), who.voice, func(): G._show_step())))

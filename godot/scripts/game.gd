@@ -56,6 +56,7 @@ const CaballeteS = preload("res://scripts/caballete.gd")
 const PickupsS = preload("res://scripts/pickups.gd")
 const InventarioS = preload("res://scripts/inventario.gd")
 const TomasaS = preload("res://scripts/tomasa.gd")
+const FumarS = preload("res://scripts/fumar.gd")
 
 ## A whole day lasts 48 minutes of play: two minutes an hour. The day of the week moves on at midnight.
 const DAY_SECONDS := 48.0 * 60.0
@@ -210,7 +211,6 @@ var armario_row := 1
 var indoors := false            # inside the shop (a set built away from the town)
 var vip_crowd: Array = []       # the neighbours who turn up for a fight
 var _door_cool := 0.0
-var _tbc_t := 0.0               # countdown to the "to be continued" screen
 var slot := 0                   # the save slot this game lives in
 var save_si := 0                # the step a save would resume from (start of the current mission)
 var menu                        # the wall-styled menu (main menu, settings, pause...)
@@ -299,6 +299,7 @@ var marcas                      # who has a mission for you: photo on the map, g
 var pickups                     # 3D floating spinning glowing item pickups (pickups.gd)
 var inventario                  # Animal Crossing-style pocket inventory (inventario.gd)
 var tomasa                      # Tomasa Malvora & los chinos del Arroyuelo shopkeeper (tomasa.gd)
+var fumar                       # a pitillo: six hours up in smoke, looking at the sky (fumar.gd)
 # Driving camera modes: 0 = third person, 1 = first person (driver POV), 2 = GTA cinematic
 var car_cam := 0
 var _fp_yaw := 0.0
@@ -1586,6 +1587,8 @@ func _setup_places_and_actors() -> void:
 	pickups.setup(self)
 	tomasa = TomasaS.new()
 	tomasa.setup(self)
+	fumar = FumarS.new()
+	fumar.setup(self)
 	rally = RallyS.new()
 	add_child(rally)
 	rally.setup(self)
@@ -2520,8 +2523,17 @@ func _cine_camera() -> void:
 func moment_name() -> String:
 	return "late" if moment == "night" and clock < 12.0 else moment
 
+## The calendar leaf: the day of the week and the clock, hours and minutes (the user, 21 Nov 2026: "En vez de
+## mañana/tarde y tal vamos a mostrar el reloj in-game tal cual, solo horas y minutos"). The leaf still comes out by
+## itself only when the part of the day changes (hud.day_key), not every minute.
 func _tag() -> String:
-	return Loc.t("wd_%d" % weekday).to_upper() + " · " + Loc.t(moment_name())
+	if hud != null:
+		hud.day_key = "%d %s" % [weekday, moment_name()]
+	return Loc.t("wd_%d" % weekday).to_upper() + " · " + clock_text()
+
+func clock_text() -> String:
+	var mins := int(floor(clock * 60.0)) % (24 * 60)
+	return "%02d:%02d" % [mins / 60, mins % 60]
 
 func start_game(from_step := 0) -> void:
 	hud.ov_logo.visible = false
@@ -2613,9 +2625,8 @@ func begin_step(i: int) -> void:
 		"call":                          # the phone rings (llamadas.gd: if you do not pick up, they try again in an hour)
 			set_target(null, false)
 			llamadas.ring({"npc": s["npc"], "lines": s["lines"], "ring_first": 1.2, "valid": func(): return phase == "play" and si >= 0 and steps[si]["type"] == "call" and steps[si]["npc"] == s["npc"]})
-		"tbc":                           # the next mission is announced, but it is not built yet
-			set_target(null, false)
-			_tbc_t = 9.0
+		"tbc":                           # the end of the story built so far: no screen to say so any more, the side missions go on
+			set_target(null, false)      # (the user, 21 Nov 2026: unlocking the bridge "ya no dé un aviso de todo hecho")
 		"sleep":
 			set_target(null, false)
 			hud.set_objective(_tag(), Loc.t("obj_sleep"))
@@ -3239,19 +3250,6 @@ func _close_armario(keep: bool) -> void:
 	Sfx.beep(660.0 if keep else 330.0, 0.06, 2, -16.0)
 	if keep:
 		_save(save_si)                           # (what you have on is kept)
-
-## the story so far ends here: say so, then leave the town to roam
-func _show_end() -> void:
-	phase = "end"
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	hud.play_ui.visible = false
-	var lines: Array = _stat_lines()
-	lines.append("")
-	lines.append(Loc.t("end_0") if bumped == 0 else (Loc.t("end_few") if bumped < 4 else Loc.t("end_many")))
-	lines.append("")
-	lines.append(Loc.t("end_next"))
-	hud.show_overlay(Loc.t("rank_tbc"), Loc.t(steps[_idx("alberto")]["card"]), "\n".join(lines), Loc.t("end_keys"), 46)
-	Sfx.jingle([523, 659, 784, 1047, 784, 1047], 0.13)
 
 func _stat_lines() -> Array:
 	return ["%s:  %d" % [Loc.t("st_bumped"), bumped], "%s:  %d" % [Loc.t("st_saffron"), saffron], "%s:  %d" % [Loc.t("st_retries"), retries],
@@ -4255,7 +4253,7 @@ func _unhandled_input(e: InputEvent) -> void:
 		return
 	var accept: bool = e.is_action_pressed("m_accept") or e.is_action_pressed("interact")
 	match phase:
-		"intro", "title", "title_in", "press", "title_out", "ending":
+		"intro", "title", "title_in", "press", "title_out", "ending", "smoke":
 			return
 		"prologue":
 			if accept:
@@ -4762,6 +4760,9 @@ func _physics_process(delta: float) -> void:
 		if phase == "creator" and not padron.active:     # (not behind the Padrón's sheet: it went with the creator)
 			_creator_easel(at, f, eye)
 		return
+	if phase == "smoke":            # a pitillo: the camera up at the sky while six hours go by (fumar.gd)
+		fumar.tick(dt)
+		return
 	if phase == "cutscene":
 		_update_dialog(dt)
 		traffic.tick(dt, player.p, false)        # the town goes on behind you (and drives round the two of you)
@@ -4969,13 +4970,6 @@ func _physics_process(delta: float) -> void:
 			_arrive()
 		elif s["type"] == "sign" and firmas != null and dlg == null and _now_h() >= float(firmas["until"]):
 			_firmas_late()
-		elif s["type"] == "tbc" and not frozen:
-			_tbc_t -= dt
-			if _tbc_t <= 0.0:
-				phase = "ending"
-				var tw := create_tween()
-				tw.tween_property(hud.fade, "modulate:a", 1.0, 1.4)
-				tw.tween_callback(_show_end)
 		elif s["type"] == "deliver":
 			timer -= dt
 			var t := maxf(0.0, timer)
@@ -5089,7 +5083,7 @@ func _physics_process(delta: float) -> void:
 		about = null
 	var buy_tab: bool = not frozen and in_car == null and tomasa != null and tomasa.can_buy()
 	if buy_tab:
-		pr = Loc.t("p_buy_tobacco") % tomasa.PRICE
+		pr = tomasa.buy_prompt()
 		about = null
 	if not frozen and _can_unlock():
 		pr = Loc.t("p_puente") % int(steps[si].get("cost", 10))

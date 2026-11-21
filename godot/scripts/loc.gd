@@ -1543,7 +1543,7 @@ const TX := {
 	"obj_tanatorio": {"es": "Lleva a la Maruja al tanatorio. Sin prisa, que el muerto no se va.", "en": "Drive Maruja to the funeral home. No rush, the deceased isn’t going anywhere."},
 	"obj_home": {"es": "Vuelve a tu casa, la de la difunta, en el extrarradio.", "en": "Go back to your house — the late great-aunt’s — on the edge of town."},
 	"obj_sleep": {"es": "A la cama, que mañana hay faena.", "en": "Bedtime. Tomorrow there’s work to do."},
-	"obj_free": {"es": "Hasta aquí llega lo que hay hecho. Date un garbeo, cotillea, coge azafrán.", "en": "That’s all there is for now. Roam, gossip, pick saffron, test the brakes."},
+	"obj_free": {"es": "Hay más gente en el pueblo que te necesita. Mira el mapa o la Agenda, o date un garbeo.", "en": "More people in town need you. Check the map or the Agenda, or just go for a wander."},
 
 	# ---------- hud bits ----------
 	"saffron": {"es": "Azafrán", "en": "Saffron"},
@@ -2296,6 +2296,36 @@ const TX := {
 		"en": ["Hello, come in! But no steal anything, eh? I watch!",
 			"Hello! Look with eye, no put in pocket. I watch everything!"]},
 	"chino_paid": {"es": "¡Gracias! Pagar bien, así gustar. ¡Volver pronto!", "en": "Thank you! Pay good, I like. Come back soon!"},
+	# the pitillo (the user, 21 Nov 2026): Tomasa's smoke the first time, three to keep, more at the chinos (fumar.gd)
+	"tomasa_cig_q": {"es": "Y ahora que tengo mi *tabaco*… ¿te echas un *pitillo* conmigo?", "en": "And now I’ve got my *tobacco*… will you have a *smoke* with me?"},
+	"tomasa_cig_opt_yes": {"es": "Venga, uno", "en": "Go on, just one"},
+	"tomasa_cig_opt_no": {"es": "No, que yo no fumo", "en": "No, I don’t smoke"},
+	"tomasa_cig_yes": {
+		"es": ["¡Eso es! Que fumando una sola es vicio, pero fumando dos ya es tertulia.",
+			"Y además, a medias se reparte la culpa… y el cáncer, ¿eh? Al cincuenta por ciento cada uno. Eso son matemáticas."],
+		"en": ["That’s it! One person smoking is a vice, but two is a get-together.",
+			"And this way we split the guilt… and the cancer, eh? Fifty-fifty. That’s maths, that is."]},
+	"tomasa_cig_no": {
+		"es": ["¿Que no fumas? Anda, anda, que por uno no pasa na. Toma, cógelo, que me haces un favor.",
+			"Si me lo fumo con alguien me siento menos culpable, ¿sabes? Es como si el cáncer se partiera a medias: al cincuenta por ciento. Ciencia."],
+		"en": ["You don’t smoke? Oh, come off it, one won’t hurt. Here, take it, you’d be doing me a favour.",
+			"If I smoke with somebody I feel less guilty, see? It’s like the cancer gets split in two: fifty per cent each. Science."]},
+	"tomasa_cig_pack": {
+		"es": ["¿Has visto? Un pitillo y se te va la mitad del día mirando el cielo. Así se pasa el rato en este pueblo.",
+			"Quédate estos tres *pitillos* pa cuando te haga falta matar el tiempo. Y si se te acaban, en los chinos hay más."],
+		"en": ["See? One smoke and half the day goes by watching the sky. That’s how you pass the time round here.",
+			"Keep these three *smokes* for when you need to kill some time. And when they run out, the grocer’s has more."]},
+	"t_pitillos": {"es": "Objeto clave: Pitillo ×%d", "en": "Key item: Smoke ×%d"},
+	"inv_n_pitillo": {"es": "Pitillo", "en": "Smoke"},
+	"inv_d_pitillo": {"es": "De los de la Tomasa. Te fumas uno y se te van seis horas mirando el cielo.", "en": "Tomasa’s kind. Smoke one and six hours drift by watching the sky."},
+	"pitillos_tag_buy": {"es": "Pitillos ×%d · %d €", "en": "Smokes ×%d · %d €"},
+	"p_buy_pitillos": {"es": "<interact> Comprar pitillos ×%d (%d €)", "en": "<interact> Buy smokes ×%d (%d €)"},
+	"pitillos_no_money": {"es": "No tiés %d € pa los pitillos.", "en": "You don’t have %d € for the smokes."},
+	"fumar_none": {"es": "No te quedan pitillos. En los chinos hay más.", "en": "You’re out of smokes. The grocer’s has more."},
+	"fumar_car": {"es": "Aquí dentro no, que se llena el coche de humo. Bájate primero.", "en": "Not in here, the car fills with smoke. Get out first."},
+	"fumar_now": {"es": "Ahora no es momento de echarse un pitillo.", "en": "Now’s not the time for a smoke."},
+	"fumar_busy": {"es": "Ahora no, que tiés faena. Acaba lo que llevas entre manos.", "en": "Not now, you’ve got things to do. Finish what you’re on first."},
+	"fumar_after": {"es": "Se te han ido %d horas en humo.", "en": "%d hours gone up in smoke."},
 	"chino_buy": {
 		"es": ["¿Buscar tabaco? Estar en pasillo de derecha, seis euros.",
 			"Coger, pagar y no robar nada. Yo mirar por cámara y por ojo, ¿eh?"],

@@ -219,6 +219,17 @@ func key_items() -> Array:
 			"qty": G.bottles,
 			"key": true,
 		})
+	# Pitillos: smoke one and six hours go by (fumar.gd)
+	if G.get("fumar") != null and G.fumar.charges() > 0:
+		out.append({
+			"id": "pitillo",
+			"icon": "pitillo",
+			"name": Loc.t("inv_n_pitillo"),
+			"desc": Loc.t("inv_d_pitillo"),
+			"qty": G.fumar.charges(),
+			"key": true,
+			"usable": true,
+		})
 	# Tobacco pack for Tomasa Malvora
 	if G.get("tomasa") != null and G.tomasa.has_tobacco():
 		out.append({
@@ -244,6 +255,10 @@ func _selected_item():
 
 func use_selected() -> bool:
 	if tab != 0:
+		var key = _selected_item()
+		if key != null and bool(key.get("usable", false)) and String(key["id"]) == "pitillo":
+			close()
+			return G.fumar.use()
 		Sfx.beep(196.0, 0.08, 1, -16.0)
 		return false
 	var it = _selected_item()
@@ -439,7 +454,14 @@ func _draw() -> void:
 		draw_string(font, info.position + Vector2(14.0, 24.0), String(chosen["name"]), HORIZONTAL_ALIGNMENT_LEFT, info.size.x - 190.0, 18, INK)
 		draw_string(font, info.position + Vector2(14.0, 46.0), String(chosen["desc"]), HORIZONTAL_ALIGNMENT_LEFT, info.size.x - 190.0, 13, SUB)
 		if tab == 1:
-			draw_string(font, info.position + Vector2(14.0, 68.0), Loc.t("inv_key_lock"), HORIZONTAL_ALIGNMENT_LEFT, info.size.x - 28.0, 13, TAB_KEY.darkened(0.15))
+			var can_use: bool = bool(chosen.get("usable", false))
+			draw_string(font, info.position + Vector2(14.0, 68.0), Loc.t("inv_key_lock"), HORIZONTAL_ALIGNMENT_LEFT, info.size.x - (190.0 if can_use else 28.0), 13, TAB_KEY.darkened(0.15))
+			if can_use:                          # (a key item you can use: the pitillo)
+				_use_rect = Rect2(info.end.x - 104.0, info.position.y + 18.0, 92.0, 34.0)
+				_round_box(_use_rect, TAB_OBJ, INK, 2.0, 10.0)
+				var kt := String(Loc.t("inv_use"))
+				var kw := font.get_string_size(kt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+				draw_string(font, Vector2(_use_rect.get_center().x - kw / 2.0, _use_rect.position.y + 22.0), kt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color.WHITE)
 		else:
 			var bx := info.end.x - 104.0
 			if bool(chosen.get("droppable", false)):
@@ -513,6 +535,11 @@ func _draw_icon(kind: String, c: Vector2, r: float) -> void:
 			draw_rect(Rect2(c + Vector2(-9, -8), Vector2(18, 22)), Color("d8c53a"))
 			draw_rect(Rect2(c + Vector2(-9, -8), Vector2(18, 22)), INK, false, 1.8)
 			draw_rect(Rect2(c + Vector2(-4, -15), Vector2(8, 7)), Color("5a7a1e"))
+		"pitillo":
+			draw_line(c + Vector2(-15, 6), c + Vector2(9, -6), Color("f4f2ec"), 6.0, true)
+			draw_line(c + Vector2(-15, 6), c + Vector2(-8, 2.5), Color("d99b4a"), 6.0, true)
+			draw_circle(c + Vector2(10, -6.5), 3.2, Color("ff5514"))
+			draw_arc(c + Vector2(12, -14), 4.0, PI * 0.5, PI * 1.6, 8, Color("b9b4ac"), 2.0)
 		"tabaco":
 			draw_rect(Rect2(c + Vector2(-10, -12), Vector2(20, 26)), Color("f4f2ec"))
 			draw_rect(Rect2(c + Vector2(-10, -12), Vector2(20, 10)), Color("c82420"))

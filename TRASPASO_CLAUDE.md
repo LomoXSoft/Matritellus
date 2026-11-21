@@ -286,6 +286,89 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Tras los últimos retoques, `solo=tri_e151,tri_41,tri_e129,tri_t1` dio 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tri_e151_tri_41_tri_e129_tri_t1_20261121_004155.log)).
 - **Pendiente.** El visto bueno del usuario a las hojas. Sin commit.
 
+### El puente sin «todo hecho», el reloj en la hoja y el pitillo de la Tomasa (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. Tres cambios que pidió el usuario.
+
+- **El puente.** Desbloquearlo ya no lleva a la pantalla de «continuará» ni a sus estadísticas: «Ahora hay más misiones disponibles». El paso `tbc` sigue cerrando la historia hecha, pero no cuenta los 9 s ni funde a negro. El objetivo es `obj_free`, con texto nuevo: «Hay más gente en el pueblo que te necesita. Mira el mapa o la Agenda, o date un garbeo.».
+  - `game.gd`: fuera `_tbc_t` y `_show_end`.
+  - `missions.gd`: el paso `tbc` usa `obj_free`.
+- **El reloj.** La hoja del calendario dice «LUNES · 12:07» en vez de «LUNES · MAÑANA»: «solo horas y minutos».
+  - `game.gd`: `clock_text()` y `_tag()`.
+  - La hoja solo sale sola cuando cambia el momento del día, no a cada minuto. `_tag()` deja `hud.day_key` (día y momento) y `hud.gd` compara eso en vez del texto.
+  - `hud.show_day(s)` la saca un rato a propósito.
+- **El pitillo.** La primera vez que le llevas el tabaco, la Tomasa pregunta «¿te echas un *pitillo* conmigo?».
+  - Con «Venga, uno» o con «No, que yo no fumo» te lo fumas igual, con frases distintas: la culpa y el cáncer «al cincuenta por ciento».
+  - Ese primero es el ejemplo de la mecánica. La cámara sube 16 m por encima de los tejados mirando al cielo. Pasan 6 horas en 5 s, con el cielo y el reloj cambiando, y la cámara vuelve.
+  - Después te da tres: el objeto clave «Pitillo» ×3. En Mochila → Objetos clave se puede «Usar».
+  - Solo se fuma a pie, sin misión ni encargo en marcha y sin que te busquen. Si no, un aviso dice por qué.
+  - En los chinos del Arroyuelo, una vez hecho el recado, el estante del tabaco vende «Pitillos ×3 · 6 €». Son los únicos chinos del pueblo por ahora; el usuario dijo «en cualquier chino».
+  - Archivos: `fumar.gd` (nuevo), `tomasa.gd` (`_offer_smoke`, `_smoke_with`, `_spawn_pitillos`, `buy_prompt`, `buy`), `inventario.gd` (el objeto, su botón Usar y su icono), `game.gd` (la fase `smoke`) y `loc.gd` (las frases).
+  - Con una partida guardada entre el tabaco y los tres pitillos, `restore()` te los da.
+- **Pruebas.**
+  - `python tools/run_tests.py mejoras2 --headless`: 12 ok, 0 fallos. Incluye las tres nuevas: el pitillo con la Tomasa (6,00 h, la cámara arriba, 3 pitillos), comprar en los chinos y fumar desde la mochila.
+  - `mejoras2 shots --window`: las fotos `pitillo_tomasa.png` y `pitillo_cielo.png` (el cielo a las 15:55, con la hoja).
+  - Prueba completa (`python tools/run_tests.py`): 879 ok y 1 fallo en 480 s ([log](logs/selftest_full_20261121_012128.log)). Ahí pasan las del reloj y el final del puente. El fallo era un «tienes» en `fumar_busy`, que ahora dice «tiés». `palabros --headless`: 3 ok ([log](logs/selftest_palabros_20261121_012938.log)). La prueba incluía, sin commitear, el suelo y los matojos de Texturas.
+- **Decidido sin preguntar.** El pitillo de la Tomasa es suyo: no gasta de los tres. Un paquete de los chinos trae tres por 6 €, el precio del tabaco del recado.
+
+### Ermita del Cristo del Prado: en curso (21/11)
+
+21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Luis lo pidió el 21/11: «Siguiente proyecto la Ermita del Cristo del Prado (junto a la residencia, en la misma manzana)».
+
+- **Hecho, sin efecto todavía.**
+  - `godot/scripts/cristoprado.gd`: la ermita, su placita, la acera del Paseo y el calvario del parque. Lleva `READY := false`.
+  - Los cambios de `tools/cristoprado/enganche.py`, ya en `tools/bake_godot.py`. El Catastro tiene la ermita y la Residencia como un solo edificio, `4587301VJ5648N`; el horneado dejará de levantar las partes de la ermita y mantendrá las de la Residencia.
+  - En `godot/scripts/map_data.gd`: `var cristoprado` y su lectura.
+  - Con `READY := false`, un horneado deja el edificio entero, como ahora. Sistemas dio el OK para el horneado y para `map_data.gd`; Texturas, el del rehorneado.
+- **Comprobado.**
+  - El horneado tal como está en disco da el mismo mapa que `godot/data/map.json`, con solo la clave vacía `cristoprado`.
+  - El ensayo con `READY := true` (`python tools/cristoprado/enganche.py ensayo OUT.json`) solo cambia la manzana de la ermita: desaparece el bloque genérico, cambian sus muros y salen 2 árboles de la acera. Casas, calles y relieve quedan iguales.
+  - El dibujo de unos 155 contornos de otras manzanas se mueve 0,3 m como mucho, porque se simplifican de otra manera.
+  - `cristoprado.gd` compila (comprobado con una copia en la que se sustituye el autoload).
+- **Pendiente.**
+  - Esperar a que Sistemas libere `world.gd` (ahora no compila por otra sesión) y `selftest.gd` (tiene cambios suyos sin commitear).
+  - Después:
+    - poner `READY := true`;
+    - aplicar `python tools/cristoprado/enganche_juego.py aplicar` en `world.gd` y `selftest.gd`;
+    - rehornear y comparar;
+    - `python tools/run_tests.py cristoprado`, comparación con Street View y hojas para Luis.
+- **Sin commit.**
+
+### Suelo de tierra y plantas secas en todo el pueblo (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). El usuario, al ver las hojas del Triunfo: el suelo de color plano «tiene poco y nada que ver con la realidad». Pidió algo más anaranjado o marrón, con algo de textura, y «plantas secas sueltas, para que no quede todo tan plano».
+
+- **El suelo** (`godot/scripts/world.gd`):
+  - El terreno era arena pálida (`e3cf95`). Ahora es pardo anaranjado (`EARTH = 0xc4905c`), sacado de la tierra al sol en las fotos del Catastro del Triunfo (tono unos 30°, `#cf9a5c`).
+  - Lleva una textura nueva hecha en código, `"tierra"` en `_tex`: grano, manchas suaves más rojizas donde son más oscuras y chinas de 2×2.
+  - Con un material propio, `_earth_mat()`, la textura se superpone a 5, 23 y 61 m para que no se note que se repite en un solar entero.
+  - Los caminos de tierra pasan a `"tierra"` en `caa170`, más claros y apisonados. Los barbechos y los campos arados pasan a pardos (`c99c66`, `c39266`).
+  - La textura `"earth"` de siempre no cambia: la siguen usando Calasanz y la Caridad.
+- **Las plantas** (`godot/scripts/matojos.gd`, nuevo):
+  - Son matas de hierba seca y algún matojo seco, en rodales, más espesas al pie de las tapias y en la orilla pasada la acera.
+  - Solo crecen en el pueblo y hasta 64 m de la última manzana.
+  - No salen:
+    - en calles ni aceras;
+    - dentro de las manzanas;
+    - en césped, parques, viñas ni agua;
+    - en los sitios hechos a mano: se miran los nodos que heredan de `obra.gd` o `petril.gd`, en su propio marco.
+  - Además, un rayo hacia abajo tiene que dar en el terreno desnudo.
+  - Se dibujan con MultiMesh por cuadros de 64 m, que no se ven a más de 120 m (`Parts._range`, así que les afecta la opción de distancia de dibujado). No dan sombra ni chocan.
+  - Es un paso nuevo de la construcción del mundo, `["dry plants", _build_matojos]` entre `details` y `bounds`, que trabaja a trozos de 12 ms.
+- **Caché.**
+  - La primera vez se calculan unas 137.000 plantas en 4,7 s y se guardan en `user://matojos.cache` (6 MB).
+  - Después se leen en 0,7 s. Hay que volver a calcularlas solo si cambian el mapa, los sitios hechos a mano o `VERSION` en `matojos.gd`.
+  - Las pruebas usan la misma caché.
+  - `--sin-matojos` las quita, para medir lo que cuestan.
+- **Pruebas.**
+  - `python tools/run_tests.py casas "solo=tri_47,tri_e151,tri_45,tri_17,tri_t1,tri_e129"`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tri_47_tri_e151_tri_45_tri_17_tri_t1_tri_e129_tim_20261121_011538.log)).
+  - `python tools/run_tests.py suelos`: 1 ok, 0 fallos ([log](logs/selftest_suelos_20261121_011818.log)).
+  - `bench --window`, con plantas: 127,8 fps, gpu 5,06 ms, 1362 llamadas de dibujo ([log](logs/selftest_bench_20261121_011227.log)). Con `sin-matojos`: 125,4 fps, gpu 5,16 ms, 1398 llamadas ([log](logs/selftest_bench_sin-matojos_20261121_011400.log)). Es la misma cifra con su ruido.
+  - Vistas con `vistas=`: hay plantas en los solares y los caminos, y ninguna en la plaza.
+- **Hojas.** `guion/fotos/suelo/suelo_1.jpg` (Catastro, antes y ahora en dos casas del Triunfo) y `suelo_2.jpg` (solar, matas de cerca, camino de tierra y las afueras desde arriba).
+- **Sin probar en el móvil.** La primera vez que se abra, la carga tardará unos segundos más.
+- **Pendiente.** El visto bueno del usuario. Sin commit.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.

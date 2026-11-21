@@ -46,6 +46,7 @@ const MAP_SIZE := 184           # the plate of the little map, in pixels (it was
 const MAP_REACH := 95.0         # how many metres round you it shows (it was 150: closer in now)
 var _day_shown := ""
 var _day_t := 0.0
+var day_key := ""               # the day and the part of it (game.gd _tag): the leaf comes out when this changes
 var street_box: Control
 var _street_name := ""
 var _street_tween: Tween
@@ -1005,8 +1006,9 @@ func _process(dt: float) -> void:
 	var errand: bool = obj_text.text != ""
 	if obj_text.visible != errand:
 		obj_text.visible = errand
-	if obj_tag.text != _day_shown:
-		_day_shown = obj_tag.text
+	var key: String = day_key if day_key != "" else obj_tag.text
+	if key != _day_shown:
+		_day_shown = key
 		_day_t = 4.0
 	_day_t = maxf(0.0, _day_t - dt)
 	obj_box.modulate.a = move_toward(obj_box.modulate.a, 1.0 if (errand or _day_t > 0.0) else 0.0, dt * 2.5)
@@ -1026,6 +1028,10 @@ func _process(dt: float) -> void:
 		_toast_t -= dt
 		if _toast_t <= 0.0:
 			toast_slot.visible = false
+
+## the calendar leaf out for a while, errand or not (a pitillo: you watch the clock go round, fumar.gd)
+func show_day(seconds: float) -> void:
+	_day_t = maxf(_day_t, seconds)
 
 func set_objective(tag: String, text: String) -> void:
 	obj_tag.text = tag

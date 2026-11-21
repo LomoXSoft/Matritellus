@@ -60,7 +60,7 @@ const STEPS := [
 	{"id": "firmas", "type": "sign", "need": 5, "refusals": 3},
 	{"id": "alberto_back", "type": "talk", "npc": "alberto", "lines": "alberto_firmas", "obj": "obj_firmas_back", "then": "firmas_done", "thanks": "alberto"},
 	{"id": "puente", "type": "unlock", "obj": "obj_puente", "cost": 10, "done": true, "pc": 0},
-	{"id": "tbc", "type": "tbc", "obj": "obj_bridge_tbc"},
+	{"id": "tbc", "type": "tbc", "obj": "obj_free"},
 ]
 
 ## The kinds of mission there are (the user's scheme, 13 November 2026):
