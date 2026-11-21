@@ -85,7 +85,7 @@ code { font-family: var(--mono); font-size: 13px; }
 <main>
   <header style="display:flex;flex-direction:column;gap:6px">
     <h1>Misiones de Matritellus</h1>
-    <p class="sub">Versión 0.0.18, leído del código el 21/11/2026. Quién da cada misión, cuándo se puede hacer y qué abre al acabarla. Pulsa un recuadro del diagrama para ir a su ficha.</p>
+    <p class="sub">Leído del código el 21/11/2026, sobre la 0.0.18 con los cambios de ese día. Quién da cada misión, cuándo se puede hacer y qué abre al acabarla. Pulsa un recuadro del diagrama para ir a su ficha.</p>
   </header>
 
   <div class="legend" aria-label="Leyenda">
@@ -158,7 +158,7 @@ code { font-family: var(--mono); font-size: 13px; }
     <article class="card hist" id="m-fin">
       <span class="tag">Fin de lo hecho</span>
       <h3>Hasta aquí llega lo que hay hecho</h3>
-      <dl><dt>Qué es</dt><dd>Pantalla de «continuará» y, con cualquier tecla, juego libre. Las secundarias siguen abiertas.</dd></dl>
+      <dl><dt>Qué es</dt><dd>Sin pantalla de «continuará»: sigues jugando y el objetivo te manda al mapa y a la Agenda, donde están las secundarias abiertas.</dd></dl>
     </article>
   </div>
 
@@ -243,10 +243,11 @@ code { font-family: var(--mono); font-size: 13px; }
       <h3>Un paquete pa la Tomasa</h3>
       <dl><dt>La da</dt><dd><span class="p">Tomasa Malvora</span>, junto a los <span class="l">chinos del Arroyuelo</span> (San José con Santo Domingo)</dd>
       <dt>Cuándo</dt><dd>Con los chinos abiertos: de lunes a viernes de 7 a 21, sábado y domingo de 6 a 2. No depende de la historia</dd>
-      <dt>Premio</dt><dd>10 €, +10 de confianza, 3 PC. Decirle que no: −5</dd></dl>
+      <dt>Premio</dt><dd>10 €, +10 de confianza, 3 PC y 3 <span class="o">pitillos</span>. Decirle que no: −5</dd></dl>
       <ol><li>Entra en los chinos y compra el <span class="o">tabaco</span> en el pasillo de la derecha (6 €). El chino te vigila.</li>
-      <li>Dáselo a <span class="p">Tomasa</span>. Desde ese día fuma.</li></ol>
-      <div class="chips"><span class="chip">No abre nada</span></div>
+      <li>Dáselo a <span class="p">Tomasa</span>. Desde ese día fuma.</li>
+      <li>Te pide que te eches uno con ella. Digas sí o no, te lo fumas: la cámara sube al cielo y pasan 6 horas. Luego te da tres.</li></ol>
+      <div class="chips"><a class="chip" href="#pitillos">Abre: pitillos en los chinos, 3 por 6 €</a></div>
     </article>
   </div>
 
@@ -271,6 +272,7 @@ code { font-family: var(--mono); font-size: 13px; }
     <article class="card"><h3>Cartas desde Correa</h3><p>En <span class="l">Correa</span>, de lunes a viernes de 8 a 20 (<span class="p">Diurno</span> hasta las 14, luego <span class="p">Nocturno</span>). Una carta al día a un vecino conocido; te llama al día siguiente: +5 si es amable, +3 normal, −3 si es borde.</p></article>
     <article class="card"><h3>Padrón Municipal</h3><p>Tu nombre, después del creador. Los vecinos con nombre te llaman por él a partir de 50 de confianza; el resto, a mitad de la historia.</p></article>
     <article class="card"><h3>Gacha</h3><p>1 € la bola en la máquina del <span class="l">Tele Dürum</span>. Figuras de los vecinos con nombre, en la Agenda, página «Colección».</p></article>
+    <article class="card" id="pitillos"><h3>Pitillos</h3><p>Objeto clave que da <span class="p">Tomasa</span>; en los <span class="l">chinos del Arroyuelo</span>, 3 por 6 €. Desde la Mochila → Usar: la cámara sube al cielo y pasan 6 horas. Solo a pie y sin misión ni persecución en marcha.</p></article>
     <article class="card"><h3>Chismes y secretos</h3><p>Después de cada misión el pueblo habla de ella (menos la de Tomasa). A 100 de confianza cuentan su secreto Dolores, Katakumba69 y Chiki.</p></article>
     <article class="card"><h3>Sin hacer todavía</h3><p>Trabajos (encargos repetidos que solo pagan dinero): ninguno escrito. La plaza de toros restaurada no está ligada a ninguna misión.</p></article>
   </div>
