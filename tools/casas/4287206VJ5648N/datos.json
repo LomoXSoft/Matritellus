@@ -1,0 +1,142 @@
+{
+ "rc": "4287206VJ5648N",
+ "record": {
+  "address": "CL JUAN ANTONIO JIMENEZ 7 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Residencial",
+  "built_m2": "170",
+  "year": "1991",
+  "units": [
+   {
+    "use": "APARCAMIENTO",
+    "floor": "00",
+    "door": "01",
+    "m2": "28"
+   },
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "02",
+    "m2": "17"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "00",
+    "door": "03",
+    "m2": "6"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "01",
+    "door": "01",
+    "m2": "51"
+   },
+   {
+    "use": "VIVIENDA",
+    "floor": "02",
+    "door": "01",
+    "m2": "68"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4287206VJ5648N_part1",
+   "floors": 3,
+   "below": 0,
+   "area": 52.9,
+   "ring": [
+    [
+     11.99,
+     408.31
+    ],
+    [
+     6.91,
+     417.45
+    ],
+    [
+     2.29,
+     415.64
+    ],
+    [
+     7.7,
+     405.94
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      11.99,
+      408.31
+     ],
+     "b": [
+      6.91,
+      417.45
+     ],
+     "len": 10.46,
+     "out": [
+      0.874,
+      0.486
+     ],
+     "street": "Calle de las Viñas",
+     "to_centre": 8.31
+    },
+    {
+     "a": [
+      6.91,
+      417.45
+     ],
+     "b": [
+      2.29,
+      415.64
+     ],
+     "len": 4.96,
+     "out": [
+      -0.365,
+      0.931
+     ],
+     "street": "Calle de las Viñas",
+     "to_centre": 3.42
+    },
+    {
+     "a": [
+      2.29,
+      415.64
+     ],
+     "b": [
+      7.7,
+      405.94
+     ],
+     "len": 11.11,
+     "out": [
+      -0.873,
+      -0.487
+     ],
+     "street": "Calle de Juan Antonio Jiménez",
+     "to_centre": 3.53
+    },
+    {
+     "a": [
+      7.7,
+      405.94
+     ],
+     "b": [
+      11.99,
+      408.31
+     ],
+     "len": 4.9,
+     "out": [
+      0.484,
+      -0.875
+     ],
+     "street": "Calle de Juan Antonio Jiménez",
+     "to_centre": 5.97
+    }
+   ],
+   "ground": [
+    -11.96,
+    -11.82
+   ]
+  }
+ ]
+}

@@ -39,9 +39,13 @@ const CulturaS = preload("res://scripts/cultura.gd")
 const SebastianS = preload("res://scripts/sebastian.gd")
 const CristobalS = preload("res://scripts/cristobal.gd")
 const MatiasS = preload("res://scripts/matias.gd")
+const CristopradoS = preload("res://scripts/cristoprado.gd")
+const ResidenciaS = preload("res://scripts/residencia.gd")
+const PaseoS = preload("res://scripts/paseo.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
+const Matojos = preload("res://scripts/matojos.gd")
 const Fachadas = preload("res://scripts/fachadas.gd")
 const CasasS = preload("res://scripts/casas.gd")
 const LotesS = preload("res://scripts/lotes.gd")
@@ -130,6 +134,9 @@ var cultura                     # the block of the Casa Grande, the library and 
 var sebastian                   # the hermitage of San Sebastián and its park, built by hand (sebastian.gd)
 var cristobal                   # the little hermitage of San Cristóbal, built by hand (cristobal.gd)
 var matias                      # the house of the Calle de Matías Pérez, built by hand on its house of the map (matias.gd)
+var cristoprado                 # the hermitage of the Cristo del Prado, built by hand (cristoprado.gd)
+var residencia                  # the old people's home beside it, built by hand (residencia.gd)
+var paseo                       # the long park of the Paseo del Cristo, from the Calle de los Arcos to the hermitage (paseo.gd)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
 var lamp_spots: Array = []      # Vector3: lamp posts built by hand (the plaza), for lights.gd to switch on
 var _glass_img: Image           # while a facade is being painted: where its window glass is
@@ -143,7 +150,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["details", _build_details], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -237,6 +244,22 @@ func _build_cristobal() -> void:
 		return
 	cristobal = CristobalS.new()     # (the little hermitage of San Cristóbal: cristobal.gd)
 	cristobal.build(self)
+
+func _build_residencia() -> void:
+	if MapData.residencia.is_empty(): # (a map baked before it: Catastro's block of it still stands there)
+		return
+	residencia = ResidenciaS.new()     # (the old people's home of the Cristo del Prado: residencia.gd)
+	residencia.build(self)
+
+func _build_paseo() -> void:
+	paseo = PaseoS.new()             # (the park of the Paseo del Cristo: paseo.gd, laid over the map's ground, grass and footway; no rebake)
+	paseo.build(self)
+
+func _build_cristoprado() -> void:
+	if MapData.cristoprado.is_empty(): # (a map baked before it: Catastro's building still stands there whole)
+		return
+	cristoprado = CristopradoS.new()     # (the hermitage of the Cristo del Prado: cristoprado.gd)
+	cristoprado.build(self)
 
 func _build_matias() -> void:
 	for hd in MapData.houses:        # (the house of the Calle de Matías Pérez: matias.gd, on its house of the map)
@@ -375,6 +398,15 @@ func _build_calasanz() -> void:
 	calasanz = CalasanzS.new()      # the nursery school "S. José de Calasanz", its yard and what is played on in it
 	calasanz.build(self)
 
+## the dry plants on the bare ground (matojos.gd), a slice at a time: true while there are more to place
+var matojos
+func _build_matojos() -> bool:
+	if OS.get_cmdline_user_args().has("--sin-matojos"):     # (without them: to compare what they cost)
+		return false
+	if matojos == null:
+		matojos = Matojos.start(self)
+	return matojos.step()
+
 func _build_details() -> void:
 	Detalles.add(self)              # the small things of each street, from the street photos
 	Toro.add(self)                  # the Osborne bull on the A-4, past the south edge (toro.gd)
@@ -427,6 +459,16 @@ func _tex(kind: String) -> ImageTexture:
 						v = 0.7
 				"earth":            # dry Manchego ground: big soft blotches and pebbles
 					v = 0.84 + _n(x, y) * 0.2 - (0.12 if rng.randf() < 0.006 else 0.0)
+				"tierra":           # the bare earth of the town (the user, 21 Nov 2026): grit, soft blotches redder where darker, pebbles
+					var blot := _n(x, y)
+					v = 0.83 + blot * 0.17 + _n(x, y, 4) * 0.07 + rng.randf_range(-0.05, 0.05)
+					r = 1.0 + (0.5 - blot) * 0.06
+					b = 1.0 - (0.5 - blot) * 0.14
+					var pk := (hash(Vector2i(x >> 1, y >> 1)) & 1023)      # (pebbles of two by two: seamless, 256 is even)
+					if pk < 4:
+						v += 0.2 if (x & 1) == 0 and (y & 1) == 0 else 0.14
+					elif pk < 9:
+						v -= 0.2 if (y & 1) == 1 else 0.12
 				"grass":
 					v = 0.78 + _n(x, y, 2) * 0.24 + (0.1 if rng.randf() < 0.05 else 0.0) - (0.1 if rng.randf() < 0.05 else 0.0)
 				"furrow":           # ploughed lines
@@ -476,6 +518,37 @@ func _tex(kind: String) -> ImageTexture:
 	return t
 
 ## a material that projects one of those textures in world space (so no UVs are needed anywhere)
+## The colour of the bare earth (the user, 21 Nov 2026: the old pale sand "tiene poco y nada que ver con la realidad"):
+## the orange-brown of the dirt in Catastro's photos of the Calle del Triunfo (hue about 32, as #cf9a5c in the sun).
+const EARTH := 0xc4905c
+## The ground's own material: the "tierra" texture at two sizes laid over each other (5 m and 61 m, with a third at 23 m)
+## so that its repeat does not show over a whole empty lot, as a single 9 m one did. Matt, and seen from below too.
+func _earth_mat() -> ShaderMaterial:
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_disabled;
+uniform sampler2D grit : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec4 tint : source_color;
+varying vec3 wp;
+void vertex() {
+	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+void fragment() {
+	vec3 a = texture(grit, wp.xz / 5.0).rgb;
+	float big = texture(grit, wp.xz / 61.0 + vec2(0.31, 0.17)).r - 0.95;
+	float mid = texture(grit, wp.xz / 23.0 + vec2(0.71, 0.53)).g - 0.95;
+	vec3 warm = vec3(1.0 - big * 0.25, 1.0, 1.0 + big * 0.5);        // the darker patches redder, the paler yellower
+	ALBEDO = tint.rgb * a * warm * (1.0 + big * 1.5) * (1.0 + mid * 0.6);
+	ROUGHNESS = 1.0;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.set_shader_parameter("grit", _tex("tierra"))
+	m.set_shader_parameter("tint", Parts.col(EARTH))
+	return m
+
 func _tmat(hex: int, kind: String, metres: float) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Parts.col(hex)
@@ -714,7 +787,7 @@ func _ground_list() -> Array:
 	var jobs: Array = [["terrain", _terrain], ["cache", _load_sheets]]
 	for k in range(6):
 		jobs.append(["fields %d" % k, _ground_areas.bind(k)])
-	jobs.append_array([["dirt tracks", _ribbon.bind(1, 0.0, 0xc9a66b, ROAD_Y + 0.09, false, "earth", 4.0)],
+	jobs.append_array([["dirt tracks", _ribbon.bind(1, 0.0, 0xcaa170, ROAD_Y + 0.09, false, "tierra", 4.0)],      # (trodden: paler and greyer than the lots beside them)
 		["pavements", _ribbon.bind(0, 3.2, 0xdcd5c8, ROAD_Y + 0.12, false, "pavement", 2.0)],              # (run under the buildings where streets are tight)
 		["footpaths", _ribbon.bind(2, 0.0, 0xe8dcc0, ROAD_Y + 0.15, false, "pavement", 2.4)],             # footpaths / plazas
 		["asphalt", _ribbon.bind(0, 0.0, 0x77727a, ROAD_Y + 0.18, true, "asphalt", 3.0)],                # fitted between the real facades
@@ -723,7 +796,7 @@ func _ground_list() -> Array:
 
 ## the fields of one kind (grass, park, vineyard, earth, furrows, water), in one sheet
 func _ground_areas(k: int) -> void:
-	var area_col := [0x9ccf6e, 0x74b98c, 0xb3bd62, 0xd3c486, 0xecd9a0, 0x6fc3e0]
+	var area_col := [0x9ccf6e, 0x74b98c, 0xb3bd62, 0xc99c66, 0xc39266, 0x6fc3e0]      # (bare and ploughed fields in the earth's browns since 21 Nov 2026)
 	if true:
 		var v := PackedVector3Array()
 		var idx := PackedInt32Array()
@@ -740,7 +813,7 @@ func _ground_areas(k: int) -> void:
 				v.append(Vector3(q.x, 0, q.y))
 			for t in tri:
 				idx.append(base + t)
-		var area_tex: String = ["grass", "grass", "rows", "earth", "furrow", ""][k]
+		var area_tex: String = ["grass", "grass", "rows", "tierra", "furrow", ""][k]
 		var tint: int = 0xffffff if k == 2 else area_col[k]            # the vineyard texture brings its own colours
 		_flat(v, idx, tint, ROAD_Y + (0.06 if (k < 2 or k == 5) else 0.03), null, area_tex, [3.0, 3.0, 7.0, 8.0, 5.0, 2.0][k])
 
@@ -807,9 +880,7 @@ func _terrain() -> void:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
-	var mat := _tmat(0xe3cf95, "earth", 9.0)
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mi.material_override = mat
+	mi.material_override = _earth_mat()
 	mi.position.y = ROAD_Y
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)

@@ -3224,6 +3224,104 @@ func _cristobal_checks() -> void:
 			worst = p
 	_check(stops and free_ and nearest > 0.0, "its walls stop you (%s), the ground before its yard is free (%s), nothing of it on the asphalt (the nearest %.2f m, at %s)" % [stops, free_, nearest, worst])
 
+## The hermitage of the Cristo del Prado (cristoprado.gd): built where its parts of Catastro's building were (no longer
+## raised by the bake; the old people's home beside it still is); its walls stop you; the ground before its two doors is
+## free; nothing of it on the asphalt.
+func _cristoprado_checks() -> void:
+	if MapData.cristoprado.is_empty():              # (a map baked before it: nothing to check yet)
+		print("  the hermitage of the Cristo del Prado: not in this map yet")
+		return
+	var cp = g.world.get("cristoprado")
+	_check(cp != null and cp.pieces > 1500 and cp.openings >= 9, "the hermitage of the Cristo del Prado is built by hand (%d pieces, %d windows and doors)" % [(cp.pieces if cp != null else 0), (cp.openings if cp != null else 0)])
+	if cp == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var a: Vector2 = cp.spot(-2.5, -2.5)
+	var b: Vector2 = cp.spot(3.0, -2.5)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, cp.level + 1.2, a.y), Vector3(b.x, cp.level + 1.2, b.y), 1)).is_empty()
+	var free_ := true
+	for d: Vector2 in [cp.door, cp.side_door]:
+		var q := PhysicsPointQueryParameters3D.new()
+		q.position = Vector3(d.x, MapData.foot(d) + 0.9, d.y)
+		q.collision_mask = 1
+		if not space.intersect_point(q).is_empty():
+			free_ = false
+	var nearest := 99.0
+	var worst := Vector2.ZERO
+	for p in cp.yard:
+		var dd: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			dd += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		if dd < nearest:
+			nearest = dd
+			worst = p
+	_check(stops and free_ and nearest > 0.0, "its walls stop you (%s), the ground before its two doors is free (%s), nothing of it on the asphalt (the nearest %.2f m, at %s)" % [stops, free_, nearest, worst])
+
+## The old people's home of the Cristo del Prado (residencia.gd): built where the rest of Catastro's building was (no
+## longer raised by the bake); its walls stop you; the ground before its main door is free; nothing of it on the asphalt.
+func _residencia_checks() -> void:
+	if MapData.residencia.is_empty():               # (a map baked before it: nothing to check yet)
+		print("  the old people's home of the Cristo del Prado: not in this map yet")
+		return
+	var rs = g.world.get("residencia")
+	_check(rs != null and rs.pieces > 1500 and rs.openings >= 60, "the old people's home of the Cristo del Prado is built by hand (%d pieces, %d windows and doors)" % [(rs.pieces if rs != null else 0), (rs.openings if rs != null else 0)])
+	if rs == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var a := Vector2(334.0, 470.0)
+	var b := Vector2(316.0, 470.0)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + 1.5, a.y), Vector3(b.x, MapData.height(a) + 1.5, b.y), 1)).is_empty()
+	var q := PhysicsPointQueryParameters3D.new()
+	q.position = Vector3(rs.door.x, MapData.foot(rs.door) + 0.9, rs.door.y)
+	q.collision_mask = 1
+	var free_: bool = space.intersect_point(q).is_empty()
+	var nearest := 99.0
+	var worst := Vector2.ZERO
+	for p in rs.yard:
+		var dd: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			dd += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		if dd < nearest:
+			nearest = dd
+			worst = p
+	_check(stops and free_ and nearest > 0.0, "its walls stop you (%s), the ground before its main door is free (%s), nothing of it on the asphalt (the nearest %.2f m, at %s)" % [stops, free_, nearest, worst])
+
+## The park of the Paseo del Cristo (paseo.gd): built over the map's ground (no rebake); the walk aimed at the hermitage's
+## door; the map's own trees in it taken away (it plants its own); its lanterns lit with the town's; the white wall of the
+## gardens stops you; nothing of it on the asphalt.
+func _paseo_checks() -> void:
+	var pa = g.world.get("paseo")
+	_check(pa != null and pa.pieces > 3000 and pa.trees_n >= 28 and pa.lamps.size() >= 16, "the park of the Paseo del Cristo is built by hand (%d pieces, %d trees, %d lanterns)" % [(pa.pieces if pa != null else 0), (pa.trees_n if pa != null else 0), (pa.lamps.size() if pa != null else 0)])
+	if pa == null:
+		return
+	var standing := 0
+	for t in g.world.tree_info:
+		if not t["down"] and pa.inside(t["p"]):
+			standing += 1
+	var aim := 0.0
+	if pa.door != Vector2.ZERO:
+		var d: Vector2 = pa._loc(pa.door)
+		aim = d.y - pa.vc(d.x)
+	_check(standing == 0 and pa.felled > 0 and absf(aim) < 1.0 and g.world.lamp_spots.has(pa.lamps[0]),
+		"the map's trees in it are gone (%d taken, %d left), the walk is aimed at the hermitage's door (%.2f m off), its lanterns are the town's" % [pa.felled, standing, aim])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var a: Vector2 = pa.spot(25.0, -8.0)
+	var b: Vector2 = pa.spot(25.0, -16.0)
+	var stops: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + 1.5, a.y), Vector3(b.x, MapData.height(a) + 1.5, b.y), 1)).is_empty()
+	var q2 := PhysicsPointQueryParameters3D.new()
+	var mid: Vector2 = pa.spot(70.0, pa.vc(70.0))
+	q2.position = Vector3(mid.x, MapData.foot(mid) + 0.9, mid.y)
+	q2.collision_mask = 1
+	var free_: bool = space.intersect_point(q2).is_empty()
+	var nearest := 99.0
+	var worst := Vector2.ZERO
+	for p in pa.yard:
+		var dd: float = pa.car_dist(p)          # (the asphalt as the game lays it: the park is laid over the map's footways)
+		if dd < nearest:
+			nearest = dd
+			worst = p
+	_check(stops and free_ and nearest > 0.0, "the gardens' wall stops you (%s), the walk is clear (%s), nothing of it on the asphalt (the nearest %.2f m, at %s)" % [stops, free_, nearest, worst])
+
 ## The hermitage of San Sebastián and its park (sebastian.gd): built where Catastro's parcel was (no longer raised by
 ## the bake); its walls stop you; the door is reachable from the front; the round square and the terrace carry whoever
 ## walks on them; nothing of it on the asphalt.
@@ -4444,7 +4542,9 @@ func _relief_checks() -> void:
 	# 30000 when 33142 were left, 17 Nov 2026)
 	# Fewer generic walls remain as hand-built places and Texturas' houses replace them.
 	_check(aw["n"] > 28000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
-	_check(aw["fronts"] > 5000 and aw["odd"] < aw["fronts"] * 0.01 and aw["high"] < 4.0 and aw["deep"] < 0.8,
+	# (the fronts too: 5000 became 4000 on 21 Nov 2026, when 4807 were left after the Florido, Viñas and Cipreses houses
+	# and the Cristo del Prado block)
+	_check(aw["fronts"] > 4000 and aw["odd"] < aw["fronts"] * 0.01 and aw["high"] < 4.0 and aw["deep"] < 0.8,
 		"houses meet their street: of %d fronts, %d (%.1f %%) have the floor over 1.6 m above the pavement or 0.4 m under it; the worst are %.1f m above (at %.0f, %.0f) and %.1f m under (at %.0f, %.0f)"
 		% [aw["fronts"], aw["odd"], 100.0 * aw["odd"] / maxf(1.0, aw["fronts"]), aw["high"], aw["high_at"].x, aw["high_at"].y, aw["deep"], aw["deep_at"].x, aw["deep_at"].y])
 	# --- a level terrace under everything built by hand
@@ -10882,6 +10982,105 @@ func _run() -> void:
 		print("CRISTOBAL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--cristoprado"):      # just the hermitage of the Cristo del Prado: its front on the square, the Paseo, the side door, the crossing, the east end on the Calle del Cristo, the bell tower, the calvario, at night, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var cp = g.world.get("cristoprado")
+		if cp == null:
+			print("CRISTOPRADO FAILED (not built: the map was baked without it)")
+			get_tree().quit(1)
+			return
+		for moment in [["", 12.0], ["_noche", 22.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["frente", cp.spot(-17.0, -4.81), 1.7, cp.spot(0.0, -4.81), 6.5, 72.0], ["portada", cp.spot(-7.0, -4.81), 1.7, cp.spot(0.0, -4.81), 4.6, 62.0],
+					["paseo", cp.spot(-8.0, 13.0), 1.7, cp.spot(14.0, -2.0), 6.0, 75.0], ["puerta", cp.spot(10.0, 7.0), 1.7, cp.spot(10.0, 0.0), 3.0, 70.0],
+					["crucero", cp.spot(40.0, 13.5), 1.7, cp.spot(22.0, -3.0), 8.0, 72.0], ["cabecera", cp.spot(46.0, -8.0), 1.7, cp.spot(33.0, -6.0), 5.0, 72.0],
+					["campanario", cp.spot(-14.0, -2.0), 1.7, cp.spot(1.7, -4.8), 15.0, 55.0], ["calvario", cp.spot(-25.0, 14.0), 1.7, cp.calvario, 1.8, 70.0],
+					["aire", cp.spot(-30.0, 40.0), 40.0, cp.spot(15.0, -6.0), 0.0, 60.0]]:
+				if moment[0] != "" and v[0] != "frente":
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = Vector2(240.0, 60.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, cp.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("cristoprado_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.phase = "free"
+		await _cristoprado_checks()
+		print("CRISTOPRADO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--residencia"):      # just the old people's home of the Cristo del Prado: along the east arm of the Calle del Cristo, its main door, the north end, the west arm, the low wing on the square, at night, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var rs = g.world.get("residencia")
+		if rs == null:
+			print("RESIDENCIA FAILED (not built: the map was baked without it)")
+			get_tree().quit(1)
+			return
+		for moment in [["", 12.0], ["_noche", 22.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["este", Vector2(336.0, 490.0), 1.7, Vector2(320.0, 455.0), 5.0, 75.0], ["entrada", Vector2(334.0, 479.0), 1.7, Vector2(324.5, 476.0), 4.0, 72.0],
+					["norte", Vector2(310.0, 424.0), 1.7, Vector2(307.0, 440.0), 6.0, 75.0], ["oeste", Vector2(291.0, 440.0), 1.7, Vector2(300.0, 468.0), 5.0, 75.0],
+					["ala", Vector2(281.0, 500.0), 1.7, Vector2(295.0, 487.0), 2.5, 72.0], ["aire", Vector2(360.0, 520.0), 45.0, Vector2(310.0, 468.0), -14.0, 60.0]]:
+				if moment[0] != "" and v[0] != "este":
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.player.p = Vector2(240.0, 60.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("residencia_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.phase = "free"
+		await _residencia_checks()
+		print("RESIDENCIA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--paseo"):      # just the park of the Paseo del Cristo: from the corner of the Calle de los Arcos, down its walk, from the Paseo, the square of the crossing path, from the east end, the slate close to, at night, from the air
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var pa = g.world.get("paseo")
+		if pa == null:
+			print("PASEO FAILED (not built)")
+			get_tree().quit(1)
+			return
+		for moment in [["", 12.0], ["_noche", 22.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["esquina", Vector2(-7.0, -6.5), 2.2, Vector2(35.0, -6.0), 1.6, 72.0], ["oeste", Vector2(-1.0, -3.2), 1.7, Vector2(60.0, -3.0), 1.4, 70.0],
+					["calle", Vector2(35.0, 11.5), 1.7, Vector2(35.0, -9.0), 1.0, 75.0], ["cruce", Vector2(73.0, 8.0), 1.7, Vector2(66.0, -10.0), 1.5, 75.0],
+					["este", Vector2(152.0, -2.0), 1.7, Vector2(110.0, -2.6), 1.6, 70.0], ["losas", Vector2(43.0, -2.6), 1.6, Vector2(46.5, -6.0), 0.2, 70.0],
+					["aire", Vector2(55.0, 45.0), 40.0, Vector2(80.0, -2.0), 0.0, 60.0]]:
+				if moment[0] != "" and v[0] != "oeste":
+					continue
+				var eye: Vector2 = pa.spot(v[1].x, v[1].y)
+				var at: Vector2 = pa.spot(v[3].x, v[3].y)
+				g.player.p = Vector2(240.0, 60.0)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("paseo_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.phase = "free"
+		await _paseo_checks()
+		print("PASEO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--sebastian"):      # just the hermitage of San Sebastián and its park: its front, its porch, its side and terrace on the Calle del Santo, from the north, the round square, the park, at night, from the air
 		shots = true
 		g.menu.close()
@@ -14071,6 +14270,9 @@ func _run() -> void:
 	await _sebastian_checks()
 	await _cristobal_checks()
 	await _matias_checks()
+	await _cristoprado_checks()
+	await _residencia_checks()
+	await _paseo_checks()
 	await _gacha_checks()
 	await _sentido_checks(false)
 	await _cuartel_coche_checks()

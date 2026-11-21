@@ -311,28 +311,32 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Prueba completa (`python tools/run_tests.py`): 879 ok y 1 fallo en 480 s ([log](logs/selftest_full_20261121_012128.log)). Ahí pasan las del reloj y el final del puente. El fallo era un «tienes» en `fumar_busy`, que ahora dice «tiés». `palabros --headless`: 3 ok ([log](logs/selftest_palabros_20261121_012938.log)). La prueba incluía, sin commitear, el suelo y los matojos de Texturas.
 - **Decidido sin preguntar.** El pitillo de la Tomasa es suyo: no gasta de los tres. Un paquete de los chinos trae tres por 6 €, el precio del tabaco del recado.
 
-### Ermita del Cristo del Prado: en curso (21/11)
+### Ermita del Cristo del Prado (21/11)
 
 21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Luis lo pidió el 21/11: «Siguiente proyecto la Ermita del Cristo del Prado (junto a la residencia, en la misma manzana)».
 
-- **Hecho, sin efecto todavía.**
-  - `godot/scripts/cristoprado.gd`: la ermita, su placita, la acera del Paseo y el calvario del parque. Lleva `READY := false`.
-  - Los cambios de `tools/cristoprado/enganche.py`, ya en `tools/bake_godot.py`. El Catastro tiene la ermita y la Residencia como un solo edificio, `4587301VJ5648N`; el horneado dejará de levantar las partes de la ermita y mantendrá las de la Residencia.
-  - En `godot/scripts/map_data.gd`: `var cristoprado` y su lectura.
-  - Con `READY := false`, un horneado deja el edificio entero, como ahora. Sistemas dio el OK para el horneado y para `map_data.gd`; Texturas, el del rehorneado.
-- **Comprobado.**
-  - El horneado tal como está en disco da el mismo mapa que `godot/data/map.json`, con solo la clave vacía `cristoprado`.
-  - El ensayo con `READY := true` (`python tools/cristoprado/enganche.py ensayo OUT.json`) solo cambia la manzana de la ermita: desaparece el bloque genérico, cambian sus muros y salen 2 árboles de la acera. Casas, calles y relieve quedan iguales.
-  - El dibujo de unos 155 contornos de otras manzanas se mueve 0,3 m como mucho, porque se simplifican de otra manera.
-  - `cristoprado.gd` compila (comprobado con una copia en la que se sustituye el autoload).
-- **Pendiente.**
-  - Esperar a que Sistemas libere `world.gd` (ahora no compila por otra sesión) y `selftest.gd` (tiene cambios suyos sin commitear).
-  - Después:
-    - poner `READY := true`;
-    - aplicar `python tools/cristoprado/enganche_juego.py aplicar` en `world.gd` y `selftest.gd`;
-    - rehornear y comparar;
-    - `python tools/run_tests.py cristoprado`, comparación con Street View y hojas para Luis.
-- **Sin commit.**
+- **Hecho.** `godot/scripts/cristoprado.gd`, sobre `obra.gd`. Incluye la ermita, su placita, la acera del Paseo con el ajedrezado, los olmos y los pilones, la franja con verja de la Calle del Cristo y el calvario del parque. El detalle y las medidas están en [referencias/cristoprado/LEEME.md](referencias/cristoprado/LEEME.md).
+- **El horneado.**
+  - El Catastro tiene la ermita y la Residencia como un solo edificio, `4587301VJ5648N`. `tools/bake_godot.py` deja de levantar las partes de la ermita (con los cambios de `tools/cristoprado/enganche.py`); la Residencia sigue genérica.
+  - `godot/data/map.json` rehorneado con el OK de Sistemas y de Texturas, igual al ensayo.
+  - Frente al mapa anterior: cambia la manzana de la ermita (su contorno y 25 muros que se quitan y 10 nuevos, todos a menos de 60 m), hay 2 árboles menos en la acera sur y aparece la clave `cristoprado`. Casas, calles y relieve, iguales.
+  - Unos 155 contornos de otras manzanas se mueven 0,3 m como mucho, porque se simplifican de otra manera.
+- **Archivos compartidos**, con los avisos dados: `map_data.gd`, `world.gd` y `selftest.gd` (modo `--cristoprado`, y `_cristoprado_checks` en la prueba completa, tras Matías Pérez). Los cambios salen de `tools/cristoprado/enganche_juego.py`.
+- **Nuevos.**
+  - `tools/cristoprado/`: `manzana.py`, `capturas.py`, `enganche.py`, `enganche_juego.py` y `hojas.py`.
+  - `tools/ign/cristoprado.*`.
+  - `referencias/cristoprado/LEEME.md`.
+- **Pruebas.**
+  - `python tools/run_tests.py cristoprado`: 2 ok, 0 fallos ([log](logs/selftest_cristoprado_20261121_013705.log)): 2171 piezas, 10 ventanas y puertas, los muros paran, el suelo ante las dos puertas está libre y nada pisa el asfalto.
+  - La primera pasada falló: la verja de la cabecera pisaba la Calle del Cristo, que dobla la esquina. Ya está corregida.
+  - Vistas desde las cámaras de Street View con `tools/merkocarry/vistas.py`. El ejecutor dice «NO RESULT» porque ese modo solo hace fotos.
+- **Hojas para Luis.** `guion/fotos/cristoprado/01_street_view_y_juego.jpg` y `02_en_el_juego.jpg`.
+- **Su corrección (21/11).** Sobre la vista desde la esquina del Paseo con la Calle del Cristo dijo: «The building it's pretty good, but i'm missing the little stone wall in red and the last portion of acera (in yellow). After these fixes we can continue with the rest of the apple». Hecho en `cristoprado.gd`, sin rehornear:
+  - **El murete de piedra.** El enlosado claro sigue el suelo hasta el crucero y desde allí queda a nivel, mientras la calle baja. Su murete con albardilla sube así de bordillo a medio metro en la esquina y rodea la cabecera por la Calle del Cristo, con su chaflán donde la calle corta la esquina.
+  - **El enlosado claro** tiene su suelo para pisar (`MapData.decks`). Los pilones están sobre el murete y el portón se abre a su nivel.
+  - **La acera.** El ajedrezado es ahora una sola rejilla que rodea la esquina hasta el asfalto de las dos calles; antes allí salía el césped del parque del mapa. Los coches aparcan solo hasta x = 30.
+  - **Pruebas.** `python tools/run_tests.py cristoprado`: 2 ok ([log](logs/selftest_cristoprado_20261121_021318.log)). Un primer intento falló porque un pilón pisaba la Calle del Cristo; ya está corregido. Otra pasada coincidió con un Godot de otra sesión.
+- **Aprobada con esos arreglos.** Sin commit.
 
 ### Suelo de tierra y plantas secas en todo el pueblo (21/11)
 
@@ -367,7 +371,199 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Vistas con `vistas=`: hay plantas en los solares y los caminos, y ninguna en la plaza.
 - **Hojas.** `guion/fotos/suelo/suelo_1.jpg` (Catastro, antes y ahora en dos casas del Triunfo) y `suelo_2.jpg` (solar, matas de cerca, camino de tierra y las afueras desde arriba).
 - **Sin probar en el móvil.** La primera vez que se abra, la carga tardará unos segundos más.
-- **Pendiente.** El visto bueno del usuario. Sin commit.
+- **Aprobado** por el usuario el 21/11: «Mucho mejor. Visto bueno y siguiente». Sin commit.
+
+### Calle de los Cipreses: 33 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). Es la siguiente calle del núcleo, a la orden del usuario («Visto bueno y siguiente»).
+
+- **Hecho.** 33 casas con su frente en los Cipreses (`cip_*`), descritas con las fotos del Catastro y siete con Street View. Lo que queda fuera y por qué está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd`: 33 entradas nuevas.
+  - `godot/data/map.json`: horneado.
+  - Las carpetas del Catastro `tools/casas/<ref>/`.
+  - Las hojas `guion/fotos/tanda34/cipreses_1..6.jpg`.
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Horneado sobre el mapa con el Cristo del Prado de Edificios Especiales, avisándole antes y después. Comparado con la copia de antes: 33 casas nuevas, ninguna quitada ni cambiada. Calles (656), nodos (6376), relieve, árboles (2954) y holguras siguen igual. Ninguna casa tiene partes por delante de su frente.
+- **Pruebas.**
+  - `python tools/run_tests.py casas "solo=cip_"`: el primer intento falló porque `cip_t60` no llegaba a 12 piezas.
+  - Con las pilastras y el portón de su foto, `solo=cip_t60` dio 4 ok, 0 fallos.
+  - Tras los once arreglos, `solo=cip_t58,…,cip_10` dio 4 ok, 0 fallos ([log](logs/selftest_casas_solo_cip_t58_cip_sb47_cip_x1_cip_34_cip_26_cip_39_cip__20261121_021512.log)).
+- **Plantas secas.** El mapa ha cambiado, así que la caché de `matojos.gd` se rehace sola la próxima vez que arranque (unos 4,7 s).
+- **Aprobada** por el usuario el 21/11: «Visto bueno y siguiente». Sin commit.
+
+### Residencia de mayores del Cristo del Prado (21/11)
+
+21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Después de aprobar la ermita, Luis dijo: «After these fixes we can continue with the rest of the apple». Es el resto de la manzana de la ermita.
+
+- **Hecho.** `godot/scripts/residencia.gd`, sobre `obra.gd`:
+  - **El bloque grande**, de tres plantas entre los dos brazos de la Calle del Cristo:
+    - ladrillo salmón claro con paños altos de mampostería entre los huecos y zócalo de mampostería con las ventanas enrejadas del sótano;
+    - rejas con copete abajo y balconcitos de hierro arriba;
+    - alero de teja en inglete alrededor de la azotea con sus placas solares.
+  - **Dos alturas**: la calle baja casi 3 m de la punta norte al Paseo, así que la parte sur está un escalón más baja, donde la marca el Catastro.
+  - **La entrada principal**, a la Calle del Cristo: el gran medio punto acristalado con sus radios, las puertas de vidrio, la marquesina y la escalinata. La escalinata va dentro del porche porque el asfalto del mapa llega allí casi a la fachada.
+  - **El cuerpo redondo** de dos plantas, contra la nave de la ermita.
+  - **El ala baja**, sobre la placita y el brazo oeste: el porche de pies derechos de madera, los canecillos y las rejas.
+  - **Las aceras** de baldosa clara.
+- **Fuentes.**
+  - El Catastro, `4587301VJ5648N`: las partes que no son la ermita.
+  - La ortofoto `tools/ign/cristoprado.jpg`.
+  - Street View: el brazo este y la punta norte en 2024, el brazo oeste y la placita en 2013. Están listados en `tools/residencia/capturas.py`.
+- **El horneado.**
+  - `tools/residencia/enganche.py`, aplicado a `tools/bake_godot.py`. Con `residencia.gd` en `READY := true` no se levanta nada del edificio 4587301, y sus cuatro contornos entran en los bloques. La clave del mapa es `residencia`.
+  - Rehorneado con el OK de Sistemas y de Texturas, igual al ensayo. Frente al mapa anterior: casas (2246, también las `cip_*` de Texturas), calles, relieve y árboles, iguales. Desaparece el bloque genérico (35 muros y 4 tejados planos) y entra la clave.
+- **Archivos compartidos**, con los avisos dados: `map_data.gd`; `world.gd`, con el paso tras la ermita (los matojos y el suelo de Texturas, sin tocar); `selftest.gd`, con el modo `--residencia`, y `_residencia_checks` en la prueba completa tras `_cristoprado_checks`. Los cambios salen de `tools/residencia/enganche_juego.py`.
+- **Pruebas.**
+  - `python tools/run_tests.py residencia`: 2 ok, 0 fallos ([log](logs/selftest_residencia_20261121_023744.log)).
+  - Los dos primeros intentos fallaron porque el pie de la escalinata pisaba el asfalto. Ya está corregido.
+- **Hojas para Luis.** `guion/fotos/residencia/01_street_view_y_juego.jpg` y `02_en_el_juego.jpg`.
+- **Corrección del ala baja (21/11, mañana).**
+  - Luis: «Really impressive. Just a couple of adjustments. Here in red the fachada is very different to the photo, also a door is missing», y mandó seis capturas de una foto 360 de Google Maps de hace seis años (C. del Cristo, 52). Las capturas no se guardan en el repositorio.
+  - **La fachada a la placita, rehecha en `residencia.gd`**:
+    - cuatro ventanas, un solo porche de dos vanos, cerrado por cancelas de hierro de suelo a viga, con el pie derecho de madera en medio, y una última ventana junto al cuerpo redondo;
+    - dentro del porche, la puerta de madera de cuarterones, una ventana, la tabla de la Mayordomía con el azulejo del Cristo, dos faroles, el banco y las macetas;
+    - el zócalo de granito claro, las columnas de cajones, la cornisa de ladrillo en dientes y los canecillos.
+    - Antes el porche ocupaba toda la fachada.
+  - **La puerta que faltaba** es la de la Residencia, en el muro del cuerpo redondo, entre el ala y la ermita. Lleva la cancela, la banda con el nombre, el montante con la cruz y el balcón de dos ventanas encima.
+  - **La fachada del ala está 2,85 m más atrás que la línea del Catastro.**
+    - Medido en la ortofoto: el alero queda 2,25 m dentro, igual de punta a punta. La cara oeste y la fachada de la ermita sí coinciden con el Catastro.
+    - El césped de OpenStreetMap del mapa rodea el edificio por esa misma línea.
+    - Así queda al aire el muro de la puerta. La franja que sobra se enlosa como la placita.
+    - No hace falta horneado: el contorno del ala solo está en `residencia.gd`.
+  - **Archivos**: `godot/scripts/residencia.gd`; `tools/residencia/hojas.py`, con la hoja 03, que pone las fotos 360 al lado del juego; `referencias/cristoprado/LEEME.md`, con la sección de la Residencia y las cámaras. Ningún archivo compartido.
+  - **Pruebas**: `python tools/run_tests.py residencia`, 2 ok y 0 fallos ([log](logs/selftest_residencia_20261121_054845.log)).
+    - El primer intento dejaba el suelo del porche medio metro por encima de la placita, y por debajo se veía el césped. Ya está corregido.
+  - **Hojas**: `01_street_view_y_juego.jpg`, rehecha, y `03_ala_fotos_360.jpg`, nueva.
+- **Aprobada** por Luis el 21/11 («Visto bueno»), con la corrección del ala. Sin commit.
+
+### Parque del Paseo del Cristo (21/11)
+
+21 de noviembre de 2026, Edificios Especiales (Claude · Pretil). Luis, tras aprobar la Residencia: «Visto bueno. Podemos continuar con el parque largo empedrado que hay al lado del paseo del cristo (tiene su propia linea en street view, sin nombre)». Mandó una foto de noviembre de 2024 de la esquina oeste y el mapa con la flecha. Las capturas no se guardan en el repositorio.
+
+- **Hecho.** `godot/scripts/paseo.gd`, sobre `obra.gd`. Es el «Parque del Paseo del Cristo» del mapa: unos 165 m desde la esquina de la Calle de las Viñas y la Calle de los Arcos hasta la placita de la ermita.
+  - **El paseo central**: baldosa clara de 40 cm con un cuadro rojo en marco rojo cada 15 m. Apunta a la puerta de la ermita (a 0,01 m). A cada lado, una banda de losas de pizarra irregulares (`tools/paseo/losas.py` → `godot/assets/paseo/losas.png`).
+  - **Los céspedes** con bordillo, y la acera ajedrezada roja y crema a lo largo del Paseo.
+  - **Al oeste**:
+    - la plaza de ladrillo, con la muela de pie y el cono de piedra sobre su base redonda;
+    - el seto de boj ante la casa de los arcos;
+    - el parterre de cipreses con su verjita, el álamo y la farola alta;
+    - la piedra y el tronco tallado sobre su base;
+    - la jardinera redonda de mampostería alrededor de la acacia.
+  - **Al norte**: la tapia blanca de los huertos, con su albardilla de teja. Después, el murete de mampostería con pilares de ladrillo y verja, ante los patios y el callejón. La rocalla con sus macetones y el sauce llorón.
+  - **La plaza de losas del cruce**, con faroles de dos brazos. Al este, las losas alrededor del calvario (el de `cristoprado.gd`), los bancos de granito y los bolardos ante la placita.
+  - **Lo demás**:
+    - 33 árboles donde la ortofoto tiene sus copas: plátanos encalados, olmos y olmos trasmochos, álamos, la acacia, el sauce y una palmera;
+    - bancos de hierro;
+    - 22 faroles que se encienden con los del pueblo (`W.lamp_spots`);
+    - papeleras y bolardos, como mobiliario que se puede tumbar (`W.extra_props`).
+- **Sin horneado.**
+  - Se tiende sobre el suelo, el césped y la senda del mapa, y se corta por el borde del asfalto tal como lo pone el juego: cada tramo de calle es una cápsula de su ancho ajustado, y las sendas peatonales no cuentan.
+  - Los bordes se leen al cargar: el asfalto del Paseo al sur; la tapia, la verja, el callejón o las casas al norte.
+  - Los 13 árboles del mapa que caían dentro se quitan con `W.fell_tree`.
+- **Trampas.**
+  - El Paseo del juego está unos 4 m metido en el parque real, así que el césped sur queda más estrecho.
+  - La línea propia de Street View del parque es solo de marzo de 2013. En 2024 solo hay fotos desde el coche.
+  - La tapia blanca no está en el mapa: la levanta el parque.
+  - El asfalto de la esquina de la Calle de los Arcos pasa a 2,5 m del parterre de cipreses, que se corre hacia el este hasta quedar libre.
+- **La casa de los arcos** (la de la foto de Luis, en la esquina norte) sigue siendo la casa genérica del horneado: no forma parte del parque.
+- **Fuentes.** Street View (las cámaras están en `tools/paseo/capturas.py`), la ortofoto `tools/ign/paseo_cristo.jpg` y la foto de Luis. Notas en `referencias/paseo/LEEME.md`.
+- **Archivos compartidos**, con el aviso dado a Sistemas:
+  - `world.gd`: `PaseoS`, `var paseo` y el paso «the park of the Paseo del Cristo» detrás de la Residencia;
+  - `selftest.gd`: el modo `--paseo` y `_paseo_checks()` en la prueba completa, tras `_residencia_checks`.
+- **Pruebas.** `python tools/run_tests.py paseo`: 3 ok, 0 fallos ([log](logs/selftest_paseo_20261121_081505.log)).
+  - El primer intento contaba las sendas peatonales como calles, y el borde del Paseo salía en la senda central. Ya está corregido.
+- **Hojas.** `guion/fotos/paseo/01_street_view_y_juego.jpg` (13 puntos de Street View al lado del juego) y `02_en_el_juego.jpg` (la foto de Luis al lado del juego, y el parque).
+- **Pendiente.** El visto bueno de Luis. Sin commit.
+
+### Calle de las Viñas: 44 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). Es la siguiente calle del núcleo, a la orden del usuario («Visto bueno y siguiente»).
+
+- **Hecho.** 44 casas con su frente en las Viñas (`vin_*`), descritas con las fotos del Catastro y doce con Street View. Lo que queda fuera y por qué está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd`: 44 entradas nuevas.
+  - `godot/data/map.json`: horneado.
+  - Las carpetas del Catastro `tools/casas/<ref>/`.
+  - Las hojas `guion/fotos/tanda34/vinas_1..8.jpg`.
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado dos veces sobre el mapa de Edificios Especiales de las 02:25, con el Cristo del Prado y la Residencia, avisándole antes y después de cada vez.
+  - La segunda vez fue para quitar `vin_bv12`, `vin_bv11` y `vin_ja8`, cuyas fachadas quedaban detrás de otras.
+  - Comparado con la copia de antes: 44 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) siguen igual.
+  - La holgura de 21 nodos junto a las casas nuevas baja unos 0,7 m; la menor queda en 3,7 m.
+  - Ninguna casa tiene partes por delante de su frente.
+- **Lección.** Además de las partes por delante, conviene buscar fachadas paralelas en el mismo lado de la calle a menos de unos 9 m una de otra. La de detrás no se ve desde la calle, y en la hoja la cámara queda dentro de la de delante.
+- **Pruebas.**
+  - `casas solo=vin_`: el primer intento falló porque `vin_rs67` no llegaba a 12 piezas.
+  - Con la celosía de su foto, `solo=vin_rs67` dio 4 ok.
+  - Tras los arreglos, `solo=vin_rs71,vin_x2,vin_12,vin_x4,vin_bv14,vin_4b,vin_4` dio 4 ok, 0 fallos ([log](logs/selftest_casas_solo_vin_rs71_vin_x2_vin_12_vin_x4_vin_bv14_vin_4b_vin_20261121_023910.log)).
+- **Aprobada** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+
+### Calle del Florido, tramo norte: 29 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). Es la siguiente calle del núcleo, a la orden del usuario («Visto bueno y siguiente», tras aprobar las Viñas). La calle es larga (unas 84 casas, más 20 en la Bajada del Florido) y va en tres tandas; esta es la primera, de los Silos a la Bajada.
+
+- **Hecho.** 29 casas con su frente en el Florido (`flo_*`), descritas con las fotos del Catastro y doce con Street View de noviembre de 2024. Lo que queda fuera y por qué está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Casos puestos a mano** (en `tools/casas/calles.json`):
+  - `flo_68`: frente por la pared de delante, sobre el hueco de la escalera de fuera.
+  - `flo_50` y `flo_50g`: una misma referencia partida por plantas con `only`: la parte de una planta y la de dos, cada una con su trozo de frente.
+  - `flo_b10`: el trozo de una planta (`only` 1) de Bajada del Florido 10, su portón a esta calle.
+  - `flo_62`: la tapia del patio, sin referencia (`rc` null, 0,9 m de fondo), porque el Catastro da el patio sin plantas.
+  - Los Ángeles 1 queda fuera: su cara a esta calle está detrás de la casa de la esquina.
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd`: 29 entradas nuevas.
+  - `godot/data/map.json`: horneado.
+  - Las carpetas del Catastro `tools/casas/<ref>/`.
+  - Las hojas `guion/fotos/tanda34/florido_1..5.jpg`.
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el mapa de las 02:39 (el de las Viñas), avisando a Edificios Especiales antes y después.
+  - Comparado con la copia de antes: 29 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) siguen igual; la holgura de un nodo baja de 4,9 a 3,5 m.
+  - Antes de hornear se comprobó que ninguna casa tiene partes por delante de su frente ni fachadas paralelas escondidas detrás de otras (`precheck.py` en el scratchpad, sobre los anillos de `datos.json`).
+- **Pruebas.**
+  - `casas solo=flo_`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_flo__20261121_053430.log)).
+  - Tras los arreglos de la comparación, `solo=flo_65,flo_66,flo_60,flo_58,flo_an15,flo_b10,flo_50,flo_50g,flo_48,flo_49` dio 4 ok, 0 fallos. El primer intento paró en un error de compilación de `residencia.gd`, que Edificios Especiales estaba editando; al terminar él, pasó.
+  - `solo=flo_48`, con el friso en ladrillo oscuro: 4 ok ([log](logs/selftest_casas_solo_flo_48_20261121_054237.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En el mensaje de las hojas lo llamé «tramo sur» por error; es el extremo norte de la calle (en el mapa, z negativa es el norte). Sin commit.
+
+### Calle del Florido, tramo medio, y Bajada del Florido: 34 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). Segunda de las tres tandas del Florido, a la orden del usuario («Visto bueno y siguiente», tras aprobar el tramo norte).
+
+- **Hecho.** 18 casas del Florido entre la Bajada y el 21 y el 26 (`flo_*`) y 16 de la Bajada del Florido (`bfl_*`). Fotos del Catastro, y ocho con Street View de noviembre de 2024. Lo que queda fuera y por qué está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - `bfl_10` lleva `only` 2; su parte de una planta es `flo_b10`, del tramo norte.
+  - Monjas 65 y 63 quedan fuera: sus frentes a la Bajada están de 4 a 7 m detrás de `bfl_2` y `bfl_1`, en el mismo lado.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (34 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/florido_medio_1..6.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 05:34 (el del tramo norte), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 34 casas nuevas, ninguna quitada. `flo_50g` cambia solo en qué aristas quedan tapadas por la casa nueva de al lado. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: ninguna parte por delante; las únicas fachadas escondidas eran las de Monjas 65 y 63, que se quitaron.
+- **Pruebas.**
+  - `casas` de las 34: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_flo_41_flo_46_flo_39_flo_34_flo_37_flo_32_flo_35__20261121_055758.log)).
+  - Tras los arreglos, `solo=flo_27,flo_23,flo_26,bfl_21,bfl_23`: 4 ok ([log](logs/selftest_casas_solo_flo_27_flo_23_flo_26_bfl_21_bfl_23_20261121_060251.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+
+### Calle del Florido, tramo sur, y Prolongación del Florido: 39 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). Última de las tres tandas del Florido, a la orden del usuario («Visto bueno y siguiente», tras aprobar el tramo medio y la Bajada).
+
+- **Hecho.** 18 entradas del tramo sur del Florido (del 24 y el 15 hasta el final, con el 1 A y el 1 B) y 21 de la Prolongación (`flo_p*`), todas `flo_*`. Fotos del Catastro, y Street View de 2024 (2026 en la Bajada del Rollo) en las casas sin foto, cambiadas o dudosas. Lo que queda fuera está en `PROJECT_STATE.md`; lo que no se parece, en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - `only` para partir dos referencias: `flo_x2`/`flo_x2g` (3692606, bloque de tres plantas y almacén con `reach` 6, para que sus naves de la calle de la Vega queden normales) y `flo_x3`/`flo_x3t` (3692608, bloque y tapia de bloques).
+  - Pareadas impares de la Prolongación: `house_street` cogía la cara inclinada del porche (4 m). El frente va ahora paralelo a la calle en la cara del cuerpo de dos plantas, a todo lo ancho, con `floors` 2 y `strip` 2.5 para quitar el porche (lo calcula `sur_write.py` en el scratchpad).
+  - Bajada del Rollo 4 (3692302) está derribada según Street View de 2026. No hay forma de dejar un solar sin tocar `bake_godot.py`, así que queda la casa genérica; está apuntado.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (39 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/florido_sur_1..7.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 05:57 (el del tramo medio), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 39 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: ni partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 39: 3 ok, 1 fallo, porque `flo_x3t` tenía pocas piezas ([log](logs/selftest_casas_solo_flo_24_flo_15_flo_x4_flo_13_flo_11_flo_9_flo_22_f_20261121_075137.log)).
+  - Con más hiladas, `solo=flo_x3t`: 4 ok ([log](logs/selftest_casas_solo_flo_x3t_20261121_075422.log)).
+  - Tras los cambios de color: 4 ok ([log](logs/selftest_casas_solo_flo_x2_flo_p13_flo_p15_flo_p14_flo_p16_flo_p18_fl_20261121_075654.log)) y 4 ok ([log](logs/selftest_casas_solo_flo_p14_flo_p16_flo_p18_flo_p20_flo_p22_flo_p24_f_20261121_075815.log)).
+- **Pendiente.** El visto bueno del usuario a las hojas. Sin commit.
 
 ## Cómo mantener el registro
 

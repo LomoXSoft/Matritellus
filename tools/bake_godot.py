@@ -523,6 +523,24 @@ cristobal = {'o': [429.23, -981.43], 'u': [0.8875, -0.4610]}
 _cristobal_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'cristobal.gd')
 if not (os.path.exists(_cristobal_gd) and 'const READY := true' in open(_cristobal_gd, encoding='utf-8').read()):      # (not built yet: Catastro's building stays)
     CRISTOBAL_RC, cristobal = None, {}
+# The hermitage of the Cristo del Prado, on the Paseo del Cristo (godot/scripts/cristoprado.gd; the user, 21 November
+# 2026; referencias/cristoprado/): Catastro has it and the old people's home beside it as one building -- the hermitage's
+# parts (its nave, a piece of part 4; the crossing, part 3; the east body, part 1) are not raised, the home's stay.
+CRISTOPRADO_RC = '4587301VJ5648N'
+cristoprado_built = Polygon([(318.61, 502.34), (303.46, 494.77), (299.14, 503.37), (314.29, 510.95), (313.94, 511.64), (323.82, 516.57), (324.73, 514.75), (332.28, 518.52), (335.2, 512.71), (333.21, 511.71), (333.74, 506.57), (331.63, 501.74), (328.53, 500.19), (326.0, 505.21), (318.93, 501.69)])
+cristoprado_zone = unary_union([Polygon([(288.41, 487.94), (278.79, 507.17), (327.98, 531.78), (337.6, 512.55)]), Polygon([(336.48, 502.49), (331.78, 511.88), (336.7, 514.34), (341.4, 504.95)]), Point((268.1, 495.8)).buffer(3.5)])
+cristoprado = {'o': [299.14, 503.37], 'u': [0.894309, 0.44745]}
+_cristoprado_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'cristoprado.gd')
+if not (os.path.exists(_cristoprado_gd) and 'const READY := true' in open(_cristoprado_gd, encoding='utf-8').read()):      # (not built yet: Catastro's building stays whole)
+    CRISTOPRADO_RC, cristoprado, cristoprado_zone = None, {}, Polygon()
+# ...and the old people's home beside it, the rest of that building (godot/scripts/residencia.gd; the user, 21 November
+# 2026: "the rest of the apple"): with it built too, nothing of Catastro's building is raised.
+RESIDENCIA_RC = '4587301VJ5648N'
+residencia_built = [Polygon([(302.77, 434.61), (311.78, 433.23), (318.89, 452.64), (319.3, 454.3), (298.0, 453.0), (297.25, 452.76)]), Polygon([(298.0, 453.0), (319.3, 454.3), (320.57, 459.55), (329.48, 496.3), (329.81, 497.64), (328.53, 500.19), (328.2, 500.84), (320.77, 497.43), (309.42, 484.58), (308.49, 485.5), (309.2, 483.59), (305.63, 482.28), (299.14, 453.33)]), Polygon([(318.61, 502.34), (304.8, 495.44), (308.49, 485.5), (309.42, 484.58), (310.42, 483.77), (311.52, 483.12), (312.72, 482.65), (313.97, 482.38), (315.24, 482.3), (316.52, 482.42), (318.11, 482.86), (319.27, 483.42), (320.32, 484.15), (321.24, 485.04), (322.03, 486.05), (322.64, 487.18), (323.06, 488.38), (323.3, 489.64), (323.34, 490.92), (323.17, 492.19), (322.81, 493.42), (322.27, 494.57), (321.55, 495.63), (320.77, 497.43), (328.2, 500.84), (326.0, 505.21), (318.93, 501.69)]), Polygon([(303.46, 494.77), (286.53, 487.99), (287.06, 486.25), (292.8, 467.37), (300.96, 470.38), (297.64, 479.34), (305.63, 482.28), (309.2, 483.59), (308.49, 485.5), (304.8, 495.44)])]
+residencia = {'o': [312.0, 465.0]}
+_residencia_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'residencia.gd')
+if not (cristoprado and os.path.exists(_residencia_gd) and 'const READY := true' in open(_residencia_gd, encoding='utf-8').read()):      # (not built yet: the home stays as Catastro's block)
+    RESIDENCIA_RC, residencia, residencia_built = None, {}, []
 # The cooperative on the Avenida de la Constitución is hand-built as well (godot/scripts/coop.gd), from street photos.
 # Its frame: the origin is on the centre line of the avenue at the south end of the compound, u runs north along
 # the avenue and the compound lies to the east of it. Catastro parts and generic trees are kept out of that rectangle.
@@ -724,6 +742,10 @@ for pid, floors, v in raw:
         ph = PETRIL_PARTS[bid].get(pid.split('_')[-1])
         if ph is not None: petril_parts.append((bid, floors, p, ph))
         continue
+    if bid == RESIDENCIA_RC: continue        # (the home of the Cristo del Prado built by hand as well: nothing of the parcel is raised)
+    if bid == CRISTOPRADO_RC:               # (the hermitage of the Cristo del Prado: what of the parcel is the hermitage goes, the home stays)
+        p = p.difference(cristoprado_built.buffer(0.05, join_style=2)).buffer(-0.2, join_style=2).buffer(0.2, join_style=2)
+        if p.is_empty or p.area < 5: continue
     hand = house_of(bid, floors)
     if hand and 'reach' in HOUSES[hand] and LineString(HOUSES[hand]['front']).distance(p) > HOUSES[hand]['reach']:
         hand = None                         # ("reach": <m> -- a block of a deep plot farther than that behind the front stays an ordinary part:
@@ -1144,6 +1166,8 @@ if correos: block_list.append(correos_built)        # (the post office, likewise
 if cultura: block_list.append(cultura_built)        # (the block of the Casa Grande, likewise)
 if sebastian: block_list.extend([sebastian_built, sebastian_chapel])      # (the hermitage of San Sebastián and its little chapel, likewise)
 if cristobal: block_list.append(cristobal_built)    # (the little hermitage of San Cristóbal, likewise)
+if cristoprado: block_list.append(cristoprado_built)    # (the hermitage of the Cristo del Prado, likewise)
+if residencia: block_list.extend(residencia_built)    # (and the old people's home beside it)
 block_tree = STRtree(block_list)
 def building_dist(x, z):
     i = block_tree.nearest(Point(x, z)); return block_list[i].distance(Point(x, z))
@@ -1211,6 +1235,7 @@ trees = [t for t in trees if not masahorro_zone.contains(Point(t[0], t[1]))]    
 trees = [t for t in trees if not merkocarry_zone.contains(Point(t[0], t[1]))]   # ...and the Merkocarry, its lane and its car park
 trees = [t for t in trees if not ferial_park.contains(Point(t[0], t[1]))]      # ...and the park of the fairground by the Paseo del Cristo (ferial.gd plants its own)
 trees = [t for t in trees if not sebastian_zone.contains(Point(t[0], t[1]))]   # ...and the park of San Sebastián and round its hermitage (sebastian.gd plants its own)
+trees = [t for t in trees if not cristoprado_zone.contains(Point(t[0], t[1]))]   # ...and round the hermitage of the Cristo del Prado (cristoprado.gd plants its own)
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
@@ -1223,7 +1248,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'cristobal': cristobal, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'cristobal': cristobal, 'cristoprado': cristoprado, 'residencia': residencia, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

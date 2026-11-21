@@ -402,6 +402,80 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
   - el 27: un soportal de 2,8 m;
   - el 18.
 
+## Calle de los Cipreses
+
+- **Toda la calle:** el ladrillo rosado y el asalmonado de las casas nuevas (`cip_22`, `cip_20`) salen más anaranjados que en las fotos.
+- **`cip_m119`:** el costado de la casa de dos plantas de la esquina sale a la altura de la tapia (unos 4 m).
+- **`cip_x1`:** el salitre de la pared de ladrillo sale en recuadros pálidos; en la realidad es una mancha blanca difusa. La foto del Catastro es antigua: entonces era un patio abierto con palés de ladrillos.
+- **`cip_t60`:** el lado de esta calle no se ve en ninguna foto. El portón gris azulado es el de la foto del Catastro, que puede ser del lado del Camino de Toledo.
+- **`cip_21b`:** el Catastro muestra un portón verde grande en la cara de la esquina; Street View lo muestra a media tapia. Se ha seguido Street View.
+- **`cip_15`:** según el Catastro, es un almacén de 1900 de dos plantas. Hoy es un portón de patio entre tapias de bloque (Street View).
+- **`cip_tr2`:** los ojos de buey del hastial salen como ventanucos cuadrados.
+- **`cip_18`:** la barandilla de cristal de la terraza sale como una barandilla clara.
+- **`cip_x2`:** los escaparates con toldos de la otra calle no se ponen; son de otra calle.
+- **Sin hacer:** Camino de Toledo 56, San Blas 45, Monjas 121, Travesía 1 y el 5, porque no dan a esta calle; Tembleque 48, que es un solar.
+
+## Calle de las Viñas
+
+- **La hilera de 1992 (`vin_45` a `vin_53`, `vin_x1`, `vin_cs2`):** los patios de delante, con sus tapias, rejas y porches de ladrillo y teja, no se ponen; la casa da directamente a la acera. En algún patio queda un trocito de casa genérica (un porche suelto del Catastro) que se ve como una lámina.
+- **Los bloques de Buero Vallejo (`vin_bv14`, `vin_bv13`, `vin_4b`, `vin_4`, `vin_ja7`):** la piedra de abajo cubre toda la planta del garaje; en la realidad, en la esquina sube solo un metro y medio.
+- **`vin_x4`:** el ladrillo amarillo pálido sale más pardo, y el escaparate es de vidrio con marcos oscuros, no una pared roja con dos huecos.
+- **`vin_x2`, `vin_x3`:** las ventanas salen más pequeñas que en la realidad.
+- **`vin_21`:** donde hay una alambrada con un huerto detrás se pone tapia; en la realidad solo el primer trozo es tapia de tapial.
+- **`vin_43`:** la torrecilla de dos plantas de detrás no sale.
+- **`vin_35`:** la escalera de fuera da a la otra cara y no se ve desde esta calle.
+- **`vin_22a`:** se ha seguido la foto del Catastro en blanco y negro (2023); Street View es anterior y muestra un solar.
+- **`vin_17`, `vin_15`:** en los portones hay garabatos pequeños; el juego pone ahí las pintadas grandes de las peñas.
+- **`vin_9`:** el patio con las naves y el cartel del negocio está detrás; desde esta calle solo se ve la casita encalada.
+- **Sin hacer:**
+  - `vin_bv12`, `vin_bv11`, `vin_ja8`: sus fachadas quedan detrás de las de al lado; dan a otras calles;
+  - Paseo del Cristo 2;
+  - el 2, con 1,9 m de frente.
+
+## Calle del Florido (tramo norte, de los Silos a la Bajada)
+
+- **`flo_50`, `flo_50g`:** la casa gris de la puerta verde oscura tiene dos plantas; el Catastro la da de una y sale de una, al final del tramo de ladrillo pardo. Al lado, la de dos plantas (ladrillo abajo con cochera gris, crema arriba) es la que el Catastro da de dos.
+- **`flo_69`:** la casa vieja del Catastro está derribada; en Street View (2024) hay un solar tras una tapia de ladrillo con un cartel de «se vende». Sale la tapia, pero el solar es un bloque bajo, no un hueco.
+- **`flo_62`:** el Catastro da el patio sin plantas; la tapia gris con su portón de madera se ha puesto a mano. La casita de detrás del patio sigue genérica.
+- **`flo_68`:** la escalera de fuera sube en un solo tramo; en la realidad son dos, con un rellano. La fachada va por la pared de delante, también delante del hueco de la escalera.
+- **`flo_67`:** la terraza de celosía de arriba sale como una ventana grande de celosía, sin los pilares de ladrillo.
+- **`flo_65`:** la verja negra sale como rejas sobre una puerta oscura; el zaguán de detrás no se hace.
+- **`flo_48`:** el friso de ladrillo en celosía bajo el alero sale como una franja lisa de ladrillo más oscuro.
+- **`flo_63`:** el alero es de placas onduladas; sale de teja.
+- **`flo_b10`:** solo su trozo de una planta, la tapia vieja con el portón gastado. Su casa de la Bajada del Florido sigue genérica hasta que se haga esa calle.
+- **Sin hacer:** Los Ángeles 1 (`an1`): su cara a esta calle queda detrás de la casa de la esquina; da a la calle de los Ángeles.
+
+## Calle del Florido (tramo medio, de la Bajada al 21) y Bajada del Florido
+
+- **`flo_41`, `flo_39`, `flo_31`, `flo_31d`:** están reformadas o hechas de nuevo; se ha seguido Street View (2024) y no las fotos viejas del Catastro.
+- **`flo_35`:** el portón de chapa sobre la tapia de piedra es de una planta; en el juego, el blanco de la casa sigue por encima.
+- **`flo_26`:** la tapia blanca y la cochera son de una planta; sale de dos todo el frente.
+- **`flo_29`:** el portón en arco sale más pequeño que el de verdad.
+- **`flo_37`:** las celosías de ladrillo de arriba salen como dos cuadros de ladrillo naranja.
+- **`flo_46`:** los toldos verdes son tiras planas.
+- **`bfl_13`:** el piso de arriba vuela sobre la acera con un alero; sale como una caja lisa.
+- **`bfl_2`:** detrás de la tapia encalada sale la casa genérica de Monjas 65, blanca con ventanas verdes; en la realidad asoma un piso viejo de ladrillo.
+- **`bfl_8`:** el ladrillo amarillo sale más tostado.
+- **`bfl_1`:** en Street View (2024) aún tiene la valla de obra; sale terminada.
+- **Sin hacer:**
+  - Monjas 65 y 63: sus caras a la Bajada quedan detrás de `bfl_2` y `bfl_1`; dan a la calle de las Monjas;
+  - Bajada 12 y 14: el trazado del mapa pasa por encima de sus casitas;
+  - Bajada 25 y Los Ángeles 26: no tienen frente a estas calles.
+
+## Calle del Florido (tramo sur, del 24 y el 15 hasta el final) y Prolongación del Florido
+
+- **Street View:** `flo_24` no tiene foto del Catastro; en `flo_15` (2010), `flo_x2g` (la tapia de bloques del Catastro es hoy un almacén con portón oscuro), `flo_p9` y `flo_p11` (la hiedra ya no está: piedra y tejadillo) se ha seguido Street View de 2024 y no la foto vieja.
+- **`flo_br6` y `flo_16`:** en Street View de 2026 el muro del portón verde se ve beige; se ha dejado el ocre de la foto del Catastro, que todavía tiene la punta norte.
+- **`flo_x3`:** el Catastro le da dos plantas y tiene tres; sale con tres. Su tapia de bloques es `flo_x3t`.
+- **`flo_2a`:** el Catastro le da una planta; tiene cámara arriba y sale de dos.
+- **`flo_13`:** la tapia de ladrillo es de una planta y detrás asoma un muro beige; sale todo el frente de dos, con el trozo de arriba en beige.
+- **`flo_x1`:** el ladrillo con cajones de piedra (aparejo toledano) sale como ladrillo liso.
+- **Pareadas impares de la Prolongación (`flo_1a`, del `flo_p3` al `flo_p19`):** la casa de dos plantas está unos 2 m detrás de la calle, con un porche pequeño delante. El frente va en la cara de la casa, a todo lo ancho, y el porche se quita (`strip`). La valla (celosía, hiedra, rejas) va pintada en plano en el muro de abajo, y la balaustrada blanca va encima. Los hastiales de frontón no salen; el tejado es de alero corrido.
+- **Adosadas de 2006 (del `flo_p14` al `flo_p26`):** la tapia baja crema, el garaje en semisótano y la casa quedan en un mismo plano; la escalera sí sale (`esc`). El ladrillo sale algo más anaranjado que en la foto.
+- **Sin hacer:**
+  - Bajada del Rollo 4: derribada (Street View de 2026: solar con valla de obra); en el juego sigue la casa genérica del Catastro;
+  - Prolongación 28: da al Camino de Consuegra, no a esta calle; sale genérica junto al 26.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

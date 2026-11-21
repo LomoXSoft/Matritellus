@@ -6,6 +6,9 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
+- **Parque del Paseo del Cristo (Edificios Especiales, 21/11; pendiente del visto bueno de Luis).** Hecho a mano (`paseo.gd`), sin rehorneado: se tiende sobre el suelo, el césped y la senda del mapa, y se recorta al asfalto del juego. Va de la esquina de la Calle de los Arcos a la placita de la ermita, unos 165 m. Lleva el paseo de baldosa con sus cuadros rojos, apuntado a la puerta de la ermita, las bandas de losas de pizarra, los céspedes con sus árboles, la acera ajedrezada, la plaza de ladrillo con la muela, el parterre de cipreses, la plaza del cruce, la tapia blanca, el murete con verja, la rocalla y el sauce, bancos de hierro y 22 faroles. Quita al cargar los 13 árboles del mapa que caían dentro. `paseo`: 3 ok. Hojas en `guion/fotos/paseo/`. [Detalle](TRASPASO_CLAUDE.md#parque-del-paseo-del-cristo-2111).
+- **Residencia de mayores del Cristo del Prado (Edificios Especiales, 21/11; aprobada con el ala rehecha).** Hecha a mano (`residencia.gd`) con rehorneado: el edificio 4587301 del Catastro ya no se levanta. Lleva el bloque de tres plantas de ladrillo con mampostería, la entrada con el medio punto y la escalinata, el cuerpo redondo con la puerta de la Residencia y el ala baja. La fachada del ala a la placita se rehízo con las fotos 360 de Luis: un solo porche, y la fachada 2,85 m detrás de la línea del Catastro, según la ortofoto. `residencia`: 2 ok. Hojas en `guion/fotos/residencia/`. [Detalle](TRASPASO_CLAUDE.md#residencia-de-mayores-del-cristo-del-prado-2111).
+- **Ermita del Cristo del Prado (Edificios Especiales, 21/11; aprobada con el murete de piedra y la acera de la esquina).** Hecha a mano (`cristoprado.gd`) con rehorneado: el Catastro la tiene junto a la Residencia como un solo edificio, y solo se quitan las partes de la ermita. Lleva la fachada con su portada de piedra y el campanario, la nave, el crucero, la cabecera, la acera del Paseo con el ajedrezado y el calvario del parque. `cristoprado`: 2 ok. Hojas en `guion/fotos/cristoprado/`. [Detalle](TRASPASO_CLAUDE.md#ermita-del-cristo-del-prado-2111).
 - **Matías Pérez 16, retocada con Street View (Edificios Especiales, 21/11; aprobada: «Visto bueno»).** La casa ya iba en la 0.0.18 (`matias.gd`). Ahora tiene el ladrillo salmón a su tamaño, los sardineles del tono del muro, las persianas bajadas y visibles, las cortinas de rosas, la reja de nueve barrotes, dos cajitas blancas y el cable a la altura de los alféizares. `matias`: 2 ok. Hojas en `guion/fotos/matias/`. [Detalle](TRASPASO_CLAUDE.md#matías-pérez-16-retocada-con-street-view-2111).
 - **Cámaras al conducir, Tomasa Malvora, chinos del Arroyuelo, fumadores y HUD dev (20/11).** 3 modos de cámara en coche (`V` / cruceta izq. / R3: 3.ª persona, 1.ª persona sin cabeza desde encima de hombros, cinemática tipo GTA con saltos cada ≥5 s o si se aleja), slow-motion + cámara cinemática al saltar por los aires con el coche, interior completo de los chinos del Arroyuelo (`chinos_dentro.gd`) con dependiente hablando en infinitivo, misión de Tomasa Malvora (`tomasa.gd`) con paquete de tabaco giratorio a 6 €, tabaco en el 5 % de los adultos/mayores (0 % niños) y opción de desarrollador para ocultar/mostrar el HUD (`ºª` / `Select`). [Detalle y pruebas](TRASPASO_CLAUDE.md#cámaras-al-conducir-tomasa-malvora-fumadores-y-hud-dev-2011).
 - **Tanda de 20 mejoras jugables (20/11).** Rendimiento al pegar carteles, rampas lanzaderas de coches, cinemática nocturna del Galaxy Recress limpia, botón «Salir» en Tokken 9, Rally 9 a 3 vueltas con ruedas corregidas/hitbox dinámica/nitro de alcance, Katakumba69 por diálogo (máquinas contra la CPU), orientación de piezas y perros en el ajedrez, rondas de ocio de 12 NPCs únicos, velocidad diagonal radial, medidor de sospecha + furgoneta rápida con murmullos + arreglo de captura fuera de la furgoneta en el kebab, frases de golpe divididas (bate / atropello / ambas con «¡Ostia!»), conductores uniformados de policía y Guardia Civil, repintado y borrado de búsqueda en taller, pulsar Acción para entrar en interiores, selector/deselector de misión en el mapa grande, pickups 3D flotantes con halo (`pickups.gd`), inventario estilo Animal Crossing con 2 pestañas (`inventario.gd`) y confirmación de salida con ratón en menús. [Detalle y pruebas](TRASPASO_CLAUDE.md#tanda-de-20-mejoras-jugables-2011).
@@ -99,6 +102,85 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
     - Pajaritos 3: es de otra calle.
   - Bake (avisando a Pretil): 16 casas nuevas. Ninguna con parte por delante de su frente. Nada más cambia: calles, nodos, relieve, árboles (2956) y holguras.
   - `casas solo=tri_`: OK tras los arreglos. Hojas en `guion/fotos/tanda34/triunfo_4..6.jpg`.
+  - Aprobada por el usuario («Visto bueno»). Commit `1379d2f` de Sistemas.
+- **Sin publicar (Texturas, 21/11): suelo de tierra pardo anaranjado con textura y plantas secas sueltas en todo el pueblo**, a petición del usuario. Los detalles están en `TRASPASO_CLAUDE.md`.
+  - El suelo: `world.gd` (`EARTH`, la textura `"tierra"`, `_earth_mat()`), con los caminos de tierra y los barbechos en pardos.
+  - Las plantas: `matojos.gd`, un paso «dry plants» de la construcción del mundo, guardado en `user://matojos.cache`. `--sin-matojos` las quita.
+  - `casas` (6 casas del Triunfo): OK. `suelos`: OK. El `bench` no cambia (127,8 fps con plantas, 125,4 sin ellas).
+  - Hojas en `guion/fotos/suelo/suelo_1..2.jpg`. **Aprobado** por el usuario el 21/11 («Mucho mejor. Visto bueno y siguiente»). Falta probarlo en el móvil.
+- **Sin publicar (Texturas, 21/11): calle de los Cipreses entera, 33 casas (`cip_*`).** Hay de todo:
+  - almacenes y tapias de ladrillo viejo, de bloque gris o encaladas, con portones de chapa o de tablas;
+  - casas bajas con zócalo de piedra;
+  - casas de dos plantas de ladrillo o de ocre con balcones de hierro;
+  - un bloque de pisos en la esquina, adosados de 2006 y dos casas nuevas (2021 y 2025).
+  - Comparadas con las fotos del Catastro. Siete con Street View:
+    - el 38 y el 10, que no tienen foto del Catastro;
+    - `cip_x1` y el 15, cuya foto del Catastro es antigua: un patio abierto y un solar derribado;
+    - Monjas 119, el adosado de la Travesía y el 21 B, para ver qué lado da a esta calle.
+  - Al compararlas cambié once cosas: remiendos de ladrillo inventados, tonos de ladrillo y de ocre, una puerta de garaje y unos pilares.
+  - `cip_t60`, una tapia blanca, no llegaba al mínimo de piezas: lleva las pilastras y el portón gris azulado de su foto.
+  - Sin hacer: Camino de Toledo 56, San Blas 45, Monjas 121, Travesía de los Cipreses 1 y el 5, porque no dan a esta calle; Tembleque 48, que es un solar.
+  - Bake (avisando a Pretil): 33 casas nuevas. Ninguna con parte por delante de su frente. Nada más cambia: calles, nodos, relieve, árboles (2954) y holguras.
+  - `casas solo=cip_`: OK tras los arreglos. Hojas en `guion/fotos/tanda34/cipreses_1..6.jpg`.
+  - **Aprobada** por el usuario el 21/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 21/11): calle de las Viñas entera, 44 casas (`vin_*`).** Hay de todo:
+  - los costados de las casas de la Avenida de la Reina Sofía;
+  - la hilera de adosados de 1992 tras sus patios, blancos o amarillos con arcos de ladrillo;
+  - los bloques de 1990 a 1997 de Buero Vallejo y Juan Antonio Jiménez: piedra abajo, portones de madera y balcones corridos;
+  - tres bloques de pisos;
+  - almacenes y tapias de tapial;
+  - casas de ladrillo de 1985 a 2020.
+  - Comparadas con las fotos del Catastro. Doce con Street View:
+    - los costados de Reina Sofía, Valdespino 2, el 57 y la plaza de Jesús Requejo;
+    - el 43, el 35 y el 9;
+    - el 21, que hoy es una tapia y una alambrada;
+    - el 22 A, que está sin foto en color.
+  - Varias casas están metidas unos 11 m tras sus patios, así que sus frentes se sacaron con más alcance (`--reach=15`).
+  - Quitadas tras la primera hoja: `vin_bv12`, `vin_bv11` y `vin_ja8`. Sus fachadas quedaban 4,5 a 8 m detrás de las de al lado, en el mismo lado de la calle, porque dan a Buero Vallejo y a Juan Antonio Jiménez. La cámara de la prueba quedaba dentro de otra casa.
+  - Al compararlas se arreglaron:
+    - las rejas de Reina Sofía 71;
+    - el ladrillo de dos bloques;
+    - una puerta de garaje;
+    - la tapia `vin_rs67`, que no llegaba al mínimo de piezas: lleva la celosía de hormigón de lo alto.
+  - Sin hacer:
+    - Paseo del Cristo 2, que no da a esta calle;
+    - el 2, con 1,9 m de frente;
+    - los tres de arriba.
+  - Bake (avisando a Pretil, dos veces, sobre su mapa con el Cristo del Prado y la Residencia): 44 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) siguen igual. La holgura baja unos 0,7 m en 21 nodos junto a las casas nuevas; la más justa queda en 3,7 m.
+  - `casas solo=vin_`: OK tras los arreglos. Hojas en `guion/fotos/tanda34/vinas_1..8.jpg`.
+  - **Aprobada** por el usuario el 21/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 21/11): calle del Florido, tramo norte (de los Silos a la Bajada del Florido), 29 casas (`flo_*`).** La calle tiene unas 84 casas y la Bajada otras 20; se hace en tres tandas.
+  - Casas de los años 60 a 80 enfoscadas en tostado, crema o salmón con zócalo oscuro; ladrillo rojo de una planta; dos casas nuevas (2000 y 2001); almacenes con portones de chapa.
+  - Comparadas con las fotos del Catastro. Doce con Street View (noviembre de 2024): el 60, que no tiene foto; el 61, el 58 B, el 54, el 68 y el solar del 69, que han cambiado; el 55 (del Catastro, Los Ángeles 15), el 62, el portón del b10, el x5, el 48 y el 50.
+  - Puestas a mano:
+    - el 68, con la fachada por su pared de delante sobre el hueco de la escalera;
+    - el 50, partido por plantas (`only`: la parte de una planta y la de dos, con su frente cada una);
+    - el portón del b10 (Bajada del Florido 10), que es su trozo de una planta a esta calle (`only` 1);
+    - la tapia del patio del 62, sin referencia (`rc` null, 0,9 m de fondo), porque el Catastro da el patio sin plantas.
+  - Al compararlas se arreglaron: la verja del 65, los tonos del 66, el 49, el 55 y la tapia del b10, la puerta del 58, el portón del 62, el friso del 48 y el 50.
+  - Sin hacer: Los Ángeles 1, cuya cara a esta calle queda detrás de la casa de la esquina.
+  - Bake (avisando a Pretil): 29 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) siguen igual; la holgura de un nodo baja de 4,9 a 3,5 m. Ninguna casa tiene partes por delante de su frente ni fachadas escondidas detrás de otra.
+  - `casas solo=flo_`: 4 ok, 0 fallos. Hojas en `guion/fotos/tanda34/florido_1..5.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Al mandar las hojas lo llamé «tramo sur» por error: es el extremo norte de la calle.
+- **Sin publicar (Texturas, 21/11): calle del Florido, tramo medio (de la Bajada al 21 y al 26), y la Bajada del Florido: 34 casas (18 `flo_*` y 16 `bfl_*`).**
+  - Casas viejas de tapial enfoscado en tostado o pardo, casas de 1960 a 1980 con zócalo de ladrillo o piedra, y almacenes; en la Bajada, ladrillo rojo y amarillo y dos casas encaladas muy viejas.
+  - Comparadas con las fotos del Catastro. Ocho con Street View (noviembre de 2024), porque han cambiado o había dudas: el 41, el 39, el 35, el 30, el 31 y el 31 D (las ruinas son hoy una casa blanca nueva), y en la Bajada el 1 (edificio nuevo de ladrillo de 2025) y el 2.
+  - `bfl_10` es la parte de dos plantas de Bajada 10 (`only` 2); su trozo de una planta al Florido ya era `flo_b10`.
+  - Al compararlas se arreglaron los tonos del 27, el 23 y los amarillos de Bajada 21 y 23, y el zócalo del 26.
+  - Sin hacer: Monjas 65 y 63 (sus caras a la Bajada quedan detrás de otras casas), Bajada 12 y 14 (el trazado del mapa pasa por encima), Bajada 25 y Los Ángeles 26 (sin frente a estas calles).
+  - Bake (avisando a Pretil): 34 casas nuevas, ninguna quitada. Solo `flo_50g` cambia, en las aristas que tapa la casa nueva de al lado. Calles, nodos, relieve, árboles (2954) y holguras siguen igual. Sin partes por delante ni fachadas escondidas (comprobado antes de hornear).
+  - `casas` de las 34: 4 ok, 0 fallos. Hojas en `guion/fotos/tanda34/florido_medio_1..6.jpg`.
+  - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 21/11): calle del Florido, tramo sur (del 24 y el 15 hasta el final, con el 1 A y el 1 B), y la Prolongación del Florido: 39 entradas `flo_*`.**
+  - En el tramo sur: casas viejas de tapial, almacenes, casas de los 70 a los 90 y bloques de tres plantas. En la Prolongación: diez pareadas de 1995 (lado impar), siete adosadas de 2006 con garaje en semisótano (lado par) y cuatro casas de 2006 a 2015.
+  - Comparadas con las fotos del Catastro, y con Street View (noviembre de 2024; la Bajada del Rollo, 2026) en el 24 (sin foto), el 15, el 13, el 11, el 9, el 7, el bloque sin número `flo_x2`, el 3, la esquina `flo_x3`, el 2 A y las pareadas del 9 y el 11.
+  - Dos referencias llevan dos entradas cada una (`only`): `flo_x2` (bloque de tres plantas) y `flo_x2g` (su almacén, `reach` 6); `flo_x3` (bloque de la esquina) y `flo_x3t` (tapia de bloques).
+  - Pareadas impares: el frente va en la cara de la casa de dos plantas, paralelo a la calle y a todo lo ancho (`floors` 2); el porche de una planta de delante se quita con `strip: 2.5`.
+  - `flo_br6` lleva `reach` 8: su bloque de dos plantas del fondo queda como casa normal.
+  - Al compararlas se cambiaron el ladrillo de `flo_x2` y de las adosadas (a `brick_buff`) y el tono de las rejas del 13 y el 15 de la Prolongación.
+  - Sin hacer: Bajada del Rollo 4 (derribada; en el juego queda la casa genérica) y la Prolongación 28 (da al Camino de Consuegra).
+  - Bake (avisando a Pretil): 39 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras siguen igual. Sin partes por delante ni fachadas escondidas.
+  - `casas` de las 39: 3 ok y 1 fallo (`flo_x3t`, pocas piezas); arreglado, 4 ok, y 4 ok tras los cambios de color. Hojas en `guion/fotos/tanda34/florido_sur_1..7.jpg`.
 - **Pendiente:**
   - Texturas:
     - **La calle de la Cruz (`cruz_*`) salió en la 0.0.13 con 31 casas.** Después, ya en X:, quité `cruz_13` y `cruz_17`, cuyo frente quedaba metido en la manzana, y quedaron 29. A `cruz_vg9` y `cruz_21` les puse alero de teja. Rehorneado sin más cambios, y `casas` OK. Las hojas `guion/fotos/tanda34/cruz_1..5.jpg` se mandaron al usuario el 17/11, que dio su «Visto bueno».
