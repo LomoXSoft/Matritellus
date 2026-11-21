@@ -50,6 +50,7 @@ const COLORS := {
 	"kebab": Color(1.0, 0.62, 0.18),
 	"azafran": Color(0.72, 0.34, 0.98),
 	"tabaco": Color(0.98, 0.78, 0.24),
+	"pollo": Color(1.0, 0.66, 0.22),
 }
 
 var G
@@ -79,9 +80,22 @@ func spawn(kind: String, pos: Vector2, opts := {}) -> Dictionary:
 			if String(old.get("tag", "")) == tag:
 				_remove(old)
 	var root := Node3D.new()
+	pos = _off_the_player(pos)
 	var y: float = MapData.foot(pos)
 	root.position = Vector3(pos.x, y, pos.y)
+	var col: Color = COLORS.get(kind, Color(0.28, 0.92, 0.45))
+	var hmat := _decor(root, col)
 
+	# Spinning tilted 3D item mesh
+	var spin := Node3D.new()
+	spin.position = Vector3(0.0, 1.02, 0.0)
+	var mesh_root := _build_mesh(kind)
+	spin.add_child(mesh_root)
+	root.add_child(spin)
+	return _finish_spawn(kind, pos, opts, tag, root, spin, hmat)
+
+## the halo and the ring every item has round it (GTA III style); its halo's material, to pulse
+func _decor(root: Node3D, col: Color) -> ShaderMaterial:
 	# Glowing translucent GTA III-style circular halo around the item
 	var halo := MeshInstance3D.new()
 	var qm := QuadMesh.new()
@@ -89,7 +103,6 @@ func spawn(kind: String, pos: Vector2, opts := {}) -> Dictionary:
 	halo.mesh = qm
 	var hmat := ShaderMaterial.new()
 	hmat.shader = _halo_shader
-	var col: Color = COLORS.get(kind, Color(0.28, 0.92, 0.45))
 	hmat.set_shader_parameter("glow_color", col)
 	halo.material_override = hmat
 	halo.position = Vector3(0.0, 1.02, 0.0)
@@ -114,14 +127,9 @@ func spawn(kind: String, pos: Vector2, opts := {}) -> Dictionary:
 	ring.position = Vector3(0.0, 0.04, 0.0)
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(ring)
+	return hmat
 
-	# Spinning tilted 3D item mesh
-	var spin := Node3D.new()
-	spin.position = Vector3(0.0, 1.02, 0.0)
-	var mesh_root := _build_mesh(kind)
-	spin.add_child(mesh_root)
-	root.add_child(spin)
-
+func _finish_spawn(kind: String, pos: Vector2, opts: Dictionary, tag: String, root: Node3D, spin: Node3D, hmat: ShaderMaterial) -> Dictionary:
 	var caption: String = String(opts.get("caption", ""))
 	if caption != "":
 		var lbl := Label3D.new()
@@ -155,11 +163,83 @@ func spawn(kind: String, pos: Vector2, opts := {}) -> Dictionary:
 	items.append(rec)
 	return rec
 
+## Something to pick up never appears where you are standing (the user, 21 Nov 2026: "muchos de los que te piden
+## recoger aparecen exactamente donde está el jugador ubicado, por lo que se cogen automáticamente y no da tiempo a ver
+## el modelo"): too close to you, it goes 2.4 m off, the first way round you with no wall in between. And whatever is
+## is only ever taken with the action button (near()/take(): the user, 21 Nov 2026, "para evitar coger el objeto por
+## accidente sería mejor que sea necesario pulsar el botón de acción").
+func _off_the_player(pos: Vector2) -> Vector2:
+	if G == null or G.get("player") == null or G.player == null:
+		return pos
+	var pp: Vector2 = G.player.p
+	if pp.distance_to(pos) > REACH + 0.6:
+		return pos
+	var space: PhysicsDirectSpaceState3D = G.get_world_3d().direct_space_state
+	var ahead := Vector2(sin(G.player.h), cos(G.player.h))
+	for turn in [0.0, 0.8, -0.8, 1.6, -1.6, 2.4, -2.4, PI]:
+		var q: Vector2 = pp + ahead.rotated(turn) * 2.4
+		var y0: float = MapData.foot(pp) + 0.9
+		var ray := PhysicsRayQueryParameters3D.create(Vector3(pp.x, y0, pp.y), Vector3(q.x, y0, q.y), 1)
+		if space.intersect_ray(ray).is_empty():
+			return q
+	return pos
+
+## The saffron flowers (the town's, the hidden ones, any): as they are, a flower, but floating, turning and with the
+## halo of everything else that is picked up (the user, 21 Nov 2026). `root` keeps its place; what it held turns.
+var _dressed: Array = []
+func dress(root: Node3D) -> void:
+	if root == null or not is_instance_valid(root) or root.has_meta("dressed"):
+		return
+	root.set_meta("dressed", true)
+	var layers := _layers_of(root)
+	var spin := Node3D.new()
+	spin.position = Vector3(0.0, 0.42, 0.0)
+	for c in root.get_children():
+		root.remove_child(c)
+		spin.add_child(c)
+	root.add_child(spin)
+	var hmat := _decor(root, COLORS["azafran"])
+	if layers != 1:
+		_set_layer(root, layers)
+	_dressed.append({"root": root, "spin": spin, "halo_mat": hmat, "age": randf() * 3.0})
+
+func _layers_of(n: Node) -> int:
+	if n is MeshInstance3D:
+		return (n as MeshInstance3D).layers
+	for c in n.get_children():
+		var l := _layers_of(c)
+		if l != 1:
+			return l
+	return 1
+
 func _set_layer(n: Node, mask: int) -> void:
 	if n is MeshInstance3D:
 		(n as MeshInstance3D).layers = mask
 	for c in n.get_children():
 		_set_layer(c, mask)
+
+## the item within reach to be taken with the action button (null: none). Not those bought at a counter ("auto" false:
+## Tomasa's tobacco, the pitillos), which have a button of their own.
+func near(pp: Vector2):
+	if G.in_car != null or not (G.phase == "play" or G.phase == "free") or G.dlg != null or G.cine_lock or G.menu.visible:
+		return null
+	var best = null
+	var bd := REACH
+	for it in items:
+		if not bool(it.get("auto", true)) or it["collected"] or float(it["age"]) < 0.25:
+			continue
+		var d: float = (it["p"] as Vector2).distance_to(pp)
+		if d < bd:
+			bd = d
+			best = it
+	return best
+
+func prompt(it) -> String:
+	return Loc.t("p_coger") % String(it["label"] if String(it["label"]) != "" else _default_label(String(it["kind"])))
+
+func take(it) -> void:
+	if it != null:
+		_collect(it)
 
 func take_tag(tag: String) -> bool:
 	for it in items.duplicate():
@@ -242,6 +322,25 @@ func _build_mesh(kind: String) -> Node3D:
 			holder.add_child(Parts.part("cyl", 0xd8dce0, Vector3(0.0, -0.06, 0.0), Vector3(0.18, 0.40, 0.18)))
 			holder.add_child(Parts.part("cyl", 0xe5be7a, Vector3(0.0, 0.16, 0.0), Vector3(0.17, 0.12, 0.17)))
 			holder.add_child(Parts.part("ball", 0x5aa84f, Vector3(0.0, 0.22, 0.0), Vector3(0.15, 0.08, 0.15)))
+		"pollo":                                     # a roast chicken on its tray: golden body, two drumsticks, the tray
+			holder.rotation.z = deg_to_rad(10.0)
+			holder.add_child(Parts.part("box", 0xd8d4cc, Vector3(0, -0.16, 0), Vector3(0.62, 0.05, 0.42)))
+			holder.add_child(Parts.part("ball", 0xc8782e, Vector3(0, 0.02, 0), Vector3(0.42, 0.3, 0.32)))
+			for sx in [-1.0, 1.0]:
+				var leg := Parts.part("cyl", 0xb5652a, Vector3(0.2, 0.06, sx * 0.1), Vector3(0.07, 0.22, 0.07))
+				leg.rotation.z = -1.1
+				holder.add_child(leg)
+				holder.add_child(Parts.part("ball", 0xf1e6d0, Vector3(0.3, 0.1, sx * 0.1), Vector3(0.05, 0.05, 0.05)))
+		"azafran":                                   # the town's saffron flower (game.gd): a stem, five purple petals, the red stigma
+			holder.rotation.z = 0.0
+			var fl := Node3D.new()
+			fl.position = Vector3(0.0, -0.45, 0.0)
+			fl.add_child(Parts.part("cyl", 0x5f9c4a, Vector3(0, 0.3, 0), Vector3(0.03, 0.6, 0.03)))
+			for k in range(5):
+				fl.add_child(Parts.part("ball", 0x9b5de5, Vector3(cos(k * 1.257) * 0.12, 0.66, sin(k * 1.257) * 0.12), Vector3(0.11, 0.2, 0.11)))
+			fl.add_child(Parts.part("ball", 0xe63946, Vector3(0, 0.74, 0), Vector3(0.05, 0.13, 0.05)))
+			fl.scale = Vector3.ONE * 1.4
+			holder.add_child(fl)
 		"tabaco":
 			# Classic red-and-white hard cigarette pack with gold trim and one cigarette peeking out
 			holder.add_child(Parts.part("box", 0xf4f2ec, Vector3(0.0, -0.08, 0.0), Vector3(0.28, 0.26, 0.13)))
@@ -280,7 +379,6 @@ func _collect(it: Dictionary) -> void:
 
 func tick(dt: float, pp: Vector2) -> void:
 	_t += dt
-	var can_take: bool = G.in_car == null and (G.phase == "play" or G.phase == "free") and G.dlg == null and not G.cine_lock and not G.menu.visible
 	for it in items.duplicate():
 		if not is_instance_valid(it["node"]):
 			items.erase(it)
@@ -290,5 +388,13 @@ func tick(dt: float, pp: Vector2) -> void:
 		spin.rotation.y += dt * 2.5
 		spin.position.y = 1.02 + sin(_t * 3.0 + float(it["age"])) * 0.10
 		(it["halo_mat"] as ShaderMaterial).set_shader_parameter("pulse", _t * 4.5)
-		if bool(it.get("auto", true)) and can_take and float(it["age"]) > 0.25 and (it["p"] as Vector2).distance_to(pp) < REACH:
-			_collect(it)
+	for f in _dressed.duplicate():
+		if not is_instance_valid(f["root"]):
+			_dressed.erase(f)
+			continue
+		if not (f["root"] as Node3D).visible:
+			continue
+		f["age"] = float(f["age"]) + dt
+		(f["spin"] as Node3D).rotation.y += dt * 2.5
+		(f["spin"] as Node3D).position.y = 0.42 + sin(_t * 3.0 + float(f["age"])) * 0.10
+		(f["halo_mat"] as ShaderMaterial).set_shader_parameter("pulse", _t * 4.5)

@@ -744,7 +744,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 35: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_rsa_1_rsa_3_rsa_5_rsa_7_rsa_9_rsa_11_rsa_13_rsa_1_20261121_113502.log)).
   - Tras arreglar puertas y tonos, `solo=rsa_1,rsa_4,rsa_6,rsa_15,rsa_21,rsa_32`: 4 ok ([log](logs/selftest_casas_solo_rsa_1_rsa_4_rsa_6_rsa_15_rsa_21_rsa_32_20261121_113959.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Calle de Sevilla: 36 casas, y `house_of` con `reach` en el horneado (21/11)
 
@@ -763,7 +763,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 36 y las cuatro de la Rosa: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_sev_3_sev_5_sev_7_sev_9_sev_11_sev_13_sev_15_sev__20261121_120325.log)).
   - Tras arreglar los tonos del 13 y del 22, `solo=sev_13,sev_22`: 4 ok ([log](logs/selftest_casas_solo_sev_13_sev_22_20261121_120630.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Las cámaras de las giras de la Chiki y de Alberto (21/11, Claude · Sistemas)
 
@@ -809,7 +809,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 32 y las dos de Argentina: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_cri_5_cri_7_cri_9_cri_x11_cri_13_cri_15_cri_15d_c_20261121_122321.log)).
   - Tras aclarar el amarillo, `solo=cri_x11`: 4 ok ([log](logs/selftest_casas_solo_cri_x11_20261121_122612.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Calle del Doctor Fleming: 24 casas (21/11)
 
@@ -828,7 +828,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 24 y las dos de Sevilla: 3 ok, 1 fallo, porque `fle_25` tenía pocas piezas ([log](logs/selftest_casas_solo_fle_1_fle_3_fle_5_fle_7_fle_9_fle_11_fle_13_fle_1_20261121_124038.log)).
   - Con más parches y una hilada de albardilla, `solo=fle_25`: 4 ok ([log](logs/selftest_casas_solo_fle_25_20261121_124336.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Calle de la Vega: 16 casas (21/11)
 
@@ -846,7 +846,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 16 y `sap_19`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_veg_x1_veg_x3_veg_x5_veg_x7_veg_3d_veg_sap25_veg__20261121_125239.log)).
   - Tras bajar los ventanucos, `solo=veg_3d`: 4 ok ([log](logs/selftest_casas_solo_veg_3d_20261121_125440.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Calle de los Ángeles: 17 casas (21/11)
 
@@ -865,7 +865,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - El primer intento de `casas` paró en el arranque, por un error de sintaxis en `fondo_casa.gd:256` (archivo nuevo de Sistemas, a medio escribir; avisado). No se tocó.
   - A las 13:10, ya corregido, `casas` de las 17: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_ang_tol1_ang_2_ang_4_ang_8_ang_10_ang_x12_ang_vp1_20261121_131024.log)).
-- **Visto bueno** del usuario el 21/11 («Visto bueno y siguiente cuando puedas»), antes de ver las hojas, que se le mandaron después. Sin commit.
+- **Visto bueno** del usuario el 21/11 («Visto bueno y siguiente cuando puedas»), antes de ver las hojas, que se le mandaron después. En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Calle de la Virgen de la Paloma: 20 entradas (21/11)
 
@@ -881,7 +881,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 20 y `ang_vp1`: 3 ok, 1 fallo, porque `vpa_3` tenía pocas piezas ([log](logs/selftest_casas_solo_vpa_3_vpa_5_vpa_9_vpa_11_vpa_13_vpa_x15_vpa_19_vp_20261121_131744.log)).
   - Con una hilada de albardilla más, `solo=vpa_3`: 4 ok ([log](logs/selftest_casas_solo_vpa_3_20261121_131931.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Calle de Pizarro: 16 casas (21/11)
 
@@ -897,7 +897,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 16 y `vpa_13`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_piz_an16b_piz_3_piz_5a_piz_5d_piz_7_piz_x9_piz_va_20261121_133113.log)).
   - Tras apagar el ocre, `solo=piz_13`: 4 ok ([log](logs/selftest_casas_solo_piz_13_20261121_133308.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Misiones de fondo (la casa de la Eufrasia, Edmundo Monedero, cajero) y Trabajos (21/11, Claude · Sistemas)
 
@@ -978,7 +978,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - A las 14:02 el juego no cargaba `casa_dentro.gd` (Edificios Especiales lo estaba editando; avisado, no se tocó).
   - A las 14:05, `casas` de las 22 y las dos de Monjas: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_rol_b30_rol_b32_rol_b34_rol_b36_rol_b38_rol_b40_r_20261121_140557.log)).
   - Tras quitar `rol_br10`, `solo=rol_br8,rol_br15a,rol_br17`: 4 ok ([log](logs/selftest_casas_solo_rol_br8_rol_br15a_rol_br17_20261121_140907.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11).
 
 ### Calle del Rollo y calle del Socorro: 16 casas (21/11)
 
@@ -997,7 +997,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 16: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_rro_17_rro_19_rro_37_rro_39_rro_41_rro_43_rro_45__20261121_141632.log)).
   - Tras oscurecer el ladrillo del bloque, `solo=soc_2,soc_2b`: 4 ok ([log](logs/selftest_casas_solo_soc_2_soc_2b_20261121_141825.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos un poco»). Sin commit. Pausa después de esta tanda.
+- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos un poco»). En la 0.0.19 (commit `af9420f`, Sistemas, 21/11). Pausa después de esta tanda.
 
 ### «Saltar a misión» con todas las misiones (21/11, Claude · Sistemas)
 
@@ -1041,6 +1041,320 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Están en `dist/v0.0.19/`, con [sus SHA-256](dist/v0.0.19/SHA256SUMS.txt) comprobados.
   - Subidos a la release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.19
 - **Sin probar:** no se ha probado en móvil ni en Steam Machine.
+
+### Calle de Don Pedro de Castilla y calle de Dulcinea del Toboso: 19 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Perfecto. Puedes seguir», tras publicarse la 0.0.19). Las dos siguientes de `faltan.py`.
+
+- **Hecho.** 11 entradas `dpc_*` y 8 `dul_*`. Fotos del Catastro; Street View de 2013 en `dpc_8d`. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - La hilera de 2007 de Don Pedro sale de `dd_write.py` (scratchpad, `orange()`).
+  - `dpc_x14` lleva `floors` 1, para tomar el semisótano de los garajes, con `esc`.
+  - Fuera: `dpc_b28` (Bajada del Rollo 28, 3,5 m de costado) y el molino (`MOLINO_RC`).
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (19 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/donpedro_dulcinea_1..4.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 14:16 (el que publicó la 0.0.19), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 19 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 19: 3 ok, 1 fallo, porque `dul_4` tenía pocas piezas ([log](logs/selftest_casas_solo_dpc_2_dpc_4_dpc_8d_dpc_x10_dpc_x14_dpc_16_dpc_18__20261121_152232.log)).
+  - Con hiladas y una puerta, `solo=dul_4`: 4 ok ([log](logs/selftest_casas_solo_dul_4_20261121_152411.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+
+### Camino Hondo: 12 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y siguiente», tras aprobar Don Pedro y Dulcinea). La siguiente de `faltan.py`.
+
+- **Hecho.** 12 entradas `cho_*`. Fotos del Catastro; Street View de noviembre de 2024 en `cho_9a` y `cho_9b`. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.** `cho_jx43` lleva el frente de la pared genérica (el del Catastro era un muro 4 m más al este). Fuera `cho_co8` (Concordia 8 da a la Concordia).
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (12 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/camino_hondo_1..2.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 15:22 (el de Don Pedro y Dulcinea), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 12 casas nuevas, ninguna quitada. `bs_h20` cambia solo en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
+  - `precheck.py` antes de hornear: sin partes por delante ni fachadas escondidas.
+- **Pruebas.**
+  - `casas` de las 12 y `bs_h20`: 3 ok, 1 fallo, porque `cho_30` tenía pocas piezas ([log](logs/selftest_casas_solo_cho_jx43_cho_jx45_cho_1a_cho_14_cho_co10_cho_16_c_20261121_154705.log)).
+  - Con hiladas y una puerta, `solo=cho_30`: 4 ok ([log](logs/selftest_casas_solo_cho_30_20261121_154832.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). Sin commit.
+
+### Calle de las Monjas, del 29 y el 40 a la Rosa de Santa María: 27 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y continuar», tras aprobar el Camino Hondo). La calle con más fachada genérica de `faltan.py` (378 m); esta es su primera tanda.
+
+- **Hecho.** 27 entradas `mon_*`. Fotos del Catastro; Street View de noviembre de 2024 en tres puntos. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.** `mon_54`: frente adelantado 2 m hasta la cara de su porche (`precheck.py`). `mon_64` lleva `floors` 2. Fuera: Santa Ana (`SANTAANA_RC`), Monjas 63 y 65.
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (27 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/monjas_1..5.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 15:46 (el del Camino Hondo), avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 27 casas nuevas, ninguna quitada. Cuatro vecinas cambian solo en las aristas tapadas. Calles, nodos, relieve y árboles (2954) iguales. La holgura del nodo 2305 pasa de 6,3 a 6,0 m.
+- **Pruebas.**
+  - `casas` de las 27 y las cuatro vecinas: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_mon_29_mon_33_mon_35_mon_35d_mon_37_mon_39_mon_45_20261121_155912.log)).
+  - Tras los cambios de color, `solo=mon_44,mon_46,mon_62,mon_x55`: 4 ok ([log](logs/selftest_casas_solo_mon_44_mon_46_mon_62_mon_x55_20261121_160145.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+
+### Calle de las Monjas, el resto (de Nalda a Sancho Panza): 20 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Visto bueno y siguiente», tras aprobar el primer tramo de las Monjas).
+
+- **Hecho.** 20 entradas `mon_*`: Nalda 21, 23 y 25, Monjas 6, 10, 17, 19, 24, 36, 76, 78, 82, 84, 87, 88, 89, 90, 91, San Isidro 59 y Sancho Panza 10. Street View de noviembre de 2024 en todas (el 24, de marzo de 2013) y fotos del Catastro. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - El 6 y el 89 son solares en el Catastro y tienen casa en 2024: `rc` nulo con `deep` (10 y 5 m).
+  - El 87 es el brazo de la parcela de Florido 68 (`flo_68` toma solo las partes de 3 plantas): `only` 2, `reach` 3.
+  - El 17 (`reach` 4: el trozo de la acera y el bloque de 3 plantas de detrás) y el 10 (`reach` 2,5: solo la punta a la calle).
+  - Nalda 25 y Sancho Panza 10 llevan el frente en la calle de su número.
+  - `monjas_26` (tanda antigua): frente movido de la trasera de `mon_24` a su cara a la revuelta, solo en `calles.json`. `precheck.py` da FORWARD 2,2 m: es el quiebro real de su fachada, más allá del final del frente.
+  - Fuera: Monjas 22 (nada en pie a la calle en el Catastro).
+- **Archivos.** `tools/casas/calles.json` (20 entradas y el frente de `monjas_26`), `godot/scripts/casas_calles.gd` (20 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/monjas_b_1..5.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Horneado una vez sobre el de las 16:23, avisando a Edificios Especiales antes y después.
+  - Frente a la copia: 20 casas nuevas, ninguna quitada. Nueve vecinas cambian solo en las aristas tapadas; `amargura_17` y `monjas_85`, además, 1–3 cm de suelo. Calles, nodos, relieve y árboles (2954) iguales.
+- **Pruebas.**
+  - `casas` de las 20, `monjas_26`, `amargura_17` y `monjas_85`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_mon_n21_mon_n23_mon_n25_mon_10_mon_6_mon_17_mon_1_20261121_172329.log)).
+  - Tras los cambios de color de ocho y la ventana de San Isidro 59, `solo=mon_n23,mon_6,mon_17,mon_36,mon_76,mon_si59,mon_88,mon_90,mon_24`: 4 ok ([log](logs/selftest_casas_solo_mon_n23_mon_6_mon_17_mon_36_mon_76_mon_si59_mon_8_20261121_172751.log)).
+- **El arco del patio entre el 2 y el 10** (el usuario, al ver las hojas: «Falta el arco de ladrillo con patio interior. Tendrá la portada abierta y habrá un azafrán escondido ahí»).
+  - El mapa ya dejaba ese hueco sin casa entre `mon_10` y `monjas_b742`: es el patio. No hizo falta rehornear.
+  - `godot/scripts/casas.gd`: `_mon_10()` construye la casa por su línea corta y, en un marco propio a lo largo del hueco, el muro de ladrillo con arco de medio punto y albardilla de teja, el zócalo de granito, la franja blanca contra el 2, las dos hojas de la cancela abiertas hacia dentro (`_arco_leaf`), el solado rojo del patio, un palé de ladrillos y, detrás, el azafrán en su maceta (`game.flowers`, `"id": "arco_monjas"`, `"hidden": true`).
+  - Los pilares, la franja blanca y el palé dejan su contorno en `MapData.outlines` (y en la rejilla si ya está hecha), como la almazara; el arco queda libre para pasar.
+  - Pruebas: `casas` de `mon_10` y `monjas_b742`: 4 ok ([log](logs/selftest_casas_solo_mon_10_monjas_b742_20261121_174451.log)); los 12 avisos `ARRAY_FORMAT_TEX_UV` ya salían antes. Fotos con `vistas=arco_calle,arco_dentro,arco_azafran` (sale «VISTAS OK»; `run_tests.py` no reconoce esa línea y da «NO RESULT»). Hoja `guion/fotos/tanda34/monjas_arco.jpg`.
+  - No probado: coger el azafrán en una partida de verdad (la recogida es la misma de los otros escondidos). Avisado Sistemas.
+- **Aprobado** por el usuario el 21/11 («Visto bueno»), la tanda y el arco. Sin commit.
+
+### Travesía del Clavel, principio del Clavel y Calle del Romero: 24 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Siguiente», tras aprobar las Monjas). Elegidas por `faltan.py`: calles cerca del centro con fachada genérica.
+
+- **Hecho.** 24 entradas: `tcl_4` a `tcl_20` (la hilera de 2004 del callejón), `cla_6`, `cla_tsr8`, `rom_d14`, `rom_45`, `rom_39`, `rom_39b`, `rom_24c`, `rom_24b`, `rom_24a`, `rom_18b`, `rom_21`, `rom_19`, `rom_17`, `rom_15`, `rom_9`. Fotos del Catastro y Street View de noviembre de 2024; lo que no se parece, en `guion/repaso_casas.md`.
+- **Casos especiales.**
+  - La hilera va en parejas que comparten la escalera de entrada: la puerta a la derecha en el 4, 8, 12, 16 y 20, a la izquierda en el 6, 10, 14 y 18 (`tcl()` en el borrador).
+  - `rom_39` (`only` 2) y `rom_39b` (`only` 1, `reach` 3): la casa de dos plantas y su trozo bajo. `rom_24c` con `reach` 8 (su bloque de cuatro plantas de detrás, no el del fondo).
+  - Fuera: 4494604 (una tira de una planta sin dirección en el lado oeste de la Travesía), Delicias 21 y 12 (no dan al Romero).
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (24 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/clavel_romero_1..4.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Horneado una vez, avisando a Edificios Especiales antes y después. Frente a la copia: 24 casas nuevas, ninguna quitada; `romero_11` y `rafael_tc2` solo cambian en las aristas tapadas (y 6 cm de suelo en la segunda). Calles, nodos, relieve y árboles (2954) iguales.
+- **Pruebas.**
+  - `casas` de las 24, `romero_11` y `rafael_tc2`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tcl_4_tcl_6_tcl_8_tcl_10_tcl_12_tcl_14_tcl_16_tcl_20261121_180513.log)).
+  - Tras los cambios de color (el ocre de la hilera; los portones del 24 A y el 17; la puerta del 21): 4 ok ([log](logs/selftest_casas_solo_tcl_4_tcl_12_tcl_20_rom_24a_rom_21_rom_17_20261121_180823.log), [log](logs/selftest_casas_solo_tcl_6_tcl_8_tcl_10_tcl_14_tcl_16_tcl_18_20261121_180932.log)).
+- **La Travesía, peatonal y elevada:** el usuario preguntó si la había hecho elevada, con sus dos accesos (escalera por el Clavel, rampa por San Rafael). No lo estaba: en el mapa es una calle `residential` de asfalto. El usuario: «De acuerdo, que sea peatonal y con las cosas que has dicho. Que se ponga Petril con eso cuando termine con el Rice». Encargado a Edificios Especiales por mensaje. Fotos y notas en `referencias/travesia_clavel/` (LEEME.md, nuevo).
+- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos»). Sin commit.
+- **Después, a petición de Pretil** (su paseo elevado, `travesia.gd`, pasa 0,30–0,55 m por debajo de cada umbral, con un rellano y peldaños ante cada puerta): en `tcl_4` a `tcl_20` quité la escalera `esc` y el ventanuco de la planta de piedra. Queda `wall=stone h=1.4`; las puertas no se mueven. Sin horneado. Sobre el mapa de Pretil con la Travesía (clave `travesia`), `casas` de las nueve: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tcl_4_tcl_6_tcl_8_tcl_10_tcl_12_tcl_14_tcl_16_tcl_20261121_192344.log)). En las fotos, sus rellanos con barandilla quedan ante cada puerta y la piedra asoma por debajo.
+
+### Teniente Infante, Avenida de Castilla-La Mancha, Alameda y Arroyuelo Bajo: 17 casas (21/11)
+
+21 de noviembre de 2026, Texturas (Claude). A la orden del usuario («Siguiente calle»). Elegidas por `faltan.py`: calles cerca del centro con fachada genérica.
+
+- **Hecho.** 17 entradas:
+  - `tin_15`, `tin_x11`, `tin_x10`, `tin_16`, `tin_x6`;
+  - `acm_6`, `acm_8`, `acm_21`, `acm_24`, `acm_26`, `acm_28`, `acm_ar28`;
+  - `ala_10`, `ala_am36b`, `abj_jm27`, `abj_rs14`, `abj_jc15d`.
+  - Fotos del Catastro y Street View de noviembre de 2024; lo que no se parece, en `guion/repaso_casas.md`.
+- **Rótulos.** La sucursal de la caja rural del Teniente Infante lleva «AHORROS RURALES», el banco del juego. La zapatería de Castilla-La Mancha 28 lleva solo «CALZADOS». Los carteles de «se alquila» van con `t=1` (de agencia, sin número de teléfono).
+- **Fuera.** Cervantes 3 es la iglesia parroquial, hecha a mano. Santo 40 y Reina Sofía 31 no dan a estas calles. Castilla-La Mancha 14 queda escondida detrás de `castilla_16` (`precheck.py`).
+- **Archivos.** `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (17 entradas); `godot/data/map.json`; las hojas `guion/fotos/tanda34/infante_castilla_1..4.jpg`; `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.**
+  - Paré mi primer horneado al avisar Edificios Especiales de que horneaba la cafetería Rize; no llegó a escribir `map.json`.
+  - El de Pretil terminó (18:37) antes de mi fusión, así que no traía mis casas. Volví a hornear sobre el suyo, avisando antes y después.
+  - Frente a la copia: 17 casas nuevas, ninguna quitada, `rize` intacto. `alameda_9`, `alameda_10` y `castilla_22` solo cambian en las aristas tapadas (y 9 cm de suelo en la primera). Calles, nodos, relieve y árboles (2954) iguales.
+- **Pruebas.**
+  - `casas` de las 17 y esas tres: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tin_15_tin_x11_tin_x10_tin_16_tin_x6_acm_6_acm_8__20261121_184539.log)).
+  - Tras cambiar a `brick_rose` el ladrillo del 6 y del 28 de Castilla-La Mancha: 4 ok ([log](logs/selftest_casas_solo_acm_6_acm_28_20261121_184753.log), [log](logs/selftest_casas_solo_acm_6_20261121_184902.log)).
+- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos»). Sin commit. Las calles quedan en pausa hasta nueva orden; la siguiente por `faltan.py` sería Tembleque o Delicias.
+
+### La almazara «González de la Ruz» (21/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «Ahora ponte con aceites García de la Cruz (que llamaremos Gonzalez de la Ruz) tiene fachada tanto en calle triunfo como en carretera de villacañas».
+- **Qué es.** La almazara de la carretera de Villacañas (Catastro 4699012VJ5649N), con la trasera en la calle del Triunfo, hecha a mano en `godot/scripts/almazara.gd`. Incluye la nave alta junto a la carretera, que Catastro no tiene.
+  - Por la carretera: testero de la nave vieja con el mural, la entrada abierta al patio, el muro largo con el rótulo repetido y la nave alta de 14,7 m.
+  - En el patio: el costado de la tienda, las oficinas color salmón, la nave de recepción abierta con su cabina, su tolva y sus depósitos; tras el muro, banderas, cobertizo de madera, depósitos de acero e instalaciones.
+  - Por el Triunfo: el otro testero, un bloque de dos plantas, un tramo viejo con alero de teja y el muro largo de las naves.
+  - Rótulo, emblema y mural son dibujos propios (`tools/almazara/dibujos.py`, en `godot/assets/almazara/`). Sin personajes. Sin interior.
+  - Un azafrán escondido tras el muro (`"id": "almazara"`, `"hidden": true`).
+- **Rehorneado** (avisados Sistemas y Texturas antes y después; ensayado con `tools/colegio/ensayo.py`).
+  - Bloque ALMAZARA en `tools/bake_godot.py`: salta el RC, sus contornos en `block_list`, sin árboles en su zona, clave `almazara`.
+  - Cambios en `godot/data/map.json`: fuera las 5 naves genéricas de la parcela (5 tejados planos, 46 muros) y la holgura del nodo 1250 del Triunfo de 2,3 a 2,4 m. Relieve, nodos, calles y árboles (2954) iguales.
+  - Después retoqué dos contornos del bloque (nave de recepción más grande, nave alta un metro más corta). Un segundo ensayo da el mismo mapa que el horneado, así que no hizo falta rehornear.
+- **Archivos.**
+  - Nuevos: `godot/scripts/almazara.gd`, `godot/assets/almazara/` (6 PNG), `tools/almazara/` (capturas, alzado, manzana, plano, vistas, hojas, dibujos, LEEME), `tools/ign/almazara*.jpg/.json`, `referencias/almazara/LEEME.md`, `guion/fotos/almazara/01–03`, `tools/casas/4699012VJ5649N/` (ficha de Catastro).
+  - Compartidos, solo con añadidos y con aviso: `tools/bake_godot.py`, `godot/data/map.json`, `godot/scripts/map_data.gd` (`var almazara`), `godot/scripts/world.gd` (`AlmazaraS`, `var almazara`, paso «the oil mill», `_build_almazara()`), `godot/scripts/selftest.gd` (modo `--almazara`, `_almazara_checks()` y su llamada en la completa tras `_silo_checks()`).
+- **Decisiones que conviene conocer** (detalle en [referencias/almazara/LEEME.md](referencias/almazara/LEEME.md)).
+  - El muro del Triunfo va retranqueado hasta un metro respecto a Catastro, para no meterse en el pasillo que el horneado reserva a la calle.
+  - El muro de la carretera sigue el terreno: en el juego la carretera cae 4 m hacia el noreste.
+  - La nave alta y la de recepción se han trazado sobre la ortofoto, no sobre Catastro.
+- **Pruebas.**
+  - `python tools/run_tests.py almazara`: 3 ok, 0 fallos ([log](logs/selftest_almazara_20261121_163528.log)). Comprueba que está construida, que frena en las dos calles, que la entrada está abierta, que el mapa conoce sus contornos, el azafrán y el paseo desde la carretera hasta su rincón.
+  - `python tools/run_tests.py relief` tras el horneado: 19 ok, 0 fallos ([log](logs/selftest_relief_20261121_163800.log)).
+  - La prueba completa no la he pasado.
+- **Aprobada por Luis** (21/11): «Mejor con tilde. Visto bueno». El rótulo se queda como está, «González de la Ruz», con tilde (él lo había escrito sin ella y se lo pregunté).
+- **Sin commit**: lo hace Sistemas.
+
+### Javi y sus pollos (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario, a través de Pretil, que hace el asador y su interior: Javi, del «Asador de pollos Juli» (llamado Javi).
+- **Qué pidió.** Repartos «como los de Henry pero de pollo», los martes y los domingos. Se desbloquea tras el jamón de la Josefa, «al llegar el próximo día de reparto o al hablar con él». Desde entonces sale su cara en el mapa y la Josefa te habla de él. Javi es «bajito, hermoso, con gafas, calvo y vestido de negro básico».
+- **`javi.gd` (nuevo).**
+  - La figura:
+    - Camiseta negra, calvo (`hair_style` 32), gafas.
+    - `scale` 0.86 y `build` 1.34.
+  - Dónde está: tras el mostrador mientras abre el asador. Lo lee de `G.world.asador.dentro`: `javi_spot`, `javi_h` y `open`, o si no `asador.open_at`.
+  - El desbloqueo:
+    - Se guarda en `stats.javi`.
+    - Con `stats.menu_done`, llega por un martes o domingo o al hablarle.
+    - Te avisa con un toast y te lo presenta (`folk.meet`).
+  - La Josefa te habla de él una vez (`stats.javi_josefa`).
+  - Lleva flecha verde y cara en el mapa cuando tiene un pedido.
+  - Sin asador en el mapa, no se crea.
+- **`trabajos.gd`.** Los pedidos de Henry pasan a `order_offer(n, kind, lines_key)`, y los pollos de Javi son el kind `pollo`. Cuando el que da el pedido está dentro de un decorado, la distancia se mide desde la puerta.
+- **`game.gd` y `marcas.gd`:** los enganches.
+- **`loc.gd`:** sus frases, y las de firma de Javi.
+- **Pruebas:**
+  - Modo `--javi` (`_javi_checks`), también en la completa. Mientras no esté el asador se salta.
+  - `trabajos`: 7 ok. Ahora entrega el pedido hablando, porque ponerse a 1 m de la Paca dejaba al jugador dentro de la pared.
+  - `palabros`: 3 ok.
+- **Árbol de relaciones** (sin foto hasta que exista en el juego) y **diagrama de misiones** (v5), actualizados.
+- **Pendiente:** el asador de Pretil, para enganchar y pasar `javi`.
+
+### El asador de pollos «Javi»: fachada e interior (21/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «Siguiente edificio asador de pollos juli (que llamaremos Javi). Abrirá en horario comercial y dentro estará Javi […] Se podrá acceder al interior, que estará diseñado (adjunto foto). Pasa a sistemas lo que le toque».
+- **Reparto.** Yo hago el edificio y su interior. A Sistemas le pasé su parte con las palabras de Luis: el personaje Javi, sus repartos de pollo de martes y domingos, el desbloqueo tras la misión del jamón de Josefa, su cara en el mapa y la mención de Josefa.
+- **Dónde.** La casa ocre de la calle de los Arcos (Catastro 4390040VJ5649S), que es la `arcos_4d` de Texturas. Google la da como «Arcos, 6», pero en Catastro ese número es la casa blanca de al lado.
+- **Qué hay.**
+  - `godot/scripts/asador.gd`: la fachada sobre la casa del mapa. Ocre sobre zócalo de piedra, puerta de la vivienda con cortina, la tienda con su reja plegable y su toldo, el rótulo «Javi · Pollos Asados · Comidas preparadas» (primero decía «Asador de pollos»; Luis: «En vez de Asador de Pollos mejor llamarlo Pollos Asados»), la banderola «POLLOS ASADOS», dos balcones y una buhardilla. Abierto y cerrado según la hora.
+  - `godot/scripts/asador_dentro.gd`: el interior, un decorado aparte en (2100, −1400) con flecha verde en la puerta. Sigue la foto de Luis: mostrador de acero con tela morada, mampara y diez bandejas, la caja registradora, suelo de barro, cortinas naranjas; detrás, el asador con los pollos girando.
+  - Rótulos propios en `godot/assets/asador/` (`tools/asador/dibujos.py`), sin el nombre real ni teléfonos.
+  - Un azafrán escondido dentro (`"id": "asador"`, `"hidden": true`).
+  - Sin personajes: dejo `javi_spot`, `javi_h`, `client_spot`, `client_h` y `counter_front` para Sistemas.
+- **Horario**: martes y domingos de 7:00 a 16:00; cerrado el resto de la semana (`HOURS` en `asador.gd`). Un cartel en el cristal lo dice. Luis pidió primero «horario comercial», luego mandó el del asador real (martes 11–15, domingos 11:30–15) y por último: «Pon que esos días abre a las 7:00 mejor. Y cierra a las 16:00».
+- **Archivos.**
+  - Nuevos: `godot/scripts/asador.gd`, `godot/scripts/asador_dentro.gd`, `godot/assets/asador/` (4 PNG), `tools/asador/` (`dibujos.py`, `hojas.py`), `referencias/asador/` (`LEEME.md`, `arcos_4d_antes.txt`), `guion/fotos/asador/01–02`.
+  - Compartidos, solo con añadidos y con aviso: `world.gd` (`AsadorS`, `var asador`, paso «the roast chicken shop», `_build_asador()`), `entradas.gd` (una entrada en `shops()`), `selftest.gd` (modo `--asador`, `_asador_checks()` y su llamada en la completa tras `_almazara_checks()`).
+  - De Texturas: `casas_calles.gd`, solo la línea de `arcos_4d`, que pasa a `["obra"]`. Le avisé antes con el detalle; como no contestó (estaba ocupado), la cambié yo y se lo comuniqué. Sin rehorneado.
+- **Pruebas.** `python tools/run_tests.py asador`: 5 ok, 0 fallos ([log](logs/selftest_asador_20261121_180801.log)). Comprueba que está construido, que la casa está cedida, el horario y los dos estados, que el decorado está lejos y cerrado, que es una tienda con flecha, el azafrán y que el mostrador no deja pasar.
+  - No he probado entrar por la flecha desde la calle andando, ni la prueba completa.
+- **Trampas** (detalle en [referencias/asador/LEEME.md](referencias/asador/LEEME.md)): el primer sitio del decorado tenía dos olivos del mapa dentro; la puerta del decorado tiene que ir centrada en su pared.
+- **Aprobado por Luis** (21/11): «Visto bueno», tras los cambios de nombre y de horario.
+- **Pendiente.** La parte de Sistemas (Javi y sus repartos). Sin commit.
+
+### Coger con Acción, azafrán que gira, bate al recogerlo, pedidos que esperan, Marciano (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. Lo pidió el usuario:
+> «Todos los azafranes deberían ser como los desperdigados por la ciudad, pero con el mismo efecto 3D giratorio y halo del resto de objetos»
+> «muchos de los que te piden recoger aparecen exactamente donde está el jugador… no da tiempo a ver el modelo»
+> «El golpe con bate estará disponible desde que lo recoges del suelo»
+> «para evitar coger el objeto por accidente sería mejor que sea necesario pulsar el botón de acción»
+> «cuando Henry o Javi te digan que recojas el encargo… no se activará el temporizador hasta que recojas el objeto 3D»
+
+- **Coger con Acción** (`pickups.gd`). Ya no se coge nada solo con pisarlo.
+  - `near(pp)`, `prompt(it)` («Coger %s», `p_coger`) y `take(it)`, en `interact` y en el texto de la acción de `game.gd`.
+  - Los de mostrador (`auto` false: el tabaco, los pitillos) siguen con su botón.
+  - Un objeto que aparecería encima de ti sale a 2,4 m, por el primer lado sin pared (`_off_the_player`).
+- **Azafrán.**
+  - Las flores del pueblo y las escondidas por los decorados flotan, giran y llevan el halo (`pickups.dress`, `game._dress_flowers`).
+  - El jornal usa la misma flor (kind `azafran` en `_build_mesh`).
+  - Se coge con Acción (`near_flower`, `_take_flower`).
+- **Bate.** `has_bat()` vale también con `stats.bate`, que se pone al recoger el bate en casa de la Josefa.
+- **Pedidos de Henry y Javi.** Con el «sí», el pedido aparece junto a quien lo da (kind `jamon` o `pollo`; el pollo es un modelo nuevo) y no corre el tiempo (`stage` `recoger`). Al cogerlo empieza el reloj.
+  - Se entrega hablando antes que cualquier otra cosa del vecino (`trabajos.hand_over`, al principio de `talk_to`).
+  - El vecino a quien va ya no tiene que estar a la vista (desde dentro de un decorado no se ve a nadie).
+- **Javi, enganchado a Pollos Asados Javi** (Pretil: `asador.dentro`). Su horario final: martes y domingos de 7 a 16. El nombre del sitio está cambiado en los textos.
+- **Marciano** (`marciano.gd`, nuevo; el usuario: bigote, hermoso, tupé negro).
+  - Aspecto: `hair_style` 8, `face` 4 y `build` 1.3.
+  - Está enfrente de la cafetería del callejón (`G.world.cafeteria.marciano_spot`/`_h`, que hace Pretil). Seis charlas: los jóvenes de hoy, los ochenta y la ruta del bacalao.
+  - Hasta que esté la cafetería no aparece.
+- **`scene_shot`:** una segunda pasada más cerca y más alta, con los planos de lado solo al final. Con la tanda nueva de casas, una pared de la Chiki había quedado de lado.
+- **Pruebas:**
+  - Completa: 934 ok, 0 fallos (`logs/selftest_full_20261121_181743.log`), antes de Marciano.
+  - `javi`: 5 ok. `trabajos`: 8 ok. `herencia`: 12 ok. `pintadas`: 7 ok. `motin`: 64 ok. `palabros`: 3 ok.
+  - `--marciano` se salta hasta que esté la cafetería.
+
+### La «Cafetería Rize» y su callejón (21/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «El siguiente objetivo es la cafetería rice con todo su callejón incluido. Hay una foto 360° dentro del callejón. Enfrente habrá un NPC con bigote, hermoso, y peinado tupé negro que se llamará Marciano […]». Y después: «Lo llamaremos al local Rize en vez de Rice».
+- **Reparto.** Yo hago el callejón, la cafetería y lo que la rodea. Marciano es de Sistemas (`marciano.gd`), que ya lee `G.world.rize`.
+- **Dónde.** El callejón sin nombre que entra desde la avenida de Juan Carlos I entre `juancarlos_10` y `juancarlos_4`. Catastro: la cafetería es 4091010VJ5649S y el garaje de enfrente, 4091028VJ5649S.
+- **Fuentes.** Una foto 360° del fondo del callejón (febrero de 2020; de otra persona, no está en el repositorio) y Street View desde la avenida (noviembre de 2024). En 2020 el suelo era hormigón y en 2024 adoquín gris: vale lo más reciente.
+- **Qué hay** (`godot/scripts/rize.gd`, `world.rize`).
+  - El callejón adoquinado y cerrado al tráfico, con un remate propio al fondo.
+  - La cafetería: pared blanca sobre zócalo de granito, tres ventanas en rombo con reja, puerta sobre tres escalones, toldo con el nombre, terraza de cuatro mesas, barril, cajas y sillas apiladas.
+  - El fondo: tapia vieja con un portón verde, la tinaja y las sombrillas cerradas.
+  - Enfrente: el garaje blanco de uralita con el emblema y la puerta de ramas pintadas, y la casa gris de recercos de travertino.
+  - La casa gris es una piel de 22 cm sobre el costado de `juancarlos_10` (Texturas la acepta: «me vale; déjala»).
+  - En la boca, la pizarra, solo mientras está abierta.
+  - El emblema es del juego (tupé y bigote negros, «SIEMPRE DE FIESTA»), en lugar del de la peña real.
+  - Un azafrán escondido tras las cajas (`"id": "rize"`, `"hidden": true`).
+  - Sin interior.
+  - Para Sistemas: `marciano_spot`, `marciano_h`, `door`, `is_open`, `open_at(day, hour)`.
+- **Horario**, el de la cafetería real: lunes cerrado; martes y miércoles de 9 a 17; de jueves a domingo de 9 a 19.
+- **Horneado** (hecho, con aviso antes y después a Texturas y a Sistemas).
+  - `PAVED_ALLEYS`: la vía sin nombre pasa a `k` 2, `paved` 2 y la marca nueva `narrow`.
+  - `corridor_half` respeta `narrow` (pasillo de 1,9 m: ninguna casa se mueve).
+  - Bloque `RIZE`: las dos parcelas ya no se levantan como genéricas; clave `rize` en `map.json`.
+  - Diferencias: 2 tejados y 5 muros genéricos menos; `clr` del nodo 3062 de 2,8 a 1,6; lo demás, igual.
+- **Archivos.**
+  - Nuevos: `godot/scripts/rize.gd`, `godot/assets/rize/` (4 PNG), `tools/rice/` (`dibujos.py`, `hojas.py`, `manzana.py`, `vistas360.py`), `tools/ign/rice.jpg` y `.json`, `tools/casas/4091010VJ5649S/`, `referencias/rice/LEEME.md`, `guion/fotos/rice/01–02`.
+  - Compartidos, solo con añadidos y con aviso: `tools/bake_godot.py`, `godot/data/map.json` (rehorneado), `map_data.gd` (`var rize`), `world.gd` (`RizeS`, `var rize`, paso «the Cafetería Rize», `_build_rize()`), `selftest.gd` (modo `--rize`, `_rize_checks()` y su llamada en la completa tras `_asador_checks()`).
+- **Pruebas.** `python tools/run_tests.py rize`: 4 ok, 0 fallos ([log](logs/selftest_rize_20261121_185042.log)). Comprueba que está construido, que sus muros paran y el callejón es peatonal, el horario y los dos estados, el azafrán, que se entra andando desde la avenida hasta el fondo y que el sitio de Marciano ve la puerta.
+  - No he pasado la prueba completa ni `--marciano` (es de Sistemas).
+- **Trampas** (detalle en [referencias/rice/LEEME.md](referencias/rice/LEEME.md)): `nearest_road(p, true)` para ver una vía peatonal; lo que rellena los huecos de la piel va por delante del ladrillo; la piedra clara necesita `_glow` para no salir parda en la sombra.
+- **Aprobado por Luis** (21/11): «Visto bueno sobre todo». Sin commit (lo hace Sistemas).
+
+### La persecución de la furgoneta del sabotaje, sin caída de FPS (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario: «la misión de sabotaje baja mucho de FPS cuando empiezas a perseguir a la furgoneta».
+- **Medido** con el modo nuevo `--perfil_sabotaje` (en ventana, sin `--fixed-fps`): el tick por partes antes del recado y durante la persecución.
+  - Antes del recado: 201 fps.
+  - Persiguiendo: entre 51 y 73 fps.
+  - La parte de la misión pasaba de 0,1 a 5 ms en cada fotograma.
+- **Causa.** `sabotaje.stop(i)` recorría las 2.727 casas del mapa y llamaba a `MapData.nearest_road`, que mira todas las calles, y `_follow` la pedía en cada fotograma.
+- **Arreglo.** Se calcula una vez y se guarda (`_stops`, `_find_stop`).
+- **Después:** entre 116 y 136 fps persiguiendo; la misión, 0,07 ms por fotograma. El tick de física sigue algo más alto que fuera de la misión (unos 11–15 ms frente a 5–6), pero ya no por la misión: sus partes medidas suman menos de 1,5 ms.
+- **`game.gd`:** la marca «garages, missions» del perfil se parte en «garages, calls», «mission markers», «side lines» y «sabotage». Sin perfil activo no cuestan nada.
+- **Prueba:** en `_sabotaje_checks`, la misión cronometrada directamente durante la persecución tiene que costar menos de 0,5 ms por fotograma. Con el código antiguo falla (4,72 ms) y con el arreglo pasa (0,07 ms). `sabotaje`: 46 ok.
+- **Revisado** el resto de búsquedas caras (`nearest_road`, recorrer `houses`, `path`, `route_nodes`) dentro de código de cada fotograma: las que quedan van cada 2 s.
+
+### La Travesía del Clavel, peatonal y elevada (21/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**, que llegó por Texturas: «De acuerdo, que sea peatonal y con las cosas que has dicho. Que se ponga Petril con eso cuando termine con el Rice». Antes había dicho: «Tiene dos accesos, es de la escalera de la calle clavel y el de la rampa de la calle san Rafael».
+- **Qué hay** (`godot/scripts/travesia.gd`, `world.travesia`).
+  - El paseo de baldosa a cuadros, un plano inclinado entre 0,9 y 1,5 m sobre el terreno.
+  - Por San Rafael, tres rampas en zigzag entre muretes blancos con rejillas y barandilla de tubo.
+  - Por el Clavel, la escalera a cuadros, el carril del garaje y la escalera de la terraza de la hilera este.
+  - Ante cada puerta de la hilera este (de Texturas), un rellano con sus peldaños y barandilla de forja.
+  - La hilera oeste y la casa blanca de la esquina del Clavel, hechas a mano: el Catastro las tiene de 1,4 a 5 m fuera de su sitio.
+  - Un azafrán escondido junto al primer banco (`"id": "travesia"`).
+- **Aproximado**: el carril del garaje no baja bajo el paseo (el relieve no admite un foso tan estrecho); la hilera oeste es una reconstrucción regular.
+- **Horneado** (hecho, con aviso antes y después): la calle pasa a `k` 2, `pedestrian`, `paved` 5; la parte 2 de 4494604 no se levanta; clave `travesia`. Relieve, nodos, `clr`, árboles y casas, iguales.
+- **Archivos.**
+  - Nuevos: `godot/scripts/travesia.gd`, `godot/assets/travesia/` (3 PNG), `tools/travesia/` (5 scripts), `tools/ign/travesia.jpg` y `.json`, `guion/fotos/travesia_clavel/01–03`.
+  - Compartidos, solo con añadidos y con aviso: `tools/bake_godot.py`, `godot/data/map.json`, `map_data.gd` (`var travesia`), `world.gd` (`TravesiaS`, `var travesia`, paso, `_build_travesia()`), `selftest.gd` (`--travesia`, `_travesia_checks()` tras `_rize_checks()`), `empedrado.gd` (salta `paved` 5).
+  - De Texturas, hecho por ella a petición mía: `casas_calles.gd`, las nueve líneas `tcl_4` a `tcl_20` sin `esc` ni ventanuco.
+  - Notas añadidas al final de [referencias/travesia_clavel/LEEME.md](referencias/travesia_clavel/LEEME.md).
+- **Pruebas.** `travesia`: 4 ok ([log](logs/selftest_travesia_20261121_192929.log)): construido, el paseo elevado, se sube por las rampas, se recorre y se baja por la escalera, los muros paran, el azafrán. `relief`: 19 ok ([log](logs/selftest_relief_20261121_192716.log)).
+  - No he pasado la completa.
+- **Para Sistemas**: ante las puertas de la hilera hay que usar `MapData.foot(p)`; avisado.
+- **Aprobado por Luis** (21/11): «Visto bueno sobre todo». Sin commit (lo hace Sistemas).
+
+### Rendimiento de las misiones y la riña que deja ver a través (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario: «Prueba de rendimiento» y «Que durante la riña del jamón los NPCs detrás de ti salgan transparentes, no invisibles».
+- **Medida.** Modo nuevo `--perfil_misiones` (en ventana, sin `--fixed-fps`). Mide una tras otra varias situaciones del juego, y el informe del perfil saca ahora también las llamadas de dibujado, los objetos y los triángulos.
+
+  | Situación | FPS |
+  |---|---|
+  | A pie en la plaza | 140 |
+  | Taxi | 112–116 |
+  | Reparto | 160 |
+  | Jornal con 30 rosas | 232 |
+  | Persecución de la policía | 101 |
+  | Dentro del Recress | 252 |
+  | La riña del jamón | 70–74 |
+  | Persecución de la furgoneta del sabotaje, ya arreglada (antes 51–73) | 116–136 |
+
+- **La riña.** Ninguna parte del código destaca. Lo que pesa es el dibujado:
+  - 2.471 llamadas frente a 1.343 a pie, y 3.790 objetos frente a 2.014.
+  - Cada vecino de la multitud son decenas de piezas.
+  - Quitar las sombras de la multitud no cambia nada: solo 103 piezas hacían sombra.
+  - **Pendiente:** juntar las piezas de cada vecino en una malla. Es un cambio en `chara.gd` de calado, que se deja fuera de esta versión.
+- **Transparencia en la riña** (`game.gd` `_ghost_lens` y `_ghost`, `GHOST` 0.68). Los vecinos entre la cámara del hombro y tú se ven a través, con `transparency` en sus `GeometryInstance3D`, en vez de ocultarse. En las escenas de cámara fija, quien queda pegado al objetivo se sigue ocultando como antes.
+  - Prueba nueva en `motin`: un vecino en medio se ve a través y vuelve a ser sólido al apartarse. `motin`: 66 ok. La foto es `motin_transparente`.
 
 ## Cómo mantener el registro
 

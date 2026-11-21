@@ -1,0 +1,1 @@
+"arcos_4d": ["tiles", "wall=e0a050 plinth=0.8:9a9a98 | shop .25 1.6 2.4 f=6a4428 | door .6 1.0 2.3 c=4a3428 | win .85 1.2 1.0 1.4 g=bars", "wall=e0a050 | bal .25,.6 1.0 2.1 bw=1.4 b=6a4428 d=0.6 | win .85 1.0 1.0 1.2 b=f4f4f0 d=0.6"],      # 1993, no. 4 D: ochre, a little shop window (its sign left out)

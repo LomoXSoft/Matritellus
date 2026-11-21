@@ -596,6 +596,72 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
   - `soc_3`: la celosía de listones de madera sale como un panel marrón liso.
   - Sin hacer: El Cerro 2 y Consuegra 2, que solo tienen un costado a esta calle.
 
+## Calle de Don Pedro de Castilla y calle de Dulcinea del Toboso
+
+- **Don Pedro de Castilla:**
+  - la hilera naranja de 2007 (del 16 al 26) va casa a casa, con pilastras crema y puertas de garaje blancas;
+  - el zócalo de baldosas a cuadros de la acera no sale;
+  - `dpc_x14`: la hilera de adosadas sobre garajes con escalera lleva verja delante en la foto; sale la escalera, no la verja;
+  - `dpc_8d`: sin foto en el Catastro; el único Street View de ese tramo es de 2013;
+  - Bajada del Rollo 28 queda fuera: solo tiene 3,5 m a esta calle.
+- **Dulcinea del Toboso:** casi todo son tapias de ladrillo, naves y almacenes del borde del pueblo; el molino del Tío Gerardo (hecho a mano) queda fuera.
+  - `dul_4`: el almacén de bloques sale con hiladas pintadas y una puerta que no está en la foto (hacían falta piezas para la prueba).
+  - Las parcelas sin plantas del Catastro (Consuegra 17, Polígono 142) siguen sin edificio.
+
+## Camino Hondo
+
+- **Costados de otras calles que dan al Camino:** Juan XXIII 43 y 45 (`cho_jx43`, `cho_jx45`) y Concordia 10 (`cho_co10`). Las fotos del Catastro son de sus fachadas principales. Concordia 8 queda fuera: da a la Concordia.
+- **`cho_9a` y `cho_9b`:** almacenes de 2006 sin foto en el Catastro; se ha seguido Street View (2024): paneles de hormigón con pintadas y una nave de ladrillo. Las pintadas van como tags de las peñas.
+- **`cho_11`:** la pintada de la tapia va como tag de una peña.
+- **`cho_30`:** la casilla gris de la esquina lleva una puerta y unas hiladas que no se ven en la foto (para la prueba).
+- **Sin hacer:** Juan XXIII 47, Delicias 68 y Juan XXIII 39 (no tienen fachada al Camino) y el Camino Hondo 12 (sin plantas en el Catastro).
+
+## Calle de las Monjas (del 29 y el 40 a la Rosa de Santa María)
+
+- **Fotos del Catastro (2010–2015):** comprobadas con Street View (2024) en tres puntos de la calle; no han cambiado.
+- **`mon_44` y `mon_46`:** la tienda con toldo amarillo y reja plegable lleva el toldo liso, sin el nombre del rótulo.
+- **`mon_58`:** la casa roja de tres plantas tiene una galería de arcos y aleros sobre los balcones; salen un arco y dos tejadillos.
+- **`mon_54`:** la casa baja de zócalo amarillo tiene un porche delante; el frente va en la cara del porche.
+- **`mon_35d` y `mon_53`:** son tiras estrechas del Catastro (2 m) y llevan el aspecto de la casa de al lado.
+- **Sin hacer:** el convento de Santa Ana (hecho a mano), Monjas 63 y 65 (sus caras quedan detrás de la Bajada del Florido) y los tramos de más al sur y al norte de la calle, para otras tandas.
+
+## Calle de las Monjas, el resto (de Nalda a Sancho Panza)
+
+- **Fotos:** Street View de noviembre de 2024 en todas menos el 24, que solo tiene la de marzo de 2013; el Catastro para comparar. Han cambiado el 36 (de amarillo a caqui claro), el 84 (sin las ventanas verdes) y el 6.
+- **`mon_6`:** el Catastro lo tiene como solar, pero en 2024 hay una casa nueva de ladrillo claro de dos plantas; va hecha a mano (caja de 10 m de fondo). No se sabe bien dónde acaba por el norte: lo de arriba es la esquina ocre de `monjas_8`.
+- **`mon_89`:** también solar en el Catastro; hoy es una casita baja de ladrillo con una reja. Hecha a mano.
+- **`mon_87`:** es el brazo de la parcela de Florido 68 que llega a las Monjas (`only` 2, `reach` 3). El Catastro le da dos plantas; en la foto es una nave baja con portón blanco, y así va.
+- **`mon_17`:** la torre estrecha de 2012 lleva aleros de canecillos de madera; el bloque de tres plantas del Catastro va detrás, con la misma altura.
+- **`mon_82`:** la terraza de la azotea, con barandilla y tejado de chapa, va como una tercera planta oscura con barandilla y un tejadillo gris.
+- **`mon_n25` y `mon_sp10`:** su frente va en la calle de su número (Nalda y Sancho Panza), no en el costado de las Monjas.
+- **`monjas_26` (de una tanda antigua):** su frente estaba en la trasera de `mon_24`; ahora va en su cara a la revuelta hacia el este. Su aspecto no se ha tocado.
+- **Para repasar:** `monjas_21` sigue la foto del Catastro (blanca, portón gris), pero en Street View 2024 es una casona de enfoscado tostado con portada de piedra y escudo. `monjas_15` tampoco se parece (es una casa crema con zócalo de pizarra). Son de una tanda antigua y no se han tocado.
+- **El arco del patio entre el 2 y el 10** (a petición del usuario, 21/11): arco de ladrillo con albardilla de teja, la cancela abierta hacia dentro, el patio solado en rojo y un azafrán escondido detrás de un palé de ladrillos al fondo a la izquierda. Lo hace `_mon_10()` en `casas.gd`. Frente a Street View: la albardilla real es un tejadillo de teja curva más grueso, y la cancela tiene el remate curvo; aquí van rectos.
+- **Sin hacer:** Monjas 22 (no tiene nada en pie a la calle en el Catastro).
+
+## Travesía del Clavel, el principio del Clavel y la Calle del Romero
+
+- **La Travesía del Clavel es un callejón peatonal de escaleras y rampas,** con barandillas de acero y muretes blancos. En el mapa es una calle con asfalto y aceras. Street View no entra; la hilera se ha visto desde sus dos bocas.
+- **La hilera de 2004 (`tcl_4` a `tcl_20`):** ocre dorado sobre piedra de mampostería, una planta medio enterrada, la puerta arriba de una escalera que comparten de dos en dos, un tejadillo sobre ella y aleros de canecillos. En la foto la piedra es rosada y en lajas; aquí sale la mampostería gris de siempre.
+- **El lado oeste de la Travesía queda sin hacer:** el Catastro da una tira de una planta sin dirección (4494604) y las fotos muestran ahí los costados de casas más altas (una blanca de tres plantas en la esquina del Clavel, una ocre en la de San Rafael).
+- **`cla_6`:** la planta de arriba vuela medio metro sobre la baja, como en la foto. El porche con cancela de hierro sale como una puerta de madera.
+- **Cambios desde la foto del Catastro (Street View 2024):** Delicias 14 está ahora encalada, con ladrillo en las esquinas. Romero 21 está pintada de beige y lleva un cartel de «se vende», igual que Romero 45. El portón de Romero 39 es ahora gris (era azul). Romero 19 tiene un portón oscuro tallado y Romero 15 una puerta de garaje granate.
+- **`rom_39` y `rom_39b`:** una casa de dos plantas y su trozo bajo con el portón, en dos entradas (`only`).
+- **`rom_9`:** las rejas de rombos salen como rejas de barrotes.
+- **Sin hacer:** Delicias 21 y 12 (nada de ellas da al Romero).
+- **La Travesía peatonal y elevada,** con su escalera y su rampa: encargada a Pretil a petición del usuario (`referencias/travesia_clavel/`).
+
+## Teniente Infante, Avenida de Castilla-La Mancha, Alameda y Arroyuelo Bajo
+
+- **Cambios desde la foto del Catastro (Street View 2024):**
+  - La Alameda 10 está ahora blanca (era crema con la planta baja roja).
+  - En el Teniente Infante, el local del bloque de la caja rural ha cambiado de nombre (va como «AHORROS RURALES»); el bloque de al lado tiene dos locales cerrados y un cartel de «se alquila».
+  - El portón de Juan Carlos I 15 D es ahora gris azulado (era verde).
+- **`tin_x10`:** los frentes de sus balcones son de azulejo turquesa; aquí salen como terrazas con barandilla y toldo turquesa.
+- **`tin_16`:** la casa larga de 1950 lleva los recercos ocres moldurados como marcos lisos.
+- **`acm_ar28`:** el costado de Arcos 28 tiene en el Catastro un ventanal en arco que en 2024 no se ve; va sin él, con bandas blancas y las pintadas de su zócalo.
+- **Sin hacer:** Castilla-La Mancha 14, la casa estrecha salmón del fondo de una placita: el Catastro le da esa placita al bloque de 2019 de la esquina (`castilla_16`), que en el juego la tapa.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

@@ -161,6 +161,30 @@ for name, at in PAVED_LANES:
         else:
             r.update(k=2, h='pedestrian', paved=2)
         print('paved in grey pavers and closed to traffic: %s, %d nodes' % (name, len(paved)))
+# ...and the alley of the Cafetería Rize, off the Avenida de Juan Carlos I (godot/scripts/rize.gd; the user, 21 November
+# 2026: "la cafetería rice con todo su callejón incluido"): an unnamed service road in OSM, paved in grey setts from
+# wall to wall (Street View, November 2024), with the café's tables in it. A footpath closed to traffic like the lane
+# above ("paved": 2), but with a service road's narrow corridor ("narrow": no house moves; the alley is 4 m wide).
+PAVED_ALLEYS = [((-200.0, 87.0), (-194.0, 116.0))]      # an unnamed road, by its two ends
+for a_, b_ in PAVED_ALLEYS:
+    for r in roads:
+        if r['n'] or r['k'] != 0 or r.get('paved'): continue
+        ps = [npts[i] for i in r['p']]
+        if min(math.dist(ps[0], a_), math.dist(ps[-1], a_)) < 3.0 and min(math.dist(ps[0], b_), math.dist(ps[-1], b_)) < 3.0:
+            r.update(k=2, h='pedestrian', paved=2, narrow=1)
+            r.pop('ow', None)
+            print('alley paved in grey pavers and closed to traffic: %d nodes' % len(ps))
+# ...and the Travesía del Clavel, the alley between the Calle de San Rafael and the Calle del Clavel (godot/scripts/
+# travesia.gd; the user, 21 November 2026: "que sea peatonal"): a walk for people on foot raised over both streets. A
+# footpath closed to traffic that travesia.gd floors itself ("paved": 5), with a car street's corridor: no house moves.
+_travesia_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'travesia.gd')
+TRAVESIA = os.path.exists(_travesia_gd) and 'const READY := true' in open(_travesia_gd, encoding='utf-8').read()
+if TRAVESIA:
+    for r in roads:
+        if r['n'] == 'Travesía del Clavel' and r['k'] == 0:
+            r.update(k=2, h='pedestrian', paved=5)
+            r.pop('ow', None)
+            print('the Travesía del Clavel: a raised walk, closed to traffic (%d nodes)' % len(r['p']))
 # ...and streets paved like the Calle Real -- setts down the middle, brick along the houses, all at one level -- that cars
 # still drive: the Calle de las Monjas from its south end to its crossroads with Santiago Apóstol, by the convent of
 # Santa Ana (Street View, November 2024; the user, 15 November 2026: "La calle está empedrada pero no es peatonal").
@@ -210,7 +234,7 @@ ferial_park = Polygon([(176, 476), (156, 530), (210, 549), (230, 496)]).buffer(1
 def poly_of(w): return [proj(onodes[i]['lat'], onodes[i]['lon']) for i in w['nodes']]
 
 # the corridor every street is guaranteed to keep free of buildings (centre lines drift a little from reality)
-def corridor_half(r): return 2.4 if r.get('paved') else 1.0 if r['k'] == 2 else 1.5 if r['k'] == 1 else 1.9 if r['h'] == 'service' else 2.4
+def corridor_half(r): return (1.9 if r.get('narrow') else 2.4) if r.get('paved') else 1.0 if r['k'] == 2 else 1.5 if r['k'] == 1 else 1.9 if r['h'] == 'service' else 2.4
 corridor = unary_union([LineString([npts[i] for i in r['p']]).buffer(corridor_half(r), quad_segs=3) for r in roads])
 road_lines = [LineString([npts[i] for i in r['p']]) for r in roads]
 road_tree = STRtree(road_lines)
@@ -523,6 +547,58 @@ cristobal = {'o': [429.23, -981.43], 'u': [0.8875, -0.4610]}
 _cristobal_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'cristobal.gd')
 if not (os.path.exists(_cristobal_gd) and 'const READY := true' in open(_cristobal_gd, encoding='utf-8').read()):      # (not built yet: Catastro's building stays)
     CRISTOBAL_RC, cristobal = None, {}
+# The oil mill of the road to Villacañas, "González de la Ruz" in the game (godot/scripts/almazara.gd; the user, 21
+# November 2026; referencias/almazara/): Catastro's buildings of it are not raised -- almazara.gd builds them, and the
+# tall nave beside them on the road, which Catastro has not got -- and the map plants no trees on its plot nor on the
+# verge before it (almazara.gd plants its own pines). No relief or road change.
+ALMAZARA_RC = '4699012VJ5649N'
+def _alm(s, d): return (264.27 + 0.7340 * s - 0.6792 * d, -523.36 - 0.6792 * s - 0.7340 * d)      # s along its front on the road, d into the plot
+almazara_built = [
+    Polygon([(264.27, -523.36), (275.24, -533.51), (227.29, -556.58), (218.76, -545.09)]),      # the old nave, from the road to the Triunfo (its end a metre back from Catastro's: the street's corridor)
+    Polygon([(227.29, -556.58), (238.73, -573.00), (244.48, -581.42), (251.33, -578.17), (233.53, -553.77)]),      # the block of two floors and the low old stretch on the Triunfo
+    Polygon([(240.50, -550.38), (260.29, -577.48), (254.11, -581.97), (233.53, -553.77)]),      # the offices on the yard
+    Polygon([(260.29, -577.48), (278.47, -564.22), (287.61, -576.74), (269.43, -590.00)]),      # the reception nave
+    Polygon([(244.48, -581.42), (269.73, -615.42), (279.33, -637.50), (302.76, -633.48), (298.58, -612.00), (280.41, -581.98), (269.43, -590.00), (251.33, -578.17)]),      # the naves along the Triunfo
+    Polygon([(301.70, -609.29), (326.5, -603.5), (333.2, -628.5), (336.4, -640.5), (322.53, -644.79), (319.55, -630.61), (302.76, -633.48)]),      # the big nave behind the tall one
+    Polygon([_alm(97.5, 0.0), _alm(165.0, 0.0), (336.4, -640.5), (326.5, -603.5)]),             # the tall nave on the road (not in Catastro)
+    Polygon([_alm(89.0, 0.0), _alm(97.5, 0.0), _alm(98.9, 10.0), _alm(89.0, 10.0)]),            # the small building beside it
+    Polygon([_alm(26.5, 0.0), _alm(89.0, 0.0), _alm(89.0, 0.3), _alm(26.5, 0.3)]),              # the long wall on the road
+    Polygon([_alm(61.0, 1.6), _alm(86.0, 1.6), _alm(86.0, 10.0), _alm(61.0, 10.0)]),            # the low works behind it
+]
+almazara_zone = unary_union([p.buffer(0) for p in almazara_built] + [Polygon([_alm(-1.0, -9.0), _alm(168.0, -9.0), _alm(168.0, 12.0), _alm(-1.0, 12.0)]),
+    Polygon([(275.24, -533.51), _alm(89.0, 10.0), (326.5, -603.5), (301.70, -609.29), (298.58, -612.00), (280.41, -581.98), (287.61, -576.74), (278.47, -564.22), (260.29, -577.48), (240.50, -550.38)]).buffer(0)]).buffer(0.5)
+almazara = {'o': [264.27, -523.36], 'u': [0.7340, -0.6792]}
+_almazara_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'almazara.gd')
+if not (os.path.exists(_almazara_gd) and 'const READY := true' in open(_almazara_gd, encoding='utf-8').read()):      # (not built yet: Catastro's sheds stay)
+    ALMAZARA_RC, almazara, almazara_built, almazara_zone = None, {}, [], Polygon()
+# The Cafetería Rize and its alley, off the Avenida de Juan Carlos I (godot/scripts/rize.gd; the user, 21 November 2026;
+# referencias/rice/): Catastro's café (4091010, a shop of one floor) and the little garage opposite it (4091028) are not
+# raised -- rize.gd builds them, and the old wall with the green door that closes the alley's end, which Catastro has
+# not got. (The alley itself: PAVED_ALLEYS, above.)
+RIZE_RCS = {'4091010VJ5649S', '4091028VJ5649S'}
+rize_built = [
+    Polygon([(-196.82, 85.25), (-189.41, 84.91), (-179.58, 83.80), (-179.26, 98.75), (-184.38, 99.06), (-195.03, 99.70)]),      # the café
+    Polygon([(-203.05, 85.53), (-201.61, 90.97), (-208.50, 91.51), (-208.56, 85.78)]),                                           # the garage with the emblem
+    Polygon([(-203.05, 85.53), (-196.82, 85.25), (-196.84, 84.85), (-203.07, 85.13)]),                                           # the end wall
+]
+rize = {'o': [-196.82, 85.25]}
+_rize_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'rize.gd')
+if not (os.path.exists(_rize_gd) and 'const READY := true' in open(_rize_gd, encoding='utf-8').read()):      # (not built yet: Catastro's buildings stay)
+    RIZE_RCS, rize, rize_built = set(), {}, []
+# The Travesía del Clavel (above; referencias/travesia_clavel/): Catastro has the row on its west side as a strip (part 2
+# of 4494604) drawn 1.4 to 5 m short of the alley -- the aerial photo has its front 7 m from the east row's all the way.
+# That strip is not raised: travesia.gd builds the row where it stands, and the white house on the corner of the Calle
+# del Clavel beside it. (Part 1 of that parcel, on the Clavel, stays.) Its frame: s along the east row's front from
+# its corner on San Rafael, t west of it.
+TRAVESIA_RC = '4494604VJ5649S'
+_tv_o, _tv_u = (140.56, -160.80), (0.19084, -0.98162)
+def _tv(s, t): return (_tv_o[0] + _tv_u[0] * s + _tv_u[1] * t, _tv_o[1] + _tv_u[1] * s - _tv_u[0] * t)
+travesia_zone = Polygon([_tv(-3.0, 6.0), _tv(50.0, 6.0), _tv(50.0, 24.0), _tv(-3.0, 24.0)])      # (where Catastro's strip is)
+travesia_built = [Polygon([_tv(0.95, 7.0), _tv(52.9, 7.0), _tv(52.9, 16.5), _tv(0.95, 13.4)]),                               # the west row
+                  Polygon([_tv(52.9, 7.0), _tv(63.2, 7.0), _tv(63.6, 12.4), _tv(52.9, 12.4)])]                               # the white house
+travesia = {'o': list(_tv_o), 'u': list(_tv_u)}
+if not TRAVESIA:      # (not built yet: Catastro's strip stays)
+    TRAVESIA_RC, travesia, travesia_built = None, {}, []
 # The hermitage of the Cristo del Prado, on the Paseo del Cristo (godot/scripts/cristoprado.gd; the user, 21 November
 # 2026; referencias/cristoprado/): Catastro has it and the old people's home beside it as one building -- the hermitage's
 # parts (its nave, a piece of part 4; the crossing, part 3; the east body, part 1) are not raised, the home's stay.
@@ -719,6 +795,9 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid == CULTURA_RC: return                                 # ...and the block of the Casa Grande, the library and the music school
     if bid == SEBASTIAN_RC: return                               # ...and the hermitage of San Sebastián
     if bid == CRISTOBAL_RC: return                               # ...and the little hermitage of San Cristóbal
+    if bid == ALMAZARA_RC: return                                # ...and the oil mill of the road to Villacañas
+    if bid in RIZE_RCS: return                                   # ...and the Cafetería Rize and the garage opposite it in its alley
+    if bid == TRAVESIA_RC and travesia_zone.contains(c): return  # ...and the west row of the Travesía del Clavel
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
     elif church_u.contains(c): style, h = 5, max(12.0, floors_c * 4.0)
@@ -1169,6 +1248,9 @@ if correos: block_list.append(correos_built)        # (the post office, likewise
 if cultura: block_list.append(cultura_built)        # (the block of the Casa Grande, likewise)
 if sebastian: block_list.extend([sebastian_built, sebastian_chapel])      # (the hermitage of San Sebastián and its little chapel, likewise)
 if cristobal: block_list.append(cristobal_built)    # (the little hermitage of San Cristóbal, likewise)
+if almazara: block_list.extend(almazara_built)      # (the oil mill, its long wall and its tall nave on the road, likewise)
+if rize: block_list.extend(rize_built)              # (the Cafetería Rize, the garage opposite and the wall at the alley's end, likewise)
+if travesia: block_list.extend(travesia_built)      # (the west row of the Travesía del Clavel and the white house on the Clavel, likewise)
 if cristoprado: block_list.append(cristoprado_built)    # (the hermitage of the Cristo del Prado, likewise)
 if residencia: block_list.extend(residencia_built)    # (and the old people's home beside it)
 block_tree = STRtree(block_list)
@@ -1239,6 +1321,7 @@ trees = [t for t in trees if not merkocarry_zone.contains(Point(t[0], t[1]))]   
 trees = [t for t in trees if not ferial_park.contains(Point(t[0], t[1]))]      # ...and the park of the fairground by the Paseo del Cristo (ferial.gd plants its own)
 trees = [t for t in trees if not sebastian_zone.contains(Point(t[0], t[1]))]   # ...and the park of San Sebastián and round its hermitage (sebastian.gd plants its own)
 trees = [t for t in trees if not cristoprado_zone.contains(Point(t[0], t[1]))]   # ...and round the hermitage of the Cristo del Prado (cristoprado.gd plants its own)
+trees = [t for t in trees if not almazara_zone.contains(Point(t[0], t[1]))]     # ...and the oil mill's plot and the verge before it (almazara.gd plants its own pines)
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []
@@ -1251,7 +1334,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'cristobal': cristobal, 'cristoprado': cristoprado, 'residencia': residencia, 'colegio': colegio, 'cuartel': cuartel, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'cristobal': cristobal, 'cristoprado': cristoprado, 'residencia': residencia, 'colegio': colegio, 'cuartel': cuartel, 'almazara': almazara, 'rize': rize, 'travesia': travesia, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

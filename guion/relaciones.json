@@ -540,6 +540,30 @@
    "role": "Vecino genérico que da trabajos que se repiten: repartos en coche, taxi del pueblo y jornal en el campo.",
    "where": "En la Plaza del Ayuntamiento.",
    "notes": "Provisional: más adelante los trabajos se repartirán entre distintos vecinos (el usuario, 21/11/2026)."
+  },
+  {
+   "id": "javi",
+   "name": "Javi",
+   "foto": true,
+   "pos": [
+    3,
+    2
+   ],
+   "role": "El de Pollos Asados Javi. Bajito, hermoso, con gafas, calvo y vestido de negro. Los martes y domingos te da pollos asaos pa llevar a los vecinos.",
+   "where": "Tras el mostrador de Pollos Asados Javi, en la calle de los Arcos (por la mañana todos los días; por la tarde de lunes a sábado).",
+   "notes": "Se le conoce después del jamón de la Josefa, al llegar el martes o el domingo o al hablar con él. Pedido por el usuario el 21/11/2026 (el «Asador de pollos Juli», en el juego Pollos Asados Javi)."
+  },
+  {
+   "id": "marciano",
+   "name": "Marciano",
+   "foto": true,
+   "pos": [
+    8,
+    5
+   ],
+   "role": "Fiestero de los ochenta, con bigote, hermoso y tupé negro. Dice que los jóvenes de hoy no saben lo que es una fiesta; cuenta las locuras de los 80 y la ruta del bacalao.",
+   "where": "Enfrente de la cafetería del callejón de la Avenida de Juan Carlos I.",
+   "notes": "De momento solo charla, sin misión. Pedido por el usuario el 21/11/2026."
   }
  ],
  "links": [
@@ -854,6 +878,22 @@
    "label": "le cuenta lo de Hacienda",
    "detail": "La Paca te cuenta que la Eufrasia defraudaba a Hacienda: la casa debe 10.000 €.",
    "source": "casa_paca"
+  },
+  {
+   "a": "tu",
+   "b": "javi",
+   "kind": "negocio",
+   "label": "te da pollos pa repartir",
+   "detail": "Los martes y domingos, un pollo asao pa un vecino; cobras según lo caliente que llegue.",
+   "source": "javi_pollo"
+  },
+  {
+   "a": "josefa",
+   "b": "javi",
+   "kind": "trato",
+   "label": "te habla de él",
+   "detail": "La Josefa te cuenta que el Javi busca quien le reparta los pollos.",
+   "source": "josefa_javi"
   }
  ],
  "cabos": [

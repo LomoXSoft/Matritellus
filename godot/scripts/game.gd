@@ -58,6 +58,8 @@ const InventarioS = preload("res://scripts/inventario.gd")
 const TomasaS = preload("res://scripts/tomasa.gd")
 const FondoCasaS = preload("res://scripts/fondo_casa.gd")
 const TrabajosS = preload("res://scripts/trabajos.gd")
+const JaviS = preload("res://scripts/javi.gd")
+const MarcianoS = preload("res://scripts/marciano.gd")
 const FumarS = preload("res://scripts/fumar.gd")
 
 ## A whole day lasts 48 minutes of play: two minutes an hour. The day of the week moves on at midnight.
@@ -301,6 +303,8 @@ var marcas                      # who has a mission for you: photo on the map, g
 var pickups                     # 3D floating spinning glowing item pickups (pickups.gd)
 var inventario                  # Animal Crossing-style pocket inventory (inventario.gd)
 var tomasa                      # Tomasa Malvora & los chinos del Arroyuelo shopkeeper (tomasa.gd)
+var marciano                    # Marciano, across from the café: the eighties and the ruta del bacalao (marciano.gd)
+var javi                        # Javi of the Asador de pollos: his roast-chicken orders on Tuesdays and Sundays (javi.gd)
 var trabajos                    # paid work, over and over: El de las faenas on the square, and Henry's orders (trabajos.gd)
 var fondo_casa                  # the house you inherit, a "de fondo" line: the tax debt, the cash machine, Edmundo Monedero (fondo_casa.gd)
 var fumar                       # a pitillo: six hours up in smoke, looking at the sky (fumar.gd)
@@ -1363,6 +1367,15 @@ func firmas_done() -> void:
 		_complete_step()
 		get_tree().create_timer(4.0).timeout.connect(func(): hud.toast(Loc.t("t_unlocked"), 4.5)))
 
+## Every saffron flower -- the town's, and those hidden in special places by the hand-built sets -- floats, turns and
+## has the halo of all that is picked up (pickups.gd dress; the user, 21 Nov 2026)
+func _dress_flowers() -> void:
+	if pickups == null:
+		return
+	for f in flowers:
+		if is_instance_valid(f["node"]):
+			pickups.dress(f["node"])
+
 ## the inherited house: a real street on the south-east edge of town, with a building right beside it
 ## The house you inherit is Calle de Alemania, 5 (casas.gd builds it: Catastro has the plot as bare ground, so it is
 ## ours to invent); Josefa lives across the street, at no. 12.
@@ -1595,6 +1608,10 @@ func _setup_places_and_actors() -> void:
 	fondo_casa.setup(self)
 	trabajos = TrabajosS.new()
 	trabajos.setup(self)
+	javi = JaviS.new()
+	javi.setup(self)
+	marciano = MarcianoS.new()
+	marciano.setup(self)
 	fumar = FumarS.new()
 	fumar.setup(self)
 	rally = RallyS.new()
@@ -1649,6 +1666,7 @@ func _setup_places_and_actors() -> void:
 		g.position = MapData.at(fp, 0.15)
 		add_child(g)
 		flowers.append({"node": g, "p": fp})
+	call_deferred("_dress_flowers")
 
 func _setup_markers() -> void:
 	beacon = Node3D.new()
@@ -2629,6 +2647,29 @@ func _cine_camera() -> void:
 	cam.look_at(look)
 	cam_pos = cam.position
 	cam_look = look
+
+## a saffron flower picked: one more, and six euros; one hidden in a special place counts once, and is kept
+var near_flower := -1
+func _take_flower(i: int) -> void:
+	if i < 0 or i >= flowers.size():
+		return
+	if flowers[i].get("hidden", false):          # (the user, 21 Nov 2026: it counts once, saved)
+		flowers[i]["gone"] = true
+		flowers[i]["node"].visible = false
+		var found: Array = stats.get("saffron_hidden", [])
+		if not (String(flowers[i].get("id", "")) in found):
+			found.append(String(flowers[i].get("id", "")))
+		stats["saffron_hidden"] = found
+		hud.toast(Loc.t("t_saffron_hidden") % [hidden_saffron()[0], hidden_saffron()[1]], 4.0)
+	else:
+		flowers[i]["node"].queue_free()
+		flowers.remove_at(i)
+		hud.toast(Loc.t("t_saffron").pick_random(), 2.0)
+	near_flower = -1
+	saffron += 1
+	money += 6
+	_refresh_counts()
+	Sfx.jingle([880, 1175], 0.07)
 
 ## [found, all] of the saffron hidden in special places (flowers with "hidden": the silo's, Pretil's...)
 func hidden_saffron() -> Array:
@@ -3674,6 +3715,8 @@ func talk_to(n, chat_only := false) -> void:
 	if side != null and side["stage"] == "bring" and n.id == side["who"]:
 		_side_over(true)
 		return
+	if trabajos != null and trabajos.hand_over(n):    # (an order of Henry's or Javi's, for them: before anything of their own)
+		return
 	player.h = face + PI
 	var s: Dictionary = steps[si] if phase == "play" and si >= 0 else {}
 	if s.get("type", "") == "sign" and firmas != null:
@@ -3728,6 +3771,10 @@ func talk_to(n, chat_only := false) -> void:
 		return
 	if n.id == "feliciano" and feliciano != null:   # (his Thursday, how far off it is, or the convent's bell: feliciano.gd)
 		feliciano.talk(n)
+		return
+	if marciano != null and (phase == "play" or phase == "free") and marciano.talk(n):
+		return
+	if javi != null and (phase == "play" or phase == "free") and javi.talk(n):      # (javi.gd: Javi himself, and Josefa telling you about him)
 		return
 	if trabajos != null and (phase == "play" or phase == "free") and trabajos.talk(n):      # (trabajos.gd: El de las faenas, Henry's orders, handing one over)
 		return
@@ -3813,7 +3860,7 @@ func _menu_start() -> void:
 	if pickups != null and named.has("josefa"):
 		var jp: Vector2 = named["josefa"].p
 		var dir: Vector2 = (player.p - jp).normalized() if player.p.distance_to(jp) > 0.2 else Vector2(0, 1)
-		pickups.spawn("bate", jp + dir * 1.4, {"tag": "bate"})
+		pickups.spawn("bate", jp + dir * 1.4, {"tag": "bate", "on_take": func(): stats["bate"] = true})      # (yours to swing from now on: has_bat)
 	_side_show()
 
 # ---------------- the old bridge: yours for ten Puntos Cívicos ----------------
@@ -4576,6 +4623,10 @@ func interact() -> void:
 		rally.start()
 	elif recress.at_machine(player.p):
 		recress.free_play(player.p)
+	elif pickups != null and pickups.near(player.p) != null:      # something to pick up: only with the action button (21 Nov 2026)
+		pickups.take(pickups.near(player.p))
+	elif near_flower >= 0 and in_car == null and (phase == "play" or phase == "free") and dlg == null:
+		_take_flower(near_flower)
 	elif fondo_casa != null and fondo_casa.atm_near(player.p) != null:      # (a cash machine: fondo_casa.gd)
 		fondo_casa.use_atm(fondo_casa.atm_near(player.p))
 	elif gacha.near(player.p) != null:
@@ -4705,8 +4756,10 @@ func _punch() -> void:
 ## ground (the user, 14 November 2026). They get up again in a moment, as from a car.
 const BAT_REACH := 1.8
 const BAT_LANDS := 0.4                           # seconds into the swing that it gets there (chara.gd BAT_SWING: across the front)
+## (the user, 21 Nov 2026: "El golpe con bate estará disponible desde que lo recoges del suelo": from when you pick it
+## up at Josefa's, not only once her errand is done)
 func has_bat() -> bool:
-	return bool(stats.get("menu_done", false))
+	return stats.has("bate") or bool(stats.get("menu_done", false))
 
 func _bat_swing() -> void:
 	if _punch_cool > 0.0:
@@ -5081,26 +5134,11 @@ func _physics_process(delta: float) -> void:
 		player.anim(moving, dt, speed)
 		comida.pose(player)
 		motin.pose(player)
-		for i in range(flowers.size() - 1, -1, -1):
-			if flowers[i].get("gone", false):
-				continue
-			if flowers[i]["p"].distance_squared_to(player.p) < 1.6:
-				if flowers[i].get("hidden", false):      # one hidden in a special place (the user, 21 Nov 2026): it counts once, saved
-					flowers[i]["gone"] = true
-					flowers[i]["node"].visible = false
-					var found: Array = stats.get("saffron_hidden", [])
-					if not (String(flowers[i].get("id", "")) in found):
-						found.append(String(flowers[i].get("id", "")))
-					stats["saffron_hidden"] = found
-					hud.toast(Loc.t("t_saffron_hidden") % [hidden_saffron()[0], hidden_saffron()[1]], 4.0)
-				else:
-					flowers[i]["node"].queue_free()
-					flowers.remove_at(i)
-				saffron += 1
-				money += 6
-				_refresh_counts()
-				Sfx.jingle([880, 1175], 0.07)
-				hud.toast(Loc.t("t_saffron").pick_random(), 2.0)
+		near_flower = -1                         # (a saffron flower within reach: taken with the action button, like anything else)
+		for i in range(flowers.size()):
+			if not flowers[i].get("gone", false) and flowers[i]["p"].distance_squared_to(player.p) < 1.6:
+				near_flower = i
+				break
 	# --- the doors into a place with a set of its own (the V.I.P., the Recress, the Papelería Rocas): a green arrow
 	# before each, and stepping on it takes you in, or back out (entradas.gd). (The V.I.P.'s door still swings open.)
 	_mark("player and car")
@@ -5128,7 +5166,9 @@ func _physics_process(delta: float) -> void:
 	llamadas.tick(dlg == null and not menu.visible and (not indoors or (casa != null and inside_of == casa)) and not cine_lock and (phase == "play" or phase == "free") and comida.faint == null and not motin.busy())      # (at home the phone rings too: you wake up in your room, and Tía Paca rings)
 	if cartas != null:
 		cartas.tick(dt)                          # (letters: the clerks' shifts, and the calls of the ones that have arrived)
+	_mark("garages, calls")
 	marcas.tick(dt, pp)
+	_mark("mission markers")
 	if pickups != null:
 		pickups.tick(dt, pp)
 	if tomasa != null:
@@ -5137,8 +5177,12 @@ func _physics_process(delta: float) -> void:
 		fondo_casa.tick(dt)
 	if trabajos != null:
 		trabajos.tick(dt, pp)
+	if javi != null:
+		javi.tick(dt)
 	recress.tick(dt, pp)
+	_mark("side lines")
 	sabotaje.tick(dt, pp)
+	_mark("sabotage")
 	motin.tick(dt, pp)
 	if feliciano != null:
 		feliciano.tick(dt)
@@ -5240,6 +5284,10 @@ func _physics_process(delta: float) -> void:
 			pr = Loc.t("r9_play")
 		elif recress.can_play(pp) or recress.at_machine(pp):
 			pr = Loc.t("p_rec_play")
+		elif pickups != null and pickups.near(pp) != null:
+			pr = pickups.prompt(pickups.near(pp))
+		elif near_flower >= 0 and in_car == null:
+			pr = Loc.t("p_coger") % Loc.t("inv_n_azafran")
 		elif fondo_casa != null and fondo_casa.atm_near(pp) != null:
 			pr = fondo_casa.atm_prompt()
 		elif gacha.near(pp) != null:
@@ -5890,7 +5938,29 @@ func _clear_to(pp: Vector2, yaw: float, dist: float, height: float) -> float:
 const CAM_TOO_CLOSE := 0.85                  # metres from the middle of a head (half a metre of head, and a bit)
 var _cam_hid: Array = []
 
+## In the riot, those between the camera and you are not hidden but seen through (the user, 21 Nov 2026: "Que durante
+## la riña del jamón los NPCs detrás de ti salgan transparentes, no invisibles"): their figure at GHOST of the way to clear.
+const GHOST := 0.68
+var _cam_ghost: Array = []
+
+func _ghost(n, on: bool) -> void:
+	if not is_instance_valid(n) or n.get("vis") == null:
+		return
+	if not n.has_meta("ghost_meshes"):
+		n.set_meta("ghost_meshes", n.vis.find_children("*", "GeometryInstance3D", true, false))
+	for m in n.get_meta("ghost_meshes"):
+		if is_instance_valid(m):
+			(m as GeometryInstance3D).transparency = GHOST if on else 0.0
+
 func _clear_lens(on: bool, hide_player := true) -> void:
+	if not hide_player or not on:                # (the riot's see-through ones: cleared whenever the riot's camera is not on)
+		_ghost_lens(on and not hide_player)
+	if not hide_player:
+		for n in _cam_hid:                       # (anyone a scene before had hidden: back, the riot sees through instead)
+			if is_instance_valid(n):
+				n.vis.visible = true
+		_cam_hid = []
+		return
 	if not on and _cam_hid.is_empty():
 		return
 	var close: Array = []
@@ -5931,6 +6001,35 @@ func _clear_lens(on: bool, hide_player := true) -> void:
 			n.vis.visible = false
 			still.append(n)
 	_cam_hid = still
+
+## the riot's camera over your shoulder: whoever stands between it and you, seen through
+func _ghost_lens(on: bool) -> void:
+	var close: Array = []
+	if on:
+		var c: Vector3 = cam.global_position
+		var eye := Vector2(c.x, c.z)
+		var to_player: Vector2 = player.p - eye
+		var direction := to_player.normalized()
+		var distance := to_player.length()
+		for n in npcs:
+			if not is_instance_valid(n) or not n.visible:
+				continue
+			var at: Vector3 = n.global_position
+			if absf(c.x - at.x) > 5.0 or absf(c.z - at.z) > 5.0:
+				continue
+			var ld = n.get("look_data")
+			var tall: float = float(ld.get("scale", 1.0)) if ld is Dictionary else 1.0
+			var offset := Vector2(at.x, at.z) - eye
+			var depth := offset.dot(direction)
+			if depth >= -0.55 and depth < distance - 0.25 and absf(offset.cross(direction)) < tall * 0.95:
+				close.append(n)
+	for n in _cam_ghost:
+		if not (n in close):
+			_ghost(n, false)
+	for n in close:
+		if not (n in _cam_ghost):
+			_ghost(n, true)
+	_cam_ghost = close
 
 const CINE_MAX_DIST := 36.0             # GTA cinematic cam jumps if car gets further than this
 const CINE_MIN_TIME := 5.0              # ...or at least 5 seconds have elapsed on the current shot
@@ -6032,23 +6131,24 @@ func scene_shot(at: Vector3, want_a: Vector3, want_b: Vector3, keep := 0.45) -> 
 	var space := get_world_3d().direct_space_state
 	var best: Array = [want_a, want_b]
 	var best_m := -1.0
-	for turn in [0.0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2]:
-		for lift in [0.0, 3.0]:
-			var a := _shot_turned(at, want_a, turn, lift)
-			var b := _shot_turned(at, want_b, turn, lift)
-			var fa := _shot_clear(space, at, a)
-			var fb := _shot_clear(space, at, b)
-			var a2 := _shot_room(space, at.lerp(a, fa), at)
-			var b2 := _shot_room(space, at.lerp(b, fb), at)
-			var glide := _shot_open(space, a2, b2)
-			if fa >= keep and fb >= keep and glide:
-				return [a2, b2]
-			if not glide:
-				b2 = a2.lerp(at, 0.12)               # (the glide would cross a corner: a slow push in instead)
-			var m := minf(at.distance_to(a2), at.distance_to(b2))
-			if m > best_m + 0.5:
-				best_m = m
-				best = [a2, b2]
+	for pass_keep in [keep, keep * 0.6]:         # (a second pass a little closer, higher up, before settling for the furthest)
+		for turn in ([0.0, 0.4, -0.4, 0.8, -0.8] if pass_keep == keep else [0.0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2]):      # (side-on only as a last resort)
+			for lift in ([0.0, 3.0] if pass_keep == keep else [0.0, 3.0, 6.0]):
+				var a := _shot_turned(at, want_a, turn, lift)
+				var b := _shot_turned(at, want_b, turn, lift)
+				var fa := _shot_clear(space, at, a)
+				var fb := _shot_clear(space, at, b)
+				var a2 := _shot_room(space, at.lerp(a, fa), at)
+				var b2 := _shot_room(space, at.lerp(b, fb), at)
+				var glide := _shot_open(space, a2, b2)
+				if fa >= pass_keep and fb >= pass_keep and glide:
+					return [a2, b2]
+				if not glide:
+					b2 = a2.lerp(at, 0.12)               # (the glide would cross a corner: a slow push in instead)
+				var m := minf(at.distance_to(a2), at.distance_to(b2))
+				if m > best_m + 0.5:
+					best_m = m
+					best = [a2, b2]
 	return best
 
 func _shot_turned(at: Vector3, want: Vector3, turn: float, lift: float) -> Vector3:

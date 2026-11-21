@@ -86,7 +86,7 @@ func givers(free_hands: bool) -> Array:
 	if active():
 		if kind() == "taxi" and _hail != null and is_instance_valid(_hail):
 			out.append(_hail)
-		if kind() == "pedido" and G.named.has(String(G.side.get("who", ""))):
+		if kind() in ["pedido", "pollo"] and G.side["stage"] == "pedido" and G.named.has(String(G.side.get("who", ""))):
 			out.append(G.named[String(G.side["who"])])
 	return out
 
@@ -94,11 +94,15 @@ func givers(free_hands: bool) -> Array:
 func talk(n) -> bool:
 	if n == null:
 		return false
-	if active() and kind() == "pedido" and n.id == String(G.side.get("who", "")):
-		_pedido_done(n)
-		return true
 	if n.id == "faenas":
 		_giver_talk(n)
+		return true
+	return false
+
+## the order handed over by talking to whoever it is for (game.gd talk_to asks this first of all)
+func hand_over(n) -> bool:
+	if n != null and active() and kind() in ["pedido", "pollo"] and G.side["stage"] == "pedido" and n.id == String(G.side.get("who", "")):
+		_pedido_done(n)
 		return true
 	return false
 
@@ -157,12 +161,27 @@ func _house_spot(from: Vector2, rmin: float, rmax: float) -> Vector2:
 		if d > rmin and d < rmax and float(hd.get("len", 0.0)) > 5.0:
 			cands.append(hd)
 	if cands.is_empty():
+		return _drivable_spot(from, rmin, rmax)
+	for k in range(12):                          # (a house on a street a car can get to: not the pedestrian ones, the Travesía del Clavel's raised walk...)
+		var hd: Dictionary = cands.pick_random()
+		var o := Vector2(hd["o"][0], hd["o"][1])
+		var u := Vector2(hd["u"][0], hd["u"][1]).normalized()
+		var mid: Vector2 = o + u * float(hd["len"]) * 0.5
+		var sg = MapData.nearest_road(mid).get("seg")
+		if sg != null and MapData.drivable(sg):
+			return G._pavement(mid)
+	return _drivable_spot(from, rmin, rmax)
+
+## a pavement by a street a car can drive along, between `rmin` and `rmax` from `from`
+func _drivable_spot(from: Vector2, rmin: float, rmax: float) -> Vector2:
+	for k in range(12):
 		var node = MapData.random_node_near(from, rmin, rmax)
-		return G._pavement(node if node != null else from + Vector2(rmin, 0.0))
-	var hd: Dictionary = cands.pick_random()
-	var o := Vector2(hd["o"][0], hd["o"][1])
-	var u := Vector2(hd["u"][0], hd["u"][1]).normalized()
-	return G._pavement(o + u * float(hd["len"]) * 0.5)
+		if node == null:
+			continue
+		var sg = MapData.nearest_road(node).get("seg")
+		if sg != null and MapData.drivable(sg):
+			return G._pavement(node)
+	return G._pavement(from + Vector2(rmin, 0.0))
 
 # ---------------- taxi: a shift of fares ----------------
 func _start_taxi(n) -> void:
@@ -198,8 +217,7 @@ func _pick_up() -> void:
 	_rider.away = true
 	_rider.visible = false
 	c.seat(_rider.look_data, 1)
-	var node = MapData.random_node_near(c.p, 250.0, 700.0)
-	var to: Vector2 = G._pavement(node if node != null else c.p + Vector2(300.0, 0.0))
+	var to: Vector2 = _drivable_spot(c.p, 250.0, 700.0)
 	var dist := to.distance_to(c.p)
 	var t0 := dist / 8.0 + 35.0
 	G.side["stage"] = "llevar"
@@ -304,23 +322,60 @@ func _jornal_end() -> void:
 
 # ---------------- Henry's orders ----------------
 func henry_offer(n) -> void:
+	order_offer(n, "pedido", "henry_pedido")
+
+## An order to take to somebody you know: Henry's ("pedido", any day but Thursday) or Javi's roast chicken ("pollo",
+## Tuesdays and Sundays: javi.gd). `lines` is the Loc prefix of what the one who gives it says.
+func order_offer(n, k: String, lines_key: String) -> void:
 	var who = _order_for(n)
 	if who == null:
-		G.say(n.shown_name(), Loc.t("henry_pedido_none"), n.voice)
+		G.say(n.shown_name(), Loc.t(lines_key + "_none"), n.voice)
 		return
 	var prev: String = G.phase
-	var lines: Array = (Loc.t("henry_pedido") as Array).map(func(l): return String(l).replace("{quien}", who.shown_name()))
+	var lines: Array = (Loc.t(lines_key) as Array).map(func(l): return String(l).replace("{quien}", who.shown_name()))
 	G.say(n.shown_name(), lines, n.voice, func():
-		G.ask(n, n.shown_name(), Loc.t("henry_pedido_q") % who.shown_name(), [
-			[Loc.t("henry_pedido_yes"), func():
+		G.ask(n, n.shown_name(), Loc.t(lines_key + "_q") % who.shown_name(), [
+			[Loc.t(lines_key + "_yes"), func():
 				G.phase = prev
-				var dist: float = (who.p as Vector2).distance_to(n.p)
+				var from: Vector2 = _door_of(n) if G.indoors else n.p      # (from a set apart: from its door in town)
+				var dist: float = (who.p as Vector2).distance_to(from)
 				var t0 := dist / 5.0 + 60.0
-				_begin("pedido", {"stage": "pedido", "who": who.id, "dist": dist, "t": t0, "t0": t0})],
-			[Loc.t("henry_pedido_no"), func():
+				_begin(k, {"stage": "recoger", "who": who.id, "dist": dist, "t": t0, "t0": t0})
+				_spawn_order(n, k)],
+			[Loc.t(lines_key + "_no"), func():
 				G.phase = prev
-				G.say(n.shown_name(), Loc.t("henry_pedido_later"), n.voice)],
+				G.say(n.shown_name(), Loc.t(lines_key + "_later"), n.voice)],
 		]))
+
+## The order on the counter, to be picked up (the user, 21 Nov 2026: "no se activará el temporizador hasta que recojas
+## el objeto 3D de la misión, que aparecerá cerca del NPC en cuestión pero no encima del jugador"): a roast ham at
+## Henry's, a roast chicken at Javi's. Taken, the clock starts.
+func _spawn_order(giver, k: String) -> void:
+	if G.pickups == null:
+		return
+	var at: Vector2 = giver.p
+	var inside: bool = G.indoors
+	if inside and G.inside_of != null and G.inside_of.get("counter_front") != null:
+		at = (G.inside_of.counter_front as Vector2).lerp(giver.p, 0.5)
+	else:
+		var to_you: Vector2 = (G.player.p - giver.p).normalized() if G.player.p.distance_to(giver.p) > 0.3 else Vector2(0, 1)
+		at = giver.p + to_you.rotated(0.9) * 1.3
+	G.pickups.spawn("pollo" if k == "pollo" else "jamon", at, {"tag": "orden", "indoors": inside, "label": Loc.t("inv_n_pollo" if k == "pollo" else "inv_n_jamon"),
+		"on_take": _order_taken})
+
+func _order_taken() -> void:
+	if not active() or not (kind() in ["pedido", "pollo"]):
+		return
+	G.side["stage"] = "pedido"
+	G.side["t"] = float(G.side.get("t0", 60.0))
+	G.hud.toast(Loc.t("t_order_go"), 3.5)
+	show()
+
+## where the one giving the order is, in town: their own spot, or the door of the set they are inside
+func _door_of(n) -> Vector2:
+	if G.get("inside_of") != null and G.inside_of.get("door_out") != null:
+		return G.inside_of.door_out
+	return n.p
 
 ## somebody you know, out in town, a fair way off
 func _order_for(henry):
@@ -329,15 +384,15 @@ func _order_for(henry):
 	if ids.size() < 3:                           # (early on you know hardly anybody: anyone in town, then)
 		ids = G.named.keys()
 	for id in ids:
-		if id in ["henry", "goat", "faenas", "edmundo", "chino"] or not G.named.has(id):
+		if id in ["henry", "goat", "faenas", "edmundo", "chino", "javi"] or not G.named.has(id):
 			continue
 		var n = G.named[id]
-		if not is_instance_valid(n) or n.away or not n.visible:
+		if not is_instance_valid(n) or n.away:      # (not "visible": far off, or with you inside a set, nobody is drawn)
 			continue
 		var p: Vector2 = n.p
 		if p.x < MapData.xmin or p.x > MapData.xmax or p.y < MapData.zmin or p.y > MapData.zmax:
 			continue                                 # (in a set apart: inside a shop)
-		if p.distance_to(henry.p) > 60.0:
+		if p.distance_to(_door_of(henry) if G.indoors else henry.p) > 60.0:
 			cands.append(n)
 	return cands.pick_random() if not cands.is_empty() else null
 
@@ -345,8 +400,9 @@ func _pedido_done(n) -> void:
 	var frac: float = clampf(float(G.side.get("t", 0.0)) / maxf(1.0, float(G.side.get("t0", 1.0))), 0.0, 1.0)
 	var pay: int = clampi(int(round((40.0 + float(G.side.get("dist", 0.0)) * 0.12) * (0.6 + 0.4 * frac) / 5.0)) * 5, 30, 150)
 	G.folk.add(n.id, 2)
-	G.say(n.shown_name(), Loc.speaker(Loc.t("pedido_gracias").pick_random(), n.voice.ends_with("_f")), n.voice)
-	_paid(pay, Loc.t("faena_done_pedido") % n.shown_name())
+	var k: String = kind()
+	G.say(n.shown_name(), Loc.speaker(Loc.t("pollo_gracias" if k == "pollo" else "pedido_gracias").pick_random(), n.voice.ends_with("_f")), n.voice)
+	_paid(pay, Loc.t("faena_done_" + k) % n.shown_name())
 
 # ---------------- every tick ----------------
 func tick(dt: float, pp: Vector2) -> void:
@@ -431,14 +487,16 @@ func tick(dt: float, pp: Vector2) -> void:
 				_timer(true)
 				if float(G.side["t"]) <= 0.0:
 					_jornal_end()
-		"pedido":
+		"pedido", "pollo":
+			if G.side["stage"] == "recoger":     # (the clock starts once you have picked it up)
+				return
 			G.side["t"] = float(G.side["t"]) - dt
 			_timer(true)
 			var who = G.named.get(String(G.side["who"]))
 			if who != null and c == null and _stay(pp.distance_to(who.p) < 2.6, dt):
 				_pedido_done(who)
 			elif float(G.side["t"]) <= 0.0:
-				_fail("faena_fail_pedido")
+				_fail("faena_fail_" + kind())
 			else:
 				_beat_t -= dt
 				if _beat_t <= 0.0 and who != null:
@@ -514,6 +572,8 @@ func _paid(pay: int, what: String) -> void:
 	G._show_step()
 
 func _fail(key: String) -> void:
+	if G.pickups != null:
+		G.pickups.remove_tag("orden")
 	G.side = null
 	_timer(false)
 	G.set_target(null, false)
@@ -531,6 +591,7 @@ func abort() -> void:
 	if kind() == "jornal":
 		for i in range(int(G.side.get("tot", FIELD_N))):
 			G.pickups.remove_tag("jornal_%d" % i)
+	G.pickups.remove_tag("orden")
 	G.side = null
 	_timer(false)
 	G.hud.toast(Loc.t("t_faena_dropped"), 4.0)
@@ -562,14 +623,25 @@ func show() -> void:
 			else:
 				G.hud.set_objective(G._tag(), Loc.t("obj_jornal_coger") % FIELD_N)
 				G.set_target(null, false)
-		"pedido":
+		"pedido", "pollo":
 			var who = G.named.get(String(G.side["who"]))
-			G.hud.set_objective(G._tag(), Loc.t("obj_pedido") % (who.shown_name() if who != null else "?"))
+			if st == "recoger":
+				G.hud.set_objective(G._tag(), Loc.t("obj_recoger_" + kind()))
+				var it = _order_item()
+				G.set_target(it["p"] if it != null else null, false)
+				return
+			G.hud.set_objective(G._tag(), Loc.t("obj_" + kind()) % (who.shown_name() if who != null else "?"))
 			G.set_target(who.p if who != null else null, false)
+
+func _order_item():
+	for it in G.pickups.items:
+		if String(it.get("tag", "")) == "orden":
+			return it
+	return null
 
 func _timer(on: bool) -> void:
 	if not on:
-		if active() and kind() in ["reparto", "taxi", "jornal", "pedido"] and G.side["stage"] in ["entrega", "llevar", "coger", "pedido"]:
+		if active() and kind() in ["reparto", "taxi", "jornal", "pedido", "pollo"] and G.side["stage"] in ["entrega", "llevar", "coger", "pedido"]:
 			return
 		if G.hud.timer_slot.visible and not _timer_owner_other():
 			G.hud.timer_slot.visible = false

@@ -1,0 +1,124 @@
+{
+ "rc": "3792804VJ5639S",
+ "record": {
+  "address": "CL MONJAS 19 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "48",
+  "year": "1970",
+  "units": [
+   {
+    "use": "APARCAMIENTO",
+    "floor": "00",
+    "door": "01",
+    "m2": "24"
+   },
+   {
+    "use": "ALMACEN",
+    "floor": "01",
+    "door": "01",
+    "m2": "24"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "3792804VJ5639S_part1",
+   "floors": 2,
+   "below": 0,
+   "area": 24.1,
+   "ring": [
+    [
+     -511.09,
+     -26.43
+    ],
+    [
+     -505.59,
+     -24.17
+    ],
+    [
+     -507.27,
+     -20.19
+    ],
+    [
+     -512.85,
+     -23.39
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      -511.09,
+      -26.43
+     ],
+     "b": [
+      -505.59,
+      -24.17
+     ],
+     "len": 5.95,
+     "out": [
+      0.38,
+      -0.925
+     ],
+     "street": "Calle de las Monjas",
+     "to_centre": 7.63
+    },
+    {
+     "a": [
+      -505.59,
+      -24.17
+     ],
+     "b": [
+      -507.27,
+      -20.19
+     ],
+     "len": 4.32,
+     "out": [
+      0.921,
+      0.389
+     ],
+     "street": "Calle de las Monjas",
+     "to_centre": 4.78
+    },
+    {
+     "a": [
+      -507.27,
+      -20.19
+     ],
+     "b": [
+      -512.85,
+      -23.39
+     ],
+     "len": 6.43,
+     "out": [
+      -0.497,
+      0.867
+     ],
+     "street": "Calle de las Monjas",
+     "to_centre": 8.06
+    },
+    {
+     "a": [
+      -512.85,
+      -23.39
+     ],
+     "b": [
+      -511.09,
+      -26.43
+     ],
+     "len": 3.51,
+     "out": [
+      -0.865,
+      -0.501
+     ],
+     "street": "",
+     "to_centre": 10.91
+    }
+   ],
+   "ground": [
+    4.95,
+    5.11
+   ]
+  }
+ ]
+}

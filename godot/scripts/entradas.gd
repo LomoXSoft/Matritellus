@@ -92,6 +92,9 @@ func shops() -> Array:
 	var si = G.world.get("silo") if G.world != null else null
 	if si != null and si.get("dentro") != null:    # the Silo del Tío Anaranjao, by its gate (its set: silo_dentro.gd, several rooms)
 		out.append(si.dentro)
+	var asd = G.world.get("asador") if G.world != null else null
+	if asd != null and asd.get("dentro") != null:  # the roast chicken shop "Javi" of the Calle de los Arcos (its set: asador_dentro.gd)
+		out.append(asd.dentro)
 	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
 		out.append(G.casa)
 	return out

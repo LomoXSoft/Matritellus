@@ -1454,5 +1454,11 @@
     16.53
    ]
   }
- ]
+ ],
+ "aerial": {
+  "x0": 208.95541531937897,
+  "z0": -653.7946409321214,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
 }

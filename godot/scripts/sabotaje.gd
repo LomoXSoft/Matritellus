@@ -87,7 +87,15 @@ func _luis():
 	return G.named["luis"]
 
 ## where the lorry stops and the boxes go at each of the three: {road, door, name, kind}
+## (worked out once and kept: it went through every house of the map and every street, and the chase asked for it every
+## frame -- from 200 frames a second to 50 the moment you set off after the lorry; the user, 21 Nov 2026)
+var _stops := {}
 func stop(i: int) -> Dictionary:
+	if not _stops.has(i):
+		_stops[i] = _find_stop(i)
+	return _stops[i]
+
+func _find_stop(i: int) -> Dictionary:
 	var hd: Dictionary = {}
 	for h in MapData.houses:
 		if h["id"] == STOPS[i][0]:

@@ -1899,6 +1899,128 @@ func _strut(a: Vector3, b: Vector3, thick: float, hex: int) -> void:
 	m.basis = Basis(side, up, side.cross(up)) * Basis.from_scale(Vector3(thick, d.length(), thick))
 	add_child(m)
 
+## Calle de las Monjas 10, and beside it the brick arch of the yard between it and the block of the 2 (Street View,
+## November 2024; the user, 21 November 2026: "Falta el arco de ladrillo con patio interior. Tendrá la portada abierta y
+## habrá un azafrán escondido ahí"). The house is its short description (casas_calles.gd). The arch stands across the
+## gap the map leaves between the two, where Catastro has no building: a wall of brick with a round arch, a coping of
+## tiles that follows the arch, a strip of white render against the 2, the iron gate swung open into the yard, the yard
+## paved in red, and at the back of it, behind a pallet of old bricks, a saffron flower in a pot (hidden: Sistemas keeps
+## count of these). The arch has a frame of its own: x along the gap from the corner of the 10, z out into the street.
+const ARCO_A := Vector2(-505.93, -0.21)          # the arch's left end as you face it: the corner of the 10
+const ARCO_B := Vector2(-508.21, 4.15)           # ...and its right end: the corner of the block of the 2
+const ARCO_PATIO := [Vector2(-505.93, -0.21), Vector2(-500.05, 0.83), Vector2(-495.5, 1.6), Vector2(-497.6, 7.9), Vector2(-498.6, 7.9),
+	Vector2(-500.0, 6.9), Vector2(-503.6, 5.2), Vector2(-507.1, 3.6), Vector2(-508.21, 4.15)]      # the yard, between the walls round it (on the map)
+var arco_saffron := Vector2.ZERO                 # where its flower is (on the map), for the self-test
+
+func _mon_10() -> void:
+	_from_spec(_unpack(Short.HOUSES[id]))
+	var a := _local(ARCO_A)
+	var b := _local(ARCO_B)
+	var la := a.distance_to(b)
+	var d := (b - a) / la
+	_xf = Transform3D(Basis(Vector3(d.x, 0.0, d.y), Vector3.UP, Vector3(-d.y, 0.0, d.x)), Vector3(a.x, 0.0, a.y))
+	var brick = _mat("brick_tostado")
+	var ring = _mat("brick_red")
+	var T := 0.35                                # how thick the wall is
+	var S := 2.2                                 # how high the arch springs
+	var R := 1.45                                # its radius: an opening 2.9 m wide, from x 0.45 to 3.35
+	var RO := 1.75                               # the outside of its ring of bricks
+	var cx := 1.9                                # its middle
+	var gm: float = _ground(cx, -T / 2.0, 0.0).y                  # (the arch is level: its heights from the ground at its middle)
+	var foot: float = minf(_ground(0.2, -T / 2.0, 0.0).y, _ground(la - 0.2, -T / 2.0, 0.0).y) - 0.4
+	# --- the piers and the ring of the arch, in strips 10 cm wide; the coping of tiles along their tops ---
+	var x := 0.0
+	while x < 4.0 - 0.001:
+		var w := minf(0.1, 4.0 - x)
+		var dx := x + w / 2.0 - cx
+		var hi: float = gm + (S + sqrt(RO * RO - dx * dx) if absf(dx) < RO else S + 0.3)
+		if absf(dx) < R:                         # over the opening: the ring alone
+			var lo: float = gm + S + sqrt(R * R - dx * dx)
+			box(x, lo, -T, w, hi - lo, T, ring)
+		elif absf(dx) < RO:                      # the foot of the ring, on the pier
+			box(x, foot, -T, w, gm + S - foot, T, brick)
+			box(x, gm + S, -T, w, hi - gm - S, T, ring)
+		else:
+			box(x, foot, -T, w, hi - foot, T, brick)
+		box(x - 0.005, hi, -T - 0.06, w + 0.01, 0.08, T + 0.12, 0xb5653d)
+		x += w
+	box(-0.01, foot, -T - 0.02, 0.46, gm + 0.4 - foot, T + 0.04, 0x9a9a98)        # the granite at the foot of the piers
+	box(3.35, foot, -T - 0.02, 0.66, gm + 0.4 - foot, T + 0.04, 0x9a9a98)
+	box(4.0, foot, -T, la - 4.0, gm + 3.2 - foot, T, 0xf0eee8)                      # the white render against the 2
+	box(4.0, gm + 3.2, -T - 0.04, la - 4.0, 0.06, T + 0.08, 0xb8b4ac)
+	# --- the gate, its two leaves swung right back into the yard ---
+	_arco_leaf(0.47, gm)
+	_arco_leaf(3.29, gm)
+	# --- the yard, paved in red, under the arch as well ---
+	var inv := _xf.affine_inverse()
+	var yard := PackedVector2Array()
+	for p: Vector2 in ARCO_PATIO:
+		var q := _local(p)
+		var r: Vector3 = inv * Vector3(q.x, 0.0, q.y)
+		yard.append(Vector2(r.x, r.z))
+	var cell := 0.7
+	for i in range(-7, 9):
+		for j in range(-18, 1):
+			var c := Vector2((i + 0.5) * cell, (j + 0.5) * cell)
+			var inside := true
+			for o2: Vector2 in [Vector2(0.3, 0.3), Vector2(-0.3, 0.3), Vector2(0.3, -0.3), Vector2(-0.3, -0.3)]:
+				if not Geometry2D.is_point_in_polygon(c + o2, yard):
+					inside = false
+			if inside:                           # (on the highest of its corners, and deep: the ground's own triangles must not show through it)
+				var gt := -1e9
+				var gb := 1e9
+				for o3: Vector2 in [Vector2(0.35, 0.35), Vector2(-0.35, 0.35), Vector2(0.35, -0.35), Vector2(-0.35, -0.35)]:
+					var gy: float = _ground(c.x + o3.x, c.y + o3.y, 0.0).y
+					gt = maxf(gt, gy)
+					gb = minf(gb, gy)
+				box(c.x - cell / 2.0, gb - 0.25, c.y - cell / 2.0, cell, gt + 0.08 - gb + 0.25, cell, 0x9a5642 if (i + j) % 2 == 0 else 0x8e4e3c)
+	# --- at the back, on the left, a pallet of old bricks, and behind it the flower in its pot ---
+	var gp: float = _ground(-2.12, -8.55, 0.0).y + 0.08
+	box(-2.65, gp, -9.0, 1.05, 0.22, 0.9, 0x8a6a40)
+	box(-2.6, gp + 0.22, -8.95, 0.95, 0.95, 0.8, ring)          # (as high as a man's chest: from the arch it hides the flower)
+	box(-2.5, gp + 1.17, -8.9, 0.7, 0.2, 0.6, ring)
+	var sp := Vector2(-2.55, -9.6)
+	var gs: float = _ground(sp.x, sp.y, 0.0).y + 0.1                # (on the paving)
+	box(sp.x - 0.13, gs, sp.y - 0.13, 0.26, 0.24, 0.26, 0xb0623a)
+	box(sp.x - 0.11, gs + 0.24, sp.y - 0.11, 0.22, 0.015, 0.22, 0x5a3a26)
+	var flower := Node3D.new()
+	flower.add_child(Parts.part("cyl", 0x5f9c4a, Vector3(0, 0.3, 0), Vector3(0.03, 0.6, 0.03)))
+	for k in range(5):
+		flower.add_child(Parts.part("ball", 0x9b5de5, Vector3(cos(k * 1.257) * 0.12, 0.66, sin(k * 1.257) * 0.12), Vector3(0.11, 0.2, 0.11)))
+	flower.add_child(Parts.part("ball", 0xe63946, Vector3(0, 0.74, 0), Vector3(0.05, 0.13, 0.05)))
+	flower.position = _xf * Vector3(sp.x, gs + 0.2, sp.y)
+	add_child(flower)
+	arco_saffron = _on_map(sp.x, sp.y)
+	var game = W.get_parent() if W != null else null           # (the game: the world is its child)
+	if game != null and game.get("flowers") != null:
+		(game.flowers as Array).append({"node": flower, "p": arco_saffron, "id": "arco_monjas", "hidden": true})
+	# --- the piers, the white wall and the pallet are solid; the arch is the way in ---
+	for r2: Array in [[0.0, 0.45, -T, 0.0], [3.35, la, -T, 0.0], [-2.65, -1.6, -9.0, -8.1]]:
+		var ol := PackedVector2Array([_on_map(r2[0], r2[2]), _on_map(r2[1], r2[2]), _on_map(r2[1], r2[3]), _on_map(r2[0], r2[3])])
+		MapData.outlines.append(ol)
+		if not MapData._wall_grid.is_empty():
+			for k in range(ol.size()):
+				var p1: Vector2 = ol[k]
+				var p2: Vector2 = ol[(k + 1) % ol.size()]
+				MapData._grid_add(MapData._wall_grid, p1.min(p2), p1.max(p2), [p1, p2])
+	_acera(la)
+	_xf = Transform3D.IDENTITY
+
+## one leaf of the arch's iron gate, open: flat against the yard side of the arch's jamb at `hx`, out 1.4 m into the yard
+func _arco_leaf(hx: float, gy: float) -> void:
+	var z0 := -0.4
+	var z1 := z0 - 1.4
+	var k := 0x1c1c1e
+	box(hx, gy + 0.05, z1, 0.04, 2.15, 0.05, k)                  # the post at its free end
+	box(hx, gy + 0.05, z0 - 0.05, 0.04, 2.15, 0.05, k)           # ...and the one on its hinges
+	for yy: float in [0.12, 1.05, 2.1]:
+		box(hx, gy + yy, z1, 0.04, 0.05, z0 - z1, k)
+	var zb := z1 + 0.12
+	while zb < z0 - 0.08:
+		box(hx + 0.008, gy + 0.12, zb, 0.025, 2.1, 0.025, k)
+		box(hx, gy + 2.22, zb - 0.01, 0.04, 0.07, 0.045, k)      # its spear point
+		zb += 0.12
+
 ## The communications tower, between the Calle de la Cruz and the Calle de la Virgen de Gracia, from the user's photos
 ## of 12 November 2026 (referencias/torre_comunicaciones) and Catastro's parts: a tall blank building of pale brick
 ## that fills its plot, redder brick below a dark joint, a strip of rusty steel up each corner, a band of glass blocks

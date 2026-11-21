@@ -38,6 +38,10 @@ const Salvador2S = preload("res://scripts/salvador2.gd")
 const CulturaS = preload("res://scripts/cultura.gd")
 const SebastianS = preload("res://scripts/sebastian.gd")
 const CristobalS = preload("res://scripts/cristobal.gd")
+const AlmazaraS = preload("res://scripts/almazara.gd")
+const AsadorS = preload("res://scripts/asador.gd")
+const RizeS = preload("res://scripts/rize.gd")
+const TravesiaS = preload("res://scripts/travesia.gd")
 const MatiasS = preload("res://scripts/matias.gd")
 const CristopradoS = preload("res://scripts/cristoprado.gd")
 const ResidenciaS = preload("res://scripts/residencia.gd")
@@ -135,6 +139,10 @@ var salvador2                   # the house on the corner of the Salvador and Ra
 var cultura                     # the block of the Casa Grande, the library and the music school, built by hand (cultura.gd)
 var sebastian                   # the hermitage of San Sebastián and its park, built by hand (sebastian.gd)
 var cristobal                   # the little hermitage of San Cristóbal, built by hand (cristobal.gd)
+var almazara                    # the oil mill of the road to Villacañas, "González de la Ruz", built by hand (almazara.gd)
+var asador                      # the roast chicken shop "Javi" of the Calle de los Arcos, built by hand on its house of the map (asador.gd), with its inside
+var rize                        # the Cafetería Rize and its alley, off the Avenida de Juan Carlos I, built by hand (rize.gd)
+var travesia                    # the Travesía del Clavel, a raised walk between San Rafael and the Clavel, built by hand (travesia.gd)
 var matias                      # the house of the Calle de Matías Pérez, built by hand on its house of the map (matias.gd)
 var cristoprado                 # the hermitage of the Cristo del Prado, built by hand (cristoprado.gd)
 var residencia                  # the old people's home beside it, built by hand (residencia.gd)
@@ -154,7 +162,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the Travesía del Clavel", _build_travesia], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -248,6 +256,31 @@ func _build_cristobal() -> void:
 		return
 	cristobal = CristobalS.new()     # (the little hermitage of San Cristóbal: cristobal.gd)
 	cristobal.build(self)
+
+func _build_almazara() -> void:
+	if MapData.almazara.is_empty():  # (a map baked before it: Catastro's sheds still stand there)
+		return
+	almazara = AlmazaraS.new()       # (the oil mill of the road to Villacañas, "González de la Ruz": almazara.gd)
+	almazara.build(self)
+
+func _build_rize() -> void:
+	if MapData.rize.is_empty():      # (a map baked before it: Catastro's buildings still stand there)
+		return
+	rize = RizeS.new()               # (the Cafetería Rize and its alley, off the Avenida de Juan Carlos I: rize.gd)
+	rize.build(self)
+
+func _build_travesia() -> void:
+	if MapData.travesia.is_empty():  # (a map baked before it: the alley is still a street for cars)
+		return
+	travesia = TravesiaS.new()       # (the Travesía del Clavel, a raised walk between San Rafael and the Clavel: travesia.gd)
+	travesia.build(self)
+
+func _build_asador() -> void:
+	for hd in MapData.houses:        # (the roast chicken shop "Javi" of the Calle de los Arcos: asador.gd, on its house of the map)
+		if String(hd["id"]) == AsadorS.HOUSE:
+			asador = AsadorS.new()
+			asador.build(self, hd)
+			return
 
 func _build_residencia() -> void:
 	if MapData.residencia.is_empty(): # (a map baked before it: Catastro's block of it still stands there)

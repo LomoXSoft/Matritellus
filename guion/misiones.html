@@ -276,6 +276,7 @@ code { font-family: var(--mono); font-size: 13px; }
       <ol><li><b>Reparto en coche</b>: recoges un bulto y lo llevas a una casa al otro lado del pueblo, contrarreloj. 100–600 € según lo rápido y lo entero que llegue.</li>
       <li><b>Taxi del pueblo</b>: la gente te hace señas, paras, se suben y los llevas. Cinco carreras de 100–500 €; si te bajas del coche un rato, se acaba el turno.</li>
       <li><b>Jornal en el campo</b>: 30 rosas del azafrán en el campo de las afueras, en dos minutos y medio. 25 € cada una y 50 € más si las coges todas.</li></ol></article>
+    <article class="card" id="m-javi"><h3>Los pollos de Javi</h3><p>Después del jamón de la <span class="p">Josefa</span>, <span class="p">Javi</span> (el de <span class="l">Pollos Asados Javi</span>, calle de los Arcos) se da a conocer el primer martes o domingo, o al hablar con él; la Josefa te habla de él una vez. Los martes y domingos, tras su mostrador, te da un pollo asao pa un vecino: 30–150 € según lo caliente que llegue y +2 de confianza.</p></article>
     <article class="card" id="m-pedidos"><h3>Pedidos de Henry</h3><p>Cualquier día menos el jueves (que es el del jamón), <span class="p">Henry</span> te manda a llevarle comida a un vecino. 30–150 € según lo caliente que llegue, y +2 de confianza.</p></article>
   </div>
 
@@ -306,7 +307,7 @@ code { font-family: var(--mono); font-size: 13px; }
     <article class="card"><h3>Sin hacer todavía</h3><p>La plaza de toros restaurada no está ligada a ninguna misión. Los modelos de los estados de la casa y el interior del banco los está haciendo Pretil.</p></article>
   </div>
 
-  <p class="foot">Fuentes: <code>missions.gd</code>, <code>game.gd</code>, <code>recress.gd</code>, <code>sabotaje.gd</code>, <code>motin.gd</code>, <code>pintadas.gd</code>, <code>ajedrez_humano.gd</code>, <code>tomasa.gd</code>, <code>fondo_casa.gd</code>, <code>trabajos.gd</code>, <code>cartas.gd</code> y <code>loc.gd</code> en X:\MatritellusGPT.</p>
+  <p class="foot">Fuentes: <code>missions.gd</code>, <code>game.gd</code>, <code>recress.gd</code>, <code>sabotaje.gd</code>, <code>motin.gd</code>, <code>pintadas.gd</code>, <code>ajedrez_humano.gd</code>, <code>tomasa.gd</code>, <code>fondo_casa.gd</code>, <code>trabajos.gd</code>, <code>javi.gd</code>, <code>cartas.gd</code> y <code>loc.gd</code> en X:\MatritellusGPT.</p>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
@@ -347,6 +348,7 @@ code { font-family: var(--mono); font-size: 13px; }
       'obras[' + L('Obras de la casa', 'Edmundo Monedero · de fondo') + ']:::fondo',
       'faenas([' + L('Trabajos', 'El de las faenas, en la plaza') + ']):::des',
       'pedidos([' + L('Pedidos de Henry', 'menos los jueves') + ']):::des',
+      'javi([' + L('Los pollos de Javi', 'martes y domingos') + ']):::des',
       'ini --> aceite',
       'aceite --> velatorio',
       'velatorio --> noche',
@@ -375,6 +377,7 @@ code { font-family: var(--mono); font-size: 13px; }
       'faenas -.->|"el dinero"| casa',
       'ini -.-> faenas',
       'ini -.-> pedidos',
+      'menu -->|"el primer martes o domingo"| javi',
       'classDef hist fill:' + ink + ',stroke:' + ink + ',color:' + paper + ',stroke-width:2px',
       'classDef sec fill:' + tok('--sec-bg') + ',stroke:' + tok('--lugar') + ',color:' + ink + ',stroke-width:2px',
       'classDef mini fill:' + tok('--mini-bg') + ',stroke:' + tok('--mini') + ',color:' + ink + ',stroke-width:2px',
@@ -383,7 +386,7 @@ code { font-family: var(--mono); font-size: 13px; }
     ].join('\n');
   }
   var CARD = { aceite: 'm-aceite', velatorio: 'm-velatorio', noche: 'm-noche', movil: 'm-movil', puente: 'm-puente', fin: 'm-fin',
-    menu: 'm-menu', luis: 'm-luis', jueves: 'm-jueves', chiki: 'm-chiki', recress: 'm-recress', ajedrez: 'm-ajedrez', tomasa: 'm-tomasa', casa: 'm-casa', obras: 'm-casa', faenas: 'm-faenas', pedidos: 'm-pedidos',
+    menu: 'm-menu', luis: 'm-luis', jueves: 'm-jueves', chiki: 'm-chiki', recress: 'm-recress', ajedrez: 'm-ajedrez', tomasa: 'm-tomasa', casa: 'm-casa', obras: 'm-casa', faenas: 'm-faenas', pedidos: 'm-pedidos', javi: 'm-javi',
     box: 'mini', jamon: 'mini', tokken: 'mini', rally: 'mini', hit: 'mini', ajm: 'mini', sala: 'mini', inf: 'm-menu', rest: 'm-luis', pc: 'm-puente' };
   function go(id) {
     var el = document.getElementById(id);

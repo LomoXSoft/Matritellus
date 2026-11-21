@@ -17,7 +17,7 @@ const OPEN_SETTS := 0.19          #  and under the white paint of the crossings,
 
 static func add(world) -> void:
 	for r in MapData.roads:
-		if int(r["k"]) != 2 or float(r["w"]) < 7.0 or int(r.get("paved", 0)) == 2 or int(r.get("paved", 0)) == 4:   # (only a street made pedestrian: footpaths are narrower; the grey lanes below; the fairground's lay their own asphalt, ferial.gd)
+		if int(r["k"]) != 2 or float(r["w"]) < 7.0 or int(r.get("paved", 0)) == 2 or int(r.get("paved", 0)) >= 4:   # (only a street made pedestrian: footpaths are narrower; the grey lanes below; the fairground's lay their own asphalt, ferial.gd; the Travesía del Clavel is floored by travesia.gd, "paved" 5)
 			continue
 		# the brick bands: the whole width, on under the houses as the pavements of a car street do
 		var hw_all := func(_i: int) -> float: return (float(r["w"]) + 3.2) / 2.0
