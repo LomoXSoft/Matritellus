@@ -1356,6 +1356,20 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Transparencia en la riña** (`game.gd` `_ghost_lens` y `_ghost`, `GHOST` 0.68). Los vecinos entre la cámara del hombro y tú se ven a través, con `transparency` en sus `GeometryInstance3D`, en vez de ocultarse. En las escenas de cámara fija, quien queda pegado al objetivo se sigue ocultando como antes.
   - Prueba nueva en `motin`: un vecino en medio se ve a través y vuelve a ser sólido al apartarse. `motin`: 66 ok. La foto es `motin_transparente`.
 
+### Publicación de la 0.0.20 en GitHub (21/11, Claude · Sistemas)
+
+21 de noviembre de 2026. El usuario: «Si todo sale bien, prueba completa, commit de todo y release».
+- **Congelado.** Pretil y Texturas, sin nada a medias.
+- **Prueba completa:** 945 ok, 0 fallos (`logs/selftest_full_20261121_200056.log`).
+- **Commits:**
+  - `b97ac87`: todo, de Sistemas, Pretil y Texturas.
+  - «Matritellus 0.0.20»: versión y notas.
+- **Etiqueta:** `v0.0.20`.
+- **Paquetes:** `tools/make_apk.py 0.0.20` (versión 0.0.20, código 20, firmado y verificado), `tools/make_installer.py` y `tools/make_linux.py`.
+  - Están en `dist/v0.0.20/`, con [sus SHA-256](dist/v0.0.20/SHA256SUMS.txt) comprobados.
+  - Release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.20
+- **Sin probar:** no se ha probado en móvil ni en Steam Machine.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
