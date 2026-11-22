@@ -859,6 +859,12 @@ for pid, floors, v in raw:
         continue
     for g in (p.geoms if p.geom_type == 'MultiPolygon' else [p]):
         add_part(g, bid, floors)
+for name, hd in HOUSES.items():           # "fill": [[from, to, deep], ...] -- ground behind a front that Catastro leaves out of the plot's
+    if hd.get('fill') and name in hand_groups:      # parts (its front drawn metres back from the street, a porch under the floor above): a
+        o_, u_, n_, ln_ = house_frame(hd)           # box of the house there, metres along its front and back from it (Calle de las Delicias 3)
+        for a0, a1, deep in hd['fill']:
+            pts = [(o_[0] + u_[0] * s + n_[0] * d, o_[1] + u_[1] * s + n_[1] * d) for s, d in ((a0, 0.0), (a1, 0.0), (a1, -deep), (a0, -deep))]
+            hand_groups[name][2].append(Polygon(pts))
 for name, hd in HOUSES.items():           # the ones that are not in Catastro at all: a box behind their front, as deep as they say
     if hd['rc'] is None:
         o_, u_, n_, ln_ = house_frame(hd)

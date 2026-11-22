@@ -48,6 +48,12 @@ const ResidenciaS = preload("res://scripts/residencia.gd")
 const PaseoS = preload("res://scripts/paseo.gd")
 const SiloS = preload("res://scripts/silo.gd")
 const CasaFueraS = preload("res://scripts/casa_fuera.gd")
+const SopissS = preload("res://scripts/sopiss.gd")
+const ClinicaS = preload("res://scripts/clinica.gd")
+const Stana2S = preload("res://scripts/stana2.gd")
+const MiradorS = preload("res://scripts/mirador.gd")
+const BeigeS = preload("res://scripts/beige.gd")
+const CruceS = preload("res://scripts/cruce.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
@@ -147,6 +153,12 @@ var matias                      # the house of the Calle de Matías Pérez, buil
 var cristoprado                 # the hermitage of the Cristo del Prado, built by hand (cristoprado.gd)
 var residencia                  # the old people's home beside it, built by hand (residencia.gd)
 var paseo                       # the long park of the Paseo del Cristo, from the Calle de los Arcos to the hermitage (paseo.gd)
+var cruce                       # the traffic lights, the mirror and the signs of the crossroads of the traffic lights (cruce.gd): its `heads`, `walk`, set_light() and set_walk() are what the traffic drives them by
+var beige                       # the two-storey house north of the Salvador, on its corner with the avenue at the crossroads of the traffic lights, built by hand on its house of the map (beige.gd)
+var mirador                     # the cream house with the bay window, on the corner of the avenue and Santa Ana at the crossroads of the traffic lights, built by hand on its house of the map (mirador.gd)
+var stana2                      # the white house with indigo frames of the Calle de Santa Ana 2, at the crossroads of the traffic lights, built by hand on its house of the map (stana2.gd)
+var clinica                     # the dental clinic "Clínica Dental" of the crossroads of the traffic lights, built by hand on its house of the map (clinica.gd)
+var sopiss                      # "Seguros Sopiss", the red corner building of the crossroads of the traffic lights, built by hand on its house of the map (sopiss.gd)
 var casa_fuera                  # the house you inherit, Calle de Alemania 5, in its six states (casa_fuera.gd: set_state)
 var silo                        # the Silo del Tío Anaranjao, its wall and gate on the Calle de San Agustín (silo.gd; its inside: silo_dentro.gd)
 var facade_mats: Array = []     # the house fronts' materials (their windows light up at night)
@@ -162,7 +174,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the Travesía del Clavel", _build_travesia], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the crossroads' traffic lights", _build_cruce], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -308,6 +320,46 @@ func _build_cristoprado() -> void:
 		return
 	cristoprado = CristopradoS.new()     # (the hermitage of the Cristo del Prado: cristoprado.gd)
 	cristoprado.build(self)
+
+func _build_cruce() -> void:
+	if CruceS.there():               # (the traffic lights, the mirror and the signs of the crossroads of the traffic lights: cruce.gd, on the map's own streets)
+		cruce = CruceS.new()
+		cruce.build(self)
+
+func _build_beige() -> void:
+	for hd in MapData.houses:        # (the house north of the Salvador, at the crossroads of the traffic lights: beige.gd, on its house of the map)
+		if String(hd["id"]) == BeigeS.HOUSE:
+			beige = BeigeS.new()
+			beige.build(self, hd)
+			return
+
+func _build_mirador() -> void:
+	for hd in MapData.houses:        # (the cream house with the bay window, at the crossroads of the traffic lights: mirador.gd, on its house of the map)
+		if String(hd["id"]) == MiradorS.HOUSE:
+			mirador = MiradorS.new()
+			mirador.build(self, hd)
+			return
+
+func _build_stana2() -> void:
+	for hd in MapData.houses:        # (the white house of the Calle de Santa Ana 2, at the crossroads of the traffic lights: stana2.gd, on its house of the map)
+		if String(hd["id"]) == Stana2S.HOUSE:
+			stana2 = Stana2S.new()
+			stana2.build(self, hd)
+			return
+
+func _build_clinica() -> void:
+	for hd in MapData.houses:        # (the dental clinic of the crossroads of the traffic lights: clinica.gd, on its house of the map)
+		if String(hd["id"]) == ClinicaS.HOUSE:
+			clinica = ClinicaS.new()
+			clinica.build(self, hd)
+			return
+
+func _build_sopiss() -> void:
+	for hd in MapData.houses:        # ("Seguros Sopiss", the red corner building of the crossroads of the traffic lights: sopiss.gd, on its house of the map)
+		if String(hd["id"]) == SopissS.HOUSE:
+			sopiss = SopissS.new()
+			sopiss.build(self, hd)
+			return
 
 func _build_matias() -> void:
 	for hd in MapData.houses:        # (the house of the Calle de Matías Pérez: matias.gd, on its house of the map)
@@ -1624,7 +1676,8 @@ func _trees() -> void:
 		cs.shape = trunk_shape
 		cs.position = Vector3(x, gy + 2.0, z)
 		tree_body.add_child(cs)
-		tree_info.append({"p": Vector2(x, z), "kind": k, "s": s, "leaf_i": leaves[k].size() - 1, "shape": cs, "down": false})
+		tree_info.append({"p": Vector2(x, z), "kind": k, "s": s, "leaf_i": leaves[k].size() - 1, "shape": cs, "down": false,
+			"xf_t": trunks[trunks.size() - 1][0], "xf_l": leaves[k][leaves[k].size() - 1][0]})
 	_trunk_mm = _multimesh(Parts.mesh("cyl"), Parts.mat(0x7a5536), trunks)
 	var lcol := [0x6fb24c, 0x93a070, 0x3d7044]
 	for k in range(3):
@@ -1639,6 +1692,16 @@ func fell_tree(i: int) -> Dictionary:
 	_leaf_mm[t["kind"]].set_instance_transform(t["leaf_i"], gone)
 	t["shape"].set_deferred("disabled", true)
 	return t
+
+## stands a felled tree up again where it was (props.gd: the next day, while nobody is looking)
+func unfell_tree(i: int) -> void:
+	var t: Dictionary = tree_info[i]
+	if not t["down"]:
+		return
+	t["down"] = false
+	_trunk_mm.set_instance_transform(i, t["xf_t"])
+	_leaf_mm[t["kind"]].set_instance_transform(t["leaf_i"], t["xf_l"])
+	t["shape"].set_deferred("disabled", false)
 
 # ---------------- the windmill ----------------
 ## The "Molino del Tío Gerardo", with its yard and its corral: built by hand (molino.gd) when the map was baked with

@@ -6,6 +6,12 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
+- **Cruce de los semáforos: semáforos, espejo y señales (Edificios Especiales, 22/11; a la espera del visto bueno de Luis).** Sin horneado (`cruce.gd`, `world.cruce`): cinco postes y un báculo con 7 cabezas de coches y 7 de peatones, el espejo, STOP, ceda el paso, prohibidos, el armario gris, la papelera, las líneas de detención y el paso de la avenida. Las luces funcionan: el ciclo y los coches que paran son de Sistemas (`semaforos.gd`); sin él, el cruce lleva un ciclo propio. Lo que pisa el suelo se rompe de un golpe como el resto del mobiliario (`props.adopt()`); con un semáforo caído todo el cruce parpadea en ámbar hasta el día siguiente, cuando `props.gd` lo arregla con el resto del mobiliario (`cruce.repair()`). `cruce`: 5 ok. Hojas en `guion/fotos/cruce/cruce_01–05`. [Detalle](TRASPASO_CLAUDE.md#semáforos-espejo-y-señales-sexta-pieza-del-cruce-de-los-semáforos-2211-claude--edificios-especiales) y [notas](referencias/cruce/LEEME.md).
+- **Cruce de los semáforos: la casa beige del Salvador (Edificios Especiales, 22/11; aprobada por Luis el 22/11, sin azafrán).** La última esquina, la del Salvador con la avenida, a mano sobre `salvador_c3` (`beige.gd`, sin horneado): dos plantas, beige a la avenida y gris al Salvador, portal hondo, rejas, tejado a dos aguas en cada ala, las naves del patio y la tapia de bloques del solar con su cancela roja. No se entra. `beige`: 2 ok. Con ella están las cuatro esquinas; quedan los semáforos y las señales. [Detalle](TRASPASO_CLAUDE.md#la-casa-beige-del-salvador-quinta-pieza-del-cruce-de-los-semáforos-2211-claude--edificios-especiales) y [notas](referencias/cruce/LEEME.md).
+- **Cruce de los semáforos: la casa crema del mirador (Edificios Especiales, 22/11; aprobada por Luis el 22/11, sin azafrán).** La esquina de la avenida con Santa Ana, a mano sobre `constitucion_2` (`mirador.gd`, sin horneado): crema y ocre, portal y mirador en el chaflán, balcones de antepecho, portón de arco. No se entra. `mirador`: 2 ok. [Detalle](TRASPASO_CLAUDE.md#la-casa-crema-del-mirador-cuarta-pieza-del-cruce-de-los-semáforos-2211-claude--edificios-especiales) y [notas](referencias/cruce/LEEME.md).
+- **Cruce de los semáforos: la casa blanca de Santa Ana 2 (Edificios Especiales, 22/11; aprobada por Luis el 22/11, sin azafrán).** La esquina de Santa Ana con los Arcos, a mano sobre `constitucion_a1` (`stana2.gd`, sin horneado): cal, zócalo de mampostería, portón de madera, rejas, marcos añil y cornisa de tejas. No se entra. `stana2`: 2 ok. Quedan dos esquinas y los semáforos. [Detalle](TRASPASO_CLAUDE.md#la-casa-blanca-de-santa-ana-2-tercera-pieza-del-cruce-de-los-semáforos-2211-claude--edificios-especiales) y [notas](referencias/cruce/LEEME.md).
+- **Cruce de los semáforos: «Clínica Dental» (Edificios Especiales, 22/11; aprobada por Luis el 22/11).** La esquina de Cervantes con los Arcos, a mano sobre `arcos_2` (`clinica.gd`, sin horneado): piedra oscura, letras en relieve «CLÍNICA DENTAL · Dr. Josué Escudero», ventanas de espejo, balcón corrido de chapa. No se entra. Lo común con Sopiss está en `esquina.gd`. `clinica`: 2 ok. [Detalle](TRASPASO_CLAUDE.md#clínica-dental-segunda-pieza-del-cruce-de-los-semáforos-2211-claude--edificios-especiales) y [notas](referencias/cruce/LEEME.md).
+- **Cruce de los semáforos: «Seguros Sopiss» (Edificios Especiales, 21/11; aprobado por Luis el 22/11).** El edificio rojo de la esquina, a mano sobre `salvador_24` (`sopiss.gd`, sin horneado): tres fachadas, oficina a la vista por cristales de verdad, luces y cartel según su horario (L–V 9–14 y 17–20), y el neón «Salamanquesa» en amarillo de noche. No se entra. Los personajes son de Sistemas (`sopiss_gente.gd`). `sopiss`: 4 ok. Faltan las otras esquinas y los semáforos. Hojas en `guion/fotos/cruce/`. [Detalle](TRASPASO_CLAUDE.md#seguros-sopiss-primera-pieza-del-cruce-de-los-semáforos-2111-claude--edificios-especiales) y [notas](referencias/cruce/LEEME.md).
 - **Travesía del Clavel, peatonal y elevada (Edificios Especiales, 21/11; aprobada por Luis).** Paseo de baldosa a cuadros sobre el terreno, con tres rampas en zigzag por San Rafael y la escalera y el carril del garaje por el Clavel; rellanos con forja ante las puertas de la hilera este; la hilera oeste y la casa blanca, a mano (`travesia.gd`) con rehorneado. Ante esas puertas hay que usar `MapData.foot`. `travesia`: 4 ok; `relief`: 19 ok. Hojas en `guion/fotos/travesia_clavel/`. [Detalle](TRASPASO_CLAUDE.md#la-travesía-del-clavel-peatonal-y-elevada-2111-claude--edificios-especiales) y [notas](referencias/travesia_clavel/LEEME.md).
 - **«Cafetería Rize» y su callejón (Edificios Especiales, 21/11; aprobada por Luis).** El callejón de la avenida de Juan Carlos I, adoquinado y cerrado al tráfico, con la cafetería, su terraza, el portón verde del fondo, el garaje del emblema y la casa gris, hecho a mano (`rize.gd`) con rehorneado. Sin interior. Abre como la real (lunes cerrado; martes y miércoles 9–17; jueves a domingo 9–19). Marciano, enfrente, es de Sistemas. `rize`: 4 ok. Hojas en `guion/fotos/rice/`. [Detalle](TRASPASO_CLAUDE.md#la-cafetería-rize-y-su-callejón-2111-claude--edificios-especiales) y [notas](referencias/rice/LEEME.md).
 - **«Pollos Asados Javi» (Edificios Especiales, 21/11; aprobado por Luis).** La casa ocre de la calle de los Arcos (`arcos_4d`), hecha a mano (`asador.gd`) y con interior visitable por la flecha (`asador_dentro.gd`), según la foto de Luis. Abre martes y domingos de 7:00 a 16:00. El personaje Javi y sus repartos de pollo (martes y domingos) son de Sistemas. `asador`: 5 ok. Hojas en `guion/fotos/asador/`. [Detalle](TRASPASO_CLAUDE.md#el-asador-de-pollos-javi-fachada-e-interior-2111-claude--edificios-especiales) y [notas](referencias/asador/LEEME.md).
@@ -328,6 +334,56 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 27 casas nuevas, ninguna quitada. `rsm_44`, `rsm_b701`, `monjas_27` y `sap_m31` solo cambian en las aristas tapadas. Calles, nodos, relieve y árboles (2954) iguales; una holgura de la calle pasa de 6,3 a 6,0 m.
   - `casas` de las 27 y esas cuatro: 4 ok, 0 fallos; y 4 ok tras los arreglos. Hojas en `guion/fotos/tanda34/monjas_1..5.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 22/11): calles de la Parra (7 `par_*`), del Descanso (12 `des_*`) y de la Pastora (7 `pas_*`).**
+  - El usuario retomó las calles («Seguimos»). Elegidas con `calle_rc.py`: las que quedaban sin describir cerca del centro.
+  - Parra 1 a 7: el 3 va en dos entradas, `par_3` (dos plantas) y `par_3b` (`only` 1).
+  - Descanso 3 a 14, con el costado de Arroyuelo Alto 31 (`des_aa31`) y el portón del 11 (`des_11`). Ese portón es la parte de una planta de la parcela de Travesía del Santo 8: `only` 1 y `reach` 2.
+  - Pastora 1 a 6.
+  - En el lado norte de la Parra, la calle del mapa va unos 2 m al norte de la real. Los frentes salen del muro genérico (`frente_gen.py`), con `clear` de 1 a 1,4.
+  - Fotos del Catastro (hacia 2010) y Street View de noviembre de 2024.
+  - `precheck.py`: nada escondido; solo un saliente de 1 m en `par_1`, que quita su `clear`.
+  - Bake, avisando a Pretil: 26 casas nuevas, ninguna quitada. `real_83`, `real_85`, `santo_62`, `santo_80`, `alto_29` y `alto_57` solo cambian en las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
+  - Hubo dos rehorneados más: la caja hecha a mano del 11 se quedaba fuera (menos de 5 m²), y luego resultó ser una parte de `trsanto_8`.
+  - `casas` de las 26: 4 ok, 0 fallos. Tras los arreglos (ladrillo de `des_14`, `des_11`): 4 ok. Hojas en `guion/fotos/tanda34/parra_descanso_pastora_1..4.jpg`.
+  - **Aprobado** por el usuario el 22/11 («Añade la bandera de españa ahí y damos visto bueno»). La bandera cuelga de la ventana de arriba a la izquierda del Descanso 9: `_des_9()` en `godot/scripts/casas.gd`, con `casas` 4 ok ([log](logs/selftest_casas_solo_des_9_20261122_011859.log)).
+- **Sin publicar (Texturas, 22/11): Avenida de la Reina Sofía, lo que faltaba (19 `rsof_*`).**
+  - El usuario pidió seguir («Sí, siguiente»). Elegidas con `calle_rc.py`: los números 5 a 31 y 4 a 12, que seguían siendo muro genérico.
+  - El 31 va en dos entradas: `rsof_31` (la casa, con `porch`) y `rsof_31n` (la nave baja de la esquina, una caja sin Catastro).
+  - El 10 es un edificio nuevo de celosía de ladrillo: `_rsof_10()` en `godot/scripts/casas.gd`.
+  - Fotos del Catastro (hacia 2010) y Street View de noviembre de 2024 (del 10, también una de febrero de 2020).
+  - `precheck.py`: nada escondido.
+  - Bake, avisando a Pretil: 19 casas nuevas, ninguna quitada. `cajal_rs2` solo cambia en las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
+  - `casas` de las 19: 4 ok, 0 fallos. Tras los arreglos (ladrillo de `rsof_21` y `rsof_23`; colores de `rsof_11`, `rsof_10` y `rsof_27`; puerta del costado de `rsof_31n`): 4 ok. Hojas en `guion/fotos/tanda34/reina_sofia_1..4.jpg`.
+  - **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 22/11): Calle de las Delicias, primera mitad (19 `delicias_*` nuevas y el arreglo de `delicias_10`).**
+  - El usuario pidió seguir («Visto bueno y siguiente»). Son las casas de la primera mitad de la calle que seguían siendo muro genérico.
+  - El 32 va en dos entradas: `delicias_32` (`only` 2) y `delicias_32g` (el garaje, `only` 1). La nave del 19 (`delicias_19b`) es una caja sin Catastro.
+  - La hilera de adosados de 2008, detrás de sus patios, son `delicias_21r1..5`, que dibuja `_hilera21()` en `godot/scripts/casas.gd`. El muro del patio es `delicias_21t` (`["obra"]`).
+  - Clave nueva `fill` en `calles.json`: una caja de la casa delante de lo que dibuja el Catastro (`tools/bake_godot.py`). Se usa en el 3 (el Catastro lo pone 4 m atrás) y en el porche del 17.
+  - Opciones nuevas del `arc`: `sq=1` (hueco recto: porche o portal metido), `gh=` (cancela baja) y `bd=` (puerta al fondo). Además, `_sillares()` dibuja los sillares en el revoco del 28 y del 30.
+  - Fotos del Catastro (hacia 2010) y Street View de noviembre de 2024.
+  - `precheck.py`: nada escondido.
+  - Bake, avisando a Pretil: 19 casas nuevas, ninguna quitada. `delicias_10` solo cambia en las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
+  - `casas` de las 19: 4 ok, 0 fallos. Tras los arreglos (porche del 17, portal del 19 y de la esquina del 21, colores de los portones y de la hilera, zócalo del 3): 4 ok. Hojas en `guion/fotos/tanda34/delicias_1..4.jpg`.
+  - **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 22/11): Calle de las Delicias, segunda mitad (17 `delicias_*`, del 36 D al 68, lado sur).**
+  - El usuario aprobó la primera mitad y pidió seguir («Visto bueno y siguiente»).
+  - 14 casas del Catastro y 3 cajas sin referencia: la tapia del solar (`delicias_40`), la casa que el Catastro tapa con el solar (`delicias_40b`) y el corral del 54 (`delicias_54`).
+  - La galería de madera del 64: `_delicias_64()` en `godot/scripts/casas.gd`.
+  - Fotos del Catastro (hacia 2010) y Street View de noviembre de 2024.
+  - `precheck.py`: nada escondido.
+  - Bake, avisando a Pretil: 17 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954), iguales.
+  - `casas` de las 17: 4 ok, 0 fallos. Tras los arreglos de color (portones, zócalos, el 50 y el 54): 4 ok. Hojas en `guion/fotos/tanda34/delicias_5..7.jpg`.
+  - **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»).
+- **Sin publicar (Texturas, 22/11): Calle de Tembleque, lo que faltaba (19 `tembleque_*` nuevas).**
+  - El usuario aprobó Delicias entera y pidió la calle siguiente («Visto bueno y siguiente»).
+  - Lado oeste: 29, 31, 33, 35, 53, 89 D, 91, 93, 95 y 99. Lado este: 34, 34 B, 36, 38, 40, 42, 44, 46 y el solar del 48 D.
+  - El solar del 48 D: la tira de casas del Catastro se quita (`porch`) y entra una tapia de ladrillo (`fill`); queda el cobertizo viejo de la punta norte.
+  - Fotos del Catastro (hacia 2010) y Street View de noviembre de 2024.
+  - `precheck.py`: el 57 quedaba 4 m detrás del 59 y se dejó fuera; el 99 sale 1,9 m por delante y lleva `clear`.
+  - Bake, avisando a Pretil: 19 casas nuevas, ninguna quitada. De `rsm_26` y `rsm_28` solo cambian las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
+  - `casas` de las 19: 4 ok, 0 fallos. Tras los arreglos de color (el 35 y el 95): 4 ok. Hojas en `guion/fotos/tanda34/tembleque_10..14.jpg`.
+  - **Aprobado** por el usuario el 22/11 («Visto bueno y paramos de momento»). Las calles quedan en pausa hasta nueva orden.
 - **Pendiente:**
   - Texturas:
     - **La calle de la Cruz (`cruz_*`) salió en la 0.0.13 con 31 casas.** Después, ya en X:, quité `cruz_13` y `cruz_17`, cuyo frente quedaba metido en la manzana, y quedaron 29. A `cruz_vg9` y `cruz_21` les puse alero de teja. Rehorneado sin más cambios, y `casas` OK. Las hojas `guion/fotos/tanda34/cruz_1..5.jpg` se mandaron al usuario el 17/11, que dio su «Visto bueno».

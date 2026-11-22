@@ -105,6 +105,8 @@ func build(world, d: Dictionary) -> Node3D:
 		_adosado(String(Short.ADOSADOS[id]))
 	elif Short.ROSAS.has(id):
 		_rosa(Short.ROSAS[id] as Array)
+	elif Short.HILERA21.has(id):
+		_hilera21(String(Short.HILERA21[id]))
 	elif SPECS.has(id):
 		_from_spec(SPECS[id])
 	elif Short.HOUSES.has(id):
@@ -774,7 +776,8 @@ static func _word(s: String):
 ## fly=<m> h=<m> band=<what>. The others are what is in it:
 ##     win <at> [w sill h]      bal <at> [w h]      door <at> [w h]      gar <at> [w h]      shop <at> [w h]
 ##     arc <at> [w sill h]   (an arched bay set into the wall, a loggia: s= its ring, sb= how wide, d= how deep, bal=iron a rail,
-##                            f=<colour> a window of wood inside it, g=bars its iron)
+##                            f=<colour> a window of wood inside it, g=bars its iron; sq=1 a square top: a porch or doorway
+##                            let into the house, gh=<m> a low iron gate across it, bd=<colour> a door at its back)
 ##     sign <from> <to> <colour> <WORDS_LIKE_THIS> <letters' colour>      awn <from> <to> <colour>
 ##     ter <from> <to> <deep> <awning colour or -1> [railing colour]
 ##     teja <from> <to> [deep] [y=<m>]   (a tejadillo: a strip of tiled roof leaning out over the doors, its foot y up the wall)
@@ -1057,7 +1060,8 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 		"arc":                                   # an arched bay set into the wall (a loggia): its back in shadow, a ring of brick round its top
 			var sy := r.position.y
 			var rr := w / 2.0
-			var spring := r.end.y - rr
+			var sq: bool = o.get("sq", 0.0) != 0.0          # sq=1: a square top, a porch let into the house under the floor above
+			var spring := r.end.y - (0.0 if sq else rr)
 			var cx := x + rr
 			var dd := float(o.get("d", 1.1))
 			var wk = o.get("_wall", "r%d" % 0xf2efe6)
@@ -1065,23 +1069,34 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 			box(x - 0.05, sy, face - dd, 0.05, r.size.y, dd, wk)                                   # its sides, as deep as it goes
 			box(x + w, sy, face - dd, 0.05, r.size.y, dd, wk)
 			box(x - 0.04, sy - 0.06, face - dd, w + 0.08, 0.06, dd + 0.2, 0xd9d2c2)               # its floor, a little out over the front
+			if o.has("bd"):                      # bd=<colour>: the house's own door at the back of it
+				var dw := minf(0.95, w - 0.3)
+				panel_door(x + (w - dw) / 2.0, sy, dw, minf(2.2, r.size.y - 0.2), face - dd + 0.25, int(o["bd"]))      # (it sits 0.2 back from what it is given)
 			var n := 16
-			for k in range(n):                   # the round top: the wall filled back above the curve, a strip at a time
-				var xa := x + w * k / float(n)
-				var dx := xa + w / (2.0 * n) - cx
-				var yc := spring + sqrt(maxf(0.0, rr * rr - dx * dx))
-				box(xa, yc, face - dd, w / float(n) + 0.002, r.end.y - yc + 0.01, dd, wk)
 			var ring = _mat(o.get("s", "brick"))
 			var sb := float(o.get("sb", 0.16))
 			var zr := face + 0.03
-			for k in range(n):                   # the ring round it
-				var t0 := PI * k / float(n)
-				var t1 := PI * (k + 1) / float(n)
-				quad(Vector3(cx + rr * cos(t0), spring + rr * sin(t0), zr), Vector3(cx + (rr + sb) * cos(t0), spring + (rr + sb) * sin(t0), zr),
-					Vector3(cx + (rr + sb) * cos(t1), spring + (rr + sb) * sin(t1), zr), Vector3(cx + rr * cos(t1), spring + rr * sin(t1), zr), ring, Vector3(0, 0, 1))
-			box(x - sb, sy, face - 0.02, sb, spring - sy, 0.05, ring)
-			box(x + w, sy, face - 0.02, sb, spring - sy, 0.05, ring)
-			if o.has("bal"):
+			if sq:                               # its ceiling, and a lintel over it when it has a frame
+				box(x, r.end.y - 0.04, face - dd, w, 0.04, dd, wk)
+				if o.has("s"):
+					box(x - sb, r.end.y, face - 0.02, w + 2.0 * sb, sb, 0.05, ring)
+			else:
+				for k in range(n):                   # the round top: the wall filled back above the curve, a strip at a time
+					var xa := x + w * k / float(n)
+					var dx := xa + w / (2.0 * n) - cx
+					var yc := spring + sqrt(maxf(0.0, rr * rr - dx * dx))
+					box(xa, yc, face - dd, w / float(n) + 0.002, r.end.y - yc + 0.01, dd, wk)
+				for k in range(n):                   # the ring round it
+					var t0 := PI * k / float(n)
+					var t1 := PI * (k + 1) / float(n)
+					quad(Vector3(cx + rr * cos(t0), spring + rr * sin(t0), zr), Vector3(cx + (rr + sb) * cos(t0), spring + (rr + sb) * sin(t0), zr),
+						Vector3(cx + (rr + sb) * cos(t1), spring + (rr + sb) * sin(t1), zr), Vector3(cx + rr * cos(t1), spring + rr * sin(t1), zr), ring, Vector3(0, 0, 1))
+			if not sq or o.has("s"):
+				box(x - sb, sy, face - 0.02, sb, spring - sy, 0.05, ring)
+				box(x + w, sy, face - 0.02, sb, spring - sy, 0.05, ring)
+			if o.has("gh"):                      # gh=<m>: a low iron gate across it, that high
+				rail(cx, sy, w, face - 0.08, float(o["gh"]))
+			elif o.has("bal"):
 				rail(cx, sy, w + 0.1, face, 0.5, String(o["bal"]) == "white")
 			if o.has("f"):                       # a window of wood inside it: its frame, set back behind the iron
 				arch_frame(x, sy, w, spring, face - minf(dd, 0.3) + 0.08, int(o["f"]))
@@ -1898,6 +1913,302 @@ func _strut(a: Vector3, b: Vector3, thick: float, hex: int) -> void:
 	var side := up.cross(Vector3.RIGHT if absf(up.x) < 0.9 else Vector3.FORWARD).normalized()
 	m.basis = Basis(side, up, side.cross(up)) * Basis.from_scale(Vector3(thick, d.length(), thick))
 	add_child(m)
+
+## Calle del Descanso 9 (Street View, November 2024; the user, 22 November 2026: "Añade la bandera de españa ahí"): the
+## house is its short description (casas_calles.gd); out of the left upper window hangs the flag of Spain, red, yellow,
+## red, over the sill and down the wall, as in the photo.
+func _des_9() -> void:
+	_from_spec(_unpack(Short.HOUSES[id]))
+	var xc := 0.3 * length                       # (the window's middle: "win .3,.72 1.2 1.0 1.2" over a ground floor 3 m high)
+	var sill := 3.0 + 1.0
+	var w := 1.1
+	var red := 0xc60b1e
+	var yellow := 0xf1bf00
+	box(xc - w / 2.0, sill, 0.0, w, 0.06, 0.1, red)                    # folded over the sill
+	box(xc - w / 2.0, sill - 0.18, 0.07, w, 0.24, 0.02, red)           # ...and down the wall: the top red stripe,
+	box(xc - w / 2.0, sill - 0.55, 0.07, w, 0.37, 0.02, yellow)        # the yellow twice as wide,
+	box(xc - w / 2.0, sill - 0.73, 0.07, w, 0.18, 0.02, red)           # the bottom red
+
+## Avenida de la Reina Sofía 10 (Street View, February 2020 and November 2024): the new building where Catastro's photo
+## still has a brick social centre. The house is its short description (casas_calles.gd); its whole front is a screen of
+## pale brick laid open, a checker of dark holes kept clear of the blue gate and the blue-framed windows, and just over
+## the blue band some of the holes are filled with blue tiles, as in the photos.
+func _rsof_10() -> void:
+	_from_spec(_unpack(Short.HOUSES[id]))
+	var keep_clear: Array[Vector4] = [                  # (x from, x to, y from, y to): the gate, the window band, the upper window, the band
+		Vector4(0.1 * length - 1.3, 0.1 * length + 1.3, 0.0, 2.8),
+		Vector4(0.52 * length - 0.8, 0.94 * length + 0.8, 0.45, 1.85),
+		Vector4(0.51 * length - 1.0, 0.51 * length + 1.0, 3.8, 5.45),
+		Vector4(-1.0, length + 1.0, 2.9, 3.2)]
+	var dark := 0x2e2a26
+	var blue := 0x2a3a9a
+	var c := 0.18                                       # (a cell of the checker: a hole, then a brick as wide, and so on)
+	var s := 0.15                                       # (the hole itself, a little less than its cell)
+	var n := Vector3(0, 0, 1)
+	var row := 0
+	var y := 0.45
+	while y + s < top - 0.3:
+		var x := 0.2 + (c if row % 2 == 1 else 0.0)
+		var col := 0
+		while x + s < length - 0.2:
+			var ok := true
+			for r in keep_clear:
+				if x + s > r.x and x < r.y and y + s > r.z and y < r.w:
+					ok = false
+					break
+			if ok:
+				var key: int = blue if (y > 3.2 and y < 3.75 and col % 3 == row % 3) else dark
+				quad(Vector3(x, y, 0.012), Vector3(x + s, y, 0.012), Vector3(x + s, y + s, 0.012), Vector3(x, y + s, 0.012), key, n)
+			x += 2.0 * c
+			col += 1
+		y += c
+		row += 1
+
+## the openings of a house's front as its short description cuts them (Rect2s in the front's frame: x, y, w, h)
+func _holes_of(spec: Dictionary) -> Array:
+	var floors: Array = spec["floors"]
+	var n := floors.size()
+	var gh: float = top if n == 1 else float(floors[0].get("h", 3.0))
+	var out: Array = []
+	var y := 0.0
+	for i in range(n):
+		for op in (floors[i] as Dictionary).get("open", []):
+			var w: float = op[2]
+			var xc: float = float(op[1]) * length
+			match String(op[0]):
+				"win", "arc":
+					out.append(Rect2(xc - w / 2.0, y + float(op[3]), w, float(op[4])))
+				_:
+					out.append(Rect2(xc - w / 2.0, y, w, float(op[3])))
+		y += gh if i == 0 else (top - gh) / float(n - 1)
+	return out
+
+## a render scored in courses like dressed stone: pale joints a course `ch` high, the upright ones `cw` apart and
+## staggered from course to course, from `y0` (over the foot) to under the eaves, kept off the openings and their frames
+func _sillares(spec: Dictionary, y0: float, joint: int, ch := 0.45, cw := 0.9) -> void:
+	var keep: Array = []
+	for r in _holes_of(spec):
+		keep.append((r as Rect2).grow(0.1))
+	var n := Vector3(0, 0, 1)
+	var t := 0.025
+	var z := 0.012
+	var row := 0
+	var y := y0
+	while y < top - 0.35:
+		var x := 0.0
+		while x < length - 0.01:                       # the course's bed joint, in short pieces round the openings
+			var x1: float = minf(x + 0.3, length)
+			if _sillar_clear(keep, x, x1, y, y + t):
+				quad(Vector3(x, y, z), Vector3(x1, y, z), Vector3(x1, y + t, z), Vector3(x, y + t, z), joint, n)
+			x = x1
+		var yb: float = minf(y + ch, top - 0.35)
+		var xv: float = cw * (0.5 if row % 2 == 1 else 1.0)
+		while xv < length - 0.1:                       # ...and its upright joints
+			if _sillar_clear(keep, xv, xv + t, y, yb):
+				quad(Vector3(xv, y, z), Vector3(xv + t, y, z), Vector3(xv + t, yb, z), Vector3(xv, yb, z), joint, n)
+			xv += cw
+		y += ch
+		row += 1
+	boxes += 2
+
+func _sillar_clear(keep: Array, x0: float, x1: float, y0: float, y1: float) -> bool:
+	for r in keep:
+		if x1 > r.position.x and x0 < r.end.x and y1 > r.position.y and y0 < r.end.y:
+			return false
+	return true
+
+## Calle de las Delicias 28 and 30 (Street View, November 2024): their short descriptions (casas_calles.gd), and the tan
+## render of both scored in courses like dressed stone, as in the photos
+func _delicias_28() -> void:
+	var spec := _unpack(Short.HOUSES[id])
+	_from_spec(spec)
+	_sillares(spec, 0.9, 0xf2e8d0)
+
+func _delicias_30() -> void:
+	var spec := _unpack(Short.HOUSES[id])
+	_from_spec(spec)
+	_sillares(spec, 0.8, 0xf2e8d0)
+
+## Calle de las Delicias 64 (Street View, November 2024): the white house of 2006 with a wooden gallery the length of its
+## floor above, on the ends of its beams, its iron rail and the posts that carry the deep wooden eaves over it; wooden
+## lintels over the doors below.
+func _delicias_64() -> void:
+	var spec := _unpack(Short.HOUSES[id])
+	_from_spec(spec)
+	var W: float = length
+	var gh := 3.2
+	var wood := 0x5a3a24
+	var dark := 0x3e2818
+	box(0.25, gh, 0.0, W - 0.5, 0.14, 1.05, wood)              # its floor, out over the pavement
+	for k in range(7):                                          # the beams' ends under it
+		box(0.35 + (W - 0.84) * k / 6.0, gh - 0.3, 0.0, 0.14, 0.3, 1.0, dark)
+	rail(W / 2.0, gh + 0.14, W - 0.6, 0.9, 1.0)                 # its rail
+	for k in range(4):                                          # the posts up to the eaves
+		box(0.3 + (W - 0.74) * k / 3.0, gh + 0.14, 0.86, 0.14, top - gh - 0.2, 0.14, wood)
+	box(0.0, top - 0.06, 0.0, W, 0.16, 1.3, dark)               # the eaves' board over it all
+	for o in [[0.3, 3.2, 3.0], [0.6, 1.3, 2.5], [0.86, 0.9, 2.3]]:     # the wooden lintels: [at, width, top]
+		box(W * o[0] - o[1] / 2.0 - 0.15, o[2], 0.0, o[1] + 0.3, 0.18, 0.08, wood)
+
+## One of the five ochre terraced houses of 2008 at the east end of the Calle de las Delicias (Catastro's "21(1)" to
+## "21(5)"), after Catastro's parts, its photos and Street View (November 2024), built the way the Rosa ones are (_rosa).
+## Its front, `length` wide, is the line of its yard's wall at the pavement; the house stands 3.2 m behind it. On one
+## side (`side`: "L" or "R" as you face it) its porch, a recess 1.4 m wide and 2.7 deep up to a dark wooden lintel on
+## corbels, with a stair of red tiles climbing in it from the yard to the door; beside it, over the garage at the street's
+## level, the main floor with one broad window under a wooden lintel, its brown roller blind down. Ochre render; deep
+## eaves on little dark brackets; one roof with its ridge along the street, two gabled dormers on it. The yard: its wall
+## of rubble stone under a terracotta coping, an iron railing with a screen of brown reed, stone pillars, a brown sliding
+## gate before the garage and a little one before the stair, the meter box in a pillar.
+func _hilera21(side: String) -> void:
+	var W: float = length
+	var H: float = top                                  # (the eaves)
+	var left: bool = side == "L"
+	var F := -3.2                                       # the house's face
+	var back := F - 14.6
+	var och_c := 0xdcb46c                               # (a pale warm ochre in the photo of 2024)
+	var och := "r%d" % och_c
+	var shade := "r%d" % _dark(och_c, 0.3)              # the porch's walls, out of the sun
+	var wood := 0x4a3020
+	var brown := 0x5e3c28
+	var iron := 0x2a2420
+	var pw := 1.4                                       # the porch...
+	var px0: float = 0.0 if left else W - pw
+	var px1: float = px0 + pw
+	var pd := 2.7
+	var pb: float = F - pd                              # (its back, with the door)
+	var py := 4.5                                       # (its lintel)
+	var fl := 2.6                                       # the main floor, over the garage
+	var hx0: float = px1 if left else 0.0               # ...and the rest of the front beside it
+	var hx1: float = W if left else px0
+	var hc: float = (hx0 + hx1) / 2.0
+	# --- the front: the garage at the street's level, the main floor's window, the wall up to the eaves ---
+	var gw := 2.6
+	var gx: float = hc - gw / 2.0
+	var ww := 2.0
+	var wx: float = hc - ww / 2.0
+	wall(hx0, hx1, -1.4, H, F, 0.25, [Rect2(gx, 0.0, gw, 2.15), Rect2(wx, 3.35, ww, 1.2)], och)
+	sect_door(gx, 0.0, gw, 2.15, F, brown)
+	window(wx, 3.35, ww, 1.2, F, 0.9, 0x5a3a26, 0x6a4a34)
+	box(wx - 0.2, 4.55, F, ww + 0.4, 0.16, 0.12, wood)                                   # its wooden lintel, on two corbels
+	for x in [wx - 0.2, wx + ww + 0.05]:
+		box(x, 4.43, F, 0.15, 0.12, 0.1, wood)
+	box(hx0, fl - 0.06, F, hx1 - hx0, 0.06, 0.04, _dark(och_c, 0.12))                    # (where the main floor begins)
+	# --- the porch: open to its lintel, the wall over it; its back with the door, its sides, its ceiling ---
+	wall(px0, px1, py, H, F, 0.25, [], och)
+	box(px0 - 0.05, py - 0.18, F, pw + 0.1, 0.2, 0.14, wood)
+	for x in [px0, px1 - 0.16]:
+		box(x, py - 0.32, F, 0.16, 0.14, 0.12, wood)
+	var dx: float = px0 + (pw - 0.96) / 2.0
+	wall(px0, px1, -1.4, py, pb, 0.2, [Rect2(dx, fl, 0.96, 2.1)], shade)
+	panel_door(dx, fl, 0.96, 2.1, pb, wood)
+	quad(Vector3(px0, -1.4, pb), Vector3(px0, -1.4, F), Vector3(px0, py, F), Vector3(px0, py, pb), shade, Vector3(1, 0, 0))
+	quad(Vector3(px1, -1.4, pb), Vector3(px1, -1.4, F), Vector3(px1, py, F), Vector3(px1, py, pb), shade, Vector3(-1, 0, 0))
+	quad(Vector3(px0, py, pb), Vector3(px1, py, pb), Vector3(px1, py, F), Vector3(px0, py, F), shade, Vector3(0, -1, 0))
+	boxes += 3
+	# the stair, from the yard up to a landing before the door: red tiles, a white riser to each step; its iron rail
+	var steps := 10
+	var rise: float = fl / steps
+	var z0: float = F + 0.6
+	var tread: float = (z0 - (pb + 0.9)) / steps
+	var sx0: float = px0 + 0.06
+	var sw: float = pw - 0.12
+	for k in range(steps):
+		var zk: float = z0 - (k + 1) * tread
+		box(sx0, -1.4, zk, sw, 1.4 + (k + 1) * rise, tread, 0xa84a32)
+		box(sx0, k * rise, zk + tread, sw, rise, 0.012, 0xece6da)
+	box(sx0, -1.4, pb, sw, 1.4 + fl, 0.9, 0xa84a32)
+	var rx: float = (px1 - 0.1) if left else (px0 + 0.06)
+	_strut(Vector3(rx + 0.02, 0.95, z0), Vector3(rx + 0.02, fl + 0.95, pb + 0.9), 0.04, iron)
+	for k in [0, 4, 9]:
+		var zk: float = z0 - (k + 0.5) * tread
+		box(rx, (k + 1) * rise, zk, 0.04, 0.95, 0.04, iron)
+	# --- its ends against the neighbours, its back, the gables; the roof; the eaves on their brackets ---
+	var eave := 0.5
+	var ridge_z: float = (F + back) / 2.0
+	var ridge_y: float = H + 2.5
+	var kz: float = (ridge_y - (H - 0.08)) / (F + eave - ridge_z)             # (how the roof climbs, a metre back)
+	for x in [0.0, W]:
+		var nx := Vector3(-1.0 if x == 0.0 else 1.0, 0, 0)
+		quad(Vector3(x, -1.4, back), Vector3(x, -1.4, F), Vector3(x, H, F), Vector3(x, H, back), och, nx)
+		tri(Vector3(x, H, back), Vector3(x, H, F), Vector3(x, ridge_y, ridge_z), och, nx)
+		box(x - 0.02, -1.4, F, 0.04, H + 1.4, 0.02, 0x3a2a20)                  # where one house ends and the next begins
+	quad(Vector3(0, -1.4, back), Vector3(W, -1.4, back), Vector3(W, H, back), Vector3(0, H, back), och, Vector3(0, 0, -1))
+	boxes += 3
+	var run: float = (F + eave - ridge_z) / 1.6
+	quad(Vector3(0, H - 0.08, F + eave), Vector3(W, H - 0.08, F + eave), Vector3(W, ridge_y, ridge_z), Vector3(0, ridge_y, ridge_z), "tiles", Vector3(0, 1, 0.3),
+		[Vector2(0, run), Vector2(W / 1.6, run), Vector2(W / 1.6, 0), Vector2(0, 0)])
+	quad(Vector3(0, H - 0.08, back - eave), Vector3(W, H - 0.08, back - eave), Vector3(W, ridge_y, ridge_z), Vector3(0, ridge_y, ridge_z), "tiles", Vector3(0, 1, -0.3),
+		[Vector2(0, run), Vector2(W / 1.6, run), Vector2(W / 1.6, 0), Vector2(0, 0)])
+	box(0.0, H - 0.14, F, W, 0.08, eave, 0x5a3a26)
+	var bx := 0.1
+	while bx < W - 0.1:
+		box(bx, H - 0.34, F, 0.07, 0.2, eave - 0.06, wood)
+		bx += 0.34
+	# --- the two dormers on the front slope: a gabled front of ochre with a shuttered window, tiles over it ---
+	var dy0: float = H - 0.1
+	var dy1: float = H + 1.5
+	var dz1: float = F + eave - (dy1 - (H - 0.08)) / kz - 0.2               # (where its top meets the roof)
+	for f in ([0.3, 0.78] if left else [0.22, 0.7]):
+		var c: float = f * W
+		var dw := 1.25
+		var d0: float = c - dw / 2.0
+		var d1: float = c + dw / 2.0
+		wall(d0, d1, dy0, dy1, F, 0.2, [Rect2(c - 0.38, H + 0.3, 0.76, 0.85)], och)
+		window(c - 0.38, H + 0.3, 0.76, 0.85, F, 1.0, 0x5a3a26, 0x6a4a34)
+		tri(Vector3(d0, dy1, F), Vector3(d1, dy1, F), Vector3(c, dy1 + 0.55, F), och, Vector3(0, 0, 1))
+		quad(Vector3(d0, dy0, dz1), Vector3(d0, dy0, F), Vector3(d0, dy1, F), Vector3(d0, dy1, dz1), och, Vector3(-1, 0, 0))
+		quad(Vector3(d1, dy0, dz1), Vector3(d1, dy0, F), Vector3(d1, dy1, F), Vector3(d1, dy1, dz1), och, Vector3(1, 0, 0))
+		var rl: float = (F + 0.25 - dz1) / 1.6
+		quad(Vector3(d0 - 0.12, dy1 - 0.04, F + 0.25), Vector3(c, dy1 + 0.6, F + 0.25), Vector3(c, dy1 + 0.6, dz1), Vector3(d0 - 0.12, dy1 - 0.04, dz1), "tiles", Vector3(-0.6, 1, 0),
+			[Vector2(0, 0), Vector2(0, 0.5), Vector2(rl, 0.5), Vector2(rl, 0)])
+		quad(Vector3(c, dy1 + 0.6, F + 0.25), Vector3(d1 + 0.12, dy1 - 0.04, F + 0.25), Vector3(d1 + 0.12, dy1 - 0.04, dz1), Vector3(c, dy1 + 0.6, dz1), "tiles", Vector3(0.6, 1, 0),
+			[Vector2(0, 0.5), Vector2(0, 0), Vector2(rl, 0), Vector2(rl, 0.5)])
+		box(d0 - 0.1, dy1 - 0.02, F + 0.18, dw + 0.2, 0.06, 0.06, 0xe8dcc0)          # (its pale board under the gable)
+		boxes += 4
+	# --- the yard: its floor, low walls to the neighbours, its wall at the pavement with its pillars and gates ---
+	box(0.0, -1.4, F, W, 1.44, -F - 0.4, 0xb8ac98)
+	for x in [0.0, W - 0.12]:
+		box(x, -1.4, F, 0.12, 2.45, -F - 0.4, "stone")
+	var cg0: float = gx - 0.25                                                   # the car's gate, before the garage...
+	var cg1: float = gx + gw + 0.25
+	var pg0: float = 0.2 if left else W - 1.25                                   # ...and the little one, before the stair
+	var pg1: float = pg0 + 1.05
+	var piers: Array = [[0.0, 0.2], [W - 0.2, W], [cg0 - 0.4, cg0], [cg1, cg1 + 0.4], [pg1, pg1 + 0.4] if left else [pg0 - 0.4, pg0]]
+	for pr in piers:
+		var a: float = clampf(pr[0], 0.0, W)
+		var b: float = clampf(pr[1], 0.0, W)
+		if b - a < 0.05:
+			continue
+		box(a, -1.4, -0.42, b - a, 3.45, 0.42, "stone")
+		box(a - 0.02, 2.05, -0.44, b - a + 0.04, 0.07, 0.46, 0xb05a3a)
+	var gates: Array = [[cg0, cg1], [pg0, pg1]]
+	gates.sort_custom(func(p, q): return p[0] < q[0])
+	var at := 0.0
+	for g in gates + [[W, W]]:
+		if g[0] - at > 0.05:                                                     # the wall between: stone, coping, railing, reed
+			box(at, -1.4, -0.37, g[0] - at, 2.4, 0.35, "stone")
+			box(at, 1.0, -0.39, g[0] - at, 0.06, 0.41, 0xb05a3a)
+			box(at, 1.06, -0.24, g[0] - at, 0.78, 0.02, 0x8a6a40)
+			var x: float = at + 0.06
+			while x < g[0] - 0.04:
+				box(x, 1.06, -0.18, 0.025, 0.82, 0.025, iron)
+				x += 0.12
+			box(at, 1.86, -0.19, g[0] - at, 0.04, 0.04, iron)
+		at = maxf(at, g[1])
+	for g in gates:                                                              # the gates: brown iron, a panel below, bars over reed
+		var gl: float = g[1] - g[0]
+		box(g[0], 0.03, -0.2, gl, 0.9, 0.04, brown)
+		for k in range(int(gl / 1.4) + 1):
+			box(g[0] + gl * (k + 0.5) / (int(gl / 1.4) + 1) - 0.12, 0.36, -0.165, 0.24, 0.24, 0.02, 0x8a6040)
+		box(g[0], 0.93, -0.26, gl, 0.92, 0.02, 0x8a6a40)
+		var x: float = g[0] + 0.05
+		while x < g[1] - 0.03:
+			box(x, 0.93, -0.2, 0.025, 0.95, 0.025, brown)
+			x += 0.11
+		box(g[0], 1.86, -0.21, gl, 0.05, 0.05, brown)
+	var mx: float = (pg1 + 0.02) if left else (pg0 - 0.38)
+	box(mx, 0.35, -0.47, 0.36, 0.55, 0.06, 0xf2f0ea)                             # the meter box in its pillar
+	box(mx + 0.04, 0.4, -0.48, 0.28, 0.45, 0.012, 0xdad6cc)
+	_acera(W)
 
 ## Calle de las Monjas 10, and beside it the brick arch of the yard between it and the block of the 2 (Street View,
 ## November 2024; the user, 21 November 2026: "Falta el arco de ladrillo con patio interior. Tendrá la portada abierta y

@@ -662,6 +662,74 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
 - **`acm_ar28`:** el costado de Arcos 28 tiene en el Catastro un ventanal en arco que en 2024 no se ve; va sin él, con bandas blancas y las pintadas de su zócalo.
 - **Sin hacer:** Castilla-La Mancha 14, la casa estrecha salmón del fondo de una placita: el Catastro le da esa placita al bloque de 2019 de la esquina (`castilla_16`), que en el juego la tapa.
 
+## Calles de la Parra, del Descanso y de la Pastora
+
+- **Cambios desde la foto del Catastro (Street View 2024):**
+  - Descanso 3 está ahora pintada de rojo (era crema), y la puerta de Descanso 13 es azul (era verde).
+  - Pastora 2 estaba en obras en noviembre de 2024: fachada blanca nueva y un hueco grande abajo, tapado con una red verde. La foto del Catastro enseña la casa de ladrillo de antes.
+- **`des_14`:** el ladrillo claro de 2004 sale más oscuro y más anaranjado que en la foto (`brick_buff` es el más claro que hay). Las vigas de madera sobre puertas y ventanas van como frontoncitos.
+- **`pas_6`:** el Catastro la deja 4 m detrás de la calle, con un patio delante; en las fotos está a la calle, con un muro de una planta y un portón de madera al lado. Va donde dice el Catastro.
+- **`pas_2a`:** en una sola parcela hay dos fachadas, una de ladrillo sobre revoco naranja y otra blanca. Van como dos paños de la misma casa.
+- **`par_3b`:** el trozo de Parra 3 junto al 7 tiene una planta en el Catastro y dos en las fotos; va con dos.
+- **`des_10` y `des_8`:** el Catastro les da dos plantas, pero desde la calle se ve una sola, y así van.
+- **`des_9`:** lleva la bandera de España colgada de la ventana de arriba, como en la foto (a petición del usuario, 22/11).
+
+## Avenida de la Reina Sofía (lo que faltaba)
+
+- **Cambios desde la foto del Catastro (Street View 2024):**
+  - El 10 es un edificio nuevo. Donde la foto del Catastro tiene un centro social de ladrillo, ahora hay una fachada entera de celosía de ladrillo claro, con marcos azules y un portón azul. La celosía va en `_rsof_10()`, en `godot/scripts/casas.gd`.
+  - El 12 se ha rehecho: el Catastro dice 1925, y en las fotos es una casa de ladrillo con la planta de arriba volada sobre la acera.
+  - En la puerta del 19 hay ahora una cortina, y en la del 21 también (era gris).
+- **`rsof_31` y `rsof_31n`:** el Catastro da dos plantas a todo el frente del 31, pero los 5 m de la esquina son una nave blanca y baja con tejado de chapa. La casa va en los 8,6 m de la izquierda (un `porch` corta el resto) y la nave en una caja aparte de 4 m de alto.
+- **`rsof_23`:** es una tira de 1,7 m de la fachada de ladrillo del 21: la puerta de reja blanca que da a la casa de atrás y la ventana de encima.
+- **`rsof_11`:** el Catastro le da una planta a lo que da a la calle; en las fotos tiene dos, y así va. Con `reach` 14, el corral del fondo se queda como casa corriente.
+- **`rsof_4`:** tres plantas en el Catastro y dos en las fotos; va con dos (6,3 m).
+- **`rsof_12`:** su frente es el borde de la parte de dos plantas, en línea con los vecinos. La tira de una planta de 0,6 m que hay delante se quita (`strip` 1).
+- **`rsof_13`:** el rótulo del bar dice «COPAS», no el nombre real.
+- **`rsof_21` y `rsof_23`:** ladrillo amarillo viejo. `brick_buff` es el más parecido; con `brick_pale` salía naranja.
+- **`rsof_9`:** el Catastro no tiene foto de esta casa; va por Street View.
+
+## Calle de las Delicias (lo que faltaba, primera mitad)
+
+- **Cambios desde la foto del Catastro (Street View 2024):**
+  - El 3 está ahora encalado de blanco y tiene azotea; en la foto del Catastro es de piedra vista. Abajo lleva un zócalo de baldosa de piedra color tostado.
+  - El 10 es ahora crema, con un marco mostaza arriba y un portón de tablas de madera oscura; en el juego era blanco (se ha cambiado su línea).
+  - Los adosados de 2008 (el 21 de atrás) están pintados de un ocre más claro que en la foto del Catastro.
+- **`delicias_3`:** el Catastro dibuja la fachada 4 m detrás de la calle; en las fotos está a la calle. Ese hueco se rellena con la clave nueva `fill` de `calles.json` (una caja de la casa entre el frente y lo que dibuja el Catastro, en `tools/bake_godot.py`).
+- **`delicias_17b`:** el porche bajo la planta de arriba tiene 0 plantas en el Catastro y el horneado no lo cogía: también va con `fill`. Se dibuja como hueco recto con la cancela baja de hierro y la puerta al fondo (opciones nuevas del `arc`: `sq=1`, `gh=`, `bd=`).
+- **`delicias_19`:** el portal está metido detrás de una reja entera, en un marco del mismo ladrillo claro que las pilastras (`brick_buff`).
+- **`delicias_21`:** casa de esquina. Su frente es la cara del oeste (4,7 m); el chaflán, con el cuerpo volado de arriba, va en las líneas `lado`.
+- **`delicias_19b`:** nave de cemento gris con un portón alto de chapa. En el Catastro tiene 0 plantas, así que va en una caja hecha a mano, sin referencia (4,4 m de alto).
+- **`delicias_21r1` a `delicias_21r5` y `delicias_21t`:** la hilera de cinco adosados está detrás de sus patios. Cada casa la dibuja `_hilera21()` en `godot/scripts/casas.gd`: garaje abajo, porche con escalera roja de peldaños blancos, ventana con dintel de madera, dos buhardillas y el patio con muro de piedra, verjas de cañizo y pilares. El muro del patio de toda la hilera es `delicias_21t` (`["obra"]`). El lado del porche (izquierda, derecha, izquierda, derecha, izquierda) sale de las partes pequeñas del Catastro.
+- **`delicias_28` y `delicias_30`:** el revoco tostado lleva dibujados los sillares (`_sillares()` en `godot/scripts/casas.gd`).
+- **`delicias_32` y `delicias_32g`:** la parcela del 32 se parte en la casa de dos plantas y el garaje de una planta del lado este, más bajo.
+- **`delicias_36`:** el óculo de arriba va como una ventanita.
+- **`delicias_7`:** lleva el cartel de «se vende» con el teléfono garabateado.
+- **`delicias_12`:** es una tira estrecha de la casa crema del 10: la puerta metida y, encima, una ventana con marco mostaza.
+- **No tocado:** la casa de la esquina del 1 (`constitucion_90`) sale de ladrillo rojo en el juego, y en Street View es beige rosado con un portón de madera en arco. Es de otra calle y se queda como está.
+- **Para otra tanda:** la segunda mitad de la calle.
+
+## Calle de las Delicias (lo que faltaba, segunda mitad)
+
+- **El 40 y la casa de al lado (`delicias_40` y `delicias_40b`):** el Catastro pone el solar vacío del 40 encima de una casa de dos plantas (ladrillo sobre revoco crema, portón gris de chapa). El solar de verdad es el hueco de al lado, que el Catastro deja sin nada: una tapia de ladrillo con una puertecilla de hierro oxidada. Las dos van como cajas hechas a mano, sin referencia.
+- **`delicias_36d`:** casita de ladrillo de 2013, de una planta, con tejado a cuatro aguas, zócalo de pizarra y garaje marrón. Su frente son las caras norte de dos partes del Catastro, en una sola línea (7 m). La esquina blanca de la Calle del Buen Suceso va en las líneas `lado`.
+- **`delicias_54`:** el Catastro no tiene nada entre el 52 y el 56; en Street View es un corral con tapia de ladrillo, un portón granate de chapa en un marco amarillo y una puerta pequeña. Va como caja sin referencia.
+- **`delicias_64`:** la casa blanca de 2006 tiene arriba una galería de madera a lo largo de toda la fachada, sobre las cabezas de las vigas, con barandilla de hierro y postes hasta el alero. La dibuja `_delicias_64()`, en `godot/scripts/casas.gd`, con dinteles de madera sobre el portón, la ventana y la puerta.
+- **`delicias_66`:** una planta en el Catastro y dos en las fotos; va con dos.
+- **`delicias_42`, `delicias_44` y `delicias_66`:** `reach` 8, para que las partes de atrás, más altas o más bajas, sigan siendo casas corrientes.
+- **Colores:** los portones de tablas salen más claros que el color que se les da; para la madera oscura de las fotos hace falta 3e2a1e. `tile_brown` sale granate: los zócalos de baldosa marrón y de barro van con un color liso (8a6a50 y c4703c).
+- **Fuera:** Juan XXIII 39 (la esquina del final) y Reyes Católicos 2 dan a otras calles. Las tres parcelas sueltas del principio dan a la Avenida de la Constitución y a la Calle de la Parra.
+
+## Calle de Tembleque (lo que faltaba)
+
+- **El solar del 48 D (`tembleque_48d`):** el Catastro aún dibuja una tira de casas viejas a lo largo de la calle. En Street View 2024 es un solar vacío detrás de una tapia de ladrillo con pilares de cemento. Solo queda en pie, en la punta norte, un cobertizo viejo de color tierra con un portón gris y una pintada. La tira se quita con `porch` (del metro 10,2 al final) y la tapia, de medio metro de grueso, entra con `fill`. El cobertizo y la parte de la esquina se quedan; todo a 2,6 m.
+- **`tembleque_35`:** tres plantas de ladrillo pardo en la esquina donde la calle se abre en dos. El Catastro no tiene foto. Las plantas de arriba salen sobre la calle (un `paño` con `out=0.6`).
+- **`tembleque_34b`:** sin año en el Catastro. Abajo, ladrillo rojo con dos cocheras granates y una puerta en arco con cortina; arriba, blanco con ventanas en arco enmarcadas en ladrillo (`arc` con `f=`).
+- **`tembleque_99`:** la casa nueva de 2022 está detrás de su patio. Una parte de la parcela sale 1,9 m por delante de la fachada y se quita con `clear` 2,5. Falta la tapia blanca del patio, la que da a la acera.
+- **Colores:** `brick_brown` sale naranja en el juego; para el ladrillo pardo oscuro del 35 va `brick_dark`. La nave de 2012 del 95 va con `brick_red`.
+- **Fuera:** el 57, porque el Catastro solo le da una franja de 2 m a la calle y su casa queda detrás de la fachada del 59, que ya estaba hecha. Tembleque 2 es un solar sin plantas en el Catastro y da a otra calle. Consuegra 1 y 2 dan a la Calle de Consuegra.
+- **En el mapa:** de `rsm_26` y `rsm_28` solo cambia qué paredes de atrás quedan tapadas, porque lindan con el 29, el 31 y el 33.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

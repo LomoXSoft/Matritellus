@@ -1059,7 +1059,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 19: 3 ok, 1 fallo, porque `dul_4` tenía pocas piezas ([log](logs/selftest_casas_solo_dpc_2_dpc_4_dpc_8d_dpc_x10_dpc_x14_dpc_16_dpc_18__20261121_152232.log)).
   - Con hiladas y una puerta, `solo=dul_4`: 4 ok ([log](logs/selftest_casas_solo_dul_4_20261121_152411.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En la 0.0.20 (commits `b97ac87` y `d4066ba`, Sistemas, 21/11).
 
 ### Camino Hondo: 12 casas (21/11)
 
@@ -1075,7 +1075,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 12 y `bs_h20`: 3 ok, 1 fallo, porque `cho_30` tenía pocas piezas ([log](logs/selftest_casas_solo_cho_jx43_cho_jx45_cho_1a_cho_14_cho_co10_cho_16_c_20261121_154705.log)).
   - Con hiladas y una puerta, `solo=cho_30`: 4 ok ([log](logs/selftest_casas_solo_cho_30_20261121_154832.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»). En la 0.0.20 (commits `b97ac87` y `d4066ba`, Sistemas, 21/11).
 
 ### Calle de las Monjas, del 29 y el 40 a la Rosa de Santa María: 27 casas (21/11)
 
@@ -1090,7 +1090,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 27 y las cuatro vecinas: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_mon_29_mon_33_mon_35_mon_35d_mon_37_mon_39_mon_45_20261121_155912.log)).
   - Tras los cambios de color, `solo=mon_44,mon_46,mon_62,mon_x55`: 4 ok ([log](logs/selftest_casas_solo_mon_44_mon_46_mon_62_mon_x55_20261121_160145.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). En la 0.0.20 (commits `b97ac87` y `d4066ba`, Sistemas, 21/11).
 
 ### Calle de las Monjas, el resto (de Nalda a Sancho Panza): 20 casas (21/11)
 
@@ -1117,7 +1117,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Los pilares, la franja blanca y el palé dejan su contorno en `MapData.outlines` (y en la rejilla si ya está hecha), como la almazara; el arco queda libre para pasar.
   - Pruebas: `casas` de `mon_10` y `monjas_b742`: 4 ok ([log](logs/selftest_casas_solo_mon_10_monjas_b742_20261121_174451.log)); los 12 avisos `ARRAY_FORMAT_TEX_UV` ya salían antes. Fotos con `vistas=arco_calle,arco_dentro,arco_azafran` (sale «VISTAS OK»; `run_tests.py` no reconoce esa línea y da «NO RESULT»). Hoja `guion/fotos/tanda34/monjas_arco.jpg`.
   - No probado: coger el azafrán en una partida de verdad (la recogida es la misma de los otros escondidos). Avisado Sistemas.
-- **Aprobado** por el usuario el 21/11 («Visto bueno»), la tanda y el arco. Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno»), la tanda y el arco. En la 0.0.20 (commits `b97ac87` y `d4066ba`, Sistemas, 21/11).
 
 ### Travesía del Clavel, principio del Clavel y Calle del Romero: 24 casas (21/11)
 
@@ -1134,7 +1134,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - `casas` de las 24, `romero_11` y `rafael_tc2`: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tcl_4_tcl_6_tcl_8_tcl_10_tcl_12_tcl_14_tcl_16_tcl_20261121_180513.log)).
   - Tras los cambios de color (el ocre de la hilera; los portones del 24 A y el 17; la puerta del 21): 4 ok ([log](logs/selftest_casas_solo_tcl_4_tcl_12_tcl_20_rom_24a_rom_21_rom_17_20261121_180823.log), [log](logs/selftest_casas_solo_tcl_6_tcl_8_tcl_10_tcl_14_tcl_16_tcl_18_20261121_180932.log)).
 - **La Travesía, peatonal y elevada:** el usuario preguntó si la había hecho elevada, con sus dos accesos (escalera por el Clavel, rampa por San Rafael). No lo estaba: en el mapa es una calle `residential` de asfalto. El usuario: «De acuerdo, que sea peatonal y con las cosas que has dicho. Que se ponga Petril con eso cuando termine con el Rice». Encargado a Edificios Especiales por mensaje. Fotos y notas en `referencias/travesia_clavel/` (LEEME.md, nuevo).
-- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos»). Sin commit.
+- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos»). En la 0.0.20 (commits `b97ac87` y `d4066ba`, Sistemas, 21/11).
 - **Después, a petición de Pretil** (su paseo elevado, `travesia.gd`, pasa 0,30–0,55 m por debajo de cada umbral, con un rellano y peldaños ante cada puerta): en `tcl_4` a `tcl_20` quité la escalera `esc` y el ventanuco de la planta de piedra. Queda `wall=stone h=1.4`; las puertas no se mueven. Sin horneado. Sobre el mapa de Pretil con la Travesía (clave `travesia`), `casas` de las nueve: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tcl_4_tcl_6_tcl_8_tcl_10_tcl_12_tcl_14_tcl_16_tcl_20261121_192344.log)). En las fotos, sus rellanos con barandilla quedan ante cada puerta y la piedra asoma por debajo.
 
 ### Teniente Infante, Avenida de Castilla-La Mancha, Alameda y Arroyuelo Bajo: 17 casas (21/11)
@@ -1156,7 +1156,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Pruebas.**
   - `casas` de las 17 y esas tres: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tin_15_tin_x11_tin_x10_tin_16_tin_x6_acm_6_acm_8__20261121_184539.log)).
   - Tras cambiar a `brick_rose` el ladrillo del 6 y del 28 de Castilla-La Mancha: 4 ok ([log](logs/selftest_casas_solo_acm_6_acm_28_20261121_184753.log), [log](logs/selftest_casas_solo_acm_6_20261121_184902.log)).
-- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos»). Sin commit. Las calles quedan en pausa hasta nueva orden; la siguiente por `faltan.py` sería Tembleque o Delicias.
+- **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos»). En la 0.0.20 (commits `b97ac87` y `d4066ba`, Sistemas, 21/11). Las calles quedan en pausa hasta nueva orden; la siguiente por `faltan.py` sería Tembleque o Delicias.
 
 ### La almazara «González de la Ruz» (21/11, Claude · Edificios Especiales)
 
@@ -1370,8 +1370,343 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.20
 - **Sin probar:** no se ha probado en móvil ni en Steam Machine.
 
+### «Seguros Sopiss», primera pieza del cruce de los semáforos (21/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «…el cruce de los semáforos o las cuatro esquinas… Te pido ahora colocar estos donde corresponde. Antes igual tendremos que hacer unas pocas fachadas. Sugiero ir una por una y empezar por el edificio de soliss seguros (última foto) y que llamaremos seguros sopiss, tendrá luces de apagado o encendido según su horario y en su interior saldrán dos NPCs genéricos hablando de seguros cuando abierto, y una señora de la limpieza cuando cerrado. Se podrá ver desde fuera, pero no pasar. Vayamos poco a poco».
+- **Qué hay** (`godot/scripts/sopiss.gd`, `world.sopiss`, sobre la casa `salvador_24`, sin horneado).
+  - El edificio rojo de tres plantas con sus tres fachadas, la banda fucsia «SOPISS · Seguros de toda la vida», balcones de forja, alero de madera y tejado a cuatro aguas.
+  - La oficina a la vista por cristales de verdad; no se entra.
+  - Luces, penumbra y cartel «ABIERTO»/«CERRADO» según el horario real: lunes a viernes de 9 a 14 y de 17 a 20.
+  - Un azafrán escondido en el portal de los pisos (`"id": "sopiss"`).
+- **Reparto.** Texturas pasó `salvador_24` a `["obra"]`. Los tres personajes son de Sistemas (`sopiss_gente.gd`), que lee `desk_spots`, `clean_spots` e `is_open`.
+- **Archivos.**
+  - Nuevos: `godot/scripts/sopiss.gd`, `godot/assets/sopiss/` (10 PNG), `tools/cruce/` (6 scripts), `tools/ign/cruce*.jpg` y `.json`, `guion/fotos/cruce/sopiss_01–04`, [referencias/cruce/LEEME.md](referencias/cruce/LEEME.md).
+  - Compartidos, solo con añadidos y con aviso: `world.gd` (`SopissS`, `var sopiss`, paso «Seguros Sopiss», `_build_sopiss()`), `selftest.gd` (`--sopiss`, `_sopiss_checks()` y su llamada tras `_travesia_checks()`).
+- **El neón (22/11).** Luis: «El neon de salamanquesa podría brillar en amarillo por la noche». El letrero «Salamanquesa» es azul de día y luz amarilla de noche, con una luz sin sombras en la pared; sigue al cielo (`sky_fx.night`), no al horario. Es más grande que al principio (2,5 m) para que se lea.
+- **Prueba.** `sopiss`: 4 ok ([log](logs/selftest_sopiss_20261122_000215.log)).
+  - No he pasado la completa ni la prueba de Sistemas con los personajes dentro.
+- **Visto de paso, sin tocar.**
+  - La calle al sur del edificio es «Calle del Teniente Infante» en el mapa y «Calle Cervantes» en la placa real. Preguntado a Luis.
+  - Cada arranque del juego escribe doce veces el error `ARRAY_FORMAT_TEX_UV` al construir la almazara (`_build_almazara`): mezcla piezas con y sin coordenadas de textura en un mismo material. Es mío y viene de antes; no afecta a lo que se ve. **Quitado el 22/11**: los dos faldones de chapa de las naves de atrás se ponen ahora sin esas coordenadas, como el resto de su chapa (`_sheet_slope` en `almazara.gd`). `almazara`: 3 ok y ninguna aparición del error ([log](logs/selftest_almazara_20261122_003121.log)).
+- **Visto bueno de Luis (22/11):** «Visto bueno a sopiss».
+- **Pendiente.** Las otras esquinas, una por una; los semáforos, el espejo y las señales del cruce. Sin commit (lo hace Sistemas).
+
+### «Clínica Dental», segunda pieza del cruce de los semáforos (22/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «Vamos con el dentista. Lo llamaremos "Clínica Dental" y "Dr. Josué Escudero"».
+- **Qué hay** (`godot/scripts/clinica.gd`, `world.clinica`, sobre la casa `arcos_2`, sin horneado).
+  - La esquina de la calle Cervantes con los Arcos: planta baja de piedra oscura con tiras de acero y letras en relieve, ventanas de espejo con sus palabras, puertas de lamas y puerta de la clínica.
+  - A los Arcos, además, el portal de la casa entre granito gris, tras una cortina rosa.
+  - Arriba, el balcón corrido de chapa que dobla la esquina, tres balcones de forja y el alero de madera.
+  - Sin azafrán: puse uno en el portal de la casa y Luis lo mandó quitar (ver abajo).
+- **Añadido mío, sin pedir**: los cristales tienen una luz tenue mientras está abierta (horario real: L–V 9–13:30 y 16:30–20) y las letras se iluminan de noche.
+- **Código común nuevo**: `godot/scripts/esquina.gd` recoge lo que comparten los edificios del cruce (tejado por faldones, aleros, medianeras, sólidos). `sopiss.gd` pasa a extenderlo; su prueba sigue en 4 ok tras el cambio ([log](logs/selftest_sopiss_20261122_001746.log)).
+- **Reparto.** Texturas pasó `arcos_2` a `["obra"]`. No hay personajes.
+- **Archivos.**
+  - Nuevos: `godot/scripts/clinica.gd`, `godot/scripts/esquina.gd`, `godot/assets/clinica/` (7 PNG), `tools/cruce/dibujos_clinica.py`, `guion/fotos/cruce/clinica_01–03`.
+  - Cambiados, míos: `godot/scripts/sopiss.gd`, `tools/cruce/capturas.py`, `mide.py`, `hojas.py`, [referencias/cruce/LEEME.md](referencias/cruce/LEEME.md).
+  - Compartidos, solo con añadidos y con aviso: `world.gd` (`ClinicaS`, `var clinica`, paso «the dental clinic», `_build_clinica()`), `selftest.gd` (`--clinica`, `_clinica_checks()` y su llamada tras `_sopiss_checks()`).
+- **Prueba.** `clinica`: 2 ok ([log](logs/selftest_clinica_20261122_002736.log)).
+  - No he pasado la completa.
+- **Visto bueno de Luis (22/11):** «Visto bueno. No renombres. Quita ese azafrán escondido, sigue proponiendolos y yo te digo en cada proyecto si lo añadimos o lo quitamos».
+  - La clínica queda aprobada.
+  - La calle de abajo no se renombra en el mapa.
+  - El azafrán de la clínica, quitado; su cortina cierra el portal entero. **Norma nueva**: en cada proyecto se propone el azafrán y no se pone hasta que Luis lo diga.
+- **Pendiente.** Las otras tres esquinas; los semáforos y las señales. Sin commit (lo hace Sistemas).
+
+### La gente de dentro de «Seguros Sopiss» (21–22/11, Claude · Sistemas)
+
+- **Encargo de Luis** (por Pretil, y después en directo): «dos NPCs genéricos hablando de seguros cuando abierto, y una señora de la limpieza cuando cerrado»; «Que se oiga a través del cristal, el seguro lo vende una mujer rubia con americana, el que recibe el seguro cambia cada vez. La de la limpieza va tarareando música».
+- **Qué hay** (`godot/scripts/sopiss_gente.gd`, `game.sopiss_gente`; lee `world.sopiss`: `is_open`, `desk_spots`, `clean_spots`).
+  - Abierto: la vendedora (rubia, americana azul oscuro con blusa en pico) tras el mostrador y un cliente delante.
+  - A menos de 9 m del cristal se oye una charla entera, frase a frase sobre sus cabezas (Loc `sopiss_charla`, 10 charlas).
+  - Cuando acaba la charla o te vas, el siguiente cliente se sienta sin que nadie mire. Es otra persona y trae otra charla.
+  - Cerrado (también de 14 a 17): la limpiadora, con bata y fregona, hace la ronda de `clean_spots`. Tararea una melodía hecha en el propio juego, sin canción concreta, apagada por el cristal (clase `Hum`), con «♪ la-ra-ra ♪» sobre la cabeza (Loc `sopiss_tarareo`).
+  - Hablarles a través del cristal: contestan desde dentro (Loc `sopiss_cristal`, `sopiss_cristal_limpia`).
+  - Son vecinos anónimos (`id ""`, `still`) con meta `sopiss`; no entran en `named`, así que no firman ni reciben pedidos.
+- **Archivos**: nuevo `sopiss_gente.gd`; añadidos en `game.gd` (preload, var, setup, tick, gancho al principio de `talk_to`), `loc.gd` (las cuatro claves) y `selftest.gd` (`_sopiss_gente_checks`, modos `--sopiss_gente` y `--sopiss_gente_fotos`, llamada en la completa tras `_marciano_checks`).
+- **Pruebas.** `sopiss_gente`: 10 ok con la oficina de verdad ([log](logs/selftest_sopiss_gente_20261122_003019.log)). `palabros`: ok. Fotos en `godot/shots/sopiss_gente_*`. No se ha pasado la completa.
+- **Visto bueno de Luis a Sopiss (22/11).** Sin commit todavía.
+
+### La casa blanca de Santa Ana 2, tercera pieza del cruce de los semáforos (22/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**, con una captura de Street View: «Vamos a tratar de terminar el cruce de los semáforos para poner definitivamente los semáforos. El siguiente será Calle Santa Ana, 2».
+- **Qué hay** (`godot/scripts/stana2.gd`, `world.stana2`, sobre la casa `constitucion_a1`, sin horneado).
+  - La casa encalada de la esquina de Santa Ana con los Arcos: zócalo de mampostería, portón de madera con clavos, ventanas con reja, marcos añil, balconcillos, cornisa blanca con las bocas de las tejas y chimenea.
+  - A los Arcos, la ventana con reja, el portal con cortina morada y la placa de la calle.
+  - Detrás, la construcción del fondo, lisa.
+  - Sin azafrán: propuesto a Luis junto al portón.
+- **Reparto.** Texturas pasó `constitucion_a1` a `["obra"]`. No hay personajes ni horario.
+- **Archivos.**
+  - Nuevos: `godot/scripts/stana2.gd`, `guion/fotos/cruce/stana2_01–02`.
+  - Cambiados, míos: `tools/cruce/capturas.py`, `mide.py`, `hojas.py`, [referencias/cruce/LEEME.md](referencias/cruce/LEEME.md).
+  - Compartidos, solo con añadidos y con aviso: `world.gd` (`Stana2S`, `var stana2`, paso «the white house of Santa Ana», `_build_stana2()`), `selftest.gd` (`--stana2`, `_stana2_checks()` y su llamada tras `_clinica_checks()`).
+- **Pruebas.** `stana2`: 2 ok ([log](logs/selftest_stana2_20261122_004858.log)).
+  - `clinica`, ya sin su azafrán: 2 ok ([log](logs/selftest_clinica_20261122_004718.log)).
+  - No he pasado la completa.
+- **Visto bueno de Luis (22/11):** «No se pone Azafrán. Visto Bueno. Siguiente».
+- **Pendiente.** Las dos esquinas que quedan; los semáforos y las señales. Sin commit (lo hace Sistemas).
+
+### La casa crema del mirador, cuarta pieza del cruce de los semáforos (22/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**, tras aprobar Santa Ana 2: «No se pone Azafrán. Visto Bueno. Siguiente». De las dos esquinas que quedaban he seguido por la del mirador.
+- **Qué hay** (`godot/scripts/mirador.gd`, `world.mirador`, sobre la casa `constitucion_2`, sin horneado).
+  - La casa de 1925 de la esquina de la avenida con Santa Ana: revoco crema con zócalo, recercos, balcones y cornisa en ocre.
+  - En el chaflán, el portal con cortina y el mirador encima.
+  - A la avenida y a Santa Ana, ventanas con reja, balcones de antepecho macizo y las placas de las calles.
+  - A Santa Ana, además, la parte blanca con el portón de arco y la galería de madera.
+  - Un acerado propio ante el chaflán y Santa Ana, porque el del pueblo no llegaba a las paredes. Cada punto sale de la pared hasta el bordillo y no más (`_to_kerb()`).
+  - Sin azafrán: propuesto a Luis tras el portón de arco.
+- **Reparto.** Texturas pasó `constitucion_2` a `["obra"]`. No hay personajes ni horario.
+- **Archivos.**
+  - Nuevos: `godot/scripts/mirador.gd`, `godot/assets/clinica/placa_santa_ana.png`, `guion/fotos/cruce/mirador_01–02`.
+  - Cambiados, míos: `tools/cruce/capturas.py`, `mide.py`, `hojas.py`, `dibujos_clinica.py`, [referencias/cruce/LEEME.md](referencias/cruce/LEEME.md).
+  - Compartidos, solo con añadidos y con aviso: `world.gd` (`MiradorS`, `var mirador`, paso «the house with the bay window», `_build_mirador()`), `selftest.gd` (`--mirador`, `_mirador_checks()` y su llamada tras `_stana2_checks()`).
+- **Prueba.** `mirador`: 2 ok ([log](logs/selftest_mirador_20261122_013352.log)).
+  - No he pasado la completa.
+- **Pendiente.** Nada: aprobada por Luis el 22/11, sin azafrán. Sin commit (lo hace Sistemas).
+
+### La casa beige del Salvador, quinta pieza del cruce de los semáforos (22/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «Vamos a tratar de terminar el cruce de los semáforos para poner definitivamente los semáforos». Era la última esquina.
+- **Qué hay** (`godot/scripts/beige.gd`, `world.beige`, sobre la casa `salvador_c3`, sin horneado).
+  - La casa de dos plantas de 1976 al norte del Salvador, en su esquina con la avenida: dos alas de una crujía alrededor de un patio.
+  - A la avenida: revoco beige, portal hondo encalado, dos ventanas con reja y tres arriba con barandilla.
+  - Al Salvador: revoco gris, cuatro ventanas con reja (una de buche), trampilla, respiraderos y la placa «Calle Salvador».
+  - El testero norte, con el yeso de la casa vecina que tiraron.
+  - Tejado a dos aguas en cada ala, hecho con dos tejados que se solapan en la esquina.
+  - Las naves del patio y del fondo de la parcela, lisas: con `["obra"]` el mapa deja de dibujar las tres piezas de la casa.
+  - La tapia de bloques del solar del norte, con su cancela roja: por la avenida y, doblando, por la calle de Colón.
+  - Sin azafrán: propuesto a Luis en el fondo del portal.
+- **Arreglos de paso.**
+  - `esquina.gd`, `_inset()`: dos aristas casi en línea ya no se cruzan a cientos de metros. Repetidas las pruebas de los otros cuatro edificios, que usan el mismo kit.
+  - `mirador.gd`: su acerado propio busca el bordillo punto a punto (`_to_kerb()`); a ojo se metía 0,83 m en la calzada.
+  - `selftest.gd`, en mis modos `--mirador` y `--beige`: `g.traffic.clear()` antes de cada captura.
+- **Reparto.** Texturas pasó `salvador_c3` a `["obra"]`. No hay personajes ni horario.
+- **Archivos.**
+  - Nuevos: `godot/scripts/beige.gd`, `godot/assets/clinica/placa_salvador.png`, `guion/fotos/cruce/beige_01–03`.
+  - Cambiados, míos: `godot/scripts/esquina.gd`, `mirador.gd`, `tools/cruce/capturas.py`, `mide.py`, `hojas.py`, `dibujos_clinica.py`, [referencias/cruce/LEEME.md](referencias/cruce/LEEME.md).
+  - Compartidos, solo con añadidos y con aviso: `world.gd` (`BeigeS`, `var beige`, paso «the house north of the Salvador», `_build_beige()`), `selftest.gd` (`--beige`, `_beige_checks()` y su llamada tras `_mirador_checks()`).
+- **Pruebas.** `beige`: 2 ok ([log](logs/selftest_beige_20261122_020647.log)). Tras el cambio del kit: `sopiss` 4 ok; `clinica` 2 ok; `stana2` 2 ok; `mirador` 2 ok.
+  - No he pasado la completa.
+- **Pendiente.** Nada: Luis aprobó esta casa y la del mirador el 22/11 («Visto bueno. Sin azafrán. Pasamos a semáforos»). Los semáforos están en la entrada siguiente. Sin commit (lo hace Sistemas).
+
+### Semáforos, espejo y señales, sexta pieza del cruce de los semáforos (22/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «Visto bueno. Sin azafrán. Pasamos a semáforos». Con eso aprobó la casa del mirador y la casa beige, sin azafrán en ninguna.
+- **Qué hay** (`godot/scripts/cruce.gd`, `world.cruce`, sin horneado y sin casa del mapa).
+  - Cinco postes de semáforo y un báculo con brazo sobre Santa Ana: 7 cabezas de tres luces y 7 de peatones, con sus pulsadores.
+  - Una cabeza en escuadra y el ceda el paso en la fachada de Sopiss al Salvador.
+  - El espejo redondo y un STOP en un poste ante Sopiss; prohibido autobuses a Cervantes.
+  - Prohibido el paso al Salvador (con su placa) y a Santa Ana; prohibido girar a la derecha sobre STOP en la esquina de la casa blanca; prohibido parar en la avenida; prohibido aparcar en la pared de la clínica.
+  - El armario gris de la casa beige y la papelera de la casa blanca.
+  - En la calzada, la línea de detención de cada calle que trae coches y el paso de cebra de la avenida al norte del Salvador.
+  - Las lentes brillan con su material: no hay luces nuevas.
+- **Se rompen de un golpe** (Luis, 22/11: «Solo añadiría que se puedan romper con un golpe, una vez rotos pasan a funcionar como ámbar. Se arreglan igual que el resto de objetos rompibles»).
+  - Los postes, el báculo, el armario y la papelera son 14 cuerpos sueltos que `props.gd` adopta (`adopt()`, nueva): un coche o un puñetazo los tumba como al resto del mobiliario.
+  - Sistemas añadió dos ganchos a `_knock` y `cruce.gd` se los pone a sus cuerpos: `on_knock` (avisa en el momento de la caída; los 14) y `keep` (no se borra a los 40 s; los siete que llevan luces o las mandan). Un semáforo caído se queda tirado; una señal o la papelera desaparecen como el resto.
+  - Con un semáforo o el armario caídos, `world.cruce.broken` es `true` y todo el cruce parpadea en ámbar; `semaforos.gd` lo trata como su ámbar de madrugada.
+  - `world.cruce.repair()` lo levanta todo. Se arreglan al día siguiente, como el resto del mobiliario (decisión de Luis del 22/11, «Al día siguiente», que llegó por Sistemas): `props.gd` (`mend()`, de Sistemas) llama a `world.cruce.repair()` cuando hay algo caído (`broken` o `down > 0`), ya es otro día que el de la última caída y no se ve el punto de parada de la avenida. Hasta entonces el semáforo caído sigue tirado y el cruce en ámbar. Al cargar la partida todo está en pie. `world.cruce.fallen()` da los sitios que el arreglo cambiaría.
+  - Lo que cuelga de una pared (ceda el paso y cabeza de Sopiss, prohibido aparcar de la clínica) no se rompe.
+- **Cómo se midió.** 42 vistas `x_` de Street View y `tools/cruce/postes.py`, que cruza rumbos desde varias cámaras (±0,7 m). Cada cosa va por su sitio a lo largo de la fachada más cercana; `_stand()` la arrima a la pared donde la acera del juego es más estrecha.
+- **Reparto con Sistemas.**
+  - `cruce.gd` da `heads`, `walk`, `set_light()`, `set_walk()`, `auto`, `restart()`, `lights()` y `put_back()`.
+  - `semaforos.gd` (Sistemas) lleva el ciclo, el ámbar intermitente de 1 a 7 y los coches que paran. Pone `auto` a `false`; sin él, `cruce.gd` lleva un ciclo propio solo de luces.
+  - Luis decidió que los semáforos solo paran a los coches del pueblo, y que el último tramo de Santa Ana sea de sentido único hacia el cruce (`ONE_WAY_FIX`, de Sistemas).
+  - Los nombres `avenida` y `arcos` de `heads` no se pueden cambiar: Sistemas los usa para el STOP de noche.
+- **Archivos.**
+  - Nuevos: `godot/scripts/cruce.gd`, `tools/cruce/postes.py`, `guion/fotos/cruce/cruce_01–05`.
+  - Cambiados, míos: `tools/cruce/capturas.py`, `hojas.py`, [referencias/cruce/LEEME.md](referencias/cruce/LEEME.md).
+  - Compartidos, solo con añadidos y con aviso: `world.gd` (`CruceS`, `var cruce`, paso «the crossroads' traffic lights», `_build_cruce()`), `selftest.gd` (`--cruce`, `_cruce_checks()` y su llamada tras `_beige_checks()`), `props.gd` (`adopt()`, tras `_knock`).
+- **Pruebas.** `cruce`: 5 ok ([log](logs/selftest_cruce_20261122_031520.log)); `arreglos` (la prueba de Sistemas de la regla del día siguiente, con este cruce): 2 ok ([log](logs/selftest_arreglos_20261122_031706.log)).
+  - Sistemas ha pasado su prueba `semaforos` sobre este cruce con coches de verdad: 8 ok, con dos coches esperando en la linea de la avenida. No he pasado la completa.
+- **Cómo verlo en el juego.** Ir al cruce de la avenida de la Constitución con Santa Ana: los semáforos cambian solos y los coches del pueblo paran en las líneas. Dar un puñetazo a un poste con semáforo, o tumbarlo con un coche: todo el cruce queda en ámbar intermitente.
+- **Pendiente.** El visto bueno de Luis. Sin poner: las farolas de brazo de las fachadas, los carteles de dirección y el semáforo siguiente de la avenida. Sin commit (lo hace Sistemas).
+
+### Hoja de relevo de Edificios Especiales (22/11, Claude · Edificios Especiales)
+
+22 de noviembre de 2026. Luis va a pasar el trabajo de Edificios Especiales a otra IA mientras esta sesión está en pausa («Para aliviar carga le voy a pasar tu trabajo a otra IA mientras tanto») y pidió preparar lo necesario para que no se estropee.
+
+- **Hecho.** [RELEVO_EDIFICIOS_ESPECIALES.md](RELEVO_EDIFICIOS_ESPECIALES.md), en la raíz: qué es el papel, qué leer antes, lo que puede estropear el trabajo (git, Godot, horneado, archivos compartidos y de otros, nombres que usan `semaforos.gd` y `props.gd`), las normas de Luis que solo estaban en la memoria de Claude, cómo se hace un lugar, el estado del cruce y qué dejar escrito al terminar.
+- **Archivos.** `RELEVO_EDIFICIOS_ESPECIALES.md` (nuevo) y este registro. Sin cambios en el juego: no hay prueba.
+- **Pendiente.** Casi todo el cruce son archivos sin seguimiento de git. Conviene un commit de Sistemas antes de que empiece la otra IA; se le ha dicho a Luis, que decide.
+- **Para Claude al volver.** Leer las entradas posteriores a esta, con `git status --short` y `git diff`, antes de tocar nada.
+
+### Semáforos que funcionan, el último tramo de Santa Ana y lo roto que vuelve (22/11, Claude · Sistemas)
+
+- **Encargo de Luis**: «Solo paran coches» (qué hacen los semáforos), «Solo el último tramo» (Santa Ana de sentido único), «Al día siguiente» (cuándo se arregla lo roto). El cruce (`cruce.gd`) es de Edificios Especiales.
+- **Semáforos** (`godot/scripts/semaforos.gd`, `game.semaforos`):
+  - El ciclo: el grupo 0 (avenida y Arcos) tiene 16 s de verde y el 1 (Salvador y Santa Ana) 11 s; después 3 s de ámbar y 1,5 s de rojo en los dos.
+  - Ámbar intermitente de 1 a 7, y también mientras `world.cruce.broken`. Entonces solo paran un momento en la línea los de «avenida» y «arcos», que tienen STOP.
+  - Manda sobre `cruce.set_light` y `cruce.set_walk` y pone `cruce.auto = false`. Se engancha al tráfico en su primer tick, porque el tráfico se crea después.
+  - `traffic.gd`: `lights.gap()` frena el coche a 3 m/s² hasta su línea y lo deja esperando (`at_light`). Los de detrás lo ven como «en marcha» y hacen cola en vez de adelantar. Los de servicio y el piloto automático no paran.
+- **Santa Ana**: `map_data.gd` `ONE_WAY_FIX`, del Romero (969) al cruce (974), solo hacia el cruce, sin rehornear. `one_way_says` lo lee primero.
+- **Lo roto vuelve al día siguiente** (`props.gd`):
+  - `_knock` guarda dónde estaba la pieza. A los 40 s se esconde (`_tidy`) en vez de borrarse.
+  - `mend()` la vuelve a poner cada 2 s si ya es otro día y no se ve. Los árboles también (`world.unfell_tree`).
+  - Lo que lleva la meta `on_knock` es del dueño: el cruce se arregla entero con `cruce.repair()` cuando no se ve ninguno de los sitios de `cruce.fallen()`. Con `keep` no se borra a los 40 s.
+- **Pruebas.** `semaforos`: 9 ok (ciclo, caras, distancia a la línea, noche y STOP, roto, Santa Ana, un coche de verdad que para en rojo y sigue en verde, todo sobre el cruce de verdad). `arreglos`: 2 ok. `sentido` y `grua` ok. Foto: `--semaforos_fotos`.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
 
 Para cambios del juego, seguir las normas de [PROJECT_STATE.md](PROJECT_STATE.md) y ejecutar `python tools/run_tests.py <modo>` desde este repositorio para el modo afectado. Anotar aquí los resultados nuevos y enlazar a la documentación específica de la tarea cuando exista.
+
+### Calles de la Parra, del Descanso y de la Pastora: 26 casas (22/11, Claude · Texturas)
+
+22 de noviembre de 2026, Texturas (Claude). El usuario retomó las calles («Seguimos»).
+
+- **Hecho.** 26 entradas:
+  - `par_4`, `par_2`, `par_1`, `par_3`, `par_5`, `par_3b`, `par_7`;
+  - `des_14`, `des_12`, `des_10`, `des_8`, `des_6`, `des_4`, `des_13`, `des_11`, `des_9`, `des_aa31`, `des_7d`, `des_3`;
+  - `pas_6`, `pas_4`, `pas_2`, `pas_2a`, `pas_3`, `pas_1d`, `pas_1`.
+  - Fotos del Catastro y Street View de noviembre de 2024. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Parcelas partidas.**
+  - Parra 3 tiene dos frentes, separados por el 5: `par_3` (dos plantas) y `par_3b` (`only` 1, el trozo junto al 7).
+  - El portón verde de Descanso 11 es la parte de una planta de la parcela de Travesía del Santo 8 (4296603). Va en `des_11`, con `only` 1 y `reach` 2; `trsanto_8` se queda con lo de dos plantas.
+- **Calle desplazada.** En el lado norte de la Parra, la calle del mapa va unos 2 m al norte de la real. Frentes del muro genérico (`frente_gen.py`), con `clear` 1 (1,4 en `par_1`).
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (26 entradas);
+  - `godot/data/map.json`;
+  - las hojas `guion/fotos/tanda34/parra_descanso_pastora_1..4.jpg`;
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Tres horneados, avisando a Pretil antes y después de cada uno.
+  - El primero dejó fuera la caja hecha a mano del 11 (3,4 m²: `add_part` quita lo que tiene menos de 5 m²).
+  - En la hoja de repaso se vio que ese sitio era de `trsanto_8`. El tercer horneado lo arregló.
+  - Frente a la copia: 26 casas nuevas, ninguna quitada. `real_83`, `real_85`, `santo_62`, `santo_80`, `alto_29` y `alto_57` solo cambian en las aristas tapadas.
+  - Calles, nodos, relieve y árboles (2954), iguales.
+- **Pruebas.**
+  - `casas` de las 26: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_par_4_par_2_par_1_par_3_par_5_par_3b_par_7_des_14_20261122_010656.log)).
+  - Tras arreglar `des_14` y `des_11`: 4 ok ([log](logs/selftest_casas_solo_des_14_des_13_des_11_des_9_20261122_011352.log)).
+- **Casas cedidas a Edificios Especiales (21–22/11).** A petición de Pretil, para el cruce de los semáforos, estas casas pasan a `["obra"]` en `casas_calles.gd`:
+  - `salvador_24` (Seguros Sopiss);
+  - `arcos_2` (la clínica dental);
+  - `constitucion_a1` (Santa Ana 2);
+  - `constitucion_2` (la casa del mirador);
+  - `salvador_c3` (la casa de dos plantas al norte del Salvador, en la esquina de la avenida: la última del cruce, que Pretil hace en `beige.gd`).
+  - Sus entradas de `calles.json` no se tocan. Las líneas viejas están en las notas compartidas de las sesiones (`*_antes_de_pretil.md`).
+- **Aprobado** por el usuario el 22/11 («Añade la bandera de españa ahí y damos visto bueno»). La bandera cuelga de la ventana de arriba a la izquierda del Descanso 9: `_des_9()` en `godot/scripts/casas.gd`, con `casas` 4 ok ([log](logs/selftest_casas_solo_des_9_20261122_011859.log)).
+
+### Avenida de la Reina Sofía, lo que faltaba: 19 casas (22/11, Claude · Texturas)
+
+22 de noviembre de 2026, Texturas (Claude). El usuario pidió seguir con la siguiente calle («Sí, siguiente»).
+
+- **Hecho.** 19 entradas:
+  - lado de los impares (5 a 31): `rsof_31n`, `rsof_31`, `rsof_29`, `rsof_27`, `rsof_25`, `rsof_23`, `rsof_21`, `rsof_19`, `rsof_17`, `rsof_15`, `rsof_13`, `rsof_11`, `rsof_9`, `rsof_7`, `rsof_5`;
+  - lado de los pares (4 a 12): `rsof_12`, `rsof_10`, `rsof_6`, `rsof_4`.
+  - Fotos del Catastro y Street View de noviembre de 2024. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Parcelas partidas y retoques de datos.**
+  - El 31: la casa de dos plantas son los 8,6 m de la izquierda (`rsof_31`, con `porch` [8,6, 16, 5,6] que corta el resto de la parte del Catastro). La nave blanca de la esquina va en `rsof_31n`, una caja sin referencia (`rc` None, `deep` 5,4, 4 m de alto) con su puerta gris en el costado.
+  - El 12: frente en el borde de la parte de dos plantas, `floors` 2 y `strip` 1 para quitar la tira de una planta de delante.
+  - El 11: `floors` 1 y `reach` 14 (dos plantas en las fotos).
+- **Edificio nuevo.** El 10 es una fachada de celosía de ladrillo claro. Su línea en `casas_calles.gd` pone el portón y las ventanas azules, y `_rsof_10()` en `godot/scripts/casas.gd` dibuja los huecos de la celosía (un damero de cuadros oscuros, con algunos azulejos azules sobre la franja azul).
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (19 entradas);
+  - `godot/scripts/casas.gd` (`_rsof_10`);
+  - `godot/data/map.json`;
+  - las hojas `guion/fotos/tanda34/reina_sofia_1..4.jpg`;
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Un horneado, avisando a Pretil antes y después. Frente a la copia: 19 casas nuevas, ninguna quitada. `cajal_rs2` solo cambia en las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
+- **Pruebas.**
+  - `casas` de las 19: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_rsof_31n_rsof_31_rsof_29_rsof_27_rsof_25_rsof_23__20261122_014527.log)).
+  - Tras los arreglos de color y la puerta de la nave: 4 ok ([log](logs/selftest_casas_solo_rsof_31n_rsof_27_rsof_23_rsof_21_rsof_11_rsof_10_20261122_014823.log)).
+- **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»).
+
+### Calle de las Delicias, primera mitad: 19 casas y el arreglo del 10 (22/11, Claude · Texturas)
+
+22 de noviembre de 2026, Texturas (Claude). El usuario aprobó la Reina Sofía y pidió la siguiente calle («Visto bueno y siguiente»).
+
+- **Hecho.** 19 entradas nuevas:
+  - impares: `delicias_3`, `delicias_5`, `delicias_7`, `delicias_17b`, `delicias_19`, `delicias_21`, `delicias_19b` (la nave), y la hilera de atrás `delicias_21r1..5` con el muro de sus patios `delicias_21t`;
+  - pares: `delicias_12`, `delicias_28`, `delicias_30`, `delicias_32`, `delicias_32g`, `delicias_36`.
+  - `delicias_10` cambia de línea: ahora es crema, con el marco mostaza y el portón de tablas de Street View.
+  - Fotos del Catastro y Street View de noviembre de 2024. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Herramientas nuevas.**
+  - `fill` en `tools/casas/calles.json` (lo lee `tools/bake_godot.py`, antes del bucle de las cajas sin `rc`): `[[desde, hasta, fondo], ...]` en metros a lo largo del frente y hacia atrás. Añade una caja al grupo de la casa hecha a mano. Sirve para el suelo que el Catastro deja fuera: el 3, que dibuja 4 m detrás de la calle, y el porche del 17, que tiene 0 plantas. Se avisó a Pretil, porque es una herramienta común.
+  - `arc` con `sq=1` (hueco recto: un porche o un portal metido en la casa), `gh=<m>` (cancela baja de hierro) y `bd=<color>` (puerta al fondo). Está en `godot/scripts/casas.gd`.
+  - `_sillares(spec, y0, junta)`: juntas claras de sillería sobre el revoco, que dejan libres los huecos (`_holes_of`). La usan `_delicias_28()` y `_delicias_30()`.
+  - `_hilera21(lado)` y la tabla `HILERA21` en `casas_calles.gd`: los adosados de 2008, con el lado del porche de cada uno.
+- **Ojo (lección).** Primero entró el reparto a `HILERA21` en `casas.gd` y la tabla en `casas_calles.gd` llegó un momento después. La prueba `grua` de Sistemas, a las 02:19, cogió ese hueco y falló («Cannot find member "HILERA21"»). El código y los datos que lee van juntos, en el mismo paso.
+- **Archivos.**
+  - `tools/casas/calles.json` (19 entradas) y `godot/scripts/casas_calles.gd` (14 líneas, `HILERA21`, la línea del 10);
+  - `godot/scripts/casas.gd` (`_hilera21`, `_sillares`, `_holes_of`, `_delicias_28`, `_delicias_30`, las opciones del `arc`);
+  - `tools/bake_godot.py` (`fill`);
+  - `godot/data/map.json`;
+  - las hojas `guion/fotos/tanda34/delicias_1..4.jpg`;
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Un horneado, avisando a Pretil antes y después. Frente a la copia: 19 casas nuevas, ninguna quitada. `delicias_10` solo cambia en las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
+- **Pruebas.**
+  - `casas` de las 19: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_delicias_3_delicias_5_delicias_7_delicias_17b_del_20261122_022436.log)).
+  - Tras los arreglos: 4 ok ([log](logs/selftest_casas_solo_delicias_3_delicias_17b_delicias_19_delicias_21_d_20261122_023203.log), [log](logs/selftest_casas_solo_delicias_12_20261122_023428.log), [log](logs/selftest_casas_solo_delicias_3_delicias_17b_delicias_21_20261122_023601.log)).
+- **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»). La segunda mitad de la calle va en la tanda siguiente.
+
+### Calle de las Delicias, segunda mitad: 17 casas (22/11, Claude · Texturas)
+
+22 de noviembre de 2026, Texturas (Claude). El usuario aprobó la primera mitad y pidió seguir («Visto bueno y siguiente»).
+
+- **Hecho.** El lado sur, del 36 D al 68:
+  - `delicias_36d`, `delicias_40`, `delicias_40b`, `delicias_42`, `delicias_44`, `delicias_46`, `delicias_48`, `delicias_50`, `delicias_52`, `delicias_54`;
+  - `delicias_56`, `delicias_58`, `delicias_60`, `delicias_62`, `delicias_64`, `delicias_66`, `delicias_68`.
+  - Datos del Catastro de 13 parcelas nuevas con `tools/house_data.py`, en `tools/casas/<rc>/`.
+  - Fotos del Catastro y Street View de noviembre de 2024. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Cajas sin referencia.**
+  - `delicias_40`: la tapia del solar, 10 m, de 2,5 m de alto y 0,6 m de fondo.
+  - `delicias_40b`: la casa de dos plantas que el Catastro cubre con el solar del 40, de 9 m de fondo.
+  - `delicias_54`: el corral entre el 52 y el 56, que no está en el Catastro, de 0,7 m de fondo.
+  - Ojo: una caja de menos de 5 m² se pierde en el horneado.
+- **Código.** `_delicias_64()` en `godot/scripts/casas.gd`: la galería de madera (suelo volado, cabezas de vigas, barandilla, postes, tabla del alero) y los dinteles de madera. Entró en el mismo paso que su línea en `casas_calles.gd`.
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (17 entradas);
+  - `godot/scripts/casas.gd` (`_delicias_64`);
+  - `godot/data/map.json`;
+  - las hojas `guion/fotos/tanda34/delicias_5..7.jpg`;
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Un horneado, avisando a Pretil antes y después. Frente a la copia: 17 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954), iguales.
+- **Pruebas.**
+  - `casas` de las 17: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_delicias_36d_delicias_40_delicias_42_delicias_44__20261122_030132.log)).
+  - Tras los arreglos de color: 4 ok ([log](logs/selftest_casas_solo_delicias_50_delicias_54_delicias_58_delicias_60_d_20261122_030403.log)).
+- **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»). Con esto la Calle de las Delicias queda entera.
+
+### Calle de Tembleque, lo que faltaba: 19 casas (22/11, Claude · Texturas)
+
+22 de noviembre de 2026, Texturas (Claude). El usuario aprobó Delicias entera y pidió la calle siguiente («Visto bueno y siguiente»).
+
+- **Hecho.**
+  - Lado oeste: `tembleque_29`, `tembleque_31`, `tembleque_33`, `tembleque_35`, `tembleque_53`, `tembleque_89d`, `tembleque_91`, `tembleque_93`, `tembleque_95`, `tembleque_99`.
+  - Lado este: `tembleque_34`, `tembleque_34b`, `tembleque_36`, `tembleque_38`, `tembleque_40`, `tembleque_42`, `tembleque_44`, `tembleque_46`, `tembleque_48d`.
+  - Datos del Catastro de 19 parcelas nuevas con `tools/house_data.py`, en `tools/casas/<rc>/`.
+  - Fotos del Catastro y Street View de noviembre de 2024. Lo que no se parece está en `guion/repaso_casas.md`.
+- **El solar del 48 D.** El Catastro dibuja una tira de casas viejas que ya no están: en Street View hay una tapia de ladrillo.
+  - `porch: [10.2, 36, 8]` quita esa tira.
+  - `fill: [[10.2, 32.83, 0.5]]` pone en su sitio la tapia, de medio metro.
+  - Se queda el cobertizo viejo de la punta norte; todo a 2,6 m.
+- **Fuera.**
+  - El 57: en el Catastro solo tiene una franja de 2 m en la calle, y su casa queda detrás de la fachada del 59.
+  - Tembleque 2: un solar sin plantas que da a otra calle.
+  - Consuegra 1 y 2: dan a la Calle de Consuegra.
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (19 entradas);
+  - `godot/data/map.json`;
+  - las hojas `guion/fotos/tanda34/tembleque_10..14.jpg` (las 1..9 son de la tanda del 16/11 y siguen como estaban);
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Un horneado, avisando a Pretil antes y después. Frente a la copia: 19 casas nuevas, ninguna quitada; de `rsm_26` y `rsm_28` solo cambian las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
+- **Pruebas.**
+  - `casas` de las 19: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_tembleque_29_tembleque_31_tembleque_33_tembleque__20261122_032755.log)).
+  - Tras los arreglos de color del 35 (`brick_dark`) y del 95 (`brick_red`): 4 ok ([log](logs/selftest_casas_solo_tembleque_35_tembleque_95_20261122_033052.log)).
+- **Aprobado** por el usuario el 22/11 («Visto bueno y paramos de momento»). Las calles quedan en pausa hasta nueva orden.
+
+### La prueba completa de la 0.0.21: siete fallos de las pruebas, no del juego (22/11, Claude · Sistemas)
+
+22 de noviembre de 2026. La primera prueba completa de la 0.0.21 dio 976 ok y 7 fallos. Ninguno era un error del juego. Todos se arreglaron en `godot/scripts/selftest.gd`:
+- **Muros y fachadas.** Las comprobaciones pedían más de 25.000 muros y más de 4.000 fachadas genéricas. Hay menos porque los sitios hechos a mano las sustituyen. Ahora piden más de 24.000 y más de 3.500.
+  - **Ojo, Pretil y Texturas:** quedan unos 770 muros de margen (hay 24.770) y unas 360 fachadas (hay 3.863). Cada sitio hecho a mano los baja; si salta, bajad el umbral, no es un error.
+- **Mobiliario «fuera de sitio» (14).** Los semáforos, señales y papelera del cruce cuelgan de `world.cruce`, que va desplazado `level` en altura. La comprobación usaba `position.y` (local); ahora usa `global_position.y`.
+- **Robar el coche de un vecino** (fallaba a veces). La prueba cogía el primer coche de la lista, que podía ir «sobre raíles» (lejos, sin física). Al ponerlo junto a ti volvía a la física a su velocidad de antes (8 m/s) y ya no estaba «parado». Ahora se le quitan los raíles, se le pone `halt` y velocidad cero.
+- **La cama** («dos horas después de acostarte no puedes volver a dormir»). En medio de la prueba sonaba la llamada de la Tía Paca por la casa (`casa_paca_call`, dos horas de juego después del puente). `_casa_checks` deja al acabar «una casa tranquila», pero solo si antes no había estado de casa, y el tick de `fondo_casa.gd` crea `{"st": ""}` al principio. Ahora también lo hace si el estado guardado está sin empezar.
+- **Los días en `_mend_checks`.** La prueba de lo roto adelantaba `day_n` durante dos fotogramas, y `llamadas.now()` cuenta los días. Ahora lo devuelve antes de esperar ningún fotograma.
+- **El semáforo con coche real.** A veces un peatón cruzaba delante del coche de la prueba y lo paraba antes de la línea. Los vecinos a menos de 70 m se apartan (`away`) mientras dura.
+- **El pedido de Henry** (fallaba a veces en la completa, nunca solo). Ahora la comprobación acepta el tope de confianza (100) y su mensaje dice qué condición falla. Puede que la causa fuera ese tope, pero **no está confirmado**: si vuelve a fallar, el mensaje lo dirá.
+- **Finales de línea.** `game.gd`, `world.gd`, `props.gd`, `selftest.gd`, `traffic.gd`, `map_data.gd` y `semaforos.gd` habían pasado a CRLF por ediciones con Python. Vuelven a LF, como en el repositorio. `loc.gd` sigue en CRLF, como estaba. **Pretil y Texturas:** releed esos ficheros antes de editarlos.
+- **Prueba completa:** 983 ok, 0 fallos ([log](logs/selftest_full_20261122_051320.log)).
+- **Memoria con el renderizador de móvil** (`--rendering-method mobile -- --timing`): 752 MB al acabar la carga (893 en la 0.0.11) y 1.988 MB de vídeo; carga de 42 s en este PC.

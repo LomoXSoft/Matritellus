@@ -638,12 +638,22 @@ func _back_naves() -> void:
 	var in2 := Vector2(0.917, 0.399) * 4.0
 	var o1 := Vector2(-0.803, -0.596) * 0.35
 	var o2 := Vector2(-0.917, -0.399) * 0.35
-	roof([Vector3(T3.x + o1.x, eave + 0.3, T3.y + o1.y), Vector3(B.x + o1.x, eave + 0.3, B.y + o1.y), Vector3(B.x + in1.x, top, B.y + in1.y), Vector3(T3.x + in1.x, top, T3.y + in1.y)], "chapa_gris")
-	roof([Vector3(B.x + o2.x, eave2 + 0.3, B.y + o2.y), Vector3(E0.x + o2.x, eave2 + 0.3, E0.y + o2.y), Vector3(E0.x + in2.x, top, E0.y + in2.y), Vector3(B.x + in2.x, top, B.y + in2.y)], "chapa_gris")
+	_sheet_slope([Vector3(T3.x + o1.x, eave + 0.3, T3.y + o1.y), Vector3(B.x + o1.x, eave + 0.3, B.y + o1.y), Vector3(B.x + in1.x, top, B.y + in1.y), Vector3(T3.x + in1.x, top, T3.y + in1.y)], "chapa_gris")
+	_sheet_slope([Vector3(B.x + o2.x, eave2 + 0.3, B.y + o2.y), Vector3(E0.x + o2.x, eave2 + 0.3, E0.y + o2.y), Vector3(E0.x + in2.x, top, E0.y + in2.y), Vector3(B.x + in2.x, top, B.y + in2.y)], "chapa_gris")
 	flat(PackedVector2Array([T3 + in1, B + in1, B + in2, E0 + in2, E1, Q1, Q0, RN, T3P]), top, "chapa_gris")
 	_mass([T3P, T3, B, RN], eave)
 	_mass([B, Q1, Q0, RN], eave)
 	_mass([B, E0, E1, Q1], eave)
+
+## A sloping piece of plain sheet (four corners in order, all in one plane). It is obra.roof() without the tiles'
+## own lay: the rest of this sheet's mesh carries none, and a mesh cannot have it for some of its pieces only (Godot
+## said so twelve times at every start, until 22 November 2026).
+func _sheet_slope(pts: Array, key) -> void:
+	pieces += 1
+	var n: Vector3 = ((pts[1] as Vector3) - pts[0]).cross((pts[2] as Vector3) - pts[0]).normalized()
+	if n.y < 0.0:
+		n = -n
+	quad(pts[0], pts[1], pts[2], pts[3], key, n)
 
 ## the edge of a sheet roof over the wall being built: the sheet coming out, the gutter under it, a bracket every 3 m
 func _eave(ln: float, y: float) -> void:

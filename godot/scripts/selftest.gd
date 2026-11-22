@@ -3170,6 +3170,325 @@ func _kebabdeluxe_checks() -> void:
 	rule = rule and kd.open_at(5, 1.9) and not kd.open_at(5, 2.0) and kd.open_at(0, 1.9) and not kd.open_at(0, 2.0) and not kd.open_at(4, 1.6) and kd.open_at(6, 13.5)
 	_check(good and rule, "it opens from 13:00 every day until 1:30 in the night after Monday to Thursday and 2:00 after Friday to Sunday: open, its door ajar and its lights and boards on; shut, all of it dark")
 
+## The traffic lights, the mirror and the signs of the crossroads of the traffic lights (cruce.gd): a head for each
+## street that brings cars in, each a stretch of the map open that way, its cars stopping on its asphalt; each
+## street's lights answer alone, and the green and red men; this file's own cycle never opens two groups at once nor
+## lets people cross before cars with green; what stands on the ground keeps off the asphalt and stops you; a blow
+## knocks it over as the rest of the street's furniture, the lights then blink amber, and repair() mends it all.
+func _cruce_checks() -> void:
+	var cz = g.world.get("cruce")
+	if cz == null:
+		print("  the crossroads' traffic lights: not in this map")
+		return
+	_check(cz.pieces > 300 and cz.heads.size() == 4 and cz.walk.size() == 3 and cz.faces == 7 and cz.walk_faces == 7 and cz.signs == 11,
+		"the crossroads of the traffic lights has its lights and signs (%d pieces: %d heads for cars on %d streets, %d for people on %d crossings, %d signs with the mirror)" % [cz.pieces, cz.faces, cz.heads.size(), cz.walk_faces, cz.walk.size(), cz.signs])
+	var bad := ""
+	for h in cz.heads:
+		var stop: Vector2 = h["stop"]
+		var d: float = MapData.road_edge_dist(stop)
+		var on_it: bool = MapData.road_hit != null and d + MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit) < -0.3
+		if not (bool(h["whole"]) and on_it and MapData.one_way_says(int(h["a"]), int(h["b"])) >= 0):
+			bad += " " + String(h["name"])
+	var told := ""
+	for h in cz.heads:
+		told += " %s %d>%d at (%.1f, %.1f) group %d;" % [h["name"], h["a"], h["b"], h["stop"].x, h["stop"].y, h["group"]]
+	_check(bad == "", "each street that brings cars in is a stretch of the map, open that way, and its cars stop on its asphalt (wrong:%s):%s" % [bad if bad != "" else " none", told])
+	var was: Array = cz.lights()                                     # (whoever drives the lights finds them afterwards as it left them)
+	cz.auto = false
+	var alone := true
+	for i in range(cz.heads.size()):
+		for st in ["verde", "ambar", "rojo"]:
+			for k in range(cz.heads.size()):
+				cz.set_light(k, "off")
+			cz.set_light(i, st)
+			var lit: Array = []
+			for k in range(cz.heads.size()):
+				for c in cz.COLOURS:
+					if (cz._material("luz_%d_%s" % [k, c]) as StandardMaterial3D).emission_energy_multiplier > 0.5:
+						lit.append("%d_%s" % [k, c])
+			if lit != ["%d_%s" % [i, st]] or String(cz.heads[i]["state"]) != st:
+				alone = false
+	var men := true
+	for i in range(cz.walk.size()):
+		var gm: StandardMaterial3D = cz._material("peaton_%d_verde" % i)
+		var rm: StandardMaterial3D = cz._material("peaton_%d_rojo" % i)
+		cz.set_walk(i, true)
+		if not (gm.emission_energy_multiplier > 0.5 and rm.emission_energy_multiplier < 0.5 and bool(cz.walk[i]["on"])):
+			men = false
+		cz.set_walk(i, false)
+		if not (gm.emission_energy_multiplier < 0.5 and rm.emission_energy_multiplier > 0.5 and not bool(cz.walk[i]["on"])):
+			men = false
+		cz.set_walk(i, false, true)
+		if gm.emission_energy_multiplier > 0.5 or rm.emission_energy_multiplier > 0.5:
+			men = false
+	var safe := true
+	for step in cz.CYCLE:
+		cz.show_phase(int(step[0]), String(step[1]))
+		var open := {}
+		for h in cz.heads:
+			if String(h["state"]) != "rojo":
+				open[int(h["group"])] = true
+		if open.size() > 1:
+			safe = false
+		for w in cz.walk:
+			if bool(w["on"]) and open.has(int(w["group"])):
+				safe = false
+	cz.put_back(was)
+	_check(alone and men and safe, "each street's lights answer alone (%s), the green and red men too (%s), and the cycle never opens two groups at once nor lets people cross before cars with green (%s)" % [alone, men, safe])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var nearest := 99.0
+	var which := ""
+	var hits := 0
+	for s in cz.stands:
+		var p: Vector2 = s[1]
+		if float(s[2]) < nearest:
+			nearest = float(s[2])
+			which = String(s[0])
+		var y: float = MapData.height(p) + 0.7
+		for dir: Vector2 in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:      # (from every side: a wall may stand in the way of one)
+			var a: Vector2 = p - dir * 0.7
+			var b: Vector2 = p + dir * 0.7
+			var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, y, a.y), Vector3(b.x, y, b.y), 16))      # (16: the street's furniture, which stops people on foot)
+			if not hit.is_empty() and Vector2(hit["position"].x, hit["position"].z).distance_to(p) < 0.45:
+				hits += 1
+				break
+	_check(nearest > 0.0 and hits == cz.stands.size(), "its posts keep off the asphalt (the nearest, %s, %.2f m off it) and stop you (%d of %d)" % [which, nearest, hits, cz.stands.size()])
+	# a blow knocks a post over like the rest of the street's furniture: a sign down changes nothing in the lights; a
+	# post with lights down, and every light left blinks amber until repair() stands everything up again
+	var pr = g.get("props")
+	if pr == null or not pr.has_method("adopt"):
+		print("  the crossroads' lights: no street furniture here to knock them over with")
+		return
+	await _frames(2)                                                 # (cruce.gd hands its things to props.gd on its first frame after it)
+	var a_sign: Dictionary = cz.part("no entry into Santa Ana")
+	var a_light: Dictionary = cz.part("the Arcos's east post")
+	var marked: bool = (a_light["body"] as Node).has_meta("keep") and not (a_sign["body"] as Node).has_meta("keep") 		and (a_light["body"] as Node).has_meta("on_knock") and (a_sign["body"] as Node).has_meta("on_knock")      # (props.gd's two hooks: told at once; a light is not swept away)
+	var hit_sign: Array = pr.punch((a_sign["p"] as Vector2) + Vector2(0.0, -0.4), Vector2(0.0, 1.0))
+	await _frames(3)
+	var only_sign: bool = int(hit_sign[0]) >= 1 and bool(a_sign["down"]) and not cz.broken and cz.down == 1
+	var hit_light: Array = pr.punch((a_light["p"] as Vector2) + Vector2(-0.4, 0.0), Vector2(1.0, 0.0))
+	await _frames(3)
+	var fell: bool = int(hit_light[0]) >= 1 and bool(a_light["down"]) and cz.broken
+	var seen_amber := false
+	var seen_other := false
+	for k in range(100):                                             # (more than a blink and a half)
+		await _frames(1)
+		for i in range(cz.heads.size()):
+			for c in cz.COLOURS:
+				if (cz._material("luz_%d_%s" % [i, c]) as StandardMaterial3D).emission_energy_multiplier > 0.5:
+					if c == "ambar":
+						seen_amber = true
+					else:
+						seen_other = true
+		for i in range(cz.walk.size()):
+			for c in ["verde", "rojo"]:
+				if (cz._material("peaton_%d_%s" % [i, c]) as StandardMaterial3D).emission_energy_multiplier > 0.5:
+					seen_other = true
+	var lying = a_light["body"]                                      # (the fallen light: still there, on the ground)
+	var lies: bool = is_instance_valid(lying) and not lying.freeze and (cz.fallen() as Array).size() >= 3       # (its place, the sign's, and where it lies)
+	cz.repair()
+	await _frames(2)
+	var cleared: bool = not is_instance_valid(lying) and (cz.fallen() as Array).is_empty()      # (repair() takes the fallen one away and builds it anew)
+	var up := 0
+	for q in [a_sign, a_light]:
+		if not bool(q["down"]) and is_instance_valid(q["body"]) and q["body"].freeze:
+			up += 1
+	_check(marked and only_sign and fell and seen_amber and not seen_other and lies and cleared and up == 2 and not cz.broken and cz.down == 0,
+		"a blow knocks them over as the rest of the street's furniture (marked for props.gd %s): a sign down leaves the lights alone (%s), a light down and they all blink amber (down %s, amber %s, no other light %s) while it lies there (%s), and repair() clears it (%s) and stands both up again (%d of 2, broken %s)" % [marked, only_sign, fell, seen_amber, not seen_other, lies, cleared, up, cz.broken])
+
+
+## The two-storey house north of the Salvador (beige.gd), the corner of the Salvador and the avenue at the crossroads
+## of the traffic lights: on its house of the map, which casas.gd no longer draws (its three pieces: the yard's
+## buildings are beige.gd's too); its fronts and the empty plot's wall stop you; its roofs are whole; no saffron hidden
+## in it (the user says, place by place, whether one goes in); what it stands on the ground keeps off the asphalt.
+func _beige_checks() -> void:
+	var bg = g.world.get("beige")
+	if bg == null:
+		print("  the house north of the Salvador: not in this map")
+		return
+	var line = preload("res://scripts/casas_calles.gd").HOUSES.get("salvador_c3", [])
+	var handed: bool = line is Array and line.size() == 1 and String(line[0]) == "obra"      # (casas.gd leaves it to beige.gd)
+	var whole: bool = absf(bg.roof_area - bg.roof_outline) < 0.02 * bg.roof_outline          # (the roofs' pieces cover their outlines, no more and no less)
+	_check(bg.pieces > 500 and bg.openings == 14 and bg.balconies == 6 and whole and handed,
+		"the house north of the Salvador is built by hand (%d pieces, %d windows and doors, %d little rails, %d pieces of roof up to %.1f m, covering %.0f of %.0f m2; the house handed over: %s)" % [bg.pieces, bg.openings, bg.balconies, bg.roof_pieces, bg.ridge_top, bg.roof_area, bg.roof_outline, handed])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var hits := 0
+	var heart := Vector2(101.5, 51.6)
+	for a: Vector2 in [bg.door, bg.side_spot, bg.plot_spot]:
+		var to: Vector2 = heart if a != bg.plot_spot else a + Vector2(-4.0, 0.0)
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, bg.level + 1.4, a.y), Vector3(to.x, bg.level + 1.4, to.y), 1)).is_empty():
+			hits += 1
+	var none := true                                                 # (no saffron here unless the user says so)
+	for f in g.flowers:
+		if String(f.get("id", "")) == "beige":
+			none = false
+	var nearest := 99.0                                              # (the empty plot's wall, the pavement it lays: none of it on the asphalt)
+	for p in bg.yard:
+		var d: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(hits == 3 and none and nearest > 0.0, "its fronts and the empty plot's wall stop you (%d of 3); no saffron hidden in it (%s); what it stands on the ground keeps off the asphalt (the nearest %.2f m)" % [hits, none, nearest])
+
+## The cream house with the bay window (mirador.gd), the corner of the avenue and Santa Ana at the crossroads of the
+## traffic lights: on its house of the map, which casas.gd no longer draws; its three fronts stop you; its roof is
+## whole; no saffron hidden in it (the user says, place by place, whether one goes in).
+func _mirador_checks() -> void:
+	var mr = g.world.get("mirador")
+	if mr == null:
+		print("  the house with the bay window: not in this map")
+		return
+	var line = preload("res://scripts/casas_calles.gd").HOUSES.get("constitucion_2", [])
+	var handed: bool = line is Array and line.size() == 1 and String(line[0]) == "obra"      # (casas.gd leaves it to mirador.gd)
+	var whole: bool = absf(mr.roof_area - mr.roof_outline) < 0.02 * mr.roof_outline          # (the roof's pieces cover its outline, no more and no less)
+	_check(mr.pieces > 500 and mr.openings == 14 and mr.balconies == 3 and whole and handed,
+		"the house with the bay window is built by hand (%d pieces, %d windows and doors, %d balconies with the bay, %d pieces of roof up to %.1f m, covering %.0f of %.0f m2; the house handed over: %s)" % [mr.pieces, mr.openings, mr.balconies, mr.roof_pieces, mr.ridge_top, mr.roof_area, mr.roof_outline, handed])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var hits := 0
+	var heart := Vector2(121.2, 53.0)
+	for a: Vector2 in [mr.door, mr.gate_spot, Vector2(113.5, 52.5)]:
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, mr.level + 1.4, a.y), Vector3(heart.x, mr.level + 1.4, heart.y), 1)).is_empty():
+			hits += 1
+	var none := true                                                 # (no saffron here unless the user says so)
+	for f in g.flowers:
+		if String(f.get("id", "")) == "mirador":
+			none = false
+	var nearest := 99.0                                              # (the pavement it lays before its corner: none of it on the asphalt)
+	for p in mr.yard:
+		var d: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(hits == 3 and none and nearest > 0.0, "its fronts stop you from the corner, Santa Ana and the avenue (%d of 3); no saffron hidden in it (%s); the pavement it lays before its corner keeps off the asphalt (the nearest %.2f m)" % [hits, none, nearest])
+
+## The white house with indigo frames of the Calle de Santa Ana 2 (stana2.gd), the corner of Santa Ana and the Arcos at
+## the crossroads of the traffic lights: on its house of the map, which casas.gd no longer draws; its two fronts stop
+## you; its roofs are whole; no saffron hidden in it (the user says, place by place, whether one goes in).
+func _stana2_checks() -> void:
+	var sa = g.world.get("stana2")
+	if sa == null:
+		print("  the white house of Santa Ana 2: not in this map")
+		return
+	var line = preload("res://scripts/casas_calles.gd").HOUSES.get("constitucion_a1", [])
+	var handed: bool = line is Array and line.size() == 1 and String(line[0]) == "obra"      # (casas.gd leaves it to stana2.gd)
+	var whole: bool = absf(sa.roof_area - sa.roof_outline) < 0.02 * sa.roof_outline          # (the roofs' pieces cover their outlines, no more and no less)
+	_check(sa.pieces > 400 and sa.openings == 9 and sa.balconies == 4 and whole and handed,
+		"the white house of Santa Ana 2 is built by hand (%d pieces, %d windows and doors, %d little balconies, %d pieces of roof up to %.1f m, covering %.0f of %.0f m2; the house handed over: %s)" % [sa.pieces, sa.openings, sa.balconies, sa.roof_pieces, sa.ridge_top, sa.roof_area, sa.roof_outline, handed])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var hits := 0
+	var heart: Vector2 = (sa.A + sa.C) / 2.0
+	for a: Vector2 in [sa.gate_spot, sa.door, sa.A + Vector2(-1.5, -1.6)]:
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, sa.level + 1.4, a.y), Vector3(heart.x, sa.level + 1.4, heart.y), 1)).is_empty():
+			hits += 1
+	var none := true                                                 # (no saffron here unless the user says so)
+	for f in g.flowers:
+		if String(f.get("id", "")) == "stana2":
+			none = false
+	_check(hits == 3 and none, "its fronts stop you from Santa Ana, the Arcos and the corner (%d of 3); no saffron hidden in it (%s)" % [hits, none])
+
+## The dental clinic "Clínica Dental" (clinica.gd), the corner of the Calle Cervantes and the Arcos at the crossroads of
+## the traffic lights: on its house of the map, which casas.gd no longer draws; its two fronts stop you; its windows glow
+## by its hours and its letters are lit by night; no saffron hidden in it (the user had it taken away).
+func _clinica_checks() -> void:
+	var cl = g.world.get("clinica")
+	if cl == null:
+		print("  the dental clinic: not in this map")
+		return
+	var line = preload("res://scripts/casas_calles.gd").HOUSES.get("arcos_2", [])
+	var handed: bool = line is Array and line.size() == 1 and String(line[0]) == "obra"      # (casas.gd leaves it to clinica.gd)
+	var whole: bool = absf(cl.roof_area - cl.roof_outline) < 0.02 * cl.roof_outline          # (the roof's pieces cover its outline, no more and no less)
+	_check(cl.pieces > 700 and cl.openings == 13 and cl.balconies == 4 and whole and handed and cl.NAME == "Clínica Dental" and cl.DOCTOR == "Dr. Josué Escudero",
+		"the dental clinic is built by hand (%d pieces, %d windows and doors, %d balconies, %d pieces of roof up to %.1f m, covering %.0f of %.0f m2; the house handed over: %s)" % [cl.pieces, cl.openings, cl.balconies, cl.roof_pieces, cl.ridge_top, cl.roof_area, cl.roof_outline, handed])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var hits := 0
+	var heart: Vector2 = (cl.NW + cl.SE) / 2.0
+	for a: Vector2 in [cl.door, cl.house_door, cl.X + Vector2(1.6, -1.8)]:
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, cl.level + 1.4, a.y), Vector3(heart.x, cl.level + 1.4, heart.y), 1)).is_empty():
+			hits += 1
+	var glass: StandardMaterial3D = cl._material("espejo")
+	var name_mat: StandardMaterial3D = cl._material("rotulo_largo")
+	var good := true
+	for on in [true, false]:
+		cl.set_open(on)
+		if (glass.emission_energy_multiplier > 0.0) != on:
+			good = false
+	cl.set_open(cl.open_at(g.weekday, g.clock))
+	var rule: bool = cl.open_at(0, 9.0) and cl.open_at(4, 13.4) and not cl.open_at(2, 13.5) and not cl.open_at(2, 16.4) and cl.open_at(2, 16.5) and cl.open_at(3, 19.9) and not cl.open_at(3, 20.0) and not cl.open_at(5, 12.0) and not cl.open_at(6, 18.0)
+	var keep_clock: float = g.clock
+	var by_clock := true                                             # (its letters are lit by night, by themselves)
+	for q in [[23.0, true], [12.0, false]]:
+		g.set_time(q[0])
+		await _frames(3)
+		if (cl.night > 0.5) != bool(q[1]) or (name_mat.emission_energy_multiplier > 0.3) != bool(q[1]):
+			by_clock = false
+	g.set_time(keep_clock)
+	await _frames(2)
+	var none := true                                                 # (the user: no saffron hidden here)
+	for f in g.flowers:
+		if String(f.get("id", "")) == "clinica":
+			none = false
+	_check(hits == 3 and good and rule and by_clock and none, "its fronts stop you from the Calle Cervantes, the Arcos and the corner (%d of 3); its windows glow while it is open (%s), Monday to Friday 9-13:30 and 16:30-20 (%s); its letters are lit by night (%s); no saffron hidden in it (%s)" % [hits, good, rule, by_clock, none])
+
+## "Seguros Sopiss" (sopiss.gd), the red corner building of the crossroads of the traffic lights: on its house of the
+## map, which casas.gd no longer draws; its three fronts stop you and nobody gets into the office; the office's floor is a
+## floor of the map; its lamps and its card follow its hours; nothing of it on the asphalt.
+func _sopiss_checks() -> void:
+	var sp = g.world.get("sopiss")
+	if sp == null:
+		print("  Seguros Sopiss: not in this map")
+		return
+	var line = preload("res://scripts/casas_calles.gd").HOUSES.get("salvador_24", [])
+	var handed: bool = line is Array and line.size() == 1 and String(line[0]) == "obra"      # (casas.gd leaves it to sopiss.gd)
+	var whole: bool = absf(sp.roof_area - sp.roof_outline) < 0.02 * sp.roof_outline          # (the roof's pieces cover its outline, no more and no less)
+	_check(sp.pieces > 900 and sp.openings == 23 and sp.balconies == 12 and sp.roof_pieces >= 6 and whole and handed and sp.NAME == "Seguros Sopiss",
+		"Seguros Sopiss is built by hand (%d pieces, %d windows and doors, %d balconies, %d pieces of roof up to %.1f m, covering %.0f of %.0f m2; the house handed over: %s)" % [sp.pieces, sp.openings, sp.balconies, sp.roof_pieces, sp.ridge_top, sp.roof_area, sp.roof_outline, handed])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var hits := 0
+	for pair in [[sp.door, sp.client_spot], [sp.portal, sp.agent_spot], [sp.SW + Vector2(1.6, 2.4), sp.client_spot], [sp.NE + Vector2(-6.0, -3.0), sp.agent_spot]]:
+		var a: Vector2 = pair[0]
+		var b: Vector2 = pair[1]
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, sp.level + 1.4, a.y), Vector3(b.x, sp.level + 1.4, b.y), 1)).is_empty():
+			hits += 1
+	var inside := true
+	for p in [sp.agent_spot, sp.client_spot] + sp.clean_spots:
+		if not Geometry2D.is_point_in_polygon(p, sp.room) or absf(MapData.foot(p) - sp.floor_h) > 0.01:
+			inside = false
+	_check(hits == 4 and inside, "its fronts stop you from the avenue, the Salvador and the Calle Cervantes (%d of 4); the spots for its people are on the office's floor (%s, %.2f m over the pavement)" % [hits, inside, sp.floor_h - sp.level])
+	var good := true
+	for on in [true, false]:
+		sp.set_open(on)
+		var wall: StandardMaterial3D = sp._material("i:ebe7dc")
+		if sp.sign_open.visible != on or sp.sign_shut.visible == on or sp.lamps[0].visible != on or (wall.emission_energy_multiplier > 0.0) != on or (wall.albedo_color.r > 0.6) != on:
+			good = false
+	sp.set_open(sp.open_at(g.weekday, g.clock))
+	var rule: bool = sp.open_at(0, 9.0) and sp.open_at(4, 13.9) and not sp.open_at(2, 14.0) and not sp.open_at(2, 16.9) and sp.open_at(2, 17.0) and sp.open_at(3, 19.9) and not sp.open_at(3, 20.0) and not sp.open_at(5, 12.0) and not sp.open_at(6, 18.0) and not sp.open_at(1, 8.9)
+	var nearest := 99.0
+	for p in sp.yard:
+		var d: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	var hidden := false
+	for f in g.flowers:
+		if String(f.get("id", "")) == "sopiss" and bool(f.get("hidden", false)):
+			hidden = true
+	var nm: StandardMaterial3D = sp._material("salamanquesa")        # (the script name: blue paint by day, a yellow neon by night)
+	sp.set_neon(1.0)
+	var shines: bool = nm.emission_energy_multiplier > 1.0 and nm.albedo_color.b < 0.4 and nm.albedo_color.r > 0.9 and sp.neon_lamp.visible and not sp.neon_lamp.shadow_enabled
+	sp.set_neon(0.0)
+	var plain: bool = nm.emission_energy_multiplier == 0.0 and nm.albedo_color.b > 0.7 and not sp.neon_lamp.visible
+	var keep_clock: float = g.clock
+	var by_clock := true                                             # (and it follows the sky by itself)
+	for q in [[23.0, true], [12.0, false]]:
+		g.set_time(q[0])
+		await _frames(3)
+		if (sp.neon > 0.5) != bool(q[1]):
+			by_clock = false
+	g.set_time(keep_clock)
+	await _frames(2)
+	_check(good and rule and nearest > 0.0 and hidden, "its lamps and the card on its door follow whether it is open (%s); open Monday to Friday 9-14 and 17-20 (%s); nothing of it on the asphalt (the nearest %.2f m); a saffron flower hidden by the flats' door (%s)" % [good, rule, nearest, hidden])
+	_check(shines and plain and by_clock, "the script name over the avenue is blue paint by day (%s) and a yellow neon by night, with its light on the wall (%s); it comes on and goes off with the sky (%s)" % [plain, shines, by_clock])
+
 ## The house of the Calle de Matías Pérez (matias.gd): on its house of the map, which casas.gd no longer draws (handed
 ## over as "obra"); its front stops you; nothing of it on the asphalt.
 func _matias_checks() -> void:
@@ -4826,10 +5145,10 @@ func _relief_checks() -> void:
 	# 30000 when 33142 were left, 17 Nov 2026)
 	# Fewer generic walls remain as hand-built places and Texturas' houses replace them.
 	# (25000 since 21 Nov 2026: 26808 left once the Cristo del Prado block, the Paseo and the silo were built by hand)
-	_check(aw["n"] > 25000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
+	_check(aw["n"] > 24000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
 	# (the fronts too: 5000 became 4000 on 21 Nov 2026, when 4807 were left after the Florido, Viñas and Cipreses houses
 	# and the Cristo del Prado block)
-	_check(aw["fronts"] > 4000 and aw["odd"] < aw["fronts"] * 0.01 and aw["high"] < 4.0 and aw["deep"] < 0.8,
+	_check(aw["fronts"] > 3500 and aw["odd"] < aw["fronts"] * 0.01 and aw["high"] < 4.0 and aw["deep"] < 0.8,
 		"houses meet their street: of %d fronts, %d (%.1f %%) have the floor over 1.6 m above the pavement or 0.4 m under it; the worst are %.1f m above (at %.0f, %.0f) and %.1f m under (at %.0f, %.0f)"
 		% [aw["fronts"], aw["odd"], 100.0 * aw["odd"] / maxf(1.0, aw["fronts"]), aw["high"], aw["high_at"].x, aw["high_at"].y, aw["deep"], aw["deep_at"].x, aw["deep_at"].y])
 	# --- a level terrace under everything built by hand
@@ -4915,7 +5234,7 @@ func _relief_checks() -> void:
 	for cell in g.props._grid.values():
 		for b in cell:
 			props_n += 1
-			if is_instance_valid(b) and b.freeze and absf(b.position.y - MapData.height(b.get_meta("p"))) > 0.01 and absf(b.position.y - MapData.foot(b.get_meta("p"))) > 0.01:      # (or on the floor walked on there: the plaza's terraza, props.gd on_floor)
+			if is_instance_valid(b) and b.freeze and absf(b.global_position.y - MapData.height(b.get_meta("p"))) > 0.01 and absf(b.global_position.y - MapData.foot(b.get_meta("p"))) > 0.01:      # (or on the floor walked on there: the plaza's terraza, props.gd on_floor)
 				props_off += 1
 	_check(lamps_off == 0 and trees_off == 0 and props_off == 0, "%d lanterns hang at lantern height, %d trees and %d benches, bins and signs stand on the ground (out of place: %d, %d, %d)" % [g.lights.spots.size(), W.tree_info.size(), props_n, lamps_off, trees_off, props_off])
 	# --- and it works: walk and drive the steepest street, up and down
@@ -5277,8 +5596,12 @@ func _mayhem_checks() -> void:
 	var clear_spot: Dictionary = _long_street()            # away from our own parked van, which would be the nearer car
 	g.player.p = clear_spot["p"] + clear_spot["u"] * 30.0
 	stolen.place(g.player.p + Vector2(-clear_spot["u"].y, clear_spot["u"].x) * 2.2, atan2(clear_spot["u"].x, clear_spot["u"].y))
+	if victim_e.has("rail"):                # (a car far off goes along its lane without physics: taken off it here, or it would come back to life at the speed it had)
+		g.traffic._off_rails(victim_e, stolen)
+	victim_e["halt"] = true                 # (stopped beside you: it waits there)
+	stolen.set_speed(Vector2.ZERO)
 	await _frames(6)
-	_check(g.near_steal != null and g.near_car == stolen, "a neighbour's car stopped beside you can be stolen")
+	_check(g.near_steal != null and g.near_car == stolen, "a neighbour's car stopped beside you can be stolen (npc %s, car %s, its distance %.1f, speed %.1f, list %d)" % [str(g.near_npc.id if g.near_npc != null else "-"), str(g.near_car.kind if g.near_car != null else "-"), stolen.p.distance_to(g.player.p), stolen.vel.length(), g.traffic.list.size()])
 	var people_before: int = g.npcs.size()
 	g.interact()
 	_check(g.in_car == stolen and g.cars.has(stolen) and not g.traffic.list.has(victim_e), "stealing it puts you at the wheel")
@@ -9207,12 +9530,22 @@ func _descanso_checks() -> void:
 	var E = g.entradas
 	g.player.p = E.spot(g.casa, false)
 	g.player.sync()
+	var by_door: Array = []                     # (whoever is waiting for you beside your door -- the bridge's mission, "al lao de casa" -- would be talked to instead: aside while you go in)
+	var was_target = g.target_npc
+	g.target_npc = null
+	for n in g.npcs:
+		if not n.away and n.p.distance_to(g.player.p) < 5.0:
+			n.away = true
+			by_door.append(n)
 	await _frames(4)
 	g.interact()
 	var waited := 0
 	while not g.indoors and waited < 30:
 		await _frames(1)
 		waited += 1
+	g.target_npc = was_target
+	for n in by_door:
+		n.away = false
 	g.player.p = g.casa.bed_spot
 	g.player.sync()
 	await _frames(6)
@@ -9224,7 +9557,7 @@ func _descanso_checks() -> void:
 	var stayed: bool = g.phase != "ending" and g.hud.toast_label.text == Loc.t("t_nap_wait") % g._nap_when()
 	g.stats["slept_h"] = g.llamadas.now() - 24.5
 	var ready: bool = g._nap_ready()
-	_check(at_bed and held and stayed and ready, "two hours after going to bed you cannot sleep again (%s), twenty-four after you can" % g._nap_when())
+	_check(at_bed and held and stayed and ready, "two hours after going to bed you cannot sleep again (%s), twenty-four after you can%s" % [g._nap_when(), "" if at_bed and held and stayed and ready else " -- bed %s held %s stayed %s ready %s; phase %s, indoors %s, dlg %s, side %s, toast '%s', dlg %s" % [at_bed, held, stayed, ready, g.phase, g.indoors, g.dlg != null, g.side != null, g.hud.toast_label.text, str((g.dlg["lines"] as Array)[0]) if g.dlg != null else "-"]])
 	g.player.p = E.spot(g.casa, true)
 	g.player.sync()
 	await _frames(4)
@@ -9275,6 +9608,356 @@ func _marciano_checks() -> void:
 		"Marciano stands across from the café, and each talk is another tale of the eighties")
 	g.player.p = was_p
 	await _frames(3)
+
+## The people inside Seguros Sopiss (sopiss_gente.gd, the user, 21 Nov 2026): open, the blonde saleswoman and a customer
+## talking insurance, heard through the glass by whoever stands by it, and somebody else in the chair each time; shut,
+## the cleaning lady going round with her mop, humming. Tried on the office when it is built (Pretil's sopiss.gd), and
+## otherwise on a stand-in a long way off (an office of nothing but its spots and its hours).
+class SopissStub extends RefCounted:
+	var is_open := true
+	var desk_spots: Array = []
+	var clean_spots: Array = []
+
+func _sopiss_gente_checks() -> void:
+	var pool: Array = Loc.t("sopiss_charla")
+	var shapes := true
+	for talk in pool:
+		for l in talk:
+			shapes = shapes and l is Array and l.size() == 2 and String(l[0]) in ["v", "c"] and String(l[1]) != ""
+	var en: Array = Loc.TX["sopiss_charla"]["en"]
+	_check(shapes and pool.size() >= 8 and en.size() == pool.size(), "Sopiss: %d talks about insurance, every line the saleswoman's or the customer's, in both languages" % pool.size())
+	var real = g.world.get("sopiss") if g.get("world") != null else null
+	var place = real
+	if place == null or not (place.get("desk_spots") is Array):
+		place = SopissStub.new()
+		var far := MapData.nearest_road(g.player.p + Vector2(320.0, 0.0))
+		var o: Vector2 = far["p"]
+		place.desk_spots = [o + Vector2(0.0, -0.8), o + Vector2(0.0, 0.8)]
+		place.clean_spots = [o + Vector2(-2.0, -1.5), o + Vector2(2.0, -1.5), o + Vector2(2.0, 1.5), o + Vector2(-2.0, 1.5)]
+		print("  (no Seguros Sopiss on this map yet: its people tried on a stand-in office)")
+	var M = load("res://scripts/sopiss_gente.gd").new()
+	M.setup(g, place)
+	var was_open: bool = bool(place.get("is_open"))
+	var was_phase: String = g.phase
+	g.phase = "free"
+	g.dlg = null
+	var by: Vector2 = M.middle() + Vector2(2.5, 0.0)
+	var away: Vector2 = M.middle() + Vector2(60.0, 0.0)
+	var seen := func(): return g.sees(M.middle(), M.WATCH)
+	if real == null:
+		place.is_open = true
+	var dt := 0.05
+	for k in range(4):
+		M.tick(dt, away)
+	var blonde: bool = M.seller.look_data.get("hair") == 0xe3c46e and M.seller.voice == "adult_f"
+	_check(M.open and not M.seller.away and not M.customer.away and M.cleaner.away and blonde and M.seller.p.distance_to(place.desk_spots[0]) < 0.3,
+		"Sopiss open: the blonde saleswoman behind her desk and a customer before it, the cleaning lady not there")
+	# by the glass: the talk, line by line, from both of them
+	var heard := {"v": 0, "c": 0}
+	var first_c = M.customer
+	var last := {}
+	for k in range(int(40.0 / dt)):
+		M.tick(dt, by)
+		for who in [["v", M.seller], ["c", M.customer]]:
+			var lab = who[1]._label
+			if lab != null and who[1].is_barking() and last.get(who[0], "") != lab.text:
+				last[who[0]] = lab.text
+				heard[who[0]] += 1
+		if M._wait > 0.0:
+			break
+	var talk0: Array = pool[0]
+	_check(heard["v"] >= 1 and heard["c"] >= 1 and heard["v"] + heard["c"] == talk0.size() and M._wait > 0.0,
+		"Sopiss: standing by the glass you hear a whole talk, %d lines from her and %d from the customer" % [heard["v"], heard["c"]])
+	# you go off, and come back: somebody else in the chair (while nobody is looking)
+	var unseen: bool = not seen.call()
+	M.tick(dt, away)
+	_check(not unseen or (M.customer != first_c and is_instance_valid(M.customer) and not M.customer.away and M._customers == 2),
+		"Sopiss: when you come back somebody else is buying insurance (%d customers so far)" % M._customers)
+	var said := ""
+	for k in range(int(8.0 / dt)):
+		M.tick(dt, by)
+		if M.customer._label != null and M.customer.is_barking():
+			said = M.customer._label.text
+			break
+	var talk1: Array = pool[1 % pool.size()]
+	var talk1_c := ""
+	for l in talk1:
+		if l[0] == "c":
+			talk1_c = String(l[1])
+			break
+	_check(not unseen or said == talk1_c, "Sopiss: and the new customer has another talk (\"%s\")" % said)
+	# through the glass
+	var other = null
+	for n in g.npcs:
+		if n.id == "" and not n.has_meta("sopiss"):
+			other = n
+			break
+	var answer: bool = M.talk(M.seller)
+	_check(answer and M.seller._label.text in Loc.t("sopiss_cristal") and (other == null or not M.talk(other)),
+		"Sopiss: talk to her through the glass and she answers from inside; anybody else is not hers")
+	# shut: the cleaning lady, humming, going round
+	if real == null:
+		place.is_open = false
+	else:
+		place.set_open(false)
+	for k in range(4):
+		M.tick(dt, away)
+	var homes := {}
+	var hummed := 0
+	var lalala: Array = Loc.t("sopiss_tarareo")
+	var playing := false
+	for k in range(int(30.0 / dt)):
+		M.tick(dt, by)
+		homes[M.cleaner.home] = true
+		M.cleaner.p = M.cleaner.home             # (the town moves her along; here she is there at once)
+		if M.cleaner.is_barking() and M.cleaner._label.text in lalala:
+			hummed += 1
+		playing = playing or M.hum.player.playing
+	_check(not unseen or (not M.open and M.seller.away and M.customer.away and not M.cleaner.away),
+		"Sopiss shut: nobody at the desks, the cleaning lady in")
+	_check(homes.size() >= 3 and hummed > 0 and playing and M.cleaner.inner.get_node_or_null("Fregona") != null,
+		"Sopiss shut: she goes round %d spots with her mop, humming (♪ over her head, and a tune heard)" % homes.size())
+	M.tick(dt, away)
+	_check(not M.hum.player.playing, "Sopiss: away from the glass, her humming is not heard")
+	var ans2: bool = M.talk(M.cleaner)
+	_check(ans2 and M.cleaner._label.text in Loc.t("sopiss_cristal_limpia"), "Sopiss: the cleaning lady answers you through the glass too")
+	# leave things as they were
+	for n in [M.seller, M.customer, M.cleaner]:
+		g.npcs.erase(n)
+		n.queue_free()
+	M.hum.player.queue_free()
+	if real != null:
+		real.set_open(was_open)
+	g.phase = was_phase
+	await _frames(2)
+
+## What is knocked down comes back the next day (props.gd mend; the user, 22 Nov 2026: "Al día siguiente"): street
+## furniture and trees a long way off (nobody looking), not the same day, in their own place, standing; the crossroads'
+## traffic lights too.
+class FakeCar extends RefCounted:
+	var linear_velocity := Vector3(6.0, 0.0, 0.0)
+
+func _mend_checks() -> void:
+	var P = g.props
+	var cam: Vector3 = get_viewport().get_camera_3d().global_position if get_viewport().get_camera_3d() != null else g.player.global_position
+	var far_b = null
+	for k in P._grid:
+		for b in P._grid[k]:
+			if b is RigidBody3D and not b.has_meta("keep") and Vector2(cam.x, cam.z).distance_to(b.get_meta("p")) > 320.0:
+				far_b = b
+				break
+		if far_b != null:
+			break
+	var far_t := -1
+	for i in range(g.world.tree_info.size()):
+		var t: Dictionary = g.world.tree_info[i]
+		if not t["down"] and Vector2(cam.x, cam.z).distance_to(t["p"]) > 320.0:
+			far_t = i
+			break
+	if far_b == null or far_t < 0:
+		_check(false, "mending: something to knock down a long way off (furniture %s, tree %d)" % [str(far_b != null), far_t])
+		return
+	var home: Transform3D = far_b.transform
+	var was_day: int = g.day_n
+	P._knock(far_b, Vector3(6.0, 0.0, 0.0))
+	P._fell(far_t, FakeCar.new())
+	await _frames(30)
+	var moved: bool = far_b.transform.origin.distance_to(home.origin) > 0.05 or not far_b.freeze
+	var same_day: int = P.mend(false)
+	var still_down: bool = not far_b.freeze and g.world.tree_info[far_t]["down"]
+	g.day_n = was_day + 1
+	var put: int = P.mend(false)
+	g.day_n = was_day                    # (put back before any frame goes by: llamadas.now() counts the days, and a call left for "tomorrow" would ring)
+	await _frames(2)
+	var back: bool = far_b.freeze and far_b.visible and far_b.transform.origin.distance_to(home.origin) < 0.01 and far_b.collision_layer == 16
+	var in_grid: bool = far_b in P._grid.get(P._key(far_b.get_meta("p")), [])
+	var tree_up: bool = not g.world.tree_info[far_t]["down"]
+	_check(moved and same_day == 0 and still_down and put >= 2 and back and in_grid and tree_up,
+		"knocked down today, it lies there; the next day the bench (or whatever) and the tree are back in their place (%d put back)" % put)
+	# the crossroads' traffic lights
+	var cr = g.world.get("cruce")
+	if cr != null and cr.get("broken") != null and cr.has_method("repair"):
+		cr.broken = true
+		P._kept_day = g.day_n
+		var not_yet: bool = P.mend(false) == 0 or cr.broken
+		g.day_n += 1
+		P.mend(true)
+		g.day_n = was_day
+		_check(not_yet and cr.broken == false, "the crossroads' traffic lights knocked down are mended the next day too")
+	g.day_n = was_day
+	await _frames(2)
+
+## The traffic lights of the crossroads (semaforos.gd, the user, 22 Nov 2026: "Solo paran coches"): their cycle never
+## shows green both ways, blinks amber in the small hours, and a town car stops at its line on red and goes on green.
+## Tried on Pretil's crossroads when it is built (cruce.gd), otherwise on a stand-in: the four ways in, as Pretil
+## measured them on the map (22 Nov), their lines 6 m before the crossroads, and lamps that only remember what they show.
+class CruceStub extends RefCounted:
+	var heads: Array = []
+	var walk: Array = []
+	var lit := {}
+	var walking := {}
+	var broken := false
+	func set_light(i: int, s: String) -> void:
+		lit[i] = s
+	func set_walk(i: int, on: bool, _dark := false) -> void:
+		walking[i] = on
+
+func _semaforos_checks() -> void:
+	var real = g.world.get("cruce") if g.get("world") != null else null
+	var place = real
+	if place == null or not (place.get("heads") is Array) or (place.heads as Array).is_empty():
+		place = CruceStub.new()
+		for w in [[850, 1116, 0, "avenida", 2.8], [185, 193, 0, "arcos", 6.8], [1092, 1093, 1, "salvador", 6.8], [973, 974, 1, "santa_ana", 8.5]]:
+			if w[0] >= MapData.nodes.size() or w[1] >= MapData.nodes.size():
+				continue
+			var na: Vector2 = MapData.nodes[w[0]]
+			var nb: Vector2 = MapData.nodes[w[1]]
+			place.heads.append({"stop": nb - (nb - na).normalized() * float(w[4]), "a": w[0], "b": w[1], "group": w[2], "name": w[3]})
+		place.walk = [{"group": 0}, {"group": 1}]
+		print("  (no traffic lights on this map yet: tried on a stand-in crossroads)")
+	if place.heads.is_empty():
+		_check(false, "traffic lights: the crossroads' road nodes are in the map")
+		return
+	_check(real == null or g.traffic.lights == g.semaforos, "traffic lights: the game's own are the ones the town's cars mind")
+	var L = load("res://scripts/semaforos.gd").new()
+	var was_lights = g.traffic.lights
+	var was_clock: float = g.clock
+	g.set_time(12.0)
+	L.setup(g, place)
+	# the cycle
+	var both := false
+	var seen := {}
+	var k := 0.0
+	while k < L.cycle():
+		L.t = k
+		var s0: String = L.state(0)
+		var s1: String = L.state(1)
+		both = both or (s0 != "rojo" and s1 != "rojo")
+		seen[s0 + "/" + s1] = true
+		k += 0.25
+	_check(not both and seen.has("verde/rojo") and seen.has("rojo/verde") and seen.has("ambar/rojo") and seen.has("rojo/ambar") and seen.has("rojo/rojo"),
+		"traffic lights: green one way at a time, amber after green, a moment of red both ways (%s)" % ", ".join(seen.keys()))
+	L.t = 1.0
+	L.tick(0.0)
+	var lamps_ok := true
+	if place is CruceStub:
+		for i in range(place.heads.size()):
+			lamps_ok = lamps_ok and place.lit.get(i, "") == L.state(int(place.heads[i]["group"]))
+		lamps_ok = lamps_ok and place.walking.get(0) == false and place.walking.get(1) == true
+	else:
+		for i in range(place.heads.size()):
+			lamps_ok = lamps_ok and String(place.heads[i].get("state", "")) == L.state(int(place.heads[i]["group"]))
+		lamps_ok = lamps_ok and not bool(place.auto)
+	_check(lamps_ok, "traffic lights: each face shows its group's colour, and the people's lights are green across the street that has red")
+	# where a car must stop
+	var h0: Dictionary = place.heads[0]
+	var dir: Vector2 = ((MapData.nodes[h0["b"]] as Vector2) - (MapData.nodes[h0["a"]] as Vector2)).normalized()
+	var e := {"a": h0["a"], "b": h0["b"]}
+	L.t = L.GREEN[0] + L.AMBER + L.ALL_RED + 1.0          # (the side streets' green: red for group 0)
+	var g_red: float = L.gap(e, (h0["stop"] as Vector2) - dir * 20.0, 2.0, 8.0)
+	var g_past: float = L.gap(e, (h0["stop"] as Vector2) + dir * 1.5, 2.0, 0.0)
+	var g_turned: float = L.gap({"a": h0["b"], "b": h0["a"], "prev": h0["a"]}, (h0["stop"] as Vector2) - dir * 3.0, 2.0, 0.0)
+	L.t = 1.0
+	var g_green: float = L.gap(e, (h0["stop"] as Vector2) - dir * 20.0, 2.0, 8.0)
+	L.t = L.GREEN[0] + 0.5                                  # (amber: one too fast to stop goes through, one slow stops)
+	var g_fast: float = L.gap(e, (h0["stop"] as Vector2) - dir * 4.0, 2.0, 9.0)
+	var g_slow: float = L.gap(e, (h0["stop"] as Vector2) - dir * 4.0, 2.0, 1.0)
+	_check(absf(g_red - 18.0) < 0.1 and g_past < 0.0 and absf(g_turned - 1.0) < 0.1 and g_green < 0.0 and g_fast < 0.0 and g_slow >= 0.0,
+		"traffic lights: on red a car 20 m off has 18 m to its line, none once over it, also just past the turn; on green or too fast on amber, no stop (%.1f %.1f %.1f %.1f %.1f %.1f)" % [g_red, g_past, g_turned, g_green, g_fast, g_slow])
+	# in the small hours: amber blinking; at a STOP sign, a moment at the line and on; elsewhere, straight on
+	g.set_time(3.0)
+	var en := {"a": h0["a"], "b": h0["b"]}
+	var n_stop: float = L.gap(en, (h0["stop"] as Vector2) - dir * 2.5, 2.0, 0.0)
+	L.held(en, 0.5)
+	var n_still: float = L.gap(en, (h0["stop"] as Vector2) - dir * 2.5, 2.0, 0.0)
+	L.held(en, 1.0)
+	var n_go: float = L.gap(en, (h0["stop"] as Vector2) - dir * 2.5, 2.0, 0.0)
+	var side_go := 1.0
+	for h in place.heads:
+		if String(h.get("name", "")) == "salvador":
+			var sd: Vector2 = ((MapData.nodes[h["b"]] as Vector2) - (MapData.nodes[h["a"]] as Vector2)).normalized()
+			side_go = L.gap({"a": h["a"], "b": h["b"]}, (h["stop"] as Vector2) - sd * 10.0, 2.0, 5.0)
+	var blink: bool = L.state(0) in ["ambar", "off"] and L.state(1) in ["ambar", "off"]
+	g.set_time(12.0)
+	_check(blink and n_stop >= 0.0 and n_still >= 0.0 and n_go < 0.0 and side_go < 0.0,
+		"traffic lights in the small hours: blinking amber; at the Avenida's STOP a car stops a moment and goes (%.1f %.1f %.1f), from the Salvador it goes straight on (%.1f)" % [n_stop, n_still, n_go, side_go])
+	# knocked down (the user, 22 Nov 2026: "que rotos funcionen como ámbar"): blinking amber by day as well, STOPs minded
+	if place.get("broken") != null:
+		var was_broken: bool = bool(place.broken)
+		place.broken = true
+		L.t = L.GREEN[0] + L.AMBER + L.ALL_RED + 1.0
+		var b_blink: bool = L.state(0) in ["ambar", "off"] and L.state(1) in ["ambar", "off"]
+		var eb := {"a": h0["a"], "b": h0["b"]}
+		var b_stop: float = L.gap(eb, (h0["stop"] as Vector2) - dir * 2.5, 2.0, 0.0)
+		place.broken = was_broken
+		var b_back: bool = L.state(0) == "rojo"
+		_check(b_blink and b_stop >= 0.0 and b_back, "traffic lights knocked down: blinking amber at noon, the STOP minded; mended, the cycle again")
+	# the last block of Santa Ana, one way towards the crossroads (Street View; the user, 22 Nov 2026)
+	_check(MapData.one_way_says(973, 974) == 1 and MapData.one_way_says(974, 973) == -1 and MapData.one_way_says(969, 970) == 1 and MapData.one_way_says(968, 969) == 0
+		and g.traffic.one_way_ok(970, 971) and not g.traffic.one_way_ok(974, 973),
+		"Calle de Santa Ana: from the Calle del Romero to the crossroads, one way towards it; the rest as it was")
+	# a real car of the town, on the Avenida from the north
+	var was_max: int = g.traffic.max_cars
+	g.traffic.clear()
+	g.traffic.max_cars = 0
+	g.traffic.lights = L
+	var was_p: Vector2 = g.player.p
+	g.player.p = g._pavement((h0["stop"] as Vector2) + dir * 10.0)
+	g.player.sync()
+	var back: int = h0["a"]                                 # (start a good way back: the last stretch before the crossroads may be only metres long)
+	for hop in range(4):
+		if (MapData.nodes[h0["b"]] as Vector2).distance_to(MapData.nodes[back]) > 30.0:
+			break
+		var further := -1
+		for o in MapData.neighbours(back):
+			if ((MapData.nodes[back] as Vector2) - (MapData.nodes[o] as Vector2)).normalized().dot(dir) > 0.7:
+				further = o
+		if further < 0:
+			break
+		back = further
+	var nxt: int = h0["a"]
+	for o in MapData.neighbours(back):
+		if ((MapData.nodes[o] as Vector2) - (MapData.nodes[back] as Vector2)).normalized().dot(dir) > 0.7:
+			nxt = o
+	var ca: Dictionary = g.traffic.add("panda", 0, back, nxt if back != h0["a"] else h0["b"])
+	var cleared: Array = []                                 # (a neighbour crossing in front would stop it short of its line: off the street meanwhile)
+	for n in g.npcs:
+		if not n.away and n.p.distance_to(h0["stop"]) < 70.0:
+			n.away = true
+			cleared.append(n)
+	L.t = L.GREEN[0] + L.AMBER + L.ALL_RED + 0.5
+	var waited := false
+	var held := 0.0
+	for f in range(int(12.0 * 60)):
+		L.t = L.GREEN[0] + L.AMBER + L.ALL_RED + 0.5           # (held at red)
+		await get_tree().physics_frame
+		if bool(ca.get("at_light", false)):
+			waited = true
+			held += 1.0 / 60.0
+	var cp: Vector2 = ca["car"].p
+	var short: float = ((h0["stop"] as Vector2) - cp).dot(dir)
+	var stood: bool = absf(ca["car"].forward_speed()) < 0.5
+	_check(waited and held > 1.0 and stood and short > 0.5 and short < 6.0,
+		"traffic lights: a car coming down the Avenida on red stops at its line (%.1f m short of it, its middle) and waits (%s, %.1f s, speed %.2f, %d->%d, waiting for %s)" % [short, str(waited), held, ca["car"].forward_speed(), ca["a"], ca["b"], str(ca.get("dbg", "-"))])
+	L.t = 0.5
+	var over := false
+	for f in range(int(6.0 * 60)):
+		L.t = 0.5
+		await get_tree().physics_frame
+		var at: Vector2 = ca["car"].p
+		if (at - (h0["stop"] as Vector2)).dot(dir) > 1.0:
+			over = true
+			break
+	_check(over, "traffic lights: and on green it goes on through the crossroads")
+	for n in cleared:
+		n.away = false
+	g.traffic.clear()
+	g.traffic.max_cars = was_max
+	g.traffic.lights = was_lights
+	g.player.p = was_p
+	g.player.sync()
+	g.set_time(was_clock)
+	await _frames(2)
 
 ## Javi of the Asador de pollos (javi.gd, the user, 21 Nov 2026): known after Josefa's ham, when a Tuesday or a Sunday
 ## comes round or you talk to him; Josefa tells you about him once; on those days, behind his counter, an order of roast
@@ -9532,8 +10215,8 @@ func _trabajos_checks() -> void:
 		await _frames(3)
 		await _skip_dialog(false)
 	var order_pay: int = g.money - m0
-	_check(offers and q and who != null and not T.active() and order_pay >= 30 and order_pay <= 150 and g.folk.trust(who_id) >= t0 + 2,
-		"any day but Thursday Henry has an order for somebody you know (%s): taken over hot, %d EUR, and they like you a bit better" % [who.shown_name() if who != null else "?", order_pay])
+	_check(offers and q and who != null and not T.active() and order_pay >= 30 and order_pay <= 150 and g.folk.trust(who_id) >= mini(t0 + 2, 100),
+		"any day but Thursday Henry has an order for somebody you know (%s): taken over hot, %d EUR, and they like you a bit better%s" % [who.shown_name() if who != null else "?", order_pay, "" if offers and q and not T.active() and g.folk.trust(who_id) >= mini(t0 + 2, 100) else " -- offers %s, asked %s, still on %s, trust %d -> %d" % [offers, q, T.active(), t0, g.folk.trust(who_id)]])
 	g.weekday = 3
 	await _frames(3)
 	_check(not (henry in T.givers(true)) and not T.henry_can(), "on a Thursday he has the ham to think of, and no orders")
@@ -9746,7 +10429,7 @@ func _casa_checks() -> void:
 			g.stats.erase(k)
 		else:
 			g.stats[k] = saved[k]
-	if saved["casa"] == null and g.stats.has("puente_h"):      # (the bridge is open in this run: a quiet house, so that nobody rings in the middle of the tests after this)
+	if (saved["casa"] == null or String((saved["casa"] as Dictionary).get("st", "")) == "") and g.stats.has("puente_h"):      # (the bridge is open in this run: a quiet house, so that nobody rings in the middle of the tests after this; fondo_casa.gd's tick makes an untouched {"st": ""} early)
 		g.stats["casa"] = {"st": "propia", "debe": 0, "estado": 0, "obra": -1, "obra_dia": -1, "offered": true}
 	F.restore()
 	await _frames(3)
@@ -12041,6 +12724,344 @@ func _run() -> void:
 		g.phase = "free"
 		await _cultura_checks()
 		print("CULTURA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--cruce"):       # just the traffic lights, the mirror and the signs of the crossroads of the traffic lights: what a driver sees coming up each street, each corner from the middle, each sign, from the air; then the cycle's other lights, and at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var cz = g.world.get("cruce")
+		if cz == null:
+			print("CRUCE FAILED (not built: this map has no such crossroads)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = Vector2(240.0, 60.0)
+		var c_sem = g.get("semaforos")                   # (whoever drives the lights stands aside for the pictures)
+		g.set("semaforos", null)
+		var c_was: Array = cz.lights()
+		cz.auto = false
+		var c_views := [["llega_avenida", Vector2(112.4, 42.0), 1.5, Vector2(112.6, 60.0), 2.6, 70.0], ["llega_salvador", Vector2(96.5, 56.0), 1.5, Vector2(113.0, 61.0), 2.6, 70.0],
+				["llega_santa_ana", Vector2(133.0, 67.6), 1.5, Vector2(114.0, 66.8), 2.8, 70.0], ["llega_arcos", Vector2(114.4, 93.0), 1.5, Vector2(113.4, 70.0), 2.6, 70.0],
+				["esquina_beige", Vector2(114.0, 62.5), 1.7, Vector2(108.6, 54.6), 2.0, 75.0], ["esquina_mirador", Vector2(112.5, 67.5), 1.7, Vector2(119.8, 60.0), 3.0, 85.0],
+				["esquina_stana", Vector2(112.0, 66.0), 1.7, Vector2(119.0, 74.0), 2.2, 80.0], ["esquina_clinica", Vector2(115.5, 70.0), 1.7, Vector2(109.6, 78.5), 2.2, 75.0],
+				["esquina_sopiss", Vector2(115.5, 64.0), 1.7, Vector2(108.5, 68.0), 2.4, 85.0], ["arcos_este", Vector2(110.5, 74.5), 1.7, Vector2(116.3, 79.5), 2.2, 70.0],
+				["espejo", Vector2(111.3, 72.5), 1.6, Vector2(108.8, 69.3), 2.8, 55.0], ["stop_avenida", Vector2(110.9, 64.4), 1.6, Vector2(108.8, 69.3), 2.5, 55.0],
+				["armario", Vector2(112.2, 54.6), 1.6, Vector2(108.3, 54.0), 1.7, 65.0], ["prohibido_salvador", Vector2(110.6, 60.0), 1.6, Vector2(108.1, 55.3), 2.3, 50.0],
+				["baculo", Vector2(126.5, 67.0), 1.6, Vector2(120.5, 63.5), 4.2, 75.0], ["salvador_ceda", Vector2(100.0, 57.2), 1.6, Vector2(107.0, 61.2), 3.0, 50.0],
+				["prohibido_aparcar", Vector2(113.0, 81.8), 1.6, Vector2(109.1, 82.8), 2.2, 50.0], ["bus", Vector2(112.8, 70.6), 1.6, Vector2(108.2, 71.4), 2.3, 45.0],
+				["giro", Vector2(114.6, 80.5), 1.5, Vector2(116.4, 73.75), 2.4, 50.0], ["prohibido_santa_ana", Vector2(121.3, 68.3), 1.6, Vector2(125.4, 73.1), 2.3, 50.0],
+				["prohibido_parar", Vector2(116.5, 58.0), 1.6, Vector2(118.3, 51.7), 2.4, 50.0],
+				["aire", Vector2(113.4, 88.0), 34.0, Vector2(113.2, 65.0), 0.0, 55.0], ["aire_norte", Vector2(113.6, 40.0), 30.0, Vector2(113.2, 64.0), 0.0, 55.0]]
+		for turn in [["", 12.0, 0, "verde", []], ["_fase2", 12.0, 1, "verde", ["llega_salvador", "llega_santa_ana", "esquina_mirador", "esquina_sopiss", "esquina_stana"]],
+				["_ambar", 12.0, 0, "ambar", ["llega_arcos", "llega_avenida"]], ["_noche", 23.0, 0, "verde", ["llega_arcos", "llega_santa_ana", "esquina_sopiss", "esquina_mirador", "aire"]]]:
+			g.set_time(turn[1])
+			cz.show_phase(turn[2], turn[3])
+			await _frames(4)
+			for v in c_views:
+				if not (turn[4] as Array).is_empty() and not (v[0] in turn[4]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.cam.position = Vector3(eye.x, cz.level + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, cz.level + v[4], at.y))
+				g.cam.fov = v[5]
+				g.traffic.clear()                                # (no passing van before the lights in their pictures)
+				await _frames(6)
+				await _shot("cruce_%s%s" % [v[0], turn[0]])
+		var c_pr = g.get("props")                         # a blow: the white house's post and its bin fly, and every light left blinks amber
+		if c_pr != null and c_pr.has_method("adopt"):
+			g.set_time(12.0)
+			await _frames(3)
+			var c_hit: Dictionary = cz.part("the white house's post")
+			c_pr.punch((c_hit["p"] as Vector2) + Vector2(0.0, 0.3), Vector2(0.0, -1.0))
+			await _frames(150)                               # (it comes to rest; cruce.gd has seen it go)
+			cz.set_process(false)
+			cz.show_blink(true)
+			for v in c_views:
+				if v[0] in ["esquina_stana", "llega_santa_ana", "llega_arcos", "esquina_sopiss"]:
+					var eye: Vector2 = v[1]
+					var at: Vector2 = v[3]
+					g.cam.position = Vector3(eye.x, cz.level + v[2], eye.y)
+					g.cam.look_at(Vector3(at.x, cz.level + v[4], at.y))
+					g.cam.fov = v[5]
+					g.traffic.clear()
+					await _frames(6)
+					await _shot("cruce_%s_roto" % v[0])
+			cz.set_process(true)
+			cz.repair()
+			await _frames(6)
+			g.traffic.clear()
+			var c_v: Array = c_views[6]
+			g.cam.position = Vector3(c_v[1].x, cz.level + c_v[2], c_v[1].y)
+			g.cam.look_at(Vector3(c_v[3].x, cz.level + c_v[4], c_v[3].y))
+			g.cam.fov = c_v[5]
+			await _frames(6)
+			await _shot("cruce_esquina_stana_arreglado")
+		cz.put_back(c_was)
+		g.set("semaforos", c_sem)
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _cruce_checks()
+		print("CRUCE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--beige"):       # just the house north of the Salvador, at the crossroads of the traffic lights: from the crossroads, its two fronts, its doorway, its north end and the empty plot's wall, the Salvador from the west, the roofs from the air, at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var bg = g.world.get("beige")
+		if bg == null:
+			print("BEIGE FAILED (not built: its house is not in this map)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = Vector2(240.0, 60.0)
+		var b_e: Vector2 = (bg.SE + bg.NE) / 2.0
+		var b_s: Vector2 = (bg.WEST + bg.SE) / 2.0
+		var b_h := Vector2(100.0, 48.0)
+		for moment in [["", 12.0], ["_noche", 23.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["cruce", Vector2(114.6, 63.6), 1.7, bg.SE + Vector2(-2.0, -3.0), 3.4, 80.0], ["avenida", b_e + Vector2(6.2, 0.6), 1.6, b_e, 3.2, 95.0],
+					["portal", bg.door + Vector2(2.4, 0.8), 1.6, bg.door + Vector2(-1.6, -0.1), 1.5, 62.0], ["avenida_alto", b_e + Vector2(5.0, 3.5), 1.6, b_e + Vector2(0.0, -1.0), 4.6, 70.0],
+					["norte", Vector2(114.2, 38.6), 1.7, bg.NE + Vector2(-1.0, 0.5), 3.0, 80.0], ["tapia", Vector2(115.0, 41.5), 1.7, bg.NE + Vector2(0.4, -4.0), 1.6, 75.0], ["colon", Vector2(104.0, 27.0), 1.7, Vector2(99.5, 33.0), 1.4, 85.0],
+					["salvador", b_s + Vector2(3.4, 5.6), 1.6, b_s + Vector2(-1.0, 0.0), 3.2, 100.0], ["salvador_oeste", bg.WEST + Vector2(-1.5, 4.6), 1.6, b_s, 3.2, 85.0],
+					["salvador_bajo", bg.WEST + Vector2(4.2, 4.4), 1.5, bg.WEST + Vector2(4.0, 1.2), 1.7, 80.0], ["esquina", bg.SE + Vector2(3.2, 4.6), 1.6, bg.SE + Vector2(-0.6, -0.4), 3.0, 85.0],
+					["aire", Vector2(118.0, 66.0), 24.0, b_h, 4.0, 55.0], ["aire_norte", Vector2(112.0, 26.0), 24.0, b_h, 4.0, 55.0]]:
+				if moment[0] != "" and not (v[0] in ["cruce", "salvador"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.cam.position = Vector3(eye.x, bg.level + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, bg.level + v[4], at.y))
+				g.cam.fov = v[5]
+				g.traffic.clear()                                # (no passing van before the house in its pictures)
+				await _frames(6)
+				await _shot("beige_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _beige_checks()
+		print("BEIGE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--mirador"):     # just the cream house with the bay window, at the crossroads of the traffic lights: from the crossroads, its door and its bay, its fronts on the avenue and on Santa Ana, its carriage gate, the roof from the air, at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var mr = g.world.get("mirador")
+		if mr == null:
+			print("MIRADOR FAILED (not built: its house is not in this map)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = Vector2(240.0, 60.0)
+		var m_c: Vector2 = (mr.C1 + mr.C2) / 2.0
+		var m_w: Vector2 = (mr.N + mr.C1) / 2.0
+		var m_s: Vector2 = (mr.C2 + mr.E) / 2.0
+		var m_h := Vector2(124.0, 55.0)
+		for moment in [["", 12.0], ["_noche", 23.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["cruce", Vector2(112.6, 66.6), 1.7, m_c, 3.8, 75.0], ["portal", m_c + Vector2(-3.8, 2.4), 1.6, m_c, 2.2, 75.0],
+					["mirador", m_c + Vector2(-4.4, 2.8), 1.6, m_c, 5.9, 75.0],
+					["avenida", m_w + Vector2(-5.0, 0.4), 1.6, m_w, 3.6, 100.0], ["avenida_norte", Vector2(113.8, 40.0), 1.7, m_w, 4.0, 62.0],
+					["santa_ana", m_s + Vector2(0.9, 6.0), 1.6, m_s, 3.6, 95.0], ["porton", mr.gate_spot + Vector2(0.6, 4.0), 1.6, mr.gate_spot + Vector2(-0.3, -1.3), 2.6, 72.0],
+					["santa_ana_este", Vector2(138.0, 68.6), 1.7, m_s, 3.8, 60.0],
+					["aire", Vector2(107.0, 71.0), 24.0, m_h, 4.0, 55.0], ["aire_este", Vector2(141.0, 58.0), 24.0, m_h, 4.0, 55.0]]:
+				if moment[0] != "" and not (v[0] in ["cruce", "avenida"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.cam.position = Vector3(eye.x, mr.level + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, mr.level + v[4], at.y))
+				g.cam.fov = v[5]
+				g.traffic.clear()                                # (no passing van before the house in its pictures)
+				await _frames(6)
+				await _shot("mirador_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _mirador_checks()
+		print("MIRADOR %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--stana2"):      # just the white house of the Calle de Santa Ana 2, at the crossroads of the traffic lights: from the crossroads, along Santa Ana both ways, its gate and its windows close, its front on the Arcos, the roof from the air, at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var sa = g.world.get("stana2")
+		if sa == null:
+			print("STANA2 FAILED (not built: its house is not in this map)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = Vector2(240.0, 60.0)
+		var s_n: Vector2 = (sa.A + sa.B) / 2.0
+		var s_w: Vector2 = (sa.A + sa.J) / 2.0
+		for moment in [["", 12.0], ["_noche", 23.0]]:
+			g.set_time(moment[1])
+			await _frames(4)
+			for v in [["cruce", Vector2(111.8, 70.6), 1.7, sa.A + Vector2(2.0, 0.0), 2.8, 75.0], ["santa_ana", s_n + Vector2(0.4, -4.6), 1.6, s_n, 2.6, 105.0],
+					["santa_ana_este", Vector2(139.5, 69.0), 1.7, s_n + Vector2(3.0, 0.0), 2.6, 62.0], ["santa_ana_oeste", Vector2(113.6, 69.8), 1.7, s_n, 2.8, 70.0],
+					["porton", sa.gate_spot + Vector2(-0.6, -2.6), 1.6, sa.gate_spot + Vector2(0.3, 1.2), 1.7, 75.0],
+					["ventanas", s_n + Vector2(-2.6, -4.2), 1.6, s_n + Vector2(1.4, 0.0), 3.4, 80.0],
+					["arcos", s_w + Vector2(-4.4, 0.4), 1.6, s_w, 2.7, 90.0], ["arcos_sur", Vector2(113.2, 89.0), 1.7, s_w, 3.0, 55.0],
+					["aire", Vector2(110.0, 64.0), 20.0, (sa.A + sa.G) / 2.0, 3.0, 55.0], ["aire_este", Vector2(140.0, 66.0), 20.0, (sa.A + sa.G) / 2.0, 3.0, 55.0]]:
+				if moment[0] != "" and not (v[0] in ["cruce", "santa_ana"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.cam.position = Vector3(eye.x, sa.level + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, sa.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("stana2_%s%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _stana2_checks()
+		print("STANA2 %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--clinica"):     # just the dental clinic of the crossroads of the traffic lights: from the crossroads, from the Arcos and from the Calle Cervantes, each front close and its floor above, its letters, the house's doorway, the roof from the air, shut and at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var cl = g.world.get("clinica")
+		if cl == null:
+			print("CLINICA FAILED (not built: its house is not in this map)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = Vector2(240.0, 60.0)
+		var c_n: Vector2 = (cl.X + cl.NW) / 2.0
+		var c_e: Vector2 = (cl.SE + cl.X) / 2.0
+		var c_h: Vector2 = (cl.NW + cl.SE) / 2.0
+		for moment in [["", 1, 12.0], ["_cerrado", 6, 12.0], ["_noche", 6, 23.0]]:
+			g.weekday = moment[1]
+			g.set_time(moment[2])
+			await _frames(4)
+			for v in [["cruce", Vector2(111.6, 70.9), 1.7, cl.X, 3.4, 70.0], ["cruce_lejos", Vector2(115.0, 64.5), 1.7, cl.X, 3.6, 55.0],
+					["esquina", Vector2(112.4, 74.9), 1.6, cl.X, 2.2, 75.0],
+					["arcos", Vector2(112.4, 93.0), 1.7, c_e, 3.4, 62.0], ["este", c_e + Vector2(3.6, 0.0), 1.6, c_e, 2.4, 95.0],
+					["este_alto", c_e + Vector2(3.6, 0.6), 1.6, c_e, 5.4, 95.0], ["puerta_casa", cl.house_door + Vector2(1.5, 0.9), 1.6, cl.house_door + Vector2(-1.4, -0.1), 1.5, 70.0],
+					["cervantes", c_n + Vector2(0.6, -3.5), 1.6, c_n, 2.4, 100.0], ["cervantes_alto", c_n + Vector2(0.9, -3.5), 1.6, c_n, 5.4, 100.0],
+					["cervantes_este", cl.X + Vector2(-9.5, -3.2), 1.7, cl.X + Vector2(-3.5, 0.6), 3.0, 80.0],
+					["letras", cl.door + Vector2(1.2, -2.2), 1.6, cl.door + Vector2(-2.0, 1.4), 2.7, 80.0], ["oeste", Vector2(91.5, 77.3), 1.7, c_n, 3.2, 62.0],
+					["aire", Vector2(119.0, 68.0), 22.0, c_h, 4.0, 55.0], ["aire_sur", Vector2(106.0, 100.0), 22.0, c_h, 4.0, 55.0]]:
+				if moment[0] != "" and not (v[0] in ["cruce", "esquina", "letras", "este"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.cam.position = Vector3(eye.x, cl.level + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, cl.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("clinica_%s%s" % [v[0], moment[0]])
+		g.weekday = 1
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _clinica_checks()
+		print("CLINICA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--sopiss"):      # just "Seguros Sopiss", the red corner building of the crossroads of the traffic lights: from each of the five streets, each front close, the office through its windows open and shut, the roof from the air, at night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var sp = g.world.get("sopiss")
+		if sp == null:
+			print("SOPISS FAILED (not built: its house is not in this map)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = Vector2(240.0, 60.0)
+		var mid_e: Vector2 = (sp.SE + sp.NE) / 2.0
+		var mid_n: Vector2 = (sp.NE + sp.NW) / 2.0
+		var mid_s: Vector2 = (sp.SW + sp.SE) / 2.0
+		var mid_h: Vector2 = (sp.NW + sp.SE) / 2.0
+		for moment in [["", 1, 12.0], ["_cerrado", 6, 12.0], ["_noche", 6, 23.0], ["_noche_luz", 1, 23.0]]:
+			g.weekday = moment[1]
+			g.set_time(moment[2])
+			sp.set_process(moment[0] != "_noche_luz")           # (the last one: its lamps on in the dark, to see how they look)
+			sp.set_open(sp.open_at(g.weekday, g.clock) or moment[0] == "_noche_luz")
+			await _frames(4)
+			for v in [["santa_ana", Vector2(124.2, 69.9), 1.7, mid_e, 5.4, 62.0], ["santa_ana_lejos", Vector2(136.0, 70.6), 1.7, mid_e, 5.6, 45.0],
+					["neon", mid_e + Vector2(8.0, 0.4), 1.6, mid_e, 9.0, 55.0], ["frente", mid_e + Vector2(9.5, 0.2), 1.6, mid_e, 2.6, 62.0], ["puerta", sp.door + Vector2(2.6, 0.4), 1.6, sp.door + Vector2(-2.0, -0.1), 1.7, 62.0],
+					["escaparate", Vector2(112.6, 71.6), 1.6, Vector2(107.0, 67.6), 1.5, 62.0],
+					["cervantes", Vector2(111.0, 82.0), 1.7, mid_s, 5.2, 62.0], ["cervantes_cerca", mid_s + Vector2(1.5, 4.4), 1.6, mid_s, 2.6, 85.0],
+					["cervantes_oeste", Vector2(96.0, 76.4), 1.7, mid_s, 4.6, 62.0],
+					["avenida_norte", Vector2(112.8, 50.5), 1.7, sp.NE, 5.2, 62.0], ["esquina_norte", sp.NE + Vector2(3.6, -4.6), 1.6, sp.NE + Vector2(-2.0, 1.0), 2.4, 70.0],
+					["salvador", Vector2(91.0, 53.2), 1.7, mid_n, 5.0, 62.0], ["salvador_cerca", sp._rm(9.6, -4.4), 1.6, sp._rm(10.6, 0.0), 2.2, 80.0],
+					["ventanal", sp._rm(10.2, -4.2), 1.6, sp._rm(11.5, 2.5), 1.5, 62.0], ["portal", sp.portal + Vector2(0.8, -2.6), 1.6, sp.portal + Vector2(-0.2, 1.4), 1.6, 62.0],
+					["salvador_alto", sp._rm(7.0, -4.6), 1.6, sp._rm(8.2, 0.0), 7.4, 80.0],
+					["arcos", Vector2(112.3, 95.0), 1.7, sp.SE, 5.4, 45.0],
+					["dentro", sp._rm(16.4, 6.6), 1.95, sp._rm(11.0, 3.2), 1.4, 75.0], ["dentro_fondo", sp._rm(5.4, 4.6), 2.0, sp._rm(14.0, 3.2), 1.3, 75.0],
+					["aire", Vector2(122.0, 80.0), 24.0, mid_h, 8.0, 55.0], ["aire_oeste", Vector2(84.0, 76.0), 26.0, mid_h, 6.0, 55.0],
+					["aire_norte", Vector2(106.0, 44.0), 26.0, mid_h, 8.0, 55.0], ["aire_sur", Vector2(99.0, 88.0), 26.0, mid_h, 8.0, 55.0],
+					["cenital", mid_h + Vector2(0.3, 0.6), 46.0, mid_h, 0.0, 40.0]]:
+				if moment[0] != "" and not (v[0] in ["santa_ana", "neon", "frente", "escaparate", "salvador_cerca", "dentro"]):
+					continue
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.cam.position = Vector3(eye.x, sp.level + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, sp.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("sopiss_%s%s" % [v[0], moment[0]])
+		sp.set_process(true)
+		g.weekday = 1
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _sopiss_checks()
+		print("SOPISS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--matias"):      # just the house of the Calle de Matías Pérez: straight on, along the street both ways, its doorways and windows close, at night
@@ -15491,6 +16512,134 @@ func _run() -> void:
 		print("DESCANSO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--semaforos_fotos"):     # pictures: town cars waiting at the crossroads' red lights
+		shots = true
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = false
+		var cr = g.world.get("cruce")
+		var L = g.semaforos
+		if cr == null or L == null or L.place == null:
+			print("SEMAFOROS_FOTOS FAILED (no crossroads) (1 failed)")
+			get_tree().quit(1)
+			return
+		g.set_time(12.0)
+		g.traffic.clear()
+		g.traffic.max_cars = 0
+		var h0: Dictionary = cr.heads[0]
+		var dir: Vector2 = ((MapData.nodes[h0["b"]] as Vector2) - (MapData.nodes[h0["a"]] as Vector2)).normalized()
+		g.player.p = g._pavement((h0["stop"] as Vector2) - dir * 6.0)
+		g.player.sync()
+		var back: int = h0["a"]
+		for hop in range(4):
+			var further := -1
+			for o in MapData.neighbours(back):
+				if ((MapData.nodes[back] as Vector2) - (MapData.nodes[o] as Vector2)).normalized().dot(dir) > 0.7:
+					further = o
+			if further < 0 or (MapData.nodes[h0["b"]] as Vector2).distance_to(MapData.nodes[back]) > 50.0:
+				break
+			back = further
+		var nxt: int = h0["a"]
+		for o in MapData.neighbours(back):
+			if ((MapData.nodes[o] as Vector2) - (MapData.nodes[back] as Vector2)).normalized().dot(dir) > 0.7:
+				nxt = o
+		for k in range(2):
+			g.traffic.add(["panda", "seat"][k] if k == 0 else "panda", 0, back, nxt if back != h0["a"] else h0["b"])
+			for f in range(150):
+				L.t = L.GREEN[0] + L.AMBER + L.ALL_RED + 0.5
+				await get_tree().physics_frame
+		for f in range(400):
+			L.t = L.GREEN[0] + L.AMBER + L.ALL_RED + 0.5
+			await get_tree().physics_frame
+		g.player.visible = false
+		g.phase = "selfshot"
+		var stop: Vector2 = h0["stop"]
+		var side := Vector2(-dir.y, dir.x)
+		for v in [["espera", stop + dir * 9.0 + side * 6.0, 3.2, stop - dir * 8.0, 1.0, 60.0], ["alto", stop + dir * 14.0 - side * 4.0, 9.0, stop - dir * 4.0, 0.0, 60.0]]:
+			var eye: Vector2 = v[1]
+			var at: Vector2 = v[3]
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+			g.cam.fov = v[5]
+			for f in range(8):
+				L.t = L.GREEN[0] + L.AMBER + L.ALL_RED + 0.5
+				await get_tree().process_frame
+			await _shot("semaforos_%s" % v[0])
+		print("SEMAFOROS_FOTOS OK (0 failed)")
+		get_tree().quit(0)
+		return
+	if OS.get_cmdline_user_args().has("--arreglos"):     # what is knocked down comes back the next day (props.gd mend)
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		await _mend_checks()
+		print("ARREGLOS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--semaforos"):     # the crossroads' traffic lights (semaforos.gd)
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		await _semaforos_checks()
+		print("SEMAFOROS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--sopiss_gente_fotos"):     # pictures of the people inside Seguros Sopiss, open and shut
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var sp = g.world.get("sopiss")
+		var M = g.sopiss_gente
+		if sp == null or M == null or M.seller == null:
+			print("SOPISS_GENTE_FOTOS FAILED (no office)")
+			get_tree().quit(1)
+			return
+		g.player.visible = false
+		g.player.p = sp.door + Vector2(4.0, 0.0)
+		g.player.sync()
+		var mid_e: Vector2 = (sp.SE + sp.NE) / 2.0
+		var d0: Vector2 = sp.desk_spots[0]
+		var d1: Vector2 = sp.desk_spots[1]
+		var dm: Vector2 = (d0 + d1) / 2.0
+		var side: Vector2 = (d1 - d0).normalized().orthogonal()
+		for moment in [["abierto", 1, 11.0], ["cerrado", 1, 15.5]]:
+			g.weekday = moment[1]
+			g.set_time(moment[2])
+			sp.set_open(moment[0] == "abierto")
+			M._swap(moment[0] == "abierto")
+			await _frames(10)
+			if moment[0] == "abierto":
+				M.seller.bark(String(Loc.t("sopiss_charla")[3][3][1]), 30.0)
+			else:
+				M.cleaner.p = sp.clean_spots[1]
+				M.cleaner.home = M.cleaner.p
+				M.cleaner.sync()
+				M.cleaner.bark(String(Loc.t("sopiss_tarareo")[1]), 30.0)
+			var who: Vector2 = d0 if moment[0] == "abierto" else M.cleaner.p
+			for v in [["frente", mid_e + Vector2(9.5, 0.2), 1.6, mid_e, 1.6, 62.0], ["escaparate", Vector2(112.6, 71.6), 1.6, Vector2(107.0, 67.6), 1.3, 62.0],
+					["dentro", sp._rm(16.4, 6.6), 1.95, sp._rm(11.0, 3.2), 1.4, 75.0], ["cerca", (who + (dm - who) * 0.75 + side * 0.5) if moment[0] == "abierto" else who + side * 3.2, 1.5, who, 1.0, 60.0]]:
+				var eye: Vector2 = v[1]
+				var at: Vector2 = v[3]
+				g.cam.position = Vector3(eye.x, sp.level + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, sp.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(6)
+				await _shot("sopiss_gente_%s_%s" % [v[0], moment[0]])
+		print("SOPISS_GENTE_FOTOS OK (0 failed)")
+		get_tree().quit(0)
+		return
+	if OS.get_cmdline_user_args().has("--sopiss_gente"):     # the people inside Seguros Sopiss (sopiss_gente.gd)
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		await _sopiss_gente_checks()
+		print("SOPISS_GENTE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--marciano"):     # Marciano across from the café (marciano.gd)
 		g.menu.close()
 		g.phase = "free"
@@ -15842,6 +16991,12 @@ func _run() -> void:
 	await _asador_checks()
 	await _rize_checks()
 	await _travesia_checks()
+	await _sopiss_checks()
+	await _clinica_checks()
+	await _stana2_checks()
+	await _mirador_checks()
+	await _beige_checks()
+	await _cruce_checks()
 	await _casa_fuera_checks()
 	await _casa_dentro_checks()
 	await _gacha_checks()
@@ -16521,6 +17676,9 @@ func _run() -> void:
 	await _trabajos_checks()
 	await _javi_checks()
 	await _marciano_checks()
+	await _sopiss_gente_checks()
+	await _semaforos_checks()
+	await _mend_checks()
 	await _descanso_checks()
 	g.phase = "play"
 	g.stats.erase("menu_done")

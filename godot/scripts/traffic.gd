@@ -42,6 +42,7 @@ var _obs: Array = []          # what there is to run into this tick: [position, 
 var _still: Array = []        # ...of which what stands still (asleep parked cars, the trailers): made again twice a second
 var _still_t := 0
 const CELL := 38.0
+var lights = null               # the crossroads' traffic lights, once built (semaforos.gd): where a car must stop
 var _cells := {}              # the same, by map cell (Vector2i -> Array), so each car only looks at its surroundings
 
 func setup(game_) -> void:
@@ -362,8 +363,8 @@ func _gather() -> void:
 	for o in game.cars:
 		if not (o.freeze and not o.running):
 			_add_vehicle(o)
-	for e in list:
-		_add_vehicle(e["car"])
+	for e in list:                           # (one waiting at a red light counts as on its way: those behind queue, not overtake)
+		_add_vehicle(e["car"], null, Vector2(sin(e["car"].h), cos(e["car"].h)) if e.get("at_light", false) else null)
 	for e in game.police.cops:
 		_add_vehicle(e["car"])
 	for job in game.tow.jobs:                # broken down, or on the hook (then it belongs to the truck pulling it)
@@ -488,6 +489,7 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 					best = o
 			if best < 0:
 				best = e["a"]
+			e["prev"] = e["a"]
 			e["a"] = e["b"]
 			e["b"] = best
 			continue
@@ -605,6 +607,19 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 			want = minf(want, 4.5)
 		var stop := false
 		var honk := false
+		e["at_light"] = false
+		if lights != null and not duty and not auto:          # a red light ahead (semaforos.gd): brake for the line, and wait at it
+			var lg: float = lights.gap(e, cp, nose, speed)
+			if lg >= 0.0:
+				want = minf(want, sqrt(2.0 * 3.0 * maxf(0.0, lg - 0.5)) + 0.3)      # (braking at 3 m/s² to stop at it)
+				if lg < 1.2:                                       # (at the line: waiting there is not being stuck, nor a jam to steer round)
+					e["at_light"] = true
+					lights.held(e, dt)
+					e["stuck"] = 0.0
+					e["mark"] = cp
+					e["idle"] = 0.0
+					c.drive(0.0, steer, true, true, dt)
+					continue
 		if not near.is_empty():
 			if near[3] == PERSON:
 				stop = true

@@ -203,7 +203,33 @@ func _grid_add(grid: Dictionary, lo: Vector2, hi: Vector2, item) -> void:
 				grid[k] = []
 			grid[k].append(item)
 
+## Where OpenStreetMap has the way a street runs wrong, and Street View says otherwise: [street, from node, to node], the
+## stretch of that street between them one way, driving from the first to the second. The last block of the Calle de
+## Santa Ana, from the Calle del Romero to the crossroads of the traffic lights, runs only towards the crossroads (two
+## lanes coming in, no entry at its mouth: Pretil in Street View, 2024; the user, 22 Nov 2026: "Solo el último tramo").
+const ONE_WAY_FIX := [["Calle de Santa Ana", 969, 974]]
+var _ow_fix := {}                  # Vector2i(a, b) -> +1 that way allowed, -1 against
+
+func _fix_one_way() -> void:
+	_ow_fix.clear()
+	for f in ONE_WAY_FIX:
+		for r in roads:
+			if String(r.get("n", "")) != String(f[0]):
+				continue
+			var p: PackedInt32Array = r["p"]
+			var i0: int = p.find(int(f[1]))
+			var i1: int = p.find(int(f[2]))
+			if i0 < 0 or i1 < 0:
+				continue
+			var step: int = 1 if i1 > i0 else -1
+			var i := i0
+			while i != i1:
+				_ow_fix[Vector2i(p[i], p[i + step])] = 1
+				_ow_fix[Vector2i(p[i + step], p[i])] = -1
+				i += step
+
 func _build_segments() -> void:
+	_fix_one_way()
 	var pad := Vector2(12, 12)
 	for r in roads:
 		var p: PackedInt32Array = r["p"]
@@ -607,6 +633,9 @@ func seg_between(a: int, b: int) -> Seg:
 ## A one-way street of the map's source (OpenStreetMap; the bake's "ow"): may it be driven from node a to node b? Only in
 ## the order of its points. Any other stretch (two-way, a footpath, no stretch at all): yes.
 func one_way_says(a: int, b: int) -> int:
+	var fixed: int = _ow_fix.get(Vector2i(a, b), 0)
+	if fixed != 0:
+		return fixed
 	var s = seg_between(a, b)
 	if s == null or int(s.road.get("ow", 0)) == 0 or int(s.road["k"]) != 0:
 		return 0                                     # (it says nothing)

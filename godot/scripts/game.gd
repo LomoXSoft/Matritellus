@@ -60,6 +60,8 @@ const FondoCasaS = preload("res://scripts/fondo_casa.gd")
 const TrabajosS = preload("res://scripts/trabajos.gd")
 const JaviS = preload("res://scripts/javi.gd")
 const MarcianoS = preload("res://scripts/marciano.gd")
+const SopissGenteS = preload("res://scripts/sopiss_gente.gd")
+const SemaforosS = preload("res://scripts/semaforos.gd")
 const FumarS = preload("res://scripts/fumar.gd")
 
 ## A whole day lasts 48 minutes of play: two minutes an hour. The day of the week moves on at midnight.
@@ -304,6 +306,8 @@ var pickups                     # 3D floating spinning glowing item pickups (pic
 var inventario                  # Animal Crossing-style pocket inventory (inventario.gd)
 var tomasa                      # Tomasa Malvora & los chinos del Arroyuelo shopkeeper (tomasa.gd)
 var marciano                    # Marciano, across from the café: the eighties and the ruta del bacalao (marciano.gd)
+var sopiss_gente                # the people inside Seguros Sopiss, seen and heard through the glass (sopiss_gente.gd)
+var semaforos                   # the traffic lights of the crossroads: their cycle, and the town's cars stopping (semaforos.gd)
 var javi                        # Javi of the Asador de pollos: his roast-chicken orders on Tuesdays and Sundays (javi.gd)
 var trabajos                    # paid work, over and over: El de las faenas on the square, and Henry's orders (trabajos.gd)
 var fondo_casa                  # the house you inherit, a "de fondo" line: the tax debt, the cash machine, Edmundo Monedero (fondo_casa.gd)
@@ -1612,6 +1616,10 @@ func _setup_places_and_actors() -> void:
 	javi.setup(self)
 	marciano = MarcianoS.new()
 	marciano.setup(self)
+	sopiss_gente = SopissGenteS.new()
+	sopiss_gente.setup(self)
+	semaforos = SemaforosS.new()
+	semaforos.setup(self)
 	fumar = FumarS.new()
 	fumar.setup(self)
 	rally = RallyS.new()
@@ -3717,6 +3725,8 @@ func talk_to(n, chat_only := false) -> void:
 		return
 	if trabajos != null and trabajos.hand_over(n):    # (an order of Henry's or Javi's, for them: before anything of their own)
 		return
+	if sopiss_gente != null and sopiss_gente.talk(n):     # (through the glass of the insurance office: an answer from inside)
+		return
 	player.h = face + PI
 	var s: Dictionary = steps[si] if phase == "play" and si >= 0 else {}
 	if s.get("type", "") == "sign" and firmas != null:
@@ -5179,6 +5189,10 @@ func _physics_process(delta: float) -> void:
 		trabajos.tick(dt, pp)
 	if javi != null:
 		javi.tick(dt)
+	if sopiss_gente != null:
+		sopiss_gente.tick(dt, pp)
+	if semaforos != null:
+		semaforos.tick(dt)
 	recress.tick(dt, pp)
 	_mark("side lines")
 	sabotaje.tick(dt, pp)

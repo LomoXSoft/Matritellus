@@ -17,6 +17,15 @@ const Creator = preload("res://scripts/creator.gd")
 var tags: Array = []          # peña graffiti: {p: where you stand to paint it, label: Label3D, owner: int}
 var terrazas: Array = []   # {p: Vector2, u: Vector2}
 var _repair_cool := 0.0
+## Mended the next day (the user, 22 Nov 2026, asked when what you knock down comes back: "Al día siguiente"): what a car
+## or a punch has knocked over lies there as before, and is cleared away after a while; the next day it is back in its
+## place, each thing as soon as nobody is looking at it. The felled trees too, and the crossroads' traffic lights
+## (cruce.gd repair(): anything of its own with an "on_knock" is its to put back, all of it at once).
+var _down: Array = []        # {b: the piece, day: the day it was knocked over}
+var _felled: Array = []      # {i: the tree, wreck: the falling one, day}
+var _kept_day := -1          # the day something of its owner's own ("keep": the crossroads) was knocked down
+var _mend_t := 0.0
+const MEND_EVERY := 2.0
 
 func setup(game_, world_) -> void:
 	game = game_
@@ -378,13 +387,104 @@ func _prop(kind: String, p: Vector2, heading: float, variant: int, on_floor := f
 
 func _knock(b: RigidBody3D, v: Vector3) -> void:
 	_grid[_key(b.get_meta("p"))].erase(b)
+	if not b.has_meta("home"):
+		b.set_meta("home", b.transform)
+	b.set_meta("knocks", int(b.get_meta("knocks", 0)) + 1)
 	b.freeze = false
 	b.collision_layer = 32
 	b.collision_mask = 1 | 2 | 32
 	b.linear_velocity = v * 0.9 + Vector3(randf_range(-2, 2), 3.0 + v.length() * 0.18, randf_range(-2, 2))
 	b.angular_velocity = Vector3(randf_range(-7, 7), randf_range(-4, 4), randf_range(-7, 7))
 	broken_count += 1
-	get_tree().create_timer(40.0).timeout.connect(b.queue_free)
+	if b.has_meta("on_knock"):                    # (whoever owns it is told: the crossroads' traffic lights, cruce.gd)
+		(b.get_meta("on_knock") as Callable).call(b)
+	if b.has_meta("on_knock"):                    # (its owner's to stand up again, the next day: cruce.gd repair())
+		_kept_day = game.day_n
+		if not b.has_meta("keep"):                # (lying about meanwhile, or cleared away after a while like the rest)
+			get_tree().create_timer(40.0).timeout.connect(b.queue_free)
+		return
+	if b.has_meta("keep"):
+		return
+	_down.append({"b": b, "day": game.day_n})
+	get_tree().create_timer(40.0).timeout.connect(_tidy.bind(b, int(b.get_meta("knocks"))))
+
+## after a while the wreck is cleared away (kept, out of sight, to be put back the next day)
+func _tidy(b: RigidBody3D, knocks: int) -> void:
+	if not is_instance_valid(b) or int(b.get_meta("knocks", 0)) != knocks or b.freeze:
+		return
+	b.freeze = true
+	b.collision_layer = 0
+	b.collision_mask = 0
+	b.visible = false
+
+func _process(dt: float) -> void:
+	if game == null:
+		return
+	_mend_t -= dt
+	if _mend_t > 0.0:
+		return
+	_mend_t = MEND_EVERY
+	mend(false)
+
+## puts back what was knocked down on an earlier day and nobody is looking at (all of it: `anyway`, for the tests)
+func mend(anyway: bool) -> int:
+	var n := 0
+	for d in _down.duplicate():
+		var b = d["b"]
+		if not is_instance_valid(b):
+			_down.erase(d)
+			continue
+		var p: Vector2 = b.get_meta("p")
+		if not anyway and (game.day_n <= int(d["day"]) or game.sees(p)):
+			continue
+		_down.erase(d)
+		b.linear_velocity = Vector3.ZERO
+		b.angular_velocity = Vector3.ZERO
+		b.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
+		b.freeze = true
+		b.collision_layer = 16
+		b.collision_mask = 0
+		b.transform = b.get_meta("home")
+		b.visible = true
+		if b.is_inside_tree():
+			b.reset_physics_interpolation()
+		_cell_add(_grid, p, b)
+		n += 1
+	for d in _felled.duplicate():
+		var p: Vector2 = world.tree_info[int(d["i"])]["p"]
+		if not anyway and (game.day_n <= int(d["day"]) or game.sees(p)):
+			continue
+		_felled.erase(d)
+		if is_instance_valid(d["wreck"]):
+			d["wreck"].queue_free()
+		world.unfell_tree(int(d["i"]))
+		n += 1
+	var cr = world.get("cruce")
+	if cr != null and (cr.get("broken") == true or int(cr.get("down") if cr.get("down") != null else 0) > 0) and cr.has_method("repair") and (anyway or game.day_n > _kept_day):
+		var spots: Array = cr.fallen() if cr.has_method("fallen") else ([cr.heads[0]["stop"]] if cr.get("heads") is Array and not (cr.heads as Array).is_empty() else [])
+		var seen := false                         # (every place where something would stand up again: none in sight)
+		for q in spots:
+			seen = seen or game.sees(q)
+		if anyway or not seen:
+			cr.repair()
+			n += 1
+	return n
+
+## A thing another file built and keeps (a frozen body with its own pieces and shapes, standing at `p`) joins the
+## street's furniture: cars and fists knock it over like the rest (the crossroads' traffic lights, cruce.gd). `rad`: how
+## close a car has to get; `heat`: how much the police mind.
+func adopt(b: RigidBody3D, p: Vector2, kind: String, rad := 0.55, heat := 5.0) -> void:
+	b.set_meta("rad", rad)
+	b.set_meta("half", 0.0)
+	b.set_meta("along", Vector2.RIGHT)
+	b.set_meta("heat", heat)
+	b.set_meta("p", p)
+	b.set_meta("kind", kind)
+	b.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
+	b.freeze = true
+	b.collision_layer = 16
+	b.collision_mask = 0
+	_cell_add(_grid, p, b)
 
 func _fell(i: int, c) -> void:
 	var t: Dictionary = world.fell_tree(i)
@@ -416,6 +516,7 @@ func _fell(i: int, c) -> void:
 	b.linear_velocity = flat * 0.5 + Vector3(0, 1.5, 0)
 	b.angular_velocity = Vector3.UP.cross(flat.normalized()) * 2.5      # topples away from the car
 	broken_count += 1
+	_felled.append({"i": i, "wreck": b, "day": game.day_n})
 	get_tree().create_timer(40.0).timeout.connect(b.queue_free)
 
 ## called every physics tick for a moving car. Returns [furniture knocked, trees felled] this tick.
