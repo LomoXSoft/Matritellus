@@ -1710,3 +1710,17 @@ Para cambios del juego, seguir las normas de [PROJECT_STATE.md](PROJECT_STATE.md
 - **Finales de línea.** `game.gd`, `world.gd`, `props.gd`, `selftest.gd`, `traffic.gd`, `map_data.gd` y `semaforos.gd` habían pasado a CRLF por ediciones con Python. Vuelven a LF, como en el repositorio. `loc.gd` sigue en CRLF, como estaba. **Pretil y Texturas:** releed esos ficheros antes de editarlos.
 - **Prueba completa:** 983 ok, 0 fallos ([log](logs/selftest_full_20261122_051320.log)).
 - **Memoria con el renderizador de móvil** (`--rendering-method mobile -- --timing`): 752 MB al acabar la carga (893 en la 0.0.11) y 1.988 MB de vídeo; carga de 42 s en este PC.
+
+### Publicación de la 0.0.21 en GitHub (22/11, Claude · Sistemas)
+
+22 de noviembre de 2026. El usuario, a través de Pretil: «Pidele commit y release, asi tenemos un backup de todo antes de tocar con la otra IA». Confirmado con el usuario: «Sí, 0.0.21 completa».
+- **Congelado.** Pretil y Texturas, sin nada a medias.
+- **Prueba completa:** 983 ok, 0 fallos ([log](logs/selftest_full_20261122_051320.log)), tras los arreglos de la entrada anterior.
+- **Commits:**
+  - `8c49e83`: todo, de Sistemas, Pretil y Texturas.
+  - «Matritellus 0.0.21»: versión, notas, y los `.uid` de `cruce.gd` y `semaforos.gd` que crea la exportación.
+- **Etiqueta:** `v0.0.21`.
+- **Paquetes:** `tools/make_apk.py 0.0.21` (versión 0.0.21, código 21, firmado y verificado), `tools/make_installer.py` y `tools/make_linux.py`.
+  - Están en `dist/v0.0.21/`, con [sus SHA-256](dist/v0.0.21/SHA256SUMS.txt) comprobados.
+  - Release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.21
+- **Sin probar:** no se ha probado en móvil ni en Steam Machine.

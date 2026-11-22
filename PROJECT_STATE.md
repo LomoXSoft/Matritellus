@@ -38,9 +38,12 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
 
 ## Versión
 
-- **Publicada:** 0.0.20 (21/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.20 — completa: 945 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0020-en-github-2111-claude--sistemas).
+- **Publicada:** 0.0.21 (22/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.21 — completa: 983 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0021-en-github-2211-claude--sistemas).
+  - El cruce de los semáforos (Pretil: las cinco esquinas y los postes; Sistemas: semáforos que paran a los coches, Santa Ana de sentido único en su último tramo, la gente de dentro de Sopiss, lo roto vuelve al día siguiente); Texturas: Tembleque, Delicias, Reina Sofía, Parra, Descanso, Pastora y más.
 
-- **Anterior:** 0.0.19 (21/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.19 — completa: 920 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0019-en-github-2111-claude--sistemas).
+- **Anterior:** 0.0.20 (21/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.20 — completa: 945 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0020-en-github-2111-claude--sistemas).
+
+- **Antes:** 0.0.19 (21/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.19 — completa: 920 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0019-en-github-2111-claude--sistemas).
   - **Sistemas:**
     - Pausa: los coches ya no salen volando al volver (`CarS.held`: sin fuerzas acumuladas con la física parada).
     - El stick en menús, tableros y botones va por pasos con repetición de tecla (`controls.gd _stick`), no una pulsación por cada movimiento: el Steam Controller se desbocaba.
