@@ -55,6 +55,7 @@ const SK := {
 	"panda": {"glb": "sk/panda", "rack": [-0.06, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Window"], "hide_mats": ["Ground"], "seat": [0, -0.03], "rider": 0.56},
 	"pitufo": {"glb": "sk/panda", "rack": [-0.3, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Window"], "hide_mats": ["Ground"], "seat": [0, -0.03, 0.95], "rider": 0.56},
 	"z15": {"glb": "sk/z15", "rack": [-0.2, 1.0], "mats": {"M_0136": OWN, "Charcoal": OWN}, "seat": [0, 0.05, 0.8], "rider": 0.62, "hull": true},      # (a cap's peak stayed in front of the windscreen)
+	"kokas": {"glb": "sk/z15", "rack": [-0.2, 1.0], "mats": {"M_0136": OWN, "Charcoal": OWN}, "seat": [0, 0.05, 0.8], "rider": 0.62, "hull": true},    # Koke el Kokas's taxi: the Z15 in yellow, flames, sign and wing (koke_marcas.gd)
 	"tractor": {"glb": "sk/hebro", "rack": [0.24, 0.6], "hue": [[0xc02020, OWN]], "mid": true, "seat": [0, -0.2, 0.9], "rider": 0.85, "open": true},
 	"yondir": {"glb": "sk/yondir", "rack": [-0.12, 0.93], "mats": {"Part23Mtl": OWN, "Part42Mtl": 0xf2c81e}, "mid": true, "seat": [0, -0.12, 0.88], "rider": 0.72, "wheel_copy": {"wheel_bl": "wheel_br"}},
 	"tunero": {"glb": "sk/tunero", "rack": [-0.02, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Glass_Amber"], "tint": true, "seat": [0, -0.02, 0.92, 0.14], "rider": 0.52},
@@ -555,6 +556,8 @@ static func make_from(table: Dictionary, kind: String, spec: Dictionary, paint: 
 			"pitufo":
 				root.add_child(Parts.part("box", 0xf4f4f0, Vector3(0, size.y * 0.43, -size.z * 0.05), Vector3(size.x + 0.03, size.y * 0.2, size.z * 0.4)))
 				_extras(root, "tricornio", size)
+			"kokas":        # Koke el Kokas's taxi: flames, the TAXI sign, the wing (koke_marcas.gd)
+				preload("res://scripts/koke_marcas.gd").dress(root, size, top_at(kind, root, size.z * 0.0, size.z * 0.2), top_at(kind, root, -size.z * 0.5, -size.z * 0.38))
 			"grua":         # the flat bed, with a lip along each side and a stop at the back
 				var steel := 0x5a5f66
 				var deck_y: float = size.y * 0.445

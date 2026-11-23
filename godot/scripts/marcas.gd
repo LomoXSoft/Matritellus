@@ -69,6 +69,11 @@ func givers() -> Array:
 		for n in G.pintadas.givers(free_hands):
 			if n != null and not (n in out):
 				out.append(n)
+	# Koke el Kokas, while the day's taxi run is there for you (koke.gd)
+	if G.get("koke") != null:
+		for n in G.koke.givers(free_hands):
+			if n != null and not (n in out):
+				out.append(n)
 	# Javi, with an order of chicken on a Tuesday or a Sunday (javi.gd)
 	if G.get("javi") != null:
 		for n in G.javi.givers(free_hands):

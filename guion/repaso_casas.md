@@ -730,6 +730,131 @@ Los tonos de madera clara `b8904a` y `a8803a` salen amarillos en el juego. Hay q
 - **Fuera:** el 57, porque el Catastro solo le da una franja de 2 m a la calle y su casa queda detrás de la fachada del 59, que ya estaba hecha. Tembleque 2 es un solar sin plantas en el Catastro y da a otra calle. Consuegra 1 y 2 dan a la Calle de Consuegra.
 - **En el mapa:** de `rsm_26` y `rsm_28` solo cambia qué paredes de atrás quedan tapadas, porque lindan con el 29, el 31 y el 33.
 
+## Avenida de la Constitución (los impares de la Calle de Madrid a la Travesía de Alemania)
+
+- **El solar entre el 49 y el 55 (`constitucion_51`):** el Catastro no tiene nada; en Street View 2024 es un solar cerrado con chapa galvanizada y un trozo de bloque gris en la punta norte. Va como tapia de 2,4 m (`rc: None`). La chapa sale lisa, sin ondas.
+- **`constitucion_55`:** la esquina de la Travesía de Alemania. En la foto del Catastro era de ladrillo entera; en 2024 la planta baja está enfoscada en blanco con un zócalo gris y es una clínica de fisioterapia (rótulo «FISIOTERAPIA»). Los escaparates salen azul oscuro y en la foto son de cristal gris.
+- **`constitucion_23`:** es la otra fachada de df Mecánica, el taller de la Calle del Palo (`garage.gd`), a petición del usuario: la tienda de recambios de azulejo azul lleva el mismo cartel de la rueda (`assets/df_mecanica.png`) y el banderín azul que sale a la acera (`_constitucion_23()` en `casas.gd`).
+- **Colores:** el ladrillo claro de 2000–2015 (33, 39, 43) sale naranja con `brick_buff`; va con un color liso crema (`cdb597`, `c9b393`, `c8ad8c`) y pierde el dibujo del ladrillo. El ladrillo rojo pardo del 31 y del 55 va con `brick_dark`; el 41 se queda con `brick_red`.
+- **`constitucion_39`:** faltan los cuarterones hundidos del ladrillo.
+- **Fuera:** el 36 (su casa queda detrás de la fachada del 38, que ya estaba hecha). Entre el 25 y el 29 no hay casas: es la boca de la Calle de Madrid.
+
+## Avenida de la Constitución (el tramo norte: del 71 al 91 y del 104 al 114)
+
+- **`constitucion_79`:** la punta de la horquilla con la Calle Real. Va descrita por su fachada larga, la de la Calle Real (la de las fotos); el trozo de 2,2 m que da a la avenida queda sin describir.
+- **`constitucion_81`:** el Catastro dibuja sus partes solo 3,6 m a lo largo de la avenida, pero en Street View 2024 la fachada sigue hasta el 83; el resto va rellenado (`fill`).
+- **`constitucion_89`:** la casita de una planta es parte de la parcela de `alto_46` (la de la otra calle): va como segunda entrada sobre esa misma referencia, solo con su planta baja (`only: 1`).
+- **El solar entre el 89 y el 91 (`constitucion_89b`):** el Catastro no tiene nada; es una tapia de ladrillo visto con un portón de chapa verde (`rc: None`).
+- **`constitucion_91`:** el Catastro aún dibuja un edificio, pero es un solar («Suelo») con su tapia de ladrillo y «PROHIBIDO PEGAR CARTELES» pintado a mano en negro (`_constitucion_91()` en `casas.gd`, con su albardilla y sus machones). El corte del solar no puede llevarse toda la parcela: si el `porch` la corta entera, la casa desaparece y el `fill` no se pone.
+- **Colores:** el ladrillo de 1980 del 79 y del 81 salía naranja con `brick_buff`; va con un color liso (`c4a07c`) y pierde el dibujo del ladrillo. Las tapias del 89 B y del 91 y el piso alto del 114 van con `brick_dark`.
+- **`constitucion_114`:** la esquina no tiene foto de Street View 2024 en la hoja; va por la del Catastro.
+- **Fuera:** el 108 (la tapia blanca con el portón grande de chapa verde entre el 106 y el 110): su referencia es la de `tri_c108`, ya hecha por la Calle del Triunfo. El 94 se quedó fuera antes.
+
+## Huecos del centro (casas sueltas de varias calles, del centro hacia afuera)
+
+- **Cómo se buscaron:** las parcelas del Catastro a menos de 300 m del centro que no tenían casa descrita ni estaban hechas a mano, de la más cercana a la más lejana. Muchas salen libres pero no lo están: Palo 35 y 37 son df Mecánica (`garage.gd`), Cervantes 3 es la parroquia, Avenida de la Constitución 36 queda detrás del 38, y las de la Calle Real del centro son el grupo hecho a mano (`real_*`).
+- **`zaragoza_14`:** el Catastro le da 11 m² de comercio de dos plantas, pero en Street View 2024 es un hueco entre dos casas con una tapia de ladrillo pintada de amarillo y una puerta de chapa verde; detrás crecen hierbajos. Va como tapia baja de 2,3 m.
+- **`madrid_24`** (el arco de ladrillo con el balcón encima; estaba pendiente): el frente que daba `house_street.py` quedaba detrás de sus vecinas; va a mano en el hueco entre `madrid_22` y `madrid_26`, de 4,5 m.
+- **`arroyuelo_p15d`** (Palma 15 D, sin foto del Catastro): da al Arroyuelo Medio. Es una tapia de bloque crema con un portón grande de madera.
+- **`arroyuelo_t17`** (Toledo 17, su cara al Arroyuelo Medio): la casa gris del balcón. Su cara a la Calle de Toledo ya era `toledo_17`.
+- **La caseta de ladrillo junto a la torre de la parroquia (Salvador 1 T):** ya la había hecho Pretil; la mía (`salvador_1t`) se quita a petición del usuario («Siempre predomina el trabajo de Petril»).
+- **`domingo_9d`** (sin foto del Catastro): una planta beige con un portón de chapa ocre y un parche de cemento sin pintar.
+- **`toledano_8a`:** la casa de ladrillo de 2011 con los tres balcones de arco y el portal de arco.
+- **`matias_a67`:** el costado a Matías Pérez de la esquina del Arroyuelo Medio 67: blanco abajo y ladrillo rojo pardo arriba.
+- **`abajo_10`:** las oficinas de una planta detrás de la verja. Falta la verja de machones de ladrillo con sus cipreses delante: no está hecha.
+- **Pendiente junto al MaxiPrecio:** `mol_b301` es ahora el MaxiPrecio de Pretil (`maxiprecio.gd`, `["obra"]`). Al este de su esquina E2–SE el mapa sigue vacío; en la realidad sigue el bloque de pisos del portal de Granada. Cuando se haga, avisar a Pretil para que case con su medianera.
+- **Fuera:** Arroyuelo Medio 57 (la casa blanca larga) y Regidor 5 quedan detrás de fachadas ya hechas (`toledo_8` a `toledo_12`, `regidor_7`). Santo 40 no da a ninguna calle según `house_street.py`. Los solares de Real 41, Salvador 8 y Toledano 8 no tienen nada que hacer.
+
+## Huecos del centro, el segundo anillo (de 220 a 320 m)
+
+- **`sanjose_b032`:** la casa de tres plantas sin dirección en el Catastro: ladrillo arriba, blanco abajo sobre un zócalo de mampostería, portón de chapa marrón.
+- **`sanjose_11b` y `sanjose_13`:** dos portones de chapa gris. El del 13 va en una pared blanca con un zócalo alto azul; en la foto del Catastro era gris. Su frente quedaba 8 m detrás de la calle; va puesto a mano en el hueco de 5,35 m entre `sanjose_11b` y `sanjose_13b`, con el resto rellenado hasta su parcela (`fill`).
+- **`real_69d`:** la casa baja beige entre `real_69` y `real_71`, con una cortina y una reja.
+- **`trsr_3`:** una planta blanca larga sobre mampostería, con cuatro rejas de marco marrón y un tejadillo sobre canes de madera. La planta de arriba, metida hacia atrás, no está hecha.
+- **Fuera:**
+  - Roma 10: ya va dentro de `roma_8`, que la rodea (`with`).
+  - El costado a la avenida de Parra 12 (una oficina): queda detrás del 75 D de la avenida.
+  - Castilla-La Mancha 14: detrás del 16.
+  - Toledano 7 D y 15, Castilla-La Mancha 9 I y Parra 12 por su calle: no dan a ninguna calle.
+  - Toledano 11 y 19 y Portugal 9: 1 a 2 m de frente.
+  - Portugal 13 y 15, y la Travesía de San Francisco: solares.
+
+## Calles enteras más allá de 320 m: Mirasierra, Valdespino, Don Jesús Requejo y Reyes Católicos 1
+
+- **Mirasierra (9 casas) y Valdespino (4):** las hileras de 1992 a 1994. Cada casa tiene sus huecos en arco con un aro de ladrillo rojizo: portón a la izquierda, puerta y ventana con reja abajo, y arriba una logia con barandilla y un balcón. Los colores son los de 2024: blanco, crema, ocre o salmón.
+  - `mirasierra_8` cierra su planta de arriba con una galería acristalada blanca.
+  - `mirasierra_10` es de color teja, con un portón blanco bajo un tejadillo y arcos de ventana enmarcados en blanco.
+  - `valdespino_3` es blanco sobre un zócalo de baldosa naranja, con un arco de arriba tapiado.
+  - `valdespino_5`, en la esquina, es salmón con los aros en blanco.
+- **Plaza de Don Jesús Requejo:**
+  - `requejo_1`: la caseta blanca alta, con una puerta de chapa gris y una pintada.
+  - Tres casas de la Avenida de la Reina Sofía que dan a la plaza:
+    - `requejo_r57`: la casa baja beige sobre mampostería, con dos rejas y un portón de madera oscura. La celosía de ladrillo de su azotea no está hecha.
+    - `requejo_r59`: tres plantas, con la de abajo rosa, un escaparate y una cortina, y ladrillo amarillo pálido encima.
+    - `requejo_r61`: en Street View 2024 está en obras. Va como tres plantas de bloque sin acabar, con los huecos vacíos.
+- **Fachadas en línea:** los pares de Mirasierra van en una sola línea recta. El Catastro dibuja cada parcela algo torcida, con escalones de 0,7–0,9 m entre casas, y la del 8 traía 2,3 m de porche por delante. Lo que sobresalía se corta (`clear`) y lo que faltaba se rellena (`fill`). El porche del garaje del 10 (una parte de una planta suelta delante) se quita (`strip`). El trozo de una planta de Valdespino 3 entra en la casa (`floors: 1`).
+- **`reyes_1`:** una planta blanca larga de 2017 sobre un zócalo negro, con las persianas grises bajadas y una cancela gris al final.
+- **Fuera:** Camino de las Sierras 4 no salía en los datos. La caseta acristalada blanca junto a Mirasierra 1 no tiene parcela propia en el Catastro.
+
+## Fachadas adelantadas y casas metidas en un hoyo (repaso de todo lo hecho)
+
+Una casa no puede quedar suelta, adelantada a sus vecinas y enseñando un trozo de costado a la calle.
+
+- **Traídas a la línea de la calle (19 casas).** El Catastro dibujaba su fachada de 1,6 a 6 m detrás de la de sus vecinas, pero en la foto del Catastro están a ras de calle. La fachada va ahora en la línea de las vecinas y lo de detrás se rellena (`fill`):
+  - `alto_14`, `jym_b405`, `clara_22`, `tri_41`, `valencia_44`, `labradores_11`, `rafael_47`, `santo_51`, `segadores_14`, `segadores_6`.
+  - `vpa_9`, `veg_x7`, `sap_10`, `monjas_5`, `rafael_59`, `roma_25`, `toledo_49`, `toledo_51`, `toledo_53`.
+- **Toledo, del 49 al 53.** En Street View el 55 sale un poco de la fila, alrededor de 1 m, no 3,6. Las tres van un poco giradas, desde la junta con el 47 hasta 1 m detrás del 55.
+- **Viñas, del 47 al 57.** Tenía dientes de sierra, como Mirasierra. Van en una sola línea.
+- **Retranqueos de verdad, con su tapia en la calle:**
+  - Florido, del 14 al 26: la hilera está 4 m atrás, tras sus patios. Lleva tapias bajas de ladrillo con su cancela, de `flo_p14t` a `flo_p26t`, en la línea del 12.
+  - Delicias 39: un muro bajo negro con puertecilla, `delicias_39t`.
+- **Sin tocar:**
+  - Las casas que ya tienen su tapia en la calle: Regidor 24, Clavel 11, Santa María 13 y Amargura 8.
+  - Arcos 10, que es de Pretil (Universidad Comunal).
+  - Real 24, de Pretil (farmacia.gd). Lo moví por error y volvió a su sitio; el mapa queda igual que antes.
+- **Parcelas en L (arregladas el 23 nov):** `mirador_18`, `rsm_t27`, `extremadura_b441` y `labradores_15`. Su fachada quedaba al fondo de un entrante, entre las alas de su propia casa, y se veían metidas en un hoyo. Ahora la fachada va en la línea de sus alas (lo que se ve en Street View), con `fill` hasta el fondo antiguo y `clear: 3.0`. Hoja: `fotos/tanda34/adelantadas_5.jpg`. En el mapa solo cambiaron esas cuatro y los bordes y la base de `rsm_9`.
+
+## Calle de Manuel Álvarez de Ugena
+
+- **`ugena_1`:** el taller de coches de 2015: una nave beige con portón seccional gris, escaparate, puerta y dos ventanas. El rótulo dice solo «TALLER».
+- **`ugena_3`:** casa de una planta de ladrillo amarillo pálido, metida unos 3 m detrás de su patio. El Catastro mete el patio en la casa, así que la fachada va 3 m atrás con `clear: 3.0`.
+  - En la calle, en línea con el taller, van la tapia baja de mampostería con pilares de ladrillo y una cancelilla (`ugena_3t`) y dos cancelas marrones (`ugena_3p`).
+  - `ugena_3b` es su parte de dos plantas, detrás de las cancelas.
+- **`ugena_4`:** en la esquina, la casa blanca de dos plantas sobre zócalo de piedra, con el porche abierto y una reja arriba. La pérgola de la azotea no está hecha.
+  - `ugena_4w`: la tapia vieja encalada sobre zócalo malva, con el portón de tablas grises bajo un tejadillo. El hueco que el Catastro deja sin casa entre la tapia y la casa se rellena (`fill`).
+- **`ugena_7`:** casa de tejado a dos aguas, beige sobre zócalo de ladrillo rojo, con rejas abajo y persianas blancas arriba. La ventanita en arco del hastial no está hecha.
+  - `ugena_7l` es el tejadillo de la izquierda.
+  - `ugena_7g` es el ala del garaje. Va tan ancha como en Street View (5,5 m): el Catastro la dibuja de 2 m.
+- **`ugena_14`:** la casa blanca nueva de 2024, de tejado plano sobre zócalo gris, con la puerta en un entrante de piedra y el portón gris oscuro.
+- **Fuera:** Monjas 116, Consuegra 20 y 24 y Cipreses 14 tocan la calle pero dan a otras; van con sus calles.
+- **Hojas:** `fotos/tanda34/ugena_1` y `ugena_2`.
+
+## Calle Nueva
+
+- **`nueva_1`:** la casa baja de ladrillo tostado con aleros blancos, metida 3,6 m detrás de su patio. En la calle, en línea con el 3, va su valla (`nueva_1t`): murete salmón, encima la reja negra forrada de cañizo (pintada, sin barrotes) y una cancela.
+- **`nueva_3`:** enfoscado amarillo pálido con bandas blancas, cortina blanca en la puerta y portón marrón. Arriba, tres balcones bajo toldos de rayas.
+- **`nueva_5`:** la casa vacía de ladrillo rojo en damero, con dos puertas tapiadas con ladrillo más claro, el portón verde y ventanas viejas de madera.
+- **`nueva_4a`:** el almacén de enfoscado beige con el portón grande de madera marrón. `nueva_4b` es su remate de dos plantas.
+  - `nueva_4t` es la tapia larga de al lado: el n.º 4, que en el Catastro es un patio sin plantas.
+- **`nueva_6`:** casa baja encalada sobre zócalo rojizo, con dos rejas altas y el garaje bajo su tejadillo. Va a ras del 10, como en Street View; el Catastro la mete 4,7 m detrás de su garaje. El hueco va con `fill` hasta la casa.
+- **`nueva_10`:** el almacén blanco de 2010 sobre zócalo rojizo, con el portón galvanizado y una reja encima.
+- **Fuera:** Constitución 116 es el cuartel (de Pretil). Reyes Católicos 13 da a su calle.
+- **Hojas:** `fotos/tanda34/nueva_1` y `nueva_2`.
+
+## Calle de la Flor (la acera de los pares de Valencia no: son las traseras de `valencia_37` a `_43`)
+
+- **`flor_1`:** el almacén viejo de la esquina, con la cal desconchada y una puerta de hierro marrón bajo el alero de teja.
+- **`flor_3t`:** la casa del 3 (2006) está 9 m atrás, tras su patio. En la calle va su tapia blanca sobre zócalo azul, con el portón de chapa marrón.
+- **`flor_5`:** encalada sobre zócalo azul pizarra, con un portón galvanizado y una reja con el cartel de «se vende».
+- **`flor_7`:** el muro largo de cemento gris con el portón de chapa marrón enmarcado en ladrillo. Al lado va `flor_7t`, la puerta de madera bajo su tejadillo, en los 5,5 m que el Catastro deja vacíos.
+- **`flor_9`:** dos plantas enfoscadas con dibujo de aros (no está hecho), beige abajo y blanco arriba, con una cortina oscura en el portalón.
+- **`flor_11`:** enfoscado naranja sobre zócalo de piedra, con una reja y el portón gris oscuro. Va alargado 1,6 m hasta la esquina del 13.
+- **`flor_13`:** la casa blanca nueva de 2020, con el portón gris oscuro. **`flor_13d`:** el almacén de cemento gris con la puerta de chapa gris clara.
+- **`flor_b024`:** el bloque de pisos de ladrillo rosado, con persianas verdes, un escaparate, el portón blanco y la esquina redondeada en blanco con galerías. La cuarta planta de la esquina no está hecha.
+  - Va 0,7 m atrás, en la línea del 13 D.
+- **Fuera:** Travesía de Valencia 1 y Juan XXIII 10 dan a sus calles.
+- **Hojas:** `fotos/tanda34/flor_1` y `flor_2`.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

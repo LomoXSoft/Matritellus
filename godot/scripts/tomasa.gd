@@ -20,8 +20,8 @@ const ROAM := 26.0
 const BUY_REACH := 2.25
 
 const TOMASA_LOOK := {
-	"top": 7, "shirt": 0x8b4a6b, "skin": 0xefc29b, "hair": 0xd8d8dc, "hair_style": 1,
-	"brows": 0, "eyes": 0, "eye_color": 0x4a3424, "glasses": 2, "earrings": 5, "pendant": 3,
+	"top": 7, "shirt": 0x8b4a6b, "skin": 0xefc29b, "hair": 0xeeeef0, "hair_style": 26,       # (a Charo: backcombed, white: the user 23 Nov 2026)
+	"brows": 0, "eyes": 0, "eye_color": 0x4a3424, "glasses": 0, "earrings": 5, "pendant": 3,
 	"scale": 0.90, "build": 1.02, "hat": "",
 }
 const CHINO_LOOK := {
@@ -39,6 +39,8 @@ var _roam_i := 0
 var _was_in_shop := false
 var _keeper_i := 0
 var _after_i := 0
+var _hold := false          # her errand done, she stays for the smoke with you: no wandering off on her round meanwhile
+var _hold_t := 0.0
 
 func setup(game) -> void:
 	G = game
@@ -136,7 +138,7 @@ func _sync_presence(force := false) -> void:
 		return
 	var open_now := _shop_open()
 	var st := stage()
-	var want_show := open_now or st == "buy" or st == "give"
+	var want_show := open_now or st == "buy" or st == "give" or _hold      # (staying for the smoke with you, open or shut)
 	if not want_show:
 		if not n.away:
 			if force or not G.sees(n.p):
@@ -259,6 +261,14 @@ func tick(dt: float, _pp: Vector2) -> void:
 		n.home = ws
 		n.still = n.p.distance_to(ws) < 1.8
 		return
+	if _hold:                                    # (the user, 23 Nov 2026: she walked off halfway through the talk)
+		n.home = n.p
+		n.still = true
+		var talking: bool = G.dlg != null or G._ask != null or G.phase == "smoke"
+		_hold_t = 0.0 if talking else _hold_t + EVERY
+		if _hold_t < 6.0:
+			return
+		_hold = false                            # (you walked away from her: she goes back to her round)
 	_roam_t -= EVERY
 	if n.still or _roam_t <= 0.0:
 		_roam_t = ROAM
@@ -379,6 +389,9 @@ func _finish(who) -> void:
 	n.look_data = lk
 	n.set_look(lk)
 	n.still = true                               # (she stays for the smoke with you)
+	n.home = n.p
+	_hold = true
+	_hold_t = 0.0
 	G._show_step()                               # (her errand off the calendar leaf now: what the story wants instead)
 	G.say(who.shown_name(), Loc.t("tomasa_done"), who.voice, func(): _offer_smoke(who))
 
@@ -400,5 +413,6 @@ func _smoke_with(who, lines_key: String) -> void:
 			G.fumar.give(G.fumar.PACK)
 			G.hud.toast(Loc.t("t_pitillos") % G.fumar.PACK, 3.5)
 			Sfx.jingle([659, 784, 1047], 0.1)
+			_hold = false
 			n.still = false
 			G.say(who.shown_name(), Loc.t("tomasa_cig_pack"), who.voice, func(): G._show_step())))

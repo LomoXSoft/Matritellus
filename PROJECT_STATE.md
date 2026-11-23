@@ -6,6 +6,25 @@ Resumen corto para las sesiones que trabajan en Matritellus. Lo largo (carpetas,
 
 El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `guion/` y en el historial de git.
 
+- **Publicado en 0.0.23 (Edificios Especiales, 23/11): Pisacastaña, la zapatería de los Arcos con la calle Argentina (aprobada: «Visto bueno»).** Es la Pisamorena, con el nombre que le puso Luis. Fachada en `pisacastana.gd`, sobre `arcos_5`, sin rehorneado, con rótulo propio (el nombre entre líneas art déco). Horario real: de lunes a viernes de 10 a 13:30 y de 17 a 20, los sábados de 10:30 a 14 y los domingos cerrada. Interior en `pisacastana_dentro.gd`, solo con zapatos, que se queda así («Así está bien el interior»), con flecha verde, cerrado hasta el Vizum de la Josefa. En la puerta, mientras está abierta, el maniquí de `maniqui.gd` con zapatos vistosos y un pie con el par del día (`with_shoes`). Sin maniquíes tras los cristales («solo con zapatos»). Azafrán escondido en una caja de zapatos abierta junto al banco (`"id": "pisacastana"`, «Azafrán en caja de zapatos»). Luis quiere las dos cosas que ofrece Sistemas: dependiente y elegir zapatos en el banco. `pisacastana`: 8 ok. Hojas en `guion/fotos/pisacastana/`. [LEEME](referencias/pisacastana/LEEME.md).
+- **Publicado en 0.0.23 (Edificios Especiales, 23/11): Tetoqa, la tienda de complementos de Santa Ana con el Cristo (aprobada: «Así está perfecto. Visto bueno»).** Es la Tutoq, con el nombre que le puso Luis. Fachada en `tetoqa.gd`, sobre `stana_54`, sin rehorneado, con rótulo propio (ramitas de almendro). Horario inventado (Maps no lo da): de lunes a viernes de 10 a 13:30 y de 17:30 a 20:30, los sábados de 10 a 14 y los domingos cerrada. Interior en `tetoqa_dentro.gd` (en borrador, a la espera de las capturas de Luis), con flecha verde, cerrado hasta el Vizum de la Josefa. En la puerta, mientras está abierta, el maniquí de `maniqui.gd` con sombrero y adornos (`trinkets`). Con el «Si a las tres recomendaciones» de Luis: el azafrán escondido en una sombrerera del fondo (`"id": "tetoqa"`), cuatro maniquíes tras los cristales del Cristo (`in_window`) y el semáforo del chaflán, que solo parpadea en ámbar (`semaforo_ambar.gd`, mobiliario de `props.gd`). La caja de luz del Cristo lleva el nombre, como en Street View. `tetoqa`: 10 ok. Hojas en `guion/fotos/tetoqa/`. [LEEME](referencias/tetoqa/LEEME.md).
+- **Publicado en 0.0.23 (Edificios Especiales, 23/11): MaxiPrecio, la tienda de ropa de los Arcos (aprobada: «Visto bueno también»).** Es el HiperTextil Miniprecio, con el nombre que le puso Luis. Fachada en `maxiprecio.gd`, sobre `mol_b301`, sin rehorneado. El logo son dos melocotones («que el nuestro sean dos melocotones»). Horario real: de lunes a viernes de 9:30 a 14 y de 17 a 21, los sábados de 9:30 a 14 y los domingos cerrada. Interior en `maxiprecio_dentro.gd` (en borrador, a la espera de las capturas de Luis), con flecha verde y el Maxi de Sistemas. En la puerta, mientras está abierta, un maniquí rompible que se viste distinto cada día (`maniqui.gd`). Azafrán escondido en un cubo de calcetines de la isla del centro (`"id": "maxiprecio"`, «Ponlo también»). `maxiprecio`: 8 ok. Hojas en `guion/fotos/maxiprecio/`. [LEEME](referencias/maxiprecio/LEEME.md).
+- **Publicado en 0.0.23 (Texturas, 23/11): calle de la Flor, 10 entradas (`flor_1` a `flor_b024`; aprobadas: «Visto bueno y paramos»).** La acera de los impares; la otra son las traseras de la calle Valencia. Tapias con `rc` nulo: `flor_3t` y `flor_7t`. Hojas en `guion/fotos/tanda34/flor_1..2`. Test `casas solo=flor_` OK.
+- **Publicado en 0.0.23 (Texturas, 23/11): Calle Nueva, 9 entradas (`nueva_1` a `nueva_10`; aprobadas: «Visto bueno y siguiente»).** Desde Street View 2024: la valla del 1 (`nueva_1t`) y la tapia del 4 (`nueva_4t`) van con `rc` nulo. El 6 va a ras del 10 (`fill`). Hojas en `guion/fotos/tanda34/nueva_1..2`. Test `casas solo=nueva_` OK.
+- **Publicado en 0.0.23 (Texturas, 23/11): Calle de Manuel Álvarez de Ugena, 11 entradas (`ugena_1` a `ugena_14`; aprobadas: «Visto bueno y paramos un poco»).** Taller, casas 3, 4, 7 y 14 desde Street View 2024. La 3, la 4 y la 7 van partidas en varias entradas con fachadas una al lado de otra, nunca una encima de otra. Tapias en la calle con `rc` nulo. Hojas en `guion/fotos/tanda34/ugena_1..2`. Test `casas solo=ugena_` OK.
+- **Publicado en 0.0.23 (Texturas, 23/11): fachadas adelantadas, repaso de todo lo hecho (aprobado: «Visto bueno y paramos un momento»).** Lo pidió el usuario: «Arreglemos primero las fachadas adelantadas».
+  - 19 casas que el Catastro dibujaba de 1,6 a 6 m detrás de sus vecinas van ahora en la línea de la calle, con `fill` y `clear`.
+  - Toledo 49–53 van giradas para dejar el escalón real de 1 m con el 55.
+  - Viñas 47–57 van en una línea.
+  - Tapias en la calle de Florido 14–26 (`flo_pNt`) y de Delicias 39 (`delicias_39t`), porque esos retranqueos son de verdad.
+  - Hojas en `guion/fotos/tanda34/adelantadas_1..4`. Herramientas en el scratchpad: `adelantadas.py`, `alinea.py` y `adel_fix.py`.
+  - Las cuatro parcelas en L metidas en un hoyo (`mirador_18`, `rsm_t27`, `extremadura_b441`, `labradores_15`) llevan ya la fachada en la línea de sus alas (fill + clear 3.0); test `casas solo=` OK.
+  - Trampa: antes de mover una fachada, mirar si es `["obra"]`. `real_24` es de farmacia.gd: lo moví y volvió a su sitio.
+, 18 casas (aprobadas con el repaso de fachadas: «Visto bueno y paramos un momento»).** Mirasierra (`mirasierra_1` a `_10`) y Valdespino (`valdespino_3`, `_5`, `_6`, `_8`): hileras de 1992 a 1994 con arcos de ladrillo, función `pair()` en el `an3_write.py` del scratchpad. Don Jesús Requejo (`requejo_1`, la caseta, y `requejo_r57`, `_r59`, `_r61`, tres de la Reina Sofía que dan a la plaza; el 61 en obras en 2024). Reyes Católicos 1 (`reyes_1`). Rehorneado (`vin_x2` solo cambia dos paredes que ahora tapa el 61). Prueba `casas solo=mirasierra_,valdespino_,requejo_,reyes_1`: bien. Hojas `guion/fotos/tanda34/mirasierra_1..2`, `valdespino_1` y `requejo_1`. Corregido tras el «Esto es terrible. No pongas las fachadas sueltas y adelantadas» del usuario: los pares de Mirasierra van en una sola línea (`clear` 3.0 y `fill`), el porche suelto del 10 se quita con `strip` 4.0 y la parte de una planta de `valdespino_3` entra con `floors: 1`. Trampa: `floors` en `calles.json` filtra las partes del Catastro (`floors >=`); si se sube por encima del número del Catastro, la casa desaparece del horneado. Las plantas que se ven las da la línea.
+- **Publicado en 0.0.23 (Texturas, 23/11): huecos del centro, segundo anillo, 5 casas (`sanjose_b032`, `sanjose_11b`, `sanjose_13`, `real_69d`, `trsr_3`; aprobadas: «Visto bueno y siguiente»).** De 220 a 320 m del centro. A `sanjose_13` se le ha puesto la fachada a mano en la línea de la calle. Roma 10 ya iba dentro de `roma_8`; el costado de Parra 12 queda detrás del 75 D. Hojas `guion/fotos/tanda34/huecos_3` y `_4`. `casas`: 4 ok.
+- **Publicado en 0.0.23 (Texturas, 23/11): huecos del centro, 8 casas sueltas de varias calles (aprobadas: «Visto bueno y siguiente»).** Del centro hacia afuera, las parcelas sin casa: `zaragoza_14` (tapia amarilla con puerta verde), `madrid_24` (el arco de ladrillo, frente a mano entre 22 y 26), `arroyuelo_p15d`, `arroyuelo_t17`, `domingo_9d`, `toledano_8a`, `matias_a67` y `abajo_10` (sin su verja). La caseta junto a la torre de la parroquia ya era de Pretil: la mía se quita («Siempre predomina el trabajo de Petril»). Hojas `guion/fotos/tanda34/huecos_1` y `_2`. Notas en `guion/repaso_casas.md`. `casas`: 4 ok.
+- **Publicado en 0.0.23 (Texturas, 23/11): Avenida de la Constitución, el tramo norte, 17 entradas (`constitucion_71` a `constitucion_91` y `constitucion_104` a `constitucion_114`; aprobadas: «Visto bueno y siguiente»).** Del 71 al 91 por los impares (el 79 por su fachada de la Calle Real, el 81 rellenado hasta el 83, la casita del 89 como segunda entrada de `alto_46`, la tapia del 89 B) y del 104 al 114 por los pares. El solar del 91 es su tapia con «PROHIBIDO PEGAR CARTELES» (`_constitucion_91()` en `casas.gd`). Fuera el 108 (su referencia es `tri_c108`). Hojas `guion/fotos/tanda34/constitucion_20` a `_23`. Notas en `guion/repaso_casas.md`. `casas`: 4 ok.
+- **Publicado en 0.0.23 (Texturas, 23/11): Avenida de la Constitución, los impares de la Calle de Madrid a la Travesía de Alemania, 12 entradas (`constitucion_23` a `constitucion_55`; aprobadas: «Visto bueno salvo la tienda de recambios»).** Once casas y el solar cerrado con chapa entre el 49 y el 55. La tienda del 23 es la otra fachada de df Mecánica (Calle del Palo): mismo cartel y banderín (`_constitucion_23()` en `casas.gd`; hoja `constitucion_19`; aprobada: «Visto bueno y seguimos»). Rehorneado. `casas`: 4 ok. Hojas en `guion/fotos/tanda34/constitucion_16..18`. [Detalle](TRASPASO_CLAUDE.md#avenida-de-la-constitución-los-impares-de-la-calle-de-madrid-a-la-travesía-de-alemania-12-entradas-2311-claude--texturas).
 - **Creador — Complexiones y botón Aleatorio en Lustre y Pintas (23/11, para 0.0.22; aprobado por Luis: «Visto bueno»).** Nuevo modo `--criba_complexion` (matriz 3 complexiones × 4 conjuntos de estrés) en `selftest.gd`. Manteniendo las 3 complexiones (`Normal`, `{Canijo|Canija}`, `{Hermoso|Hermosa}`), en `chara.gd` se corrigen la pendiente dinámica del cono `_slope()`, el escalado por `_girth` de botones/bolsillos/bolígrafo en `Traje con corbata` y `Bata`, la posición adaptativa de manos (`_hx` según complexión + grosor de prenda), la separación proporcional de pies, el ancho de cuellos de camisa y el ajuste de la correa de `Cámara de fotos`. Además, añadido el botón **Aleatorio** (`c_random` en `loc.gd`, `[R]` en teclado / `(Y)`/`(△)` en mando / táctil en `hud.gd`, `controls.gd`, `game.gd` y `Creator.random_tab()` en `creator.gd`) visible en **Lustre** y en **Pintas** (aleatoriza solo la pestaña activa y se oculta en el armario). Pruebas: `criba_complexion` OK, `palabros` 3 ok, `creador` 21 ok (verifica Aleatorio por pestaña y capturas en teclado y mando). [Detalle](TRASPASO_CLAUDE.md#complexiones-y-botón-aleatorio-en-lustre-y-pintas-para-0022-2311-antigravity--creador).
 - **Creador — Ojos, pestañas y parpadeo orgánico (23/11, para 0.0.22; aprobado por Luis: «Muy bien»).** Nuevos modos `--criba_ojos`, `--criba_pestanas` y flag `--blink=F` en `selftest.gd`. En `chara.gd` (`_eyes()`), se mantiene el relieve frontal saltón característico y se mejora el iris + doble brillo en `0 · Normales` y `1 · Ojazos`; `2 · De siesta` pasa a párpado superior recto con malla D-recortada (`_sliced_ellipsoid()`, sin cajas de piel); se añaden al final en `creator.gd` y `loc.gd` **6 estilos de ojos** (**`3 · Rasgaos`**, **`4 · De botón`**, **`5 · Alegres`**, **`6 · Cansaos`**, **`7 · Brillantes`**, **`8 · De listo`**), **2 colores** (**`Grises`** y **`Violetas`**) y **1 estilo de pestañas** (**`3 · Con rabillo`**), recolocando `1 · Finas` y `2 · De muñeca` en abanico lateral para que no atraviesen las cejas. Añadido **parpadeo orgánico realista** (`_blink_tick()` en `chara.gd`, activo en juego, cinemáticas y creador): intervalos aleatorios asimétricos (`0,65–8,2 s`), doble parpadeo ocasional (~18 %), velocidad variable (`0,12–0,21 s`), fase inicial independiente por personaje y omitido en `5 · Alegres`. Actualizados los repartos por edad/género en `game.gd`. Pruebas: `criba_ojos` (incl. pose de parpadeo) OK, `criba_pestanas` OK, `palabros` 3 ok, `creador` 20 ok (verifica 34 parpadeos en 120 s con intervalos `0,33..8,17 s`). [Detalle](TRASPASO_CLAUDE.md#ojos-pestañas-y-parpadeo-orgánico-para-0022-2311-antigravity--creador).
 - **Creador — Complementos (23/11, para 0.0.22; aprobado por Luis: «Ahora si, mucho mejor»).** Nuevos modos `--criba_gafas`, `--criba_pendientes`, `--criba_cuello` y flag `--top=N` en `selftest.gd`. Nuevo generador `tools/creador/complementos.py` (12 `.glb` esculpidos desde cero con 0 % de penetración): en **Gafas**, rehechas `5 · De sol` (Wayfarer), `6 · De aviador` (lágrima + doble puente), pulidas `1..4`, expuestas **`7 · Rectangulares`** y añadidas **`8 · De ojo de gato`**, **`9 · De corazón`**, **`10 · Monóculo`** (con cadenita curva) y **`11 · Parche de pirata`**; en **Pendientes**, corregida la orientación de los aros (`2`, `3`, `6`) al plano lateral de la mejilla, refinados `4 · Largos` y añadidos **`7 · Flores`**, **`8 · Botones negros`** y **`9 · Cruz colgante`**; en **Cuello**, `4 · Collar de perlas` completado a 360°, medalla/cruz/pañuelo inclinados al pecho, rehechos desde cero los 4 importados (`6 · Corbata`, `7 · Pajarita`, `8 · Delantal`, `9 · Bufanda` de 20,4 % → 0 % en cabeza) y añadidos **`10 · Cámara de fotos`**, **`11 · Collar de flores`** y **`12 · Gargantilla`**. Añadido margen radial automático `_top_pad()` en `chara.gd` para que los 12 complementos de cuello y el pañuelo del armario no se hundan en prendas gruesas (verificado sobre `Plumas sin mangas`), y actualizados los pools de NPCs por edad y género en `game.gd`. Pruebas: `criba_gafas`, `criba_pendientes`, `criba_cuello` (camiseta y plumas) OK, `palabros` 3 ok, `creador` 19 ok, `ropa` 2 ok. [Detalle](TRASPASO_CLAUDE.md#complementos-gafas-pendientes-y-cuello-11-nuevos-y-ajuste-sobre-ropa-gruesa-para-0022-2311-antigravity--creador).
@@ -47,10 +66,13 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
 
 ## Versión
 
-- **Publicada:** 0.0.22 (23/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.22 — completa: 983 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0022-en-github-2311-antigravity--creador).
+- **Publicada:** 0.0.23 (23/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.23 — completa: 1042 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0023-en-github-2311-claude--sistemas).
+  - Koke el Kokas y su taxi; el «efecto jabón»; el MaxiPrecio, la Tetoqa y la Pisacastaña (Pretil) con Maxi, Manuela Moreno y el probador o el banco a 20 €; el Vizum de la Josefa y los iconos del mapa; el azafrán que se pisa, se vende a 50 € y cambia de sitio cada día; la charla del curro; cámara al hombro; calles de Texturas (Constitución, Ugena, Nueva, la Flor, los huecos del centro, las fachadas en línea).
+
+- **Anterior:** 0.0.22 (23/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.22 — completa: 983 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0022-en-github-2311-antigravity--creador).
   - Repaso completo del Creador de personajes y vecinos: peinados (`0..34`), barbas (`1..12`), cejas (`0..8`), ropa (`0..22`), sombreros (`0..13`, esculpidos desde cero), calzado (`0..14`, esculpido desde cero), complementos (gafas `1..11`, pendientes `1..9`, cuello `1..12` con margen automático sobre ropa gruesa), ojos (`0..8`), pestañas (`0..3`), parpadeo orgánico no periódico, complexiones ajustadas, botón «Aleatorio» en Lustre y Pintas, y estereotipos por edad/género en NPCs.
 
-- **Anterior:** 0.0.21 (22/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.21 — completa: 983 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0021-en-github-2211-claude--sistemas).
+- **Antes:** 0.0.21 (22/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.21 — completa: 983 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0021-en-github-2211-claude--sistemas).
   - El cruce de los semáforos (Pretil: las cinco esquinas y los postes; Sistemas: semáforos que paran a los coches, Santa Ana de sentido único en su último tramo, la gente de dentro de Sopiss, lo roto vuelve al día siguiente); Texturas: Tembleque, Delicias, Reina Sofía, Parra, Descanso, Pastora y más.
 
 - **Antes:** 0.0.20 (21/11/2026). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.20 — completa: 945 ok, 0 fallos. [Notas](TRASPASO_CLAUDE.md#publicación-de-la-0020-en-github-2111-claude--sistemas).
@@ -69,55 +91,55 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - **Texturas:** la Calle del Molino, las Travesías de las Viñas y de Portugal, la mitad oeste del Comisario.
   - El detalle de cada pieza está en el historial de git (este archivo, antes de la 0.0.17).
 - **Publicada antes:** 0.0.16 (17/11/2026): las casas fundidas por zonas (la peor dirección de 10 a 53 fps), Feliciano, armas nuevas y el swing del bate en la riña, teclado QWERTY, la ermita de San Sebastián, el Buen Suceso y la Travesía de las Cruces.
-- **Sin publicar (Texturas, 17/11): calle del Comisario, tramo este, 18 entradas (`com_*`; aprobadas: «Visto bueno y siguiente»).** Con esto la calle queda entera. Del 24 y el 15 al 1, más cuatro casas de la calle de los Cipreses que dan a esta (`com_ci*`).
+- **Publicado en 0.0.23 (Texturas, 17/11): calle del Comisario, tramo este, 18 entradas (`com_*`; aprobadas: «Visto bueno y siguiente»).** Con esto la calle queda entera. Del 24 y el 15 al 1, más cuatro casas de la calle de los Cipreses que dan a esta (`com_ci*`).
   - Comparadas con las fotos del Catastro.
   - Sin hacer: Tembleque 40 A, en la esquina, que no tiene frente a esta calle.
   - Bake (en X:, avisando a Pretil): 18 casas nuevas. En `tembleque_75` y `com_b721` solo cambian marcas de medianera. Lo demás igual.
   - `casas`: OK. Hojas en `guion/fotos/tanda34/comisario_5..7.jpg`.
-- **Sin publicar (Texturas, 17/11): calle de Granada, tramo este, 16 entradas (`gra_*`; aprobadas: «Visto bueno y siguiente»).** Del 43 y el 46 al 26, más el costado de Cristo 30 (`gra_c30`).
+- **Publicado en 0.0.23 (Texturas, 17/11): calle de Granada, tramo este, 16 entradas (`gra_*`; aprobadas: «Visto bueno y siguiente»).** Del 43 y el 46 al 26, más el costado de Cristo 30 (`gra_c30`).
   - Comparadas con las fotos del Catastro. El 41 D no tiene foto; va con Street View 2024.
   - Las casas que atraviesan hasta el Molino y ya tienen su trasera hecha allí (`mol_g*`) no se repiten: el horno solo da un frente por parcela y planta.
   - El 32 va por su parte de dos plantas (`floors: 2`) pero con la altura baja de la foto (3,8 m).
   - Bake (en X:, avisando a Pretil): 16 casas nuevas. En `mol_g35` solo cambia una marca de medianera. Lo demás igual.
   - `casas`: OK. Hojas en `guion/fotos/tanda34/granada_1..3.jpg`.
-- **Sin publicar (Texturas, 17/11): calle de Granada, tramo oeste, 14 entradas (`gra_*`; aprobadas: «Visto bueno y siguiente»).** Con esto la calle queda hecha. Del 22 al 4, más el costado largo de Arcos 29 (`gra_a29`).
+- **Publicado en 0.0.23 (Texturas, 17/11): calle de Granada, tramo oeste, 14 entradas (`gra_*`; aprobadas: «Visto bueno y siguiente»).** Con esto la calle queda hecha. Del 22 al 4, más el costado largo de Arcos 29 (`gra_a29`).
   - Comparadas con las fotos del Catastro. El 20 no tiene foto; va con Street View 2024.
   - El 8 y el 18 van por su cara estrecha a la calle (2,9 y 2,5 m, la de `frente_gen`). `house_street` les daba una pared de dentro, y lo que asomaba hacia la calle salía con el tejado flotando.
   - Bake (en X:, avisando a Pretil; dos pasadas, la segunda solo para el 8 y el 18): 14 casas nuevas. `mol_g15` solo cambia por su medianera con el 13. Lo demás igual.
   - `casas`: OK. Hojas en `guion/fotos/tanda34/granada_4..6.jpg`.
-- **Sin publicar (Texturas, 17/11): calle del Peso, 11 entradas (`peso_*`; aprobadas: «Visto bueno y siguiente»).** La calle queda entera. Del 2 al 24, más un bloque de esquina de cuatro plantas sin dirección (`peso_b008`).
+- **Publicado en 0.0.23 (Texturas, 17/11): calle del Peso, 11 entradas (`peso_*`; aprobadas: «Visto bueno y siguiente»).** La calle queda entera. Del 2 al 24, más un bloque de esquina de cuatro plantas sin dirección (`peso_b008`).
   - Comparadas con las fotos del Catastro.
   - Sin hacer: el recinto del viejo colegio (Juan Carlos I 46 D, ya hecho a mano por `colegio.gd`) y el 10, con 2 m de frente.
   - Bake (en X:, avisando a Pretil): 11 casas nuevas. En `nalda_9` solo cambia una marca de medianera. Ninguna con parte por delante de su frente. Lo demás igual.
   - `casas`: OK. `caridad` (Pretil, sobre este mapa): 3/3 OK; ninguna casa pisa la isla de la Caridad (la más cerca, `peso_b008`). Hojas en `guion/fotos/tanda34/peso_1..2.jpg`.
-- **Sin publicar (Texturas, 17/11): calle de Covadonga, 12 entradas (`cov_*`; aprobadas: «Visto bueno y siguiente»).** Incluye casas con número de la calle de los Reyes Católicos (`cov_r*`), la esquina de Constitución 102 (`cov_c102`) y una casa sin dirección (`cov_b012`).
+- **Publicado en 0.0.23 (Texturas, 17/11): calle de Covadonga, 12 entradas (`cov_*`; aprobadas: «Visto bueno y siguiente»).** Incluye casas con número de la calle de los Reyes Católicos (`cov_r*`), la esquina de Constitución 102 (`cov_c102`) y una casa sin dirección (`cov_b012`).
   - Comparadas con las fotos del Catastro. El 5 y la casa sin dirección no tienen foto; van con Street View 2024.
   - Sin hacer:
     - Reyes Católicos 3: una tapia de 55 m metida 11 m, con casetas en la acera. El frente de `house_street` era la pared de dentro, y el muro genérico que deja el horno, recto, cruzaba la calle. Se queda genérica.
     - El 11: sin frente.
   - Bake (en X:, avisando a Pretil; dos pasadas, la segunda para quitar Reyes Católicos 3): 12 casas nuevas. En `constitucion_98` y `cov_6` solo cambian marcas de medianera. Lo demás igual.
   - `casas`: OK. Hojas en `guion/fotos/tanda34/covadonga_1..2.jpg`.
-- **Sin publicar (Texturas, 17/11): calle de Santiago Apóstol, tramo este, 12 entradas (`sap_*`; aprobadas: «Visto bueno y siguiente»).** Del 1 al 12 y 5 B, más el costado de Monjas 31 (`sap_m31`) y la esquina de Florido 17 (`sap_f17`).
+- **Publicado en 0.0.23 (Texturas, 17/11): calle de Santiago Apóstol, tramo este, 12 entradas (`sap_*`; aprobadas: «Visto bueno y siguiente»).** Del 1 al 12 y 5 B, más el costado de Monjas 31 (`sap_m31`) y la esquina de Florido 17 (`sap_f17`).
   - Comparadas con las fotos del Catastro. El costado de Monjas 31, con Street View 2024.
   - Sin hacer: el convento de Santa Ana (3792701, ya hecho a mano por `santaana.gd`) y Monjas 36, que no tiene frente a esta calle.
   - El 4 va por su cara a la calle (`frente_gen`). `house_street` le daba la pared de atrás, 5 m dentro.
   - Bake (en X:, avisando a Pretil; dos pasadas, la segunda solo para el frente del 4): 12 casas nuevas. Un clr de la calle baja de 2,3 a 2,1 m. Lo demás igual.
   - `casas`: OK. `santaana` (Pretil, sobre este mapa): 3/3 OK, el convento no se pisa. Hojas en `guion/fotos/tanda34/santiago_1..2.jpg`.
-- **Sin publicar (Texturas, 17/11): calle de Santiago Apóstol, tramo oeste, 12 entradas (`sap_*`; aprobadas: «Visto bueno y siguiente»).** Del 13 y el 14 al 24. Con esto la calle queda entera.
+- **Publicado en 0.0.23 (Texturas, 17/11): calle de Santiago Apóstol, tramo oeste, 12 entradas (`sap_*`; aprobadas: «Visto bueno y siguiente»).** Del 13 y el 14 al 24. Con esto la calle queda entera.
   - Comparadas con las fotos del Catastro.
   - Bake (en X:, avisando a Pretil): 12 casas nuevas. Ninguna con parte por delante de su frente. Nada más cambia.
   - `casas`: OK. Hojas en `guion/fotos/tanda34/santiago_3..4.jpg`.
-- **Sin publicar (Texturas, 17/11): calle del Triunfo, tramo del pueblo, 17 entradas (`tri_*`; aprobadas: «Visto bueno y paramos por el momento»).** Del 1 al 18 A, más casas de la calle Nueva (`tri_n7`, `tri_n9`), de la calle de los Pajaritos (`tri_p1`) y de la Avenida de la Constitución 108 (`tri_c108`). Casi todo son almacenes viejos con portones.
+- **Publicado en 0.0.23 (Texturas, 17/11): calle del Triunfo, tramo del pueblo, 17 entradas (`tri_*`; aprobadas: «Visto bueno y paramos por el momento»).** Del 1 al 18 A, más casas de la calle Nueva (`tri_n7`, `tri_n9`), de la calle de los Pajaritos (`tri_p1`) y de la Avenida de la Constitución 108 (`tri_c108`). Casi todo son almacenes viejos con portones.
   - Comparadas con las fotos del Catastro.
   - El 7, una tapia ciega de almacén, lleva el portón gris del final y dos manchas; sin ellos no llegaba al mínimo de piezas del test.
   - Sin hacer: el 18, una caseta de 14 m² con 2,4 m de frente.
   - Bake (en X:, avisando a Pretil): 17 casas nuevas. Ninguna con parte por delante de su frente. Nada más cambia.
   - `casas`: OK. Hojas en `guion/fotos/tanda34/triunfo_1..3.jpg`.
   - El tramo de las afueras está en la entrada del 21/11.
-- **Sin publicar (Texturas, 17/11): Matías Pérez 16 (`matias_16`) pasada a Pretil como `["obra"]`, por orden del usuario («Márcala ya»).** Su línea vieja está en las notas compartidas (`matias_16_antes_de_pretil.md`). `calles.json` no cambia: sigue horneada.
+- **Publicado en 0.0.23 (Texturas, 17/11): Matías Pérez 16 (`matias_16`) pasada a Pretil como `["obra"]`, por orden del usuario («Márcala ya»).** Su línea vieja está en las notas compartidas (`matias_16_antes_de_pretil.md`). `calles.json` no cambia: sigue horneada.
   - Pretil la levanta a mano en `matias.gd`, y sale en la 0.0.18: lo comprobó con la prueba `matias` (2 ok). Solo sale como hueco en las hojas de casas, que dibujan únicamente `casas.gd`.
   - `casas solo=matias_`: OK.
-- **Sin publicar (Texturas, 21/11): calle del Triunfo, tramo de las afueras, 16 naves (`tri_*`).** Son almacenes y naves de la calle y de la Avenida de Europa, con su espalda o su costado en el Triunfo: tapias de ladrillo nuevo con portones de chapa, naves de bloque gris, una tapia vieja encalada con el barro a la vista y una nave moderna de paneles.
+- **Publicado en 0.0.23 (Texturas, 21/11): calle del Triunfo, tramo de las afueras, 16 naves (`tri_*`).** Son almacenes y naves de la calle y de la Avenida de Europa, con su espalda o su costado en el Triunfo: tapias de ladrillo nuevo con portones de chapa, naves de bloque gris, una tapia vieja encalada con el barro a la vista y una nave moderna de paneles.
   - Comparadas con las fotos del Catastro. Para cuatro (`tri_e147`, `tri_x1`, `tri_e143`, `tri_e129`) la foto del Catastro está hecha desde la Avenida de Europa, así que se usó Street View.
   - Tres tapias lisas (`tri_e151`, `tri_e145`, `tri_41`) no llegaban al mínimo de piezas del test. Llevan lo que se ve en las fotos: los postes de delante, las juntas de los paneles y zonas de ladrillo desteñido.
   - Sin hacer:
@@ -130,12 +152,12 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 16 casas nuevas. Ninguna con parte por delante de su frente. Nada más cambia: calles, nodos, relieve, árboles (2956) y holguras.
   - `casas solo=tri_`: OK tras los arreglos. Hojas en `guion/fotos/tanda34/triunfo_4..6.jpg`.
   - Aprobada por el usuario («Visto bueno»). Commit `1379d2f` de Sistemas.
-- **Sin publicar (Texturas, 21/11): suelo de tierra pardo anaranjado con textura y plantas secas sueltas en todo el pueblo**, a petición del usuario. Los detalles están en `TRASPASO_CLAUDE.md`.
+- **Publicado en 0.0.23 (Texturas, 21/11): suelo de tierra pardo anaranjado con textura y plantas secas sueltas en todo el pueblo**, a petición del usuario. Los detalles están en `TRASPASO_CLAUDE.md`.
   - El suelo: `world.gd` (`EARTH`, la textura `"tierra"`, `_earth_mat()`), con los caminos de tierra y los barbechos en pardos.
   - Las plantas: `matojos.gd`, un paso «dry plants» de la construcción del mundo, guardado en `user://matojos.cache`. `--sin-matojos` las quita.
   - `casas` (6 casas del Triunfo): OK. `suelos`: OK. El `bench` no cambia (127,8 fps con plantas, 125,4 sin ellas).
   - Hojas en `guion/fotos/suelo/suelo_1..2.jpg`. **Aprobado** por el usuario el 21/11 («Mucho mejor. Visto bueno y siguiente»). Falta probarlo en el móvil.
-- **Sin publicar (Texturas, 21/11): calle de los Cipreses entera, 33 casas (`cip_*`).** Hay de todo:
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de los Cipreses entera, 33 casas (`cip_*`).** Hay de todo:
   - almacenes y tapias de ladrillo viejo, de bloque gris o encaladas, con portones de chapa o de tablas;
   - casas bajas con zócalo de piedra;
   - casas de dos plantas de ladrillo o de ocre con balcones de hierro;
@@ -150,7 +172,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 33 casas nuevas. Ninguna con parte por delante de su frente. Nada más cambia: calles, nodos, relieve, árboles (2954) y holguras.
   - `casas solo=cip_`: OK tras los arreglos. Hojas en `guion/fotos/tanda34/cipreses_1..6.jpg`.
   - **Aprobada** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 21/11): calle de las Viñas entera, 44 casas (`vin_*`).** Hay de todo:
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de las Viñas entera, 44 casas (`vin_*`).** Hay de todo:
   - los costados de las casas de la Avenida de la Reina Sofía;
   - la hilera de adosados de 1992 tras sus patios, blancos o amarillos con arcos de ladrillo;
   - los bloques de 1990 a 1997 de Buero Vallejo y Juan Antonio Jiménez: piedra abajo, portones de madera y balcones corridos;
@@ -176,7 +198,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil, dos veces, sobre su mapa con el Cristo del Prado y la Residencia): 44 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) siguen igual. La holgura baja unos 0,7 m en 21 nodos junto a las casas nuevas; la más justa queda en 3,7 m.
   - `casas solo=vin_`: OK tras los arreglos. Hojas en `guion/fotos/tanda34/vinas_1..8.jpg`.
   - **Aprobada** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 21/11): calle del Florido, tramo norte (de los Silos a la Bajada del Florido), 29 casas (`flo_*`).** La calle tiene unas 84 casas y la Bajada otras 20; se hace en tres tandas.
+- **Publicado en 0.0.23 (Texturas, 21/11): calle del Florido, tramo norte (de los Silos a la Bajada del Florido), 29 casas (`flo_*`).** La calle tiene unas 84 casas y la Bajada otras 20; se hace en tres tandas.
   - Casas de los años 60 a 80 enfoscadas en tostado, crema o salmón con zócalo oscuro; ladrillo rojo de una planta; dos casas nuevas (2000 y 2001); almacenes con portones de chapa.
   - Comparadas con las fotos del Catastro. Doce con Street View (noviembre de 2024): el 60, que no tiene foto; el 61, el 58 B, el 54, el 68 y el solar del 69, que han cambiado; el 55 (del Catastro, Los Ángeles 15), el 62, el portón del b10, el x5, el 48 y el 50.
   - Puestas a mano:
@@ -189,7 +211,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 29 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) siguen igual; la holgura de un nodo baja de 4,9 a 3,5 m. Ninguna casa tiene partes por delante de su frente ni fachadas escondidas detrás de otra.
   - `casas solo=flo_`: 4 ok, 0 fallos. Hojas en `guion/fotos/tanda34/florido_1..5.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»). Al mandar las hojas lo llamé «tramo sur» por error: es el extremo norte de la calle.
-- **Sin publicar (Texturas, 21/11): calle del Florido, tramo medio (de la Bajada al 21 y al 26), y la Bajada del Florido: 34 casas (18 `flo_*` y 16 `bfl_*`).**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle del Florido, tramo medio (de la Bajada al 21 y al 26), y la Bajada del Florido: 34 casas (18 `flo_*` y 16 `bfl_*`).**
   - Casas viejas de tapial enfoscado en tostado o pardo, casas de 1960 a 1980 con zócalo de ladrillo o piedra, y almacenes; en la Bajada, ladrillo rojo y amarillo y dos casas encaladas muy viejas.
   - Comparadas con las fotos del Catastro. Ocho con Street View (noviembre de 2024), porque han cambiado o había dudas: el 41, el 39, el 35, el 30, el 31 y el 31 D (las ruinas son hoy una casa blanca nueva), y en la Bajada el 1 (edificio nuevo de ladrillo de 2025) y el 2.
   - `bfl_10` es la parte de dos plantas de Bajada 10 (`only` 2); su trozo de una planta al Florido ya era `flo_b10`.
@@ -198,7 +220,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 34 casas nuevas, ninguna quitada. Solo `flo_50g` cambia, en las aristas que tapa la casa nueva de al lado. Calles, nodos, relieve, árboles (2954) y holguras siguen igual. Sin partes por delante ni fachadas escondidas (comprobado antes de hornear).
   - `casas` de las 34: 4 ok, 0 fallos. Hojas en `guion/fotos/tanda34/florido_medio_1..6.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 21/11): calle del Florido, tramo sur (del 24 y el 15 hasta el final, con el 1 A y el 1 B), y la Prolongación del Florido: 39 entradas `flo_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle del Florido, tramo sur (del 24 y el 15 hasta el final, con el 1 A y el 1 B), y la Prolongación del Florido: 39 entradas `flo_*`.**
   - En el tramo sur: casas viejas de tapial, almacenes, casas de los 70 a los 90 y bloques de tres plantas. En la Prolongación: diez pareadas de 1995 (lado impar), siete adosadas de 2006 con garaje en semisótano (lado par) y cuatro casas de 2006 a 2015.
   - Comparadas con las fotos del Catastro, y con Street View (noviembre de 2024; la Bajada del Rollo, 2026) en el 24 (sin foto), el 15, el 13, el 11, el 9, el 7, el bloque sin número `flo_x2`, el 3, la esquina `flo_x3`, el 2 A y las pareadas del 9 y el 11.
   - Dos referencias llevan dos entradas cada una (`only`): `flo_x2` (bloque de tres plantas) y `flo_x2g` (su almacén, `reach` 6); `flo_x3` (bloque de la esquina) y `flo_x3t` (tapia de bloques).
@@ -209,7 +231,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 39 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras siguen igual. Sin partes por delante ni fachadas escondidas.
   - `casas` de las 39: 3 ok y 1 fallo (`flo_x3t`, pocas piezas); arreglado, 4 ok, y 4 ok tras los cambios de color. Hojas en `guion/fotos/tanda34/florido_sur_1..7.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»). En el commit `ad86143`. La Bajada del Rollo 4 sigue genérica: el usuario no pidió el solar.
-- **Sin publicar (Texturas, 21/11): calle de la Rosa del Salvador, 35 entradas `rsa_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de la Rosa del Salvador, 35 entradas `rsa_*`.**
   - Casas de los 60 a los 2000, de ladrillo y de enfoscado, almacenes y un bloque de pisos.
   - Comparadas con las fotos del Catastro (2019). Con Street View (noviembre de 2024; el 24, de 2013) donde no hay foto, la foto es de otra fachada o la casa ha cambiado: 1, 3, 5, 4, 8, las traseras de Sevilla 7 y 9, 16, 22, 24, 26, 28, 30, 32, 34, 36, 40, 42 y 44.
   - Lado par del 20 al final: la calle del mapa pasa sobre las fachadas del Catastro. Los frentes son los de la pared genérica que dejaba el horneado, con `clear` 6.
@@ -220,7 +242,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 35 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) iguales. Una holgura de la propia calle pasa de 2,3 a 2,1 m (nodo 310). Sin partes por delante (salvo las que quita `clear`) ni fachadas escondidas.
   - `casas` de las 35: 4 ok, 0 fallos; y 4 ok tras los arreglos. Hojas en `guion/fotos/tanda34/rosa_salvador_1..6.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»).
-- **Sin publicar (Texturas, 21/11): calle de Sevilla, 36 entradas `sev_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de Sevilla, 36 entradas `sev_*`.**
   - Casas de los 60 a los 2000, casi todas de dos plantas, enfoscadas o de ladrillo, un bloque de pisos y dos casas nuevas (el 8, de 2022, y el 31, de 2018).
   - La calle del mapa coincide con el Catastro: frentes de `house_street` (el 21, a mano por delante de su escalera).
   - Comparadas con las fotos del Catastro. Street View (noviembre de 2024) en el 5, el 7, el 15, el 21, el 31 y el 33, y en el lado par en el 6, el 8, el 10, el 18 y el 18 D, el 22, el 24, el 32 y el 34. Algunas han cambiado (el 8 es nueva; el 6, el 18 D, el 10 y el 32, de color) y se ha seguido Street View.
@@ -230,7 +252,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 36 casas nuevas, ninguna quitada. Cuatro de la Rosa (`rsa_6`, `rsa_8`, `rsa_s7`, `rsa_36`) solo cambian en las aristas que tapan las casas nuevas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas` de las 36 y esas cuatro: 4 ok, 0 fallos; y 4 ok tras los arreglos. Hojas en `guion/fotos/tanda34/sevilla_1..6.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 21/11): calle del Cristo, de la Mayordomía a la Travesía del Cristo, 32 entradas `cri_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle del Cristo, de la Mayordomía a la Travesía del Cristo, 32 entradas `cri_*`.**
   - Casas viejas encaladas o de tapial, casas de ladrillo de los 70 a 2006, dos bloques de pisos (el amarillo con tiendas del 11 y el de la curva hacia Fleming), una pastelería y una tienda de electricidad (sin nombre en los letreros).
   - La calle del mapa coincide con el Catastro: frentes de `house_street`.
   - Comparadas con las fotos del Catastro, y con Street View (noviembre de 2024) en el 5, el 9 y el 11, el 23, el 29, el 35 al 45, el bloque de la curva y el 38 y el 40. Al final del lado impar las fotos del Catastro están cambiadas de casa; se han seguido las placas de Street View.
@@ -239,7 +261,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 32 casas nuevas, ninguna quitada. `argentina_42` y `argentina_b029` solo cambian en las aristas tapadas. Calles, nodos, relieve y árboles (2954) iguales. Una holgura del cruce con la Cruz pasa de 4,7 a 4,2 m.
   - `casas` de las 32 y esas dos: 4 ok, 0 fallos; y 4 ok tras el arreglo. Hojas en `guion/fotos/tanda34/cristo_1..6.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 21/11): calle del Doctor Fleming, 24 entradas `fle_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle del Doctor Fleming, 24 entradas `fle_*`.**
   - Casas de los 60 a los 80, enfoscadas en beige, tostado o salmón, algunas de ladrillo; dos casas nuevas (el 3 y el 4) y un bloque de ladrillo de tres plantas (el 10).
   - La calle del mapa coincide con el Catastro: frentes de `house_street` (el 10, el de la pared genérica).
   - Fotos del Catastro viejas: Street View (noviembre de 2024) en el 1, el 3, el 7, el 9, el 17 al 23 y en el 4, el 6, el 8, el 10 y el 12. Se ha seguido Street View en las casas cambiadas (el 3 y el 4, nuevas; el 1, el 21 y el 21 D, blancas).
@@ -249,7 +271,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 24 casas nuevas, ninguna quitada. `sev_26` y `sev_28` solo cambian en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas` de las 24 y esas dos: 3 ok y 1 fallo (`fle_25`, pocas piezas); arreglado, 4 ok. Hojas en `guion/fotos/tanda34/fleming_1..4.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 21/11): calle de la Vega, 16 entradas `veg_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de la Vega, 16 entradas `veg_*`.**
   - Lado sur: cuatro hileras de adosadas (doce casas, garaje en semisótano, escalera al porche) y un almacén largo de ladrillo de 2007. Lado norte: casas viejas bajas de tapial y almacenes, un bloque estrecho de tres plantas y una casa de 2006.
   - La calle del mapa coincide con el Catastro: frentes de `house_street`.
   - Comparadas con las fotos del Catastro y con Street View (noviembre de 2024) en toda la calle; el almacén del 3 no tiene foto en el Catastro.
@@ -258,7 +280,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 16 casas nuevas, ninguna quitada. `sap_19` solo cambia en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas` de las 16 y `sap_19`: 4 ok, 0 fallos; y 4 ok tras el arreglo. Hojas en `guion/fotos/tanda34/vega_1..3.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»).
-- **Sin publicar (Texturas, 21/11): calle de los Ángeles, 17 entradas `ang_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de los Ángeles, 17 entradas `ang_*`.**
   - Casas de los 60 y 70 enfoscadas en beige y tostado, casas bajas de ladrillo, almacenes y tapias con portones, un bloque de tres plantas y una casa de 2005.
   - La calle del mapa coincide con el Catastro: frentes de `house_street` (el 19 y el 25, de la pared genérica).
   - Comparadas con las fotos del Catastro, y con Street View (noviembre de 2024) en el 2, el 4, el 10, el bloque del 12, el 14, el 16, el 21, el 25 y el 26.
@@ -267,7 +289,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 17 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954) iguales. Una holgura de la calle pasa de 2,3 a 2,2 m.
   - `casas` de las 17: 4 ok, 0 fallos. La primera vez no arrancó porque `fondo_casa.gd` (de Sistemas, a medio escribir) no compilaba; a las 13:10 ya compilaba. Hojas en `guion/fotos/tanda34/angeles_1..3.jpg`.
   - Visto bueno del usuario el 21/11 («Visto bueno y siguiente cuando puedas»), dado antes de ver las hojas.
-- **Sin publicar (Texturas, 21/11): calle de la Virgen de la Paloma, 20 entradas `vpa_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de la Virgen de la Paloma, 20 entradas `vpa_*`.**
   - Casas de los 60 a 2007: de ladrillo, encaladas con zócalo azul o rojo, tostadas con recercados marrones; tapias con portones y una casa alta de ladrillo con galería de arcos.
   - La calle del mapa coincide con el Catastro: frentes de `house_street`.
   - Comparadas con las fotos del Catastro, y con Street View (noviembre de 2024) en el 3, el 5, el 9, el 13, el 14, el 16, el 21, el 23 y el 25. Han cambiado la tapia del 3, la del 13 y una de las dos casas del 21.
@@ -276,7 +298,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 20 entradas nuevas, ninguna quitada. `ang_vp1` solo cambia en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas` de las 20 y `ang_vp1`: 3 ok y 1 fallo (`vpa_3`, pocas piezas); arreglado, 4 ok. Hojas en `guion/fotos/tanda34/paloma_1..4.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 21/11): calle de Pizarro, 16 entradas `piz_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de Pizarro, 16 entradas `piz_*`.**
   - Casas de los 60 a 2007 enfoscadas en salmón, ocre, blanco o tostado; tapias con portones; una casa de 2022.
   - La calle del mapa coincide con el Catastro: frentes de `house_street`.
   - Comparadas con las fotos del Catastro (2010–2018), y con Street View (noviembre de 2024) en el 3, el 5 A, el 5 D (sin foto en el Catastro), el 7, el 9, el 4, el 4 B, el 6 y la tapia de Virgen de África 1.
@@ -285,14 +307,14 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 16 casas nuevas, ninguna quitada. `vpa_13` solo cambia en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas` de las 16 y `vpa_13`: 4 ok, 0 fallos; y 4 ok tras el arreglo. Hojas en `guion/fotos/tanda34/pizarro_1..3.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»).
-- **Sin publicar (Texturas, 21/11): Travesía del Rollo y tramo norte de la Bajada del Rollo, 21 entradas `rol_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): Travesía del Rollo y tramo norte de la Bajada del Rollo, 21 entradas `rol_*`.**
   - En la Travesía: ocho pareadas de 1995 como las de la Prolongación del Florido (frente en la cara de dos plantas, `floors` 2, `strip` 2,5), un almacén de esquina, la parcela del 3 en dos entradas (`only`: las dos casas de la esquina y la tapia larga de bloques), el 4 y la tapia del 1. En la Bajada del Rollo: nueve casas del 3 al 19, con el bloque de tres plantas de la esquina y la de Monjas 23.
   - Comparadas con las fotos del Catastro (2010–2015) y con Street View (noviembre de 2024) en las pareadas, el 3 y el 4 de la Travesía y el 3 y el 8 de la Bajada. El 3 de la Bajada está reformado; el 4 sigue derribado y genérico.
   - Sin hacer: Rollo 17 y 19, Bajada del Rollo 28, Nalda 25, la Travesía 2 y la Bajada del Rollo 10 (su frente caía en un patio; se quitó tras ver las hojas).
   - Bake (avisando a Pretil): 22 entradas nuevas; luego otro para quitar `rol_br10`. `monjas_21`, `monjas_5` y `rol_br8` solo cambian en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas`: el primer intento no arrancó porque `casa_dentro.gd` (de Edificios Especiales, a medio escribir) no cargaba; a las 14:05 sí: 4 ok, 0 fallos; y 4 ok tras quitar `rol_br10`. Hojas en `guion/fotos/tanda34/rollo_1..4.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y seguimos»).
-- **Sin publicar (Texturas, 21/11): calle del Rollo (8 `rro_*`) y calle del Socorro (8 `soc_*`).**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle del Rollo (8 `rro_*`) y calle del Socorro (8 `soc_*`).**
   - En el Rollo, casas de ladrillo y enfoscadas de los 70 y 80 (del 17 al 47). En el Socorro, un bloque de pisos de ladrillo de tres plantas, casas bajas de 1900 a 2011 y dos nuevas (el 3, de 2018, y el 3 A).
   - Frentes de `house_street`, salvo `rro_17` y `rro_45`, de la pared genérica.
   - Comparadas con las fotos del Catastro; Street View (noviembre de 2024) en el bloque del Socorro, que no tiene foto.
@@ -301,7 +323,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 16 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas` de las 16: 4 ok, 0 fallos; y 4 ok tras el arreglo. Hojas en `guion/fotos/tanda34/rollo_socorro_1..3.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos un poco»).
-- **Sin publicar (Texturas, 21/11): calle de Don Pedro de Castilla (11 `dpc_*`) y calle de Dulcinea del Toboso (8 `dul_*`).**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de Don Pedro de Castilla (11 `dpc_*`) y calle de Dulcinea del Toboso (8 `dul_*`).**
   - En Don Pedro: una hilera de adosadas naranjas de 2007, casas de 1973 y 1997, una hilera sobre garajes y una casa de esquina con escalera exterior. En Dulcinea: tapias de ladrillo, naves y una casa de 2018 en el borde del pueblo.
   - Frentes de `house_street`. Comparadas con las fotos del Catastro (2010–2018); Street View de 2013 en la tapia del 8 D de Don Pedro, que no tiene foto.
   - Fuera: Bajada del Rollo 28 (3,5 m a esta calle) y el molino del Tío Gerardo (hecho a mano).
@@ -309,7 +331,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 19 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas` de las 19: 3 ok y 1 fallo (`dul_4`, pocas piezas); arreglado, 4 ok. Hojas en `guion/fotos/tanda34/donpedro_dulcinea_1..4.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 21/11): Camino Hondo, 12 entradas `cho_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): Camino Hondo, 12 entradas `cho_*`.**
   - Casas bajas encaladas y en ocre, almacenes y tapias, una casa de ladrillo de 2015 y un bloque gris de tres plantas de 2010.
   - Frentes de `house_street` (el de Juan XXIII 43, de la pared genérica). Comparadas con las fotos del Catastro; Street View (noviembre de 2024) en el 9 A y el 9 B, que no tienen foto.
   - Fuera: Concordia 8 (da a la Concordia), Juan XXIII 39 y 47, Delicias 68 (sin fachada al Camino) y el 12 (sin plantas).
@@ -317,11 +339,11 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 12 casas nuevas, ninguna quitada. `bs_h20` solo cambia en las aristas tapadas. Calles, nodos, relieve, árboles (2954) y holguras iguales.
   - `casas` de las 12 y `bs_h20`: 3 ok y 1 fallo (`cho_30`, pocas piezas); arreglado, 4 ok. Hojas en `guion/fotos/tanda34/camino_hondo_1..2.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y continuar»).
-- **Sin publicar (Texturas, 21/11): calle de las Monjas, del 29 y el 40 a la Rosa de Santa María, 27 entradas `mon_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de las Monjas, del 29 y el 40 a la Rosa de Santa María, 27 entradas `mon_*`.**
   - Casas de dos plantas de 1920 a 2006, enfoscadas en beige, ocre, salmón o blanco, de ladrillo, y una casa roja de tres plantas; una tienda con toldo.
   - Frentes de `house_street` (el 54, en la cara de su porche). Comparadas con las fotos del Catastro y con Street View (noviembre de 2024) en tres puntos de la calle.
   - Al compararlas se cambiaron el ocre del 44, el 46 y el 62 y el ladrillo del bloque del 55.
-- **Sin publicar (Texturas, 21/11): calle de las Monjas, el resto (de Nalda a Sancho Panza), 20 entradas `mon_*` y el frente de `monjas_26`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): calle de las Monjas, el resto (de Nalda a Sancho Panza), 20 entradas `mon_*` y el frente de `monjas_26`.**
   - Sur: Nalda 21, 23 y 25 (frente en la calle de Nalda), el 10, el 6, la torre del 17, el 19, el 24 (adobe viejo), el 36. Norte: 76, 78, la casilla de San Isidro 59, 82, 84, 88, 90, 87, 89, 91 y la tapia de Sancho Panza 10.
   - Street View de noviembre de 2024 en todas (el 24, de marzo de 2013); fotos del Catastro para comparar.
   - Hechas a mano (`rc` nulo, solares en el Catastro con casa en 2024): el 6 (caja de 10 m) y el 89 (5 m). El 87 es el brazo de Florido 68 (`only` 2, `reach` 3); el 17 y el 10 llevan `reach`.
@@ -331,7 +353,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Para repasar: `monjas_21` y `monjas_15` (tanda antigua) no se parecen a Street View 2024.
   - A petición del usuario: el arco de ladrillo del patio entre el 2 y el 10, con la cancela abierta, el patio solado y un azafrán escondido (`"id": "arco_monjas"`). Lo hace `_mon_10()` en `godot/scripts/casas.gd`; los pilares y el palé de ladrillos dejan su contorno en `MapData.outlines`. Sin rehornear. `casas` de `mon_10` y `monjas_b742`: 4 ok. Hoja `guion/fotos/tanda34/monjas_arco.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno»), la tanda y el arco.
-- **Sin publicar (Texturas, 21/11): Travesía del Clavel, principio del Clavel y Calle del Romero, 24 entradas `tcl_*`, `cla_*` y `rom_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): Travesía del Clavel, principio del Clavel y Calle del Romero, 24 entradas `tcl_*`, `cla_*` y `rom_*`.**
   - La hilera ocre de 2004 del callejón (9 casas de tres plantas con su escalera a la puerta), Clavel 6, el costado nuevo de la Travesía de San Rafael 8 y 13 casas del Romero (con el costado de Delicias 14 y el 39 en dos entradas, `only` 2 y 1).
   - Fotos del Catastro y Street View de noviembre de 2024 (en la Travesía, solo desde sus dos bocas: es un callejón de escaleras al que no entra el coche de Google).
   - Fuera: la tira de una planta del lado oeste de la Travesía (4494604, sin dirección), Delicias 21 y 12.
@@ -339,7 +361,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - `casas` de las 24 y esas dos: 4 ok, 0 fallos. Al compararlas se cambiaron el ocre de la hilera y tres portones/puertas (24 A, 21, 17): 4 ok. Hojas en `guion/fotos/tanda34/clavel_romero_1..4.jpg`.
   - **Encargado a Edificios Especiales (Pretil), a petición del usuario:** la Travesía peatonal y elevada, con la escalera desde el Clavel y la rampa desde San Rafael («Que se ponga Petril con eso cuando termine con el Rice»). Notas y fotos en `referencias/travesia_clavel/`. Las líneas `tcl_*` pueden tener que cambiar cuando esté.
   - **Aprobado** por el usuario el 21/11 («Visto bueno a todo y paramos»).
-- **Sin publicar (Texturas, 21/11): Teniente Infante, Avenida de Castilla-La Mancha, Alameda y Arroyuelo Bajo, 17 entradas `tin_*`, `acm_*`, `ala_*` y `abj_*`.**
+- **Publicado en 0.0.23 (Texturas, 21/11): Teniente Infante, Avenida de Castilla-La Mancha, Alameda y Arroyuelo Bajo, 17 entradas `tin_*`, `acm_*`, `ala_*` y `abj_*`.**
   - Teniente Infante: el 15 (nuevo, de 2015), los dos bloques de cuatro plantas (en el de la caja rural, rótulo «AHORROS RURALES», la del juego), la casa larga del 16 (1950) y la vieja junto al Noche. Castilla-La Mancha: 6, 8, 21 (nuevo, de 2023), 24, 26, la zapatería del 28 (rótulo «CALZADOS», sin el nombre) y el costado de Arcos 28, con sus pintadas. Alameda 10 (ahora blanca) y el costado de Arroyuelo Medio 36 B. Arroyuelo Bajo: costados de Jesús y María 27, Reina Sofía 14 y Juan Carlos I 15 D.
   - Fotos del Catastro y Street View de noviembre de 2024.
   - Fuera: Cervantes 3 (la iglesia parroquial, hecha a mano), Santo 40 y Reina Sofía 31 (no dan a estas calles), Castilla-La Mancha 14 (su frente queda detrás del bloque de 2019 de la esquina, `castilla_16`; `precheck.py` lo dio por escondido).
@@ -349,7 +371,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake (avisando a Pretil): 27 casas nuevas, ninguna quitada. `rsm_44`, `rsm_b701`, `monjas_27` y `sap_m31` solo cambian en las aristas tapadas. Calles, nodos, relieve y árboles (2954) iguales; una holgura de la calle pasa de 6,3 a 6,0 m.
   - `casas` de las 27 y esas cuatro: 4 ok, 0 fallos; y 4 ok tras los arreglos. Hojas en `guion/fotos/tanda34/monjas_1..5.jpg`.
   - **Aprobado** por el usuario el 21/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 22/11): calles de la Parra (7 `par_*`), del Descanso (12 `des_*`) y de la Pastora (7 `pas_*`).**
+- **Publicado en 0.0.23 (Texturas, 22/11): calles de la Parra (7 `par_*`), del Descanso (12 `des_*`) y de la Pastora (7 `pas_*`).**
   - El usuario retomó las calles («Seguimos»). Elegidas con `calle_rc.py`: las que quedaban sin describir cerca del centro.
   - Parra 1 a 7: el 3 va en dos entradas, `par_3` (dos plantas) y `par_3b` (`only` 1).
   - Descanso 3 a 14, con el costado de Arroyuelo Alto 31 (`des_aa31`) y el portón del 11 (`des_11`). Ese portón es la parte de una planta de la parcela de Travesía del Santo 8: `only` 1 y `reach` 2.
@@ -361,7 +383,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Hubo dos rehorneados más: la caja hecha a mano del 11 se quedaba fuera (menos de 5 m²), y luego resultó ser una parte de `trsanto_8`.
   - `casas` de las 26: 4 ok, 0 fallos. Tras los arreglos (ladrillo de `des_14`, `des_11`): 4 ok. Hojas en `guion/fotos/tanda34/parra_descanso_pastora_1..4.jpg`.
   - **Aprobado** por el usuario el 22/11 («Añade la bandera de españa ahí y damos visto bueno»). La bandera cuelga de la ventana de arriba a la izquierda del Descanso 9: `_des_9()` en `godot/scripts/casas.gd`, con `casas` 4 ok ([log](logs/selftest_casas_solo_des_9_20261122_011859.log)).
-- **Sin publicar (Texturas, 22/11): Avenida de la Reina Sofía, lo que faltaba (19 `rsof_*`).**
+- **Publicado en 0.0.23 (Texturas, 22/11): Avenida de la Reina Sofía, lo que faltaba (19 `rsof_*`).**
   - El usuario pidió seguir («Sí, siguiente»). Elegidas con `calle_rc.py`: los números 5 a 31 y 4 a 12, que seguían siendo muro genérico.
   - El 31 va en dos entradas: `rsof_31` (la casa, con `porch`) y `rsof_31n` (la nave baja de la esquina, una caja sin Catastro).
   - El 10 es un edificio nuevo de celosía de ladrillo: `_rsof_10()` en `godot/scripts/casas.gd`.
@@ -370,7 +392,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake, avisando a Pretil: 19 casas nuevas, ninguna quitada. `cajal_rs2` solo cambia en las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
   - `casas` de las 19: 4 ok, 0 fallos. Tras los arreglos (ladrillo de `rsof_21` y `rsof_23`; colores de `rsof_11`, `rsof_10` y `rsof_27`; puerta del costado de `rsof_31n`): 4 ok. Hojas en `guion/fotos/tanda34/reina_sofia_1..4.jpg`.
   - **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 22/11): Calle de las Delicias, primera mitad (19 `delicias_*` nuevas y el arreglo de `delicias_10`).**
+- **Publicado en 0.0.23 (Texturas, 22/11): Calle de las Delicias, primera mitad (19 `delicias_*` nuevas y el arreglo de `delicias_10`).**
   - El usuario pidió seguir («Visto bueno y siguiente»). Son las casas de la primera mitad de la calle que seguían siendo muro genérico.
   - El 32 va en dos entradas: `delicias_32` (`only` 2) y `delicias_32g` (el garaje, `only` 1). La nave del 19 (`delicias_19b`) es una caja sin Catastro.
   - La hilera de adosados de 2008, detrás de sus patios, son `delicias_21r1..5`, que dibuja `_hilera21()` en `godot/scripts/casas.gd`. El muro del patio es `delicias_21t` (`["obra"]`).
@@ -381,7 +403,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake, avisando a Pretil: 19 casas nuevas, ninguna quitada. `delicias_10` solo cambia en las aristas tapadas. Calles, nodos, relieve y árboles (2954), iguales.
   - `casas` de las 19: 4 ok, 0 fallos. Tras los arreglos (porche del 17, portal del 19 y de la esquina del 21, colores de los portones y de la hilera, zócalo del 3): 4 ok. Hojas en `guion/fotos/tanda34/delicias_1..4.jpg`.
   - **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 22/11): Calle de las Delicias, segunda mitad (17 `delicias_*`, del 36 D al 68, lado sur).**
+- **Publicado en 0.0.23 (Texturas, 22/11): Calle de las Delicias, segunda mitad (17 `delicias_*`, del 36 D al 68, lado sur).**
   - El usuario aprobó la primera mitad y pidió seguir («Visto bueno y siguiente»).
   - 14 casas del Catastro y 3 cajas sin referencia: la tapia del solar (`delicias_40`), la casa que el Catastro tapa con el solar (`delicias_40b`) y el corral del 54 (`delicias_54`).
   - La galería de madera del 64: `_delicias_64()` en `godot/scripts/casas.gd`.
@@ -390,7 +412,7 @@ El detalle de cada pieza está en su LEEME de `referencias/` o `tools/`, en `gui
   - Bake, avisando a Pretil: 17 casas nuevas, ninguna quitada ni cambiada. Calles, nodos, relieve y árboles (2954), iguales.
   - `casas` de las 17: 4 ok, 0 fallos. Tras los arreglos de color (portones, zócalos, el 50 y el 54): 4 ok. Hojas en `guion/fotos/tanda34/delicias_5..7.jpg`.
   - **Aprobado** por el usuario el 22/11 («Visto bueno y siguiente»).
-- **Sin publicar (Texturas, 22/11): Calle de Tembleque, lo que faltaba (19 `tembleque_*` nuevas).**
+- **Publicado en 0.0.23 (Texturas, 22/11): Calle de Tembleque, lo que faltaba (19 `tembleque_*` nuevas).**
   - El usuario aprobó Delicias entera y pidió la calle siguiente («Visto bueno y siguiente»).
   - Lado oeste: 29, 31, 33, 35, 53, 89 D, 91, 93, 95 y 99. Lado este: 34, 34 B, 36, 38, 40, 42, 44, 46 y el solar del 48 D.
   - El solar del 48 D: la tira de casas del Catastro se quita (`porch`) y entra una tapia de ladrillo (`fill`); queda el cobertizo viejo de la punta norte.

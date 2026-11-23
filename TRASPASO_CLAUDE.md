@@ -1547,6 +1547,129 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Lo que lleva la meta `on_knock` es del dueño: el cruce se arregla entero con `cruce.repair()` cuando no se ve ninguno de los sitios de `cruce.fallen()`. Con `keep` no se borra a los 40 s.
 - **Pruebas.** `semaforos`: 9 ok (ciclo, caras, distancia a la línea, noche y STOP, roto, Santa Ana, un coche de verdad que para en rojo y sigue en verde, todo sobre el cruce de verdad). `arreglos`: 2 ok. `sentido` y `grua` ok. Foto: `--semaforos_fotos`.
 
+### MaxiPrecio, la tienda de ropa de la calle de los Arcos (23/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «Vamos con el HiperTextil Miniprecio (que llamaremos MaxiPrecio). Necesitará tener un interior (hay fotos en maps) y su horario comercial». Después, con una imagen de referencia: «Como el logo original son dos cerezas que el nuestro sean dos melocotones».
+- **Hecho.**
+  - **La fachada** (`godot/scripts/maxiprecio.gd`, sobre `esquina.gd`, `world.maxiprecio`), en la casa `mol_b301` de Texturas, que la cedió con `["obra"]`. Sin rehorneado.
+    - A los Arcos: el frente en V bajo sus dos rótulos y sus toldos, el pilar crema con pintadas, los tres escalones y el porche de cristal sobre azulejo.
+    - Arriba, las dos alas con balcones corridos y el mirador curvo con su pérgola.
+    - A Granada y al Molino: las rayas azules y el mural; en Granada, el portal de los pisos. La parte 3 del Molino, de ladrillo tosco con manchas de mortero.
+  - **El logo**: dos melocotones en vez de las cerezas, con «Maxi Precio» en blanco. Los dibujos son nuestros (`tools/maxiprecio/dibujos.py` → `godot/assets/maxiprecio/`): rótulo, rayas, mural y cartel del horario. Sin «Síguenos en Facebook», porque en el juego no hay redes sociales.
+  - **El horario** de la tienda real (Google Maps): de lunes a viernes de 9:30 a 14 y de 17 a 21, los sábados de 9:30 a 14 y los domingos cerrada. Abierta: los toldos bajados, la puerta abierta, luz dentro y la flecha verde. Cerrada: los toldos recogidos y la puerta cerrada.
+  - **El interior** (`godot/scripts/maxiprecio_dentro.gd`): un decorado aparte en (2150, −600), al que se entra por la flecha verde de delante de los escalones (`entradas.gd`).
+    - Es un **primer borrador**: un hipertextil genérico, hasta que lleguen las capturas de Luis (las fotos de Maps piden iniciar sesión).
+    - Para el Maxi de Sistemas da `open`, `clerk_spot`/`clerk_h` y `probador_spot`/`probador_h`. Sin maniquíes ni figuras.
+  - **Repaso con Street View** (noviembre de 2024):
+    - el ladrillo, salmón pálido en vez del naranja de la textura;
+    - las barandillas de los pisos, gris claro (la pérgola y la del mirador siguen de hierro oscuro);
+    - el azul de rayas y toldos, más hondo;
+    - los escaparates, oscuros de día;
+    - el mortero del tosco, en manchas.
+- **Archivos.**
+  - Nuevos: `godot/scripts/maxiprecio.gd`, `godot/scripts/maxiprecio_dentro.gd`, `tools/maxiprecio/dibujos.py`, `godot/assets/maxiprecio/` (cuatro PNG), [referencias/maxiprecio/LEEME.md](referencias/maxiprecio/LEEME.md), `guion/fotos/maxiprecio/` (dibujos y capturas del juego).
+  - Compartidos, solo con añadidos y con aviso a Sistemas:
+    - `world.gd`: `MaxiprecioS`, `var maxiprecio`, el paso «the shop MaxiPrecio» y `_build_maxiprecio()`;
+    - `entradas.gd`: el interior en `shops()`;
+    - `selftest.gd`: `_maxiprecio_checks()`, el modo `--maxiprecio` y la llamada tras `_asador_checks()`.
+- **Pruebas.** `maxiprecio`: 5 ok ([log](logs/selftest_maxiprecio_20261123_062937.log)), sin avisos de UV. No he pasado la completa.
+  - Lo que mira: la casa cedida, que las fachadas y los escalones paran, las tres calles, el horario y sus dos estados, el interior lejos y cerrado, y que nadie pasa tras el mostrador.
+  - La flecha verde aparece una vez que el Vizum de la Josefa abre la tienda (era de la Tía Paca; Luis se lo pasó a la Josefa el 23/11) (`tiendas_ropa.gd`, de Sistemas). Antes está cerrada.
+- **Pendiente.**
+  - El visto bueno de Luis a la fachada.
+  - Las capturas del interior, para rehacer el borrador.
+  - El azafrán escondido, solo propuesto: dentro, en una de las cestas de la isla del centro, entre los calcetines.
+  - Al este de E2–SE el mapa está vacío (en la realidad sigue el bloque de pisos), así que desde Granada se ve una medianera lisa. Es zona de Texturas.
+  - Sin commit: lo hace Sistemas.
+
+### El maniquí de la puerta del MaxiPrecio (23/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «Ponle un maniquí con ropa y sombrero en la puerta (puede ser un modelo de NPC blanco y la ropa con color), que sea rompible y que cambie cada día aleatoriamente».
+- **Hecho.** `godot/scripts/maniqui.gd` (nuevo y mío, vale para cualquier tienda), puesto por `maxiprecio.gd` como `maniqui`.
+  - Es una figura de `chara.gd`: la piel de plástico blanco, sin pelo, sin ojos y sin coloretes, sobre una peana. Está en la acera, a la derecha de los escalones según se mira la tienda.
+  - Cada día lleva otra ropa, otro sombrero y otro calzado, sacados de las opciones del creador. Se sortea con el día como semilla y se cambia cuando nadie lo mira.
+  - Es mobiliario de la calle: `props.adopt(self, p, "maniqui", 0.35, 4.0)` cuando el juego tiene `props`. Un golpe o un coche lo tiran y vuelve al día siguiente (`mend()`). `props.gd` no se ha tocado.
+- **Archivos.** Nuevo: `godot/scripts/maniqui.gd`. Cambiados, míos: `maxiprecio.gd` (`ManiquiS`, `MANIQUI`, `var maniqui`), [referencias/maxiprecio/LEEME.md](referencias/maxiprecio/LEEME.md), `guion/fotos/maxiprecio/maxiprecio_05_maniqui.jpg`. En `selftest.gd`, solo dentro de lo mío: una comprobación más en `_maxiprecio_checks()` y seis vistas del maniquí en `--maxiprecio`.
+- **Pruebas.** `maxiprecio`: 6 ok ([log](logs/selftest_maxiprecio_20261123_064043.log)). El maniquí está en su sitio, es blanco y sin cara, viste distinto los siete días y el mismo día igual; un puñetazo lo tira y `mend()` lo levanta.
+- **Solo con la tienda abierta.** Luis: «Solo mientras la tienda está abierta». `maxiprecio.set_open()` llama a `maniqui.set_out()`. Cerrada, el maniquí se guarda: no se ve, la capa de colisión pasa a 0 y su `rad` para `props.gd` queda fuera de alcance. Abierta, vuelve a salir. `maxiprecio`: 7 ok ([log](logs/selftest_maxiprecio_20261123_070045.log)).
+- **Pendiente.** El visto bueno de Luis. Sin commit: lo hace Sistemas.
+- **Visto bueno de Luis** (23/11, después de aprobar la Tetoqa): «Visto bueno también», al MaxiPrecio con su maniquí. 
+- **El azafrán escondido**, a la palabra de Luis («Ponlo también», 23/11): en el cubo del fondo de la isla del centro, el de la izquierda según se entra, entre los calcetines (`maxiprecio_dentro.gd` `_saffron`, `"id": "maxiprecio"`). En `selftest.gd`, dentro de lo mío: una comprobación más al final de `_maxiprecio_checks()` (que está y se llega a él sin cogerlo) y la vista `dentro_azafran` en `--maxiprecio`. `maxiprecio`: 8 ok ([log](logs/selftest_maxiprecio_20261123_085253.log)). Como todos, `pickups.gd` lo hace flotar y girar con su halo sobre el cubo. Avisado a Sistemas para su cuenta.
+
+### Tetoqa, la tienda de complementos de Santa Ana con el Cristo (23/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**, con una captura de Street View (C. Sta. Ana 54, noviembre de 2024): «Vamos con la tienda de complementos Tutoq (que llamaremos Tetoqa). Mismo tratamiento que con MiniPrecio pero esta vez para complementos».
+- **Hecho.**
+  - **La fachada** (`godot/scripts/tetoqa.gd`, sobre `esquina.gd`, `world.tetoqa`), en la casa `stana_54` de Texturas, cedida en `casas_calles.gd` con `["obra"]`. Sin rehorneado.
+    - Planta baja de granito rosado gris: dos escaparates de ropa a Santa Ana con el rótulo encima, el aire acondicionado y la alarma, y el portal de los pisos en piedra clara con su cancela; en el chaflán, la puerta tras su persiana blanca; al Cristo, el escaparate de cubos blancos de bolsos y zapatos, el de baldas de cristal con sombrerero y la caja de luz en blanco.
+    - Dos plantas en vuelo de 0,45 m sobre las tres calles: ladrillo naranja con paños crema, balcones franceses con persianas beis, franjas crema con rombos de ladrillo, cornisa y bocas de teja. Tejado de teja vieja a cuatro aguas (una vertiente a cada calle y otra a la trasera).
+  - **El rótulo** es nuestro (`tools/tetoqa/dibujos.py` → `godot/assets/tetoqa/`): «Complementos» en rosa manuscrito con ramitas de flor de almendro y «Tetoqa» pequeño. También el cartel del horario y el nombre de la pared del fondo de dentro.
+  - **El horario** es inventado (Google Maps no da el de la tienda real): de lunes a viernes de 10 a 13:30 y de 17:30 a 20:30, los sábados de 10 a 14 y los domingos cerrada. Abierta: persiana subida, luz dentro, maniquí fuera y flecha verde. Cerrada: persiana bajada y escaparates a oscuras.
+  - **El interior** (`godot/scripts/tetoqa_dentro.gd`, en borrador): un decorado aparte en (−1000, −1200), con la flecha verde delante del chaflán (`entradas.gd`). Baldas de cubos, mostrador con pared rosa, barra de ropa con ganchos, vitrina de bisutería, torre de gafas, mesa de pañuelos, sombrerero, el nombre al fondo con un espejo ovalado y el probador con cortina rosa. Expone para Sistemas `clerk_spot`, `client_spot` y `probador_spot` con sus rumbos. Sin maniquíes ni figuras dentro.
+  - **El maniquí de la puerta**: el de `maniqui.gd`, con un quinto parámetro nuevo `trinkets` (por defecto `false`, así que el del MaxiPrecio no cambia). Siempre con sombrero y casi siempre con gafas, pendientes y algo al cuello. Cambia cada día y solo sale con la tienda abierta.
+- **Archivos compartidos** (solo líneas insertadas, avisando antes a Sistemas):
+  - `world.gd`: `TetoqaS`, `var tetoqa`, el paso «the shop Tetoqa» y `_build_tetoqa()`;
+  - `entradas.gd`: el interior en `shops()`, cerrado hasta el Vizum de la Josefa como el MaxiPrecio;
+  - `selftest.gd`: `_tetoqa_checks()`, el modo `--tetoqa` y la llamada tras `_maxiprecio_checks()` en la prueba completa.
+  - Sistemas ya añadió `"tetoqa"` a `SHOPS` en `tiendas_ropa.gd`.
+- **Pruebas.** `tetoqa`: 7 ok ([log](logs/selftest_tetoqa_20261123_080313.log)). Mira la casa cedida, que las tres fachadas paran, las calles, el tejado entero, el horario y sus dos estados, el interior lejos, cerrado y llano con su flecha, el mostrador y el probador, y el maniquí (sombrero, adornos, cambios, golpe y vuelta, recogido al cerrar). No he pasado la completa.
+  - Después de las hojas: el granito, más claro y gris como en Street View; el fondo de los escaparates, oscuro como la tienda que se ve detrás; y quien está en el probador mira un poco hacia el centro, porque la cámara a su lado caía en la pared.
+- **Pendiente.**
+  - El visto bueno de Luis, y las capturas del interior de Google Maps (se ven solo con la sesión iniciada) para rehacer el borrador.
+  - Solo propuestos: el azafrán (en una sombrerera del banco del fondo, o a los pies del sombrerero del escaparate estrecho), maniquíes en los escaparates y el semáforo del chaflán (de Sistemas).
+  - Al sur, donde está la juguetería, el mapa está vacío y se ve la medianera. Es zona de Texturas.
+  - Sin commit: lo hace Sistemas.
+
+### Tetoqa: azafrán, maniquíes en los escaparates y el semáforo del chaflán (23/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**: «Si a las tres recomendaciones» (las tres propuestas de la entrada anterior).
+- **Hecho.**
+  - **El azafrán escondido** (`tetoqa_dentro.gd` `_saffron`): en la última sombrerera del banco del fondo, abierta, con la tapa apoyada de canto. Está en `G.flowers` con `"id": "tetoqa"` y `"hidden": true`. Propuse dos sitios y elegí este.
+  - **Cuatro maniquíes tras los cristales del Cristo** (`tetoqa.dummies`), como en Street View: uno en cada punta del escaparate ancho, con los cubos entre ellos y un busto de costura encima (chaqueta crema y lazo negro); dos en el estrecho, junto a sus baldas de cristal. `maniqui.gd` tiene ahora un sexto parámetro, `in_window`: sin colisión, no lo adopta `props.gd`, un poco más pequeño (0,8), igual abierta o cerrada la tienda, y cambia de ropa cada día mientras nadie lo mira.
+  - **El semáforo del chaflán** (`godot/scripts/semaforo_ambar.gd`, nuevo y mío, `tetoqa.semaforo`): un poste gris claro con una cabeza de tres luces, en la punta del chaflán que da al Cristo, junto al bordillo, mirando a Santa Ana. Solo parpadea el ámbar, como se ve en Street View, y no para a nadie. Es mobiliario de `props.gd` (`"semaforo"`): se tira, se apaga y vuelve al día siguiente. Tiene `set_light()` y `auto` por si Sistemas quiere llevarlo desde `semaforos.gd`.
+  - **Corrección de Street View**: la caja de luz del Cristo no estaba en blanco, sino que lleva el nombre de la tienda. Ahora pone «TETOQA» entre ramitas de almendro, con marco verde (`caja.png`, en `tools/tetoqa/dibujos.py`).
+- **Archivos.** Nuevo: `semaforo_ambar.gd`. Cambiados, míos: `tetoqa.gd`, `tetoqa_dentro.gd`, `maniqui.gd`, `tools/tetoqa/dibujos.py`, `godot/assets/tetoqa/caja.png`, [referencias/tetoqa/LEEME.md](referencias/tetoqa/LEEME.md). En `selftest.gd`, solo dentro de lo mío: tres comprobaciones más en `_tetoqa_checks()` y tres vistas más en `--tetoqa`.
+- **Avisado a Sistemas**: el azafrán nuevo para su cuenta y cómo llevar el semáforo.
+- **Pruebas.** `tetoqa`: 10 ok ([log](logs/selftest_tetoqa_20261123_083936.log)), con los maniquíes de los escaparates ya reducidos. Hoja en `guion/fotos/tetoqa/tetoqa_04_propuestas.jpg`. Comprueba que el azafrán está escondido y se llega a él (sin cogerlo), los cuatro maniquíes (dentro de los muros, fuera de alcance, blancos, cada uno a su manera, con la tienda cerrada también) y el semáforo (en la acera junto al bordillo, lejos de la puerta, que parpadea, que obedece a `set_light`, que se tira, se apaga y vuelve). Ojo: las dos últimas tandas coincidieron un momento con un Godot de Sistemas que arrancó a la vez.
+- **Visto bueno de Luis**: «Así está perfecto. Visto bueno» (23/11), a la Tetoqa entera con lo de esta entrada.
+- **Pendiente.** Las capturas del interior, si Luis las manda, para rehacer el borrador. Sin commit: lo hace Sistemas.
+
+### Pisacastaña, la zapatería de los Arcos con la calle Argentina (23/11, Claude · Edificios Especiales)
+
+- **Encargo de Luis**, con una captura de Street View de la Pisamorena: «Perfecto. Ahora la zapatería. Usaremos Pisamorena (que llamaremos Pisacastaña). Mismo tratamiento que las otras dos tiendas pero solo con zapatos».
+- **Hecho.**
+  - **La fachada** (`godot/scripts/pisacastana.gd`, sobre `esquina.gd`, `world.pisacastana`), en la casa `arcos_5` de Texturas, cedida en `casas_calles.gd` con `["obra"]`. Sin rehorneado.
+    - Planta baja de enfoscado blanco sobre azulejo turquesa. A la calle Argentina: el machón de la esquina con un cristal esmerilado estrecho y su cartelito, dos escaparates de zapatos (baldas blancas; cubos blancos) con toldo crema y el rótulo encima del primero, el cristal esmerilado turquesa con el nombre y el horario, y la puerta metida casi un metro bajo una marquesina de cristal ahumado con hiedra. Pasada la tienda, el cuarto beis de los pisos con su reja abombada, el contador y dos aparatos de aire. A los Arcos: un escaparate de zapatos en escalones con su friso, el portal de los pisos en granito negro con tres escalones y puerta tallada, y una tienda de electrodomésticos cerrada y en venta (letrero sin marca, toldo con franja verde, reja de tijera, cartel de «se vende» sin teléfono).
+    - Tres plantas de ladrillo en vuelo de 0,4 m sobre las dos calles: ventanas de aluminio blanco con persiana blanca y visillo, sardineles, cuatro ventanas por planta a la Argentina y, a los Arcos, una ventana en cada punta con una columna de terrazas de barandilla roja (la primera medio cerrada con aluminio y costado naranja, con macetas; la tercera con toldo verde). Aire acondicionado, parabólica, la placa «Calle Argentina», los cables por el canto del vuelo. Tejado bajo de cinco vertientes con cornisa de ladrillo.
+  - **Los dibujos** son nuestros (`tools/pisacastana/dibujos.py` → `godot/assets/pisacastana/`): «PISACASTAÑA» en mayúsculas grises entre líneas art déco en el rótulo, el friso y el cristal esmerilado; el cartelito, el horario, la placa de la calle, el nombre de dentro, el letrero de electrodomésticos y el «se vende».
+  - **El horario** es el real (Google Maps): de lunes a viernes de 10 a 13:30 y de 17 a 20, los sábados de 10:30 a 14 y los domingos cerrada. Abierta: persiana subida, puerta de cristal, luz dentro, maniquí fuera y flecha verde. Cerrada: la persiana blanca bajada (como en Street View 2024) y los escaparates en penumbra.
+  - **El interior** (`godot/scripts/pisacastana_dentro.gd`, en borrador): un decorado aparte en (−1400, −150), con la flecha verde delante de la puerta (`entradas.gd`). Solo zapatos: paredes de baldas con pares a los dos lados, escalones blancos tras los cristales, mesa redonda, banco tapizado con el taburete inclinado, espejo bajo, mostrador con frente turquesa delante de una pared de cajas de zapatos, y el nombre en la pared turquesa del fondo sobre un escalón de botas. Expone para Sistemas `clerk_spot`, `client_spot` y `probador_spot` (junto al espejo bajo, mirando a la puerta) con sus rumbos. Sin figuras.
+  - **El maniquí de la puerta**: el de `maniqui.gd`, con un séptimo parámetro nuevo, `with_shoes` (por defecto `false`): siempre zapatos vistosos y, a su lado, un pie blanco con otro par del día. Cambia cada día y solo sale con la tienda abierta.
+  - **Sin maniquíes tras los cristales**: en Street View de 2021 el escaparate de los Arcos solo tiene zapatos (en 2024 hay maniquíes), y Luis pidió «solo con zapatos».
+- **Archivos compartidos** (solo líneas insertadas, avisando antes a Sistemas):
+  - `world.gd`: `PisacastanaS`, `var pisacastana`, el paso «the shop Pisacastaña» y `_build_pisacastana()`;
+  - `entradas.gd`: el interior en `shops()`, cerrado hasta el Vizum de la Josefa como las otras dos;
+  - `selftest.gd`: `_pisacastana_checks()`, el modo `--pisacastana` y la llamada tras `_tetoqa_checks()` en la prueba completa.
+  - Sistemas añadió `"pisacastana": "zapatos"` a `SHOPS` en `tiendas_ropa.gd`, con su icono de bota de tacón en el mapa.
+- **Pruebas.** `pisacastana`: 7 ok ([log](logs/selftest_pisacastana_20261123_095327.log)). Mira la casa cedida, los zapatos de los escaparates y de dentro, que las tres fachadas paran, las calles, el tejado entero, el horario real y sus dos estados, el interior lejos, cerrado y llano con su flecha, el mostrador y dónde se prueba uno los zapatos, y el maniquí (zapatos vistosos con su pie, cambios, golpe y vuelta, recogido al cerrar). No he pasado la completa.
+  - Después de las hojas: el ladrillo con otra textura (`brick_wall_09`, de salmón apagado, con un tinte rosado; la naranja `brick_wall_003` de la Tetoqa salía demasiado viva al lado de la foto), el blanco de la planta baja más claro, toldos más grandes, la cornisa de ladrillo en vez de un alero blanco, fondo blanco en los dos escaparates que lo tenían gris y el nombre de dentro en gris oscuro para que se lea sobre el turquesa.
+- **Pendiente.**
+  - El visto bueno de Luis, y las capturas del interior de Google Maps (se ven solo con la sesión iniciada) para rehacer el borrador.
+  - Solo propuesto: el azafrán escondido. Sistemas ofrece frases de dependiente o elegir zapatos en el banco: lo decide Luis.
+  - Sin commit: lo hace Sistemas.
+
+### Pisacastaña: visto bueno y azafrán en una caja de zapatos (23/11, Claude · Edificios Especiales)
+
+- **Respuesta de Luis**: «Visto bueno. Azafrán en caja de zapatos. Así está bien el interior. Las dos opciones me gustan».
+- **Hecho.**
+  - **El azafrán escondido** (`pisacastana_dentro.gd` `_saffron`): en una caja de zapatos negra, abierta y con papel de seda dentro, en el suelo junto al banco donde uno se prueba los zapatos; la tapa, de canto, apoyada en su frente. Está en `G.flowers` con `"id": "pisacastana"` y `"hidden": true`. Era la primera de las dos propuestas (la otra, dentro de una bota del escalón del fondo).
+  - **El interior** se queda como está: Luis no manda capturas («Así está bien el interior»).
+- **Avisado a Sistemas**: el azafrán nuevo para su cuenta y, con las palabras de Luis («Las dos opciones me gustan»), que quiere las dos cosas que ofreció: frases de dependiente como las del Maxi y elegir zapatos en el banco. Le he pasado dónde están el mostrador, el banco, el taburete y el espejo bajo.
+- **Archivos.** Cambiados, míos: `pisacastana_dentro.gd`, `pisacastana.gd` (solo la cabecera), [referencias/pisacastana/LEEME.md](referencias/pisacastana/LEEME.md). En `selftest.gd`, solo dentro de lo mío: una comprobación más en `_pisacastana_checks()` y una vista más en `--pisacastana`.
+- **Pruebas.** `pisacastana`: 8 ok ([log](logs/selftest_pisacastana_20261123_100424.log)). Comprueba también que el azafrán está escondido y que se llega a él (sin cogerlo). No he pasado la completa.
+- **Visto bueno de Luis**: «Visto bueno» (23/11), a la Pisacastaña entera.
+- **Pendiente.** Lo de Sistemas (dependiente y zapatos en el banco). Sin commit: lo hace Sistemas.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
@@ -1897,3 +2020,320 @@ Para cambios del juego, seguir las normas de [PROJECT_STATE.md](PROJECT_STATE.md
   - Copiados a `dist/v0.0.22/`, con [sus SHA-256](dist/v0.0.22/SHA256SUMS.txt) comprobados.
   - Release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.22
 - **Sin probar:** no se ha probado en móvil físico ni en Steam Machine.
+
+### Avenida de la Constitución, los impares de la Calle de Madrid a la Travesía de Alemania: 12 entradas (23/11, Claude · Texturas)
+
+23 de noviembre de 2026, Texturas (Claude). El usuario dijo «Continuamos» tras la pausa de las calles.
+
+- **Hecho.**
+  - Lado oeste: `constitucion_23`, `constitucion_25`, `constitucion_31`, `constitucion_33`, `constitucion_39`, `constitucion_41`, `constitucion_43`, `constitucion_45`, `constitucion_47`, `constitucion_49`, `constitucion_55`.
+  - `constitucion_51`: el solar entre el 49 y el 55, sin nada en el Catastro, como tapia de chapa (`rc: None`, 2,4 m).
+  - Datos del Catastro de 25 parcelas con `tools/house_data.py`, en `tools/casas/<rc>/`: las 11 de esta tanda y 14 del tramo norte (71 a 91 y 104 a 114), para la tanda siguiente.
+  - Fotos del Catastro y Street View de noviembre de 2024. Lo que no se parece está en `guion/repaso_casas.md`.
+- **Fuera.** El 36: su casa queda detrás del 38, que ya estaba hecho (precheck HIDDEN). Ninguna de las parcelas está en los sitios hechos a mano de `bake_godot.py`.
+- **Antes de hornear.** Pretil ya no toca la carpeta y la otra IA de Edificios Especiales no recibe avisos: se comprobó que no había ningún Godot abierto.
+- **Archivos.**
+  - `tools/casas/calles.json` y `godot/scripts/casas_calles.gd` (12 entradas);
+  - `godot/data/map.json`;
+  - las hojas `guion/fotos/tanda34/constitucion_16..18.jpg`;
+  - `PROJECT_STATE.md` y `guion/repaso_casas.md`.
+- **Mapa.** Un horneado. Frente a la copia: 12 casas nuevas, ninguna quitada; de `alemania_14` y `madrid_30` solo cambian las aristas tapadas (y 1 cm la base de `madrid_30`). Calles, nodos, relieve y árboles (2954), iguales.
+- **Pruebas.**
+  - `casas` de las 12: 4 ok, 0 fallos ([log](logs/selftest_casas_solo_constitucion_23_constitucion_25_constitucion_31_c_20261123_045121.log)).
+  - Tras los arreglos de color (31 y 55 a `brick_dark`; 33, 39 y 43 a crema liso): 4 ok ([log](logs/selftest_casas_solo_constitucion_31_constitucion_33_constitucion_39_c_20261123_045337.log)).
+- **Aprobado** por el usuario el 23/11 salvo el 23: «Visto bueno salvo la tienda de recambios, es la otra fachada de AT Taller Mecánico que hicimos en la calle del palo (y llamamos dt) habría que hacer coincidir su estética y logo».
+- **El 23, otra fachada de df Mecánica.** El taller de la Calle del Palo es `df` en `garage.gd`. La tienda lleva ahora su cartel (`assets/df_mecanica.png`, de `tools/make_df.py`) sobre un marco gris encima del escaparate, y el banderín azul con la cara blanca que sale a la acera en la punta norte, como en el taller. El rótulo de texto se quita. Va en `_constitucion_23()` de `casas.gd`. `casas` de 23 y 25: 4 ok ([log](logs/selftest_casas_solo_constitucion_23_constitucion_25_20261123_050621.log)). Hoja `guion/fotos/tanda34/constitucion_19.jpg`, con el taller al lado. **Aprobado** el 23/11 («Visto bueno y seguimos»).
+
+### Avenida de la Constitución, el tramo norte: 17 entradas (23/11, Claude · Texturas)
+
+- **Qué.** Los impares del 71 al 91 (desde la Travesía de Alemania) y los pares del 104 al 114, con Street View 2024 y las fotos del Catastro. Líneas en `casas_calles.gd` (sección «the north stretch»), entradas en `tools/casas/calles.json`.
+- **Casos raros.**
+  - El 79 es la punta de la horquilla con la Calle Real: va por su fachada larga de la Calle Real; los 2,2 m de la avenida, sin describir.
+  - El 81 sigue en Street View hasta el 83, aunque el Catastro dibuja sus partes solo 3,6 m: el resto con `fill`.
+  - El 89 es la casita de una planta de la parcela de `alto_46`: segunda entrada en la misma referencia con `only: 1`.
+  - El 89 B (`rc: None`) es la tapia de ladrillo con el portón verde.
+  - El 91 es un solar que el Catastro aún dibuja con edificio: `porch` + `fill` como `tembleque_48d`. Con el `porch` a 9 m se cortaba la parcela entera, la casa desaparecía y el `fill` no se ponía: va a 3,5 m. `_constitucion_91()` en `casas.gd` le pone albardilla, machones con remate y el letrero «PROHIBIDO PEGAR CARTELES» delante de los machones (detrás se comían letras). La prueba `casas` pide al menos 12 piezas por casa.
+- **Fuera.** El 108 (tapia blanca con portón verde): su referencia es la de `tri_c108`, de la Calle del Triunfo.
+- **Colores.** `brick_buff` sale naranja también en el ladrillo de 1980: 79 y 81 a `c4a07c` liso. 89 B, 91 y el piso alto del 114 a `brick_dark`.
+- **Mapa.** Dos horneados (el segundo por el 91). Frente a la copia: 17 casas nuevas, ninguna quitada; de `alemania_19` cambia 3 cm la base y de `alto_42` y `alto_48` solo las aristas tapadas.
+- **Pruebas.** `casas` de las 15 claves: 4 ok ([log](logs/selftest_casas_solo_constitucion_71_constitucion_75_constitucion_77_c_20261123_052931.log)); tras los arreglos de color y del 91: 4 ok ([log](logs/selftest_casas_solo_constitucion_71_constitucion_79_constitucion_81_c_20261123_053309.log)).
+- **Hojas.** `guion/fotos/tanda34/constitucion_20` a `constitucion_23`. **Aprobado** por el usuario el 23/11 («Visto bueno y siguiente»).
+
+### Azafrán a la venta, la charla del curro, pieles y pañoletas, cámara al hombro, la Tomasa y las tres abuelas (23/11, Claude · Sistemas)
+
+- **Qué pidió el usuario (23/11).** Menos pieles oscuras, pañoletas blancas, negras o azules, el azafrán solo se coge al pisarlo y se vende a cuatro vendedores, la Paca explica cómo ganar dinero tras la deuda, la Tomasa no se va a media charla, charlas con los vecinos únicos con cámara al hombro, y Josefa y Tomasa distintas de la Paca.
+- **Pieles y pañoletas** (`game.gd` `_neighbour_look`). Piel oscura o negra en 1 de cada 20 vecinos al azar (la prueba da 5 %). Pañoleta de las viejas: blanca `f2efe6`, negra `1b1b1f` o azul `2c4a7a`.
+- **Azafrán.**
+  - Se coge al pasar por encima y ya no da dinero (`_take_flower`).
+  - Nuevo `azafran.gd`: cuatro vendedores (Vendedor Azafrán 1 a 4, mismo modelo), en Máximo García de la Torre 34, Curtidores 27 (polígono San Sebastián), Santiago Apóstol 5 A y delante de la puerta MUSEO del Petril (buscada en el Label3D del Petril; `petril.gd` sin tocar).
+  - Compran todo lo que llevas a 6 € la flor, el precio de antes. Pregonan si pasas cerca.
+  - Círculos de azafrán en el minimapa (`minimap.gd` `saffron_shops`).
+  - Contadores en `stats`: `azafran_cogido` y `azafran_vendido`.
+- **La charla del curro** (`fondo_casa.gd` `_curro_talk`). Al acabar la de la deuda, 7 frases nuevas (`loc.gd` `casa_curro`). La cámara corta a un vendedor, al Henry, al asador de Javi (su fachada: él está en el interior aparte) y al de las faenas.
+  - Al acabar se abren los vendedores y El de las faenas (`trabajos.gd` `place_giver`, `henry_can` pide `stats.curro`).
+  - Las partidas guardadas con la deuda ya contada lo tienen abierto al cargar.
+  - Los repartos de Javi no se han cerrado.
+- **Rondas** (`rondas.gd`). Quien te está hablando ya no se mueve. Antes, con la cámara lejos, la ronda devolvía a la Paca a su sitio en mitad de la charla.
+- **La Tomasa** (`tomasa.gd`). Tras su recado se queda contigo (`_hold`) hasta el pitillo. Antes, la rama de paseo la movía cada 1,2 s. La prueba de `mejoras2` espera 8 s con la charla abierta.
+- **Cámara al hombro** (`game.gd` `_talk_camera`). Hablando en la calle con un vecino único: plano por encima de tu hombro y, en la frase siguiente, por encima del suyo; se pone del lado con sitio. No actúa con genéricos, dentro de tiendas, en coche ni en las escenas especiales (`cam_fixed`, `cine_lock`, Recress, Henry…).
+- **Caras.** Josefa con pañoleta negra. Tomasa con cardao rubio teñido (peinado 26) y sin las gafas redondas de la Paca. La Paca igual. Nuevo modo `elenco`: foto de frente y de tres cuartos de cada vecino único (`--solo=`).
+- **Pruebas.**
+  - Nuevo `azafran`, también en la tanda completa tras `_mend_checks`: 6 ok.
+  - `herencia` 13 ok, con el recorrido: 7 de 7 planos.
+  - `trabajos` 8 ok, `mejoras2` 13 ok, `rondas` 1 ok, `palabros` 3 ok.
+  - Fotos en `godot/shots/` (`curro_*`, `azafran_vendedor_*`, `hombro_*`, `elenco_*`).
+  - Tanda completa sin pasar.
+
+### Maxi y el probador del MaxiPrecio, el azafrán a 50 € y tres caras más (23/11, Claude · Sistemas)
+
+- **Qué pidió el usuario (23/11).** «Pon a Tomasa de pelo blanco a Dolores Rubia y a Nocturno ponle barba con perilla», un dependiente para el MaxiPrecio que se llame Maxi y hable con maxis, que venda toda la ropa a 20 € directa al armario, y el azafrán a 50 € la flor.
+- **Caras.**
+  - Tomasa: cardao blanco (`tomasa.gd`).
+  - Dolores: rubia teñida, `d8b25e` (`game.gd`).
+  - Nocturno Correa: bigote y perilla, `face` 8 (`cartas.gd`).
+- **Azafrán.** `azafran.gd` `PRICE` = 50.
+- **Maxi** (`maxi.gd`, nuevo, de Sistemas).
+  - Está tras el mostrador del interior de Pretil (`maxiprecio_dentro.gd`: `clerk_spot` y `clerk_h`) cuando la tienda abre.
+  - El primer día saluda y luego va rotando 7 charlas, todas con maxis (`loc.gd` `maxi_*`).
+  - Después pregunta «¿Te pruebas algo? To a 20 euros».
+- **El probador** (`game.gd` `open_shop_ropa`). Es la pantalla del armario con una sola fila, Ropa, con todas las prendas del creador menos la camiseta de la peña.
+  - Te las pruebas y compras a 20 €; lo que compras va a `stats.armario` y se guarda la partida.
+  - Sales vestido como entraste: lo comprado está en el armario de casa.
+  - Se prueba en el primer probador (`probador_spot` y `probador_h` de Pretil).
+  - Sin zapatos, complementos ni gorras. Los colores siguen siendo los que ya tienes.
+- **Árbol de relaciones.** Maxi y los Vendedores Azafrán 1 a 4 en `guion/relaciones.json`; retratos y `make_relaciones.py`.
+- **Pruebas.**
+  - Nuevo modo `maxi` (`_ropa_checks`), también en la tanda completa tras `_azafran_checks`: 4 ok.
+  - `elenco` de las caras cambiadas: ok.
+  - Fotos `godot/shots/maxi_probador*.png`.
+
+### Huecos del centro: 9 casas sueltas (23/11, Claude · Texturas)
+
+- **Qué.** El usuario pidió buscar «calles que falten empezando por el centro hacia afuera». Quedan pocas calles enteras sin hacer cerca del centro; lo que falta son parcelas sueltas. Se buscaron así: las parcelas del Catastro a menos de 300 m del centro (-100, -60) que no estaban en `calles.json`, ni en `bake_godot.py`, ni en ningún `.gd`, ordenadas por distancia (script `huecos`/`calle_rc` del scratchpad).
+- **Las 8.** `zaragoza_14`, `madrid_24`, `arroyuelo_p15d`, `arroyuelo_t17`, `domingo_9d`, `toledano_8a`, `matias_a67` y `abajo_10`; cada una en su calle, en la sección «Holes near the centre» al final de `casas_calles.gd`.
+- **Falsas libres.** Palo 35 y 37 son df Mecánica (el `GARAGES` de `bake_godot.py` las corta sin nombrar su referencia). Cervantes 3 es la parroquia. Constitución 36 queda detrás del 38. Las de la Calle Real del centro son `real_*` hechas a mano.
+- **Fuera.** Arroyuelo Medio 57 y Regidor 5 quedan detrás de fachadas hechas (`precheck.py`: HIDDEN). Santo 40 no da a ninguna calle. Hay tres solares.
+- **`madrid_24`.** Estaba pendiente porque su frente quedaba detrás de las vecinas. Va puesto a mano en el hueco entre `madrid_22` y `madrid_26` (4,5 m).
+- **`salvador_1t`, quitada.** La caseta de ladrillo junto a la torre de la parroquia ya la había hecho Pretil. El usuario: «La casera de ladrillo de la parroquia creo que se la has pisado a Petril, que ya la había hecho. Siempre predomina el trabajo de Petril». Fuera de `calles.json` y `casas_calles.gd`, y se vuelve a hornear: frente a la copia quedan 8 casas nuevas, ninguna quitada. `casas`: 4 ok ([log](logs/selftest_casas_solo_zaragoza_14_madrid_24_20261123_070432.log)). Lección: antes de describir una parcela pegada a algo hecho a mano, mirar en el juego si ya hay algo en ella.
+- **`abajo_10`.** Le falta la verja de machones de ladrillo con los cipreses.
+- **Mapa.** Un horneado. Frente a la copia: 9 casas nuevas, ninguna quitada; de 6 vecinas solo cambian las aristas tapadas.
+- **Pruebas.** `casas` de las 9: 4 ok ([log](logs/selftest_casas_solo_zaragoza_14_madrid_24_arroyuelo_p15d_arroyuelo_t1_20261123_062206.log)); tras los colores de `domingo_9d` y `toledano_8a`: 4 ok ([log](logs/selftest_casas_solo_domingo_9d_toledano_8a_20261123_062604.log)).
+- **Hojas.** `guion/fotos/tanda34/huecos_1` y `huecos_2`. **Aprobado** por el usuario el 23/11 («Visto bueno y siguiente»).
+
+### Probador con iconos, el Vizum de la Paca y el color en los gatillos (23/11, Claude · Sistemas)
+
+- **Iconos en vez de flechas.** El probador del MaxiPrecio enseña una rejilla de 4 columnas con todas las prendas a la venta, con scroll si no caben (`hud.show_shop_grid`, `shop_grid_icon`). Cada celda lleva el dibujo del jugador con la prenda puesta, su nombre y «tuya» o «20 €».
+  - Los dibujos los hace `ropa_icono.gd`: un SubViewport con mundo propio y fondo blanco, de 6 en 6 (`game._draw_ropa_icons`), guardados en `_ropa_tex` por prenda, colores, piel y talla.
+  - Se mueve con el stick o las flechas (arriba/abajo saltan una fila) y se toca o pulsa para elegir.
+- **El Vizum.** Contada la deuda de Hacienda y el curro (`stats.curro`), cuando te alejas más de 60 m de la Paca te llama una vez (`fondo_casa._vizum_rung`, `casa_vizum_call`): «una cosa es serlo y otra parecerlo». Te manda un Vizum de 20 € (`_vizum`: `stats.vizum` = día, +20 €, toast `t_vizum`).
+  - Al colgar se abren las tiendas de ropa y complementos: `tiendas_ropa.gd` (`SHOPS`, hoy solo `maxiprecio`). Antes, la flecha verde de la puerta del MaxiPrecio no aparece: `entradas.gd`, `tiendas_ropa.shut(dentro)`.
+  - En el minimapa y en el mapa grande cada tienda abierta lleva una peseta: moneda dorada con la P tachada (`minimap._peseta`, `clothes_shops`; en el mapa grande se pone también en `_set_map(true)`).
+- **Color en el probador.** Mientras te pruebas algo, LT/RT en el mando, Z/X en el teclado o las flechas ‹ › de la fila de color (táctil, Android) cambian el color 1 de la prenda (opción 2 del creador).
+  - Los dibujos se rehacen con ese color. Una prenda solo sale como «tuya» si tienes la prenda y también ese color.
+  - Comprar mete en el armario la prenda y el color (el armario guarda prendas y colores por separado, así que el color sirve luego para todas).
+  - Los colores 2 y 3 no se cambian en la tienda.
+  - En la tienda los gatillos ya no giran al personaje (giran Q/E, el ratón o el stick derecho).
+- **Pruebas.** Modo `maxi` (`_vizum_checks` y `_ropa_checks`), también en la tanda completa: 8 ok ([log](logs/selftest_maxi_shots_20261123_062838.log)). Fotos: `godot/shots/vizum*.png` y `maxi_probador*.png`. La tanda completa no se ha pasado. Nada subido.
+
+### El Vizum pasa a la Josefa (23/11, Claude · Sistemas)
+
+- **Qué.** El usuario: «movamos toda la parte del vizum a la Josefa, ya que ella se encarga de las misiones de negocios. Que sean suyas las llamadas y el vizum». Ahora llama ella (`fondo_casa.gd`, `npc: "josefa"`) y el toast dice «Vizum de la Josefa».
+- **Cuándo.** Igual que antes: después de que la Tía Paca te cuente lo de Hacienda y el curro, cuando te alejas más de 60 m de la Paca. La deuda sale después del puente, así que la Josefa ya te conoce y ya tiene el móvil arreglado.
+- **Diálogo.** La clave de loc es ahora `josefa_vizum_call` (antes `casa_vizum_call`). Dice lo mismo en su voz: «yo me entero de to», «una cosa es serlo y otra parecerlo», el muchacho del V.I.P. que le enseñó a darle al botón, «más de tres mil pesetas», y en los negocios lo primero es la pinta.
+- **Pretil.** Su `_maxiprecio_checks` aún nombra a la Paca solo en dos textos (3808 y 3818). Está avisado; la lógica no cambia.
+
+### Huecos del centro, el segundo anillo: 5 casas (23/11, Claude · Texturas)
+
+- **Qué.** Las parcelas libres de 220 a 320 m del centro. Hechas: `sanjose_b032`, `sanjose_11b`, `sanjose_13`, `real_69d` y `trsr_3`, en la sección «the second ring» al final de `casas_calles.gd`.
+- **Trampas.**
+  - `roma_10` se horneaba y no salía, porque `roma_8` ya la incluye con `with` y `house_of` da la primera entrada que coincide. Antes de describir una parcela, buscar su referencia también dentro de los `with`.
+  - `sanjose_13` y `constitucion_p12` salían metidas en un hoyo, a 12–13 m de la calle (d en `svh.py`). `sanjose_13` va a mano en el hueco de la línea entre sus vecinas, con `fill`. `constitucion_p12` era la parte de atrás del 75 D y se quita.
+- **Fuera.** Las parcelas con 1–2 m de frente, las que no dan a ninguna calle y los solares (lista en `guion/repaso_casas.md`).
+- **Mapa.** Tres horneados. Al final, frente a la copia: 5 casas nuevas, ninguna quitada; de `real_69` y `real_71` solo cambian las aristas tapadas.
+- **Pruebas.** `casas`: 4 ok ([log](logs/selftest_casas_solo_real_69d_sanjose_b032_sanjose_11b_sanjose_13_trsr_20261123_071447.log)).
+- **Hojas.** `guion/fotos/tanda34/huecos_3` y `huecos_4`. **Aprobado** por el usuario el 23/11 («Visto bueno y siguiente»).
+
+### Calles enteras más allá de 320 m: 18 casas (23/11, Claude · Texturas)
+
+- **Qué.** Calles enteras que faltaban, de la más cercana a la más lejana:
+  - Mirasierra: 9 casas, del `mirasierra_1` al `mirasierra_10`.
+  - Valdespino: `valdespino_3`, `_5`, `_6` y `_8`.
+  - Plaza de Don Jesús Requejo: `requejo_1`, y `requejo_r57`, `_r59` y `_r61`, tres de la Reina Sofía que dan a la plaza.
+  - Reyes Católicos 1: `reyes_1`.
+  - Van en la sección «Whole streets past 320 m» al final de `casas_calles.gd`.
+- **Trampa.** `requejo_r61` se horneaba y no salía. Le subí `floors` a 3, y `house_of` solo acepta partes con `floors >=` ese número; las del Catastro tienen 2. Queda en 2 en `calles.json`; las tres plantas las da la línea.
+- **Mapa.** Dos horneados. Frente a la copia: 18 casas nuevas, ninguna quitada. De `vin_x2` solo cambian dos aristas, ahora tapadas por el 61.
+- **Pruebas.** `casas solo=mirasierra_,valdespino_,requejo_,reyes_1`: bien. Después corregí los colores de `valdespino_5`, `mirasierra_2` y `requejo_r59` y repetí sus fotos.
+- **Corrección (el usuario: «Esto es terrible. No pongas las fachadas sueltas y adelantadas»).**
+  - `mirasierra_8` salía 2,3 m por delante del 6 y del 10, porque su parcela del Catastro lleva el porche dentro.
+  - Los cinco pares (2–10) van ahora en una sola línea recta ajustada, con `clear: 3.0` para lo que queda delante y `fill` para lo que falta.
+  - El porche del garaje del 10 es una parte de una planta que el filtro `floors` dejaba como casa genérica suelta en la acera; se quita con `strip: 4.0`.
+  - La franja de una planta de `valdespino_3` entra en la casa con `floors: 1`.
+  - Comprobado en el mapa: ningún punto de las piezas queda delante de su fachada.
+  - Herramienta: `alinea.py` del scratchpad.
+  - En todo `calles.json` hay 41 casos de una casa a más de 1,5 m por delante de su vecina. Están sin revisar; algunos serán reales.
+- **Hojas.** `guion/fotos/tanda34/mirasierra_1` y `_2`, `valdespino_1` y `requejo_1`. A la espera del visto bueno.
+- **Pretil.** Le he cedido `stana_54` (Santa Ana 54, «Tetoqa», `tetoqa.gd`), con `["obra"]`, como `mol_b301`.
+
+### Koke el Kokas y su taxi; la Paca y la droga (23/11, Claude · Sistemas)
+
+- **La Paca.** En la charla de Hacienda (`casa_curro`) hay una línea nueva antes de la última: «Y si no, siempre te queda vender droga: en este pueblo la mitad trafica y la otra mitad consume. Economía circular, lo llaman.». Tiene su plano en `CURRO_SHOTS` («paca»). De El de las faenas ya solo nombra «repartos, el campo...».
+- **Koke el Kokas** (`koke.gd`, nuevo, pedido por el usuario).
+  - Cuarentón pasado de vueltas: camisa hawaiana, gafas de aviador, cadena de oro, barba de tres días.
+  - Su flota está en el recinto ferial (elección del usuario): tres Z15 tuneadas (amarilla, negra y azul) en fila a lo largo del camino más largo del ferial, a 7 m o más de las terrazas, y él al lado, en la tierra. Como `props.terrazas` aún está vacío en `koke.setup`, el sitio se vuelve a calcular en el primer tick que ya las tiene (`_find_spot`/`_settle`).
+  - Llama una hora de juego después del Vizum de la Josefa (`stats.vizum_h`, que guarda `fondo_casa._vizum`; en una partida vieja sin esa hora, llama enseguida). La llamada es `koke_call`, de las que solo cuentan, sin sí/no. Al colgar: `stats.koke`, aviso «Nuevo trabajo» y la flecha verde (`marcas.gd`) mientras la carrera del día esté disponible.
+- **La Z15 del Kokas** (`car.gd` SPECS «kokas»: la Z15 con más motor y turbo, es decir, nitro con el reloj deportivo).
+  - Usa el mismo modelo que la Z15 (`modelos.gd` SK «kokas»). `koke_marcas.gd` le pone llamas en calcomanía en los dos costados y el capó, el letrero TAXI · KOKAS iluminado y un alerón con dos patas.
+  - Las imágenes las pinta `tools/koke/pinturas.py` en `godot/assets/koke/` (importadas).
+  - `car.gd` tiene ahora `unbreakable` (sin daño) y `knocks` (cuenta los golpes aunque no haya daño).
+- **La carrera** (un tipo de trabajo más en `trabajos.gd`, `kind: "kokas"`; su tick, show y abort son de `koke.gd`).
+  - Empieza al subirte a la amarilla (`game._enter_car` llama a `koke.entered`), una vez al día (`stats.koke_dia`). Si no te toca, Koke no te deja subir (`koke.refuses`, antes de `_enter_car`).
+  - Turno de 60 s, con flecha al cliente más cercano. Esperan 4 vecinos con un aro a los pies: rojo, 150-320 m; amarillo, 320-560 m; verde, 560-900 m.
+  - Paras al lado, se suben y empieza el reloj del cliente (distancia/9 + 10 s).
+  - Al dejarlo pagan una base de 30 + 0,22 €/m (redondeada a 5) más una propina igual a la base por la fracción de tiempo que sobra. Se califica la carrera («¡Como un cohete!», «Ni tan mal», «A paso de burra») y el turno gana +30 s.
+  - Si se le acaba su reloj, se baja sin pagar. El turno acaba cuando su reloj llega a 0, tras 10 s fuera del coche o si empieza una misión. Lo ganado se cobra con cada cliente.
+  - Mientras dura, la furgoneta es irrompible y la policía está callada (`police.reset()` si había persecución, y `muted`, que se devuelve como estaba). Al acabar puedes seguir montado, pero vuelve a romperse y la policía vuelve (palabras del usuario).
+  - Cuando te bajas y nadie la ve, la furgoneta vuelve sola a la flota.
+  - Las mecánicas salen de los juegos de taxi arcade: aro de color por distancia, reloj general, reloj por cliente, propina por rapidez. No se usa el nombre, la estética ni el sonido de ningún juego.
+- **Lo que dicen los clientes** (encima de la furgoneta, con el estilo de los murmullos de `npc.bark`, porque el usuario dijo: «Que las frases del cliente sean como los murmullos que ya tenemos»).
+  - Hablan de la velocidad (`kokas_fast` por encima de 22 m/s, `kokas_slow` tras 3 s por debajo de 5 m/s), de los golpes (`kokas_crash`) y de tus pintas («{el|la} de la Eufrasia»: el usuario escribió «la Eusebia», pero la tía del juego es la Eufrasia). También de sus vidas, con `[[hombre|mujer]]`: divorcio, hijos que no les quieren, cuernos. Y frases sueltas.
+  - Al subir dicen adónde van (`kokas_to`); al bajar dan las gracias (`kokas_thanks`) o se quejan (`kokas_angry`).
+- **El de las faenas** ya no da el taxi (el usuario: «Se lo queda Koke»). Se quitaron su opción y su código; las pruebas `trabajos` y el perfil, sin el taxi, eligen el campo con `_choose(1)`.
+- **Guion.** Koke está en `guion/relaciones.json` con sus enlaces (Josefa le da tu número, el Vizum de la Josefa, taxista suyo), con retrato y `make_relaciones.py`. En `guion/misiones.html` hay una tarjeta `m-koke`, el nodo en el esquema y la tarjeta de faenas con dos trabajos.
+- **La radio de sus coches.** Al subirte a cualquiera de los tres suena Koka y Ná, y la tecla de la radio solo la cambia a Traktor y vuelta: ni otras emisoras ni apagarla (el usuario: «Ni otras cadenas ni apagarla»). Al bajarte, vuelve la emisora que llevabas. Las emisoras se buscan por el nombre de su `emisora.json` («koka» y «traktor»); si falta alguna de las dos, la radio va como en cualquier coche (`koke.station_of`, `_radio_tick`, `radio_flip`, llamado desde la tecla de `game.gd`).
+- **Coches aparcados movidos (`car.gd`, `game.gd`).** Si se movía con `place` un coche aparcado y dormido (`doze`), se le quedaban las ruedas donde estaba, porque `_doze_cars` lo volvía a dormir antes de un paso de física. Ahora `place` lo despierta, y `awake_t` lo deja medio segundo en la física antes de que pueda dormirse otra vez.
+- **Pruebas.** Modo nuevo `koke`, con 11 comprobaciones (también en la tanda completa, tras `_ropa_checks`); una de ellas comprueba que la flota esté lejos de las terrazas y con las ruedas debajo. Fotos en `godot/shots/koke_*.png`. Pasadas: koke 11 ok (10 con fotos; la 11.ª es la de la radio), tricornio 3 ok, trabajos 6 ok, herencia 13 ok, palabros 3 ok. La tanda completa no se ha corrido. No hay nada en commit.
+
+### Fachadas adelantadas: repaso de todo lo hecho (23/11, Claude · Texturas)
+
+- **Qué.** El usuario pidió «Arreglemos primero las fachadas adelantadas». `adelantadas.py` (scratchpad) busca en `calles.json` las fachadas que salen más de 1,5 m por delante de su vecina del mismo lado y da cuánto se separa cada una de la calle. Salieron 41.
+- **Cómo se decidió cada una.** Por tres cosas: la acera de siempre de cada calle (la mediana), la foto del Catastro y Street View.
+  - En casi todas, la que estaba mal era la casa de atrás: el Catastro la dibujaba de 3 a 6 m dentro, pero en la foto está a ras.
+  - En Florido 14–26 la hilera es la buena: está metida de verdad, tras sus patios.
+  - En Toledo 45–53 frente al 55 hay un escalón real de 1 m, no de 3,6.
+- **Hecho.**
+  - 19 casas a la línea de las vecinas, con `fill: [[0, L, avance + 0.4]]` y `clear: 3.0`.
+  - Toledo 49, 51 y 53 en una línea girada desde la junta con el 47 hasta 1 m detrás del 55.
+  - Viñas 47–57 en una sola línea ajustada.
+  - Las tapias bajas `flo_p14t` a `flo_p26t` y `delicias_39t`, en `casas_calles.gd` junto a su casa. Un muro sin referencia necesita ≥ 5 m² de planta (`deep` ≥ 0,75), o el horneado lo tira.
+- **Sin tocar.** Las casas detrás de su tapia (Regidor 24, Clavel 11, Santa María 13, Amargura 8) y lo de Pretil (Arcos 10 con su tapia y Real 24).
+- **Error corregido.** Moví `real_24`, que es `["obra"]` de farmacia.gd, y lo devolví a su sitio. Su casa en el mapa queda idéntica a la de antes.
+- **Parcelas en L, arregladas.** `mirador_18`, `rsm_t27`, `extremadura_b441` y `labradores_15` tenían la fachada al fondo de un entrante, entre sus propias alas. Tras mirarlas en Street View, la fachada va en la línea de las alas, con `fill [[0, L, D+0.4]]` y `clear: 3.0`. En el mapa solo cambiaron esas cuatro y los bordes y la base de `rsm_9`; ninguna tiene piezas por delante de su fachada. Test `casas solo=` OK; hoja `guion/fotos/tanda34/adelantadas_5.jpg`.
+- **Mapa y pruebas.** Cuatro horneados; ninguna casa se pierde. Ninguna de las casas tocadas tiene piezas delante de su fachada. `casas` bien.
+- **Hojas.** `guion/fotos/tanda34/adelantadas_1` a `_4`: Catastro, lo que haya de Street View y dos fotos del juego.
+
+### El «efecto jabón» al rozar paredes (23/11, Claude · Sistemas)
+
+- **Lo que pidió el usuario:** que un golpe de lado o contra la esquina de una fachada, si no es demasiado frontal ni demasiado fuerte, deslice el coche en vez de pararlo en seco.
+- **El coche que conduces** (`car.set_soap`, que activan `game._enter_car` y `_exit_car`).
+  - Su carrocería casi no agarra contra lo que roza (`PhysicsMaterial` con fricción 0,03, `SOAP_GRIP`). Con Jolt, eso basta para que un roce suave siga a lo largo de la pared.
+  - Cuando un golpe le quita de golpe más de 3 m/s, `_soap` lee la normal de la pared en los contactos (`contact_monitor`, solo en el coche que conduces).
+    - Si el golpe no es frontal (menos del 72 % de la velocidad va contra la pared, `SOAP_FRONT`) ni fuerte (menos de 13 m/s contra la pared, `SOAP_HARD`), el coche conserva el 85 % de la velocidad a lo largo de la pared (`SOAP_KEEP`), recibe un empujoncito hacia fuera y gira el morro hacia donde desliza. Como golpe solo cuenta el 70 % de la velocidad que iba contra la pared (daño, ruido, botellas).
+    - Si es frontal o fuerte, es un choque como antes, y además se queda con un tercio de la velocidad que tenía, para que la carrocería resbaladiza no lo lleve por la pared.
+  - Si el coche no pierde velocidad sino que lo empujan (un patrullero que te embiste por detrás), no se toca.
+  - Los coches del tráfico y la policía no tienen jabón.
+- **Pruebas.** Modo nuevo `jabon` (también en la tanda completa, tras `_driving_checks`), contra una fachada larga y recta.
+  - Roce a 25° y 54 km/h: no baja de 14 m/s; sin jabón, se paraba en 2 m/s.
+  - A 40° y 47 km/h: sigue a 7,7 m/s.
+  - De frente: se para.
+  - Fuerte, a 108 km/h: baja a 6,9 m/s.
+  - Pasadas: jabon 5 ok, conduccion 8 ok, salto 11 ok, vuelcos 1 ok, y `pitufos` (diagnóstico) embiste igual que antes. Nada en commit.
+
+### Iconos del mapa para las tiendas de ropa, complementos y zapaterías (23/11, Claude · Sistemas)
+
+- **Lo que pidió el usuario:** «iconos para el mapa para las tiendas de ropa, de complementos y zapaterías. Que encajen con nuestro estilo».
+- **El diseño.** Sobre la misma moneda dorada de la peseta (la que eligió el usuario para estas tiendas), en tinta, lo que vende cada una: una camiseta (ropa), un anillo con su piedra (complementos) y un zapato normal, con la suela marcada en dorado (zapatos). El usuario cambió el bolso por el anillo («Figuras más reconocibles») y la bota de tacón que vino después por un zapato normal («la bota está rara»).
+  - Se dibujan con las llamadas de dibujo de `minimap.gd` (`_coin`, `_shop_icon`, `SHIRT`/`GEM`/`SHOE`, y el aro del anillo en óvalo, en unidades del radio), como el resto del mapa. La P de la peseta queda para un tipo que no se conozca.
+  - `tools/iconos_mapa.py` dibuja la hoja de muestra, en grande y a su tamaño (`guion/iconos_mapa.png`).
+- **Qué vende cada tienda.** `tiendas_ropa.SHOPS` ahora es un diccionario `{tienda: tipo}` con `KINDS = ropa, complementos, zapatos`: el MaxiPrecio es ropa y la Tetoqa, complementos. La zapatería es la Pisacastaña de Pretil («pisacastana»: «zapatos»), que ya se ve en el mapa.
+  - `marks()` devuelve `{p, kind}`.
+- **Pruebas.** Modo nuevo `iconos` (con `shots`, la foto del mapa grande; si no hubiera zapatería, pone una de muestra). La comprobación del Vizum (`_vizum_checks`) ahora cuenta una marca por tienda hecha.
+  - Pasadas: iconos 1 ok, maxi 8 ok con fotos. Sin ventana, maxi falla en las dos comprobaciones del probador, porque no se dibujan las fotos; con ventana pasa. Nada en commit.
+
+### Dos azafranes: los escondidos y los de la calle (23/11, Claude · Sistemas)
+
+- **La regla del usuario** (pasada por Pretil): «Y internamente vamos a tener dos azafranes. Los escondidos que solo aparecen una vez por juego. Y los públicos que aparecerán aleatoriamente como hasta ahora y se regenerán cada 24 horas in-game en sitios diferentes».
+- **Los escondidos** (los que llevan `"hidden": true` y su `id`) siguen como estaban: cuentan una vez por partida y se guardan en `stats.saffron_hidden`. Hoy son 9, con los dos nuevos de Pretil («tetoqa» y «maxiprecio»), y `hidden_saffron()` los cuenta solos.
+- **Los de la calle** (`game._spread_saffron`).
+  - Son `SAFFRON_N` = 40 por las aceras y las calles residenciales, como antes.
+  - Cada día nuevo de juego (cuando cambia `day_n`: a medianoche, al despertar o al cargar una partida; lo vigila `_advance_clock` con `saffron_day`) se vuelven a repartir todos, también los que nadie cogió, a 15 m o más de los del día anterior (`SAFFRON_AWAY`).
+  - Lo que se coge desaparece hasta el día siguiente.
+- **Pruebas.** `_azafran_dia_checks`, al principio de `_azafran_checks`: se coge uno de la calle y uno escondido, pasa un día, y comprueba que vuelven los 40 en otros sitios y que el escondido sigue cogido. `azafran` 7 ok. Nada en commit.
+
+### Calle de Manuel Álvarez de Ugena: 11 entradas (23/11, Claude · Texturas)
+
+- **Qué.** Las cinco parcelas de la calle que faltaban, desde Street View 2024 (solo la 4, la 7 y la 14 tienen foto del Catastro): `ugena_1` (el taller), `ugena_3` con `_3b`, `_3t` y `_3p`, `ugena_4` con `_4w`, `ugena_7` con `_7l` y `_7g`, y `ugena_14`. Van al final de `casas_calles.gd`.
+- **Trampa: una entrada pinta una sola pared a lo largo de todo su frente.** `_facade` levanta el muro del largo del frente, no por piezas. Dos entradas de la misma parcela con el mismo frente se tapan entre sí: la puerta y el garaje del 7, y el porche del 4, no salían. Los frentes de una parcela partida van uno al lado de otro.
+- **Reparto de partes.** Con `reach` (distancia del polígono al frente) y con el orden de `calles.json`, porque `house_of` da la primera entrada que encaja:
+  - `ugena_4` (`reach` 1.0) va antes que `ugena_4w`, y se queda la casa y el porche.
+  - `ugena_7l` (`only` 1, `reach` 2.0) va antes que `ugena_7g`.
+- **Patio delante.** El Catastro mete el patio del 3 en la casa. La fachada va 3 m atrás (`clear: 3.0`), con dos tapias de `rc` nulo en la calle, en línea con el taller.
+  - Una tapia lisa no pasa la prueba de «too little»: la casa necesita 12 cajas o más, y los `paño` no cuentan. La del 3 lleva una cancelilla (`gar`).
+  - La de las cancelas necesitaba `deep` 1.1 para pasar de 5 m².
+- **Fuera.** Monjas 116, Consuegra 20/24 y Cipreses 14 salen junto a la calle pero dan a las suyas.
+- **Mapa.** Frente a la copia, 11 casas nuevas, ninguna quitada ni cambiada. Ninguna pieza queda por delante de su fachada.
+- **Pruebas.** `casas solo=ugena_`: 4 ok. Hojas `guion/fotos/tanda34/ugena_1..2`. **Aprobado** por el usuario el 23/11 («Visto bueno y paramos un poco»). Nada en commit.
+- **Antes, aprobado.** El repaso de fachadas adelantadas, con las cuatro parcelas en L, y las calles de Mirasierra: «Visto bueno y paramos un momento».
+
+### Calle Nueva: 9 entradas (23/11, Claude · Texturas)
+
+- **Qué.** Las parcelas de la calle que faltaban, desde Street View 2024 y la foto del Catastro: `nueva_1` con su valla `nueva_1t`, `nueva_3`, `nueva_5`, `nueva_4a` con `_4b` (su remate de dos plantas, `floors` 2), `nueva_4t` (la tapia del n.º 4: el Catastro lo da con 0 plantas y el horneado no lo levanta), `nueva_6` y `nueva_10`. Van al final de `casas_calles.gd`.
+- **Fachadas en línea.** La valla del 1 va de su esquina al frente del 3. El 6 va desde la punta de su garaje (la única parte que el Catastro pone en la calle) hasta el frente del 10, con `fill` 5,1 m y `clear` 3,0, como en Street View.
+- **Fuera.** Constitución 116 (el cuartel, `cuartel.gd`) y Reyes Católicos 13.
+- **Mapa.** Frente a la copia, 9 casas nuevas, ninguna quitada. De `constitucion_114` solo cambia una arista lateral, ahora tapada por `nueva_4b`.
+- **Pruebas.** `casas solo=nueva_`: 4 ok. Hojas `guion/fotos/tanda34/nueva_1..2`. **Aprobado** por el usuario el 23/11 («Visto bueno y siguiente»). Nada en commit.
+- **Antes, aprobado.** La calle de Manuel Álvarez de Ugena («Visto bueno y siguiente»). `arcos_5` pasó a `["obra"]` para la zapatería de Pretil (`pisacastana.gd`).
+
+### Manuela Moreno y el banco de zapatos de la Pisacastaña (23/11, Claude · Sistemas)
+
+- **Qué pidió el usuario.** Una dependienta con frases, como Maxi, y elegir zapatos en el banco de la tienda: «Las dos opciones me gustan» (a través de Pretil). El nombre, «Manuela Moreno», y el precio, todos a 20 €, los eligió él.
+- **`manuela.gd` (nuevo).** Copia el modelo de `maxi.gd`:
+  - está tras el mostrador de `pisacastana_dentro.gd` (de Pretil: `clerk_spot`/`clerk_h`, `probador_spot`/`probador_h`, `open`) mientras la tienda abre;
+  - habla con pisas (`manuela_*` en `loc.gd`: pisaprecios, pisaofertas, «¡pisa fuerte!») y luego pregunta «¿Te pruebas algo?»;
+  - con el sí se abre el banco: los 14 zapatos del creador menos ir descalzo, a 20 € el par, con el color en los gatillos. Lo comprado (zapato y color) va al armario de casa, y sales como entraste.
+- **El probador, general.** `game.open_shop_ropa(spot, face, side, price, who, kind)` acepta `kind` = `{opt, col, title, poor, bought, have, have_btn}`. Sin `kind` sigue siendo la ropa del MaxiPrecio (opciones 15 y 2). `_so()`/`_sc()` dan la opción y el color de la tienda abierta; `ropa_for_sale()` quita lo que es «nada» (`Creator.NOTHING`).
+- **Iconos.** `ropa_icono.gd viewport(look, px, feet)`: con `feet`, la foto es de los pies.
+- **Textos.** «Pisacastaña · Zapatos», «tuyos», «Ya los tiés».
+- **Más.** Retrato `guion/fotos/manuela.png`. Está en `guion/relaciones.json` (tú → «te vende zapatos»).
+- **Pruebas.** Modo `manuela` (`_manuela_checks`, también en la pasada completa tras `_ropa_checks`): `manuela shots` 3 ok, `maxi shots` 8 ok, `palabros` 3 ok. Fotos `manuela_banco`, `manuela_tienda`. Nada en commit.
+
+### Calle de la Flor: 10 entradas (23/11, Claude · Texturas)
+
+- **Qué.** La acera sur, entera. La norte son las traseras de las casas de la calle Valencia (`valencia_37` a `_43`).
+  - Las casas: `flor_1`, `flor_5`, `flor_7`, `flor_9` (dos plantas), `flor_11`, `flor_13`, `flor_13d` y el bloque de la esquina `flor_b024` (sin dirección en el Catastro).
+  - Dos tapias con `rc` nulo: `flor_3t`, porque la casa del 3 (4692020VJ5649S) está 9 m atrás y `calle_rc.py` no la ve, y `flor_7t`, en un hueco de 5,5 m entre el 7 y el 9.
+- **Fachadas en línea.** El 11 se alarga 1,6 m hasta el 13 con `fill`. El bloque va 0,7 m atrás, en la línea del 13 D, con `clear: 1.0`.
+- **Trampas.**
+  - `flor_7t` con 0,8 m de fondo se quedaba en 4,4 m² y el horneado lo tiraba: lleva `deep` 1.1.
+  - El ladrillo del bloque va en `brick_rose`, el rosado de las casas de después de 2005.
+- **Mapa.** Frente a la copia, 10 casas nuevas, ninguna quitada ni cambiada.
+- **Pruebas.** `casas solo=flor_`: 4 ok. Hojas `guion/fotos/tanda34/flor_1..2`. **Aprobado** por el usuario el 23/11 («Visto bueno y paramos»). Nada en commit.
+- **Antes, aprobado.** La Calle Nueva («Visto bueno y siguiente»).
+
+### Pasada completa para la 0.0.23: lo que fallaba y por qué (23/11, Claude · Sistemas)
+
+- **Primera pasada: 1030 ok, 12 fallos.** Solo una era de verdad: Maxi, Manuela y Koke no tenían frases para las firmas del puente. Ahora tienen `firma_si_*` y `firma_no_*` en `loc.gd`.
+- **Del juego.**
+  - `game._shot_clear` mira ahora en los dos sentidos. Una cara que solo da a la cámara no se veía desde la pared, y La Chiki tenía una pintada tapada en la Travesía del Clavel, en (140, −219).
+  - `props._tidy` va sin tipo: un mueble ya liberado rompía la llamada del temporizador.
+- **De las pruebas (`selftest.gd`):**
+  - **Fotos del probador y del banco.** Sin ventana no se dibujan, así que solo se exigen con ventana (`maxi shots`, `manuela shots`).
+  - **Maniquíes del MaxiPrecio, la Tetoqa y la Pisacastaña** (de Pretil). En la pasada completa todavía era la hora de la pantalla de título y el reloj de la tienda la cerraba. Se miran un lunes a mediodía y luego se deja la hora como estaba.
+  - **Ajedrez.** El balanceo de los niños se mide durante 150 fotogramas en vez de 60.
+  - **Javi, Vizum y llamada de Koke.** Una llamada se quedaba sonando de una prueba anterior (la Josefa, Koke). `_hush_phone()` cuelga y vacía la cola.
+  - **Maruja que te sigue.** Se anda hacia un lado libre: donde para el coche, de frente podía haber una pared.
+  - **Rondas.** Se quita `g.side`. Además, a menos de 25 m nadie se teletransporta: se mira su `home`. El mensaje dice quién falta y a cuántos metros está la cámara.
+  - **El motín.** Se esperan hasta 40 fotogramas más a que llegue el último del corro. El mensaje da la etapa, el más lejano y los armados.
+- **Pendiente, sin tocar.** En las rondas, la cámara estaba a 188 m del jugador: alguna prueba anterior la deja fija. No rompe nada, pero sería bueno saber cuál.
+
+### Publicación de la 0.0.23 en GitHub (23/11, Claude · Sistemas)
+
+- **Por qué.** Lo pidió el usuario: «Si está todo vamos preparando el release». Antes, Pretil y Texturas pararon y confirmaron que no les quedaba nada a medias.
+- **Pruebas.** Hicieron falta siete pasadas completas; la última dio 1042 ok, 0 fallos. Lo que se arregló por el camino está en la entrada anterior.
+- **Memoria con el renderizador del móvil** (`--rendering-method mobile -- --timing`): 773 MB estática y 2075 MB de vídeo al final de la carga. En la 0.0.21 eran 752 y 1988.
+- **Paquetes.** Están en `dist/v0.0.23/`: `Matritellus-0.0.23-{Windows.exe,Android.apk,Linux.tar.gz}` y `SHA256SUMS.txt` (dos espacios). El APK lleva la versión 0.0.23 (código 23), firmado y verificado.
+- **Contenido.**
+  - Sistemas: Koke el Kokas y su taxi, el «efecto jabón», Maxi, Manuela Moreno y su banco de zapatos, el Vizum de la Josefa, los iconos del mapa, los dos azafranes, la charla del curro y la cámara al hombro.
+  - Pretil: el MaxiPrecio, la Tetoqa y la Pisacastaña.
+  - Texturas: Constitución, Ugena, Nueva, la Flor, los huecos del centro y las fachadas en línea.
+- **Sin probar** en el móvil ni en la Steam Machine.

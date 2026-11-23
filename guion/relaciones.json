@@ -564,6 +564,54 @@
    "role": "Fiestero de los ochenta, con bigote, hermoso y tupé negro. Dice que los jóvenes de hoy no saben lo que es una fiesta; cuenta las locuras de los 80 y la ruta del bacalao.",
    "where": "Enfrente de la cafetería del callejón de la Avenida de Juan Carlos I.",
    "notes": "De momento solo charla, sin misión. Pedido por el usuario el 21/11/2026."
+  },
+  {
+   "id": "maxi",
+   "name": "Maxi",
+   "foto": true,
+   "pos": [
+    8,
+    6
+   ],
+   "role": "El dependiente del MaxiPrecio. Habla con maxis: maxiprecios, maxiofertas, maxidías... Te vende la ropa a 20 € la prenda y va derecha a tu armario de casa.",
+   "where": "Tras el mostrador del MaxiPrecio, en la calle de los Arcos entre Molino y Granada (L–V 9:30–14 y 17–21, sábado 9:30–14).",
+   "notes": "Pedido por el usuario el 23/11/2026. La tienda y su interior los hace Pretil."
+  },
+  {
+   "id": "manuela",
+   "name": "Manuela Moreno",
+   "foto": true,
+   "pos": [
+    8,
+    7
+   ],
+   "role": "La dependienta de la Pisacastaña. Habla con pisas: pisaprecios, pisaofertas, «¡pisa fuerte!». Te vende los zapatos a 20 € el par y van derechos a tu armario de casa.",
+   "where": "Tras el mostrador de la Pisacastaña, en la esquina de la calle de los Arcos con la calle Argentina (L–V 10–13:30 y 17–20, sábado 10:30–14, domingo cerrao).",
+   "notes": "Pedida por el usuario el 23/11/2026, que le puso el nombre. La tienda y su interior los hace Pretil; te pruebas los zapatos en el banco, junto al espejo bajo."
+  },
+  {
+   "id": "azafran",
+   "name": "Vendedores Azafrán 1 a 4",
+   "foto": false,
+   "pos": [
+    9,
+    4
+   ],
+   "role": "Cuatro vendedores, de momento con el mismo modelo, que te compran el azafrán que encuentres a 50 € la flor.",
+   "where": "En la puerta de las tiendas de azafrán reales: Máximo García de la Torre 34, Curtidores 27, Santiago Apóstol 5 A y frente a la puerta del museo del Petril.",
+   "notes": "Aparecen cuando la Tía Paca te cuenta cómo ganar dinero tras la deuda con Hacienda. Pedidos por el usuario el 23/11/2026."
+  },
+  {
+   "id": "koke",
+   "name": "Koke el Kokas",
+   "foto": true,
+   "pos": [
+    6,
+    7
+   ],
+   "role": "Cuarentón pasado de vueltas: le pueden la fiesta y las drogas. Tiene una flota de Z15 tuneadas y trabaja de taxista. Su último compañero está en coma (se estampó con el taxi a 140 contra la fachada de un colegio).",
+   "where": "Con su flota en el recinto ferial, junto a la Z15 amarilla de las llamas y el nitro.",
+   "notes": "Pedido por el usuario el 23/11/2026. Te llama una hora de juego después del Vizum de la Josefa. Su taxi, una vez al día y contrarreloj, sustituye al taxi de El de las faenas. A los Pitufos y a los Tricornios les pasa hierba, y por eso le dejan en paz."
   }
  ],
  "links": [
@@ -894,6 +942,62 @@
    "label": "te habla de él",
    "detail": "La Josefa te cuenta que el Javi busca quien le reparta los pollos.",
    "source": "josefa_javi"
+  },
+  {
+   "a": "tu",
+   "b": "maxi",
+   "kind": "negocio",
+   "label": "te vende ropa",
+   "detail": "Toda la ropa a 20 €, que va directa a tu armario de casa.",
+   "source": "maxi_q"
+  },
+  {
+   "a": "tu",
+   "b": "manuela",
+   "kind": "negocio",
+   "label": "te vende zapatos",
+   "detail": "Todos los zapatos a 20 € el par, que van directos a tu armario de casa.",
+   "source": "manuela_q"
+  },
+  {
+   "a": "tu",
+   "b": "azafran",
+   "kind": "negocio",
+   "label": "te compran el azafrán",
+   "detail": "A 50 € la flor, todo lo que lleves.",
+   "source": "azafran_venta"
+  },
+  {
+   "a": "paca",
+   "b": "azafran",
+   "kind": "trato",
+   "label": "te manda a ellos",
+   "detail": "Tras la deuda, la Paca te cuenta las maneras de ganar dinero: el azafrán, los recados del Henry y el Javi, el de las faenas.",
+   "source": "casa_curro"
+  },
+  {
+   "a": "josefa",
+   "b": "tu",
+   "kind": "negocio",
+   "label": "te hace un Vizum",
+   "detail": "Después de lo de Hacienda, ya sabe que eres un pobre: «una cosa es serlo y otra parecerlo». 20 € pa ropa decente, y se te abren las tiendas de ropa.",
+   "source": "josefa_vizum_call"
+  },
+  {
+   "a": "josefa",
+   "b": "koke",
+   "kind": "trato",
+   "label": "le da tu número",
+   "detail": "«Tu número me lo ha dao la Josefa, que esa mujer lo sabe to».",
+   "source": "koke_call"
+  },
+  {
+   "a": "tu",
+   "b": "koke",
+   "kind": "negocio",
+   "label": "taxista suyo",
+   "detail": "Una vez al día, su Z15 amarilla contrarreloj: base por distancia, propina por rapidez y +30 s por cliente.",
+   "source": "koke_call"
   }
  ],
  "cabos": [

@@ -32,11 +32,11 @@ const INK := Color(0.13, 0.11, 0.1)
 const PAPER := Color("fbf6e9")
 const STAMP_RED := Color(0.78, 0.1, 0.12)
 ## the two of them: old, in the post's blue (our own: correos_dentro.gd BLUE), Diurno bald on top with his moustache
-## and round eyes, Nocturno with his grey crop, a walrus moustache, one brow across and his sleepy eyes
+## and round eyes, Nocturno with his grey crop, moustache and goatee (the user, 23 Nov 2026; a walrus moustache before), one brow across and his sleepy eyes
 const LOOKS := {
 	"diurno": {"top": 1, "shirt": 0x8fb3dd, "hair": 0xe6e6ea, "hair_style": 10, "face": 1, "brows": 0, "eyes": 1, "glasses": 1,
 		"build": 1.22, "scale": 0.95, "skin": 0xf1c7a3, "hat": "cap", "hat_color": 0x1e4aa0},
-	"nocturno": {"top": 6, "shirt": 0x5d6f8a, "hair": 0xa8a8ad, "hair_style": 3, "face": 4, "brows": 2, "eyes": 2, "glasses": 2,
+	"nocturno": {"top": 6, "shirt": 0x5d6f8a, "hair": 0xa8a8ad, "hair_style": 3, "face": 8, "brows": 2, "eyes": 2, "glasses": 2,
 		"build": 0.92, "scale": 1.0, "skin": 0xe2b590},
 }
 ## the keys for a pad, as a QWERTY keyboard like the Padrón's (padron.gd ROWS); "<" is rub out

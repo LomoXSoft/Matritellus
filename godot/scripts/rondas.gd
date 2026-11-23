@@ -164,6 +164,8 @@ func tick(dt: float) -> void:
 		if n == null or not is_instance_valid(n) or not base.has(id):
 			continue
 		var home: Vector2 = base[id][0]
+		if (G.dlg != null and G.dlg.get("from") == n) or (G._ask != null and G._ask.get("from") == n):
+			continue                             # (talking to you: not moved, not even home, wherever the camera is looking)
 		if wanted(n):
 			if _at.has(id) and n.state != "fly" and n.state != "down":
 				if _move(n, home, bool(base[id][1])):

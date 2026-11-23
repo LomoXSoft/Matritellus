@@ -16,6 +16,8 @@ var cops: Array = []
 var repairs: Array = []
 var ramps: Array = []
 var spray: Array = []        # walls La Chiki told you of, not yours yet (pintadas.gd hinted)
+var saffron_shops: Array = [] # the saffron sellers, once Tía Paca has told you of them (azafran.gd): a saffron circle each
+var clothes_shops: Array = [] # the clothes, accessories and shoe shops, once Josefa's Vizum has opened them: [{p, kind}] (tiendas_ropa.gd)
 var blink := false
 var missions: Array = []     # selectable missions on the big map: [{id, label, p}, ...]
 var tracked_id := "auto"
@@ -26,6 +28,73 @@ var _passes := [[], [], []]  # segments by road kind: asphalt, dirt, footpath
 const CELL := 90.0
 var _seg_cells := [{}, {}, {}]      # the same, by map cell: Vector2i -> Array (so the minimap only looks at what is near)
 var _ring_cells := {}
+
+const INK := Color("3a2a12")
+const GOLD := Color("f2c230")
+
+## the gold coin of radius r at `at`, with a darker rim and ring (the peseta, and the shops' icons on it)
+func _coin(at: Vector2, r: float) -> void:
+	draw_circle(at, r + 1.2, INK)
+	draw_circle(at, r, Color("c99419"))
+	draw_circle(at, r * 0.8, GOLD)
+	draw_arc(at, r * 0.8, 0.0, TAU, 24, Color("b07d12"), maxf(1.0, r * 0.08), true)
+
+## The shops' icons (the user, 23 Nov 2026: "iconos para el mapa para las tiendas de ropa, de complementos y
+## zapaterías. Que encajen con nuestro estilo"): the coin of the peseta, which the user chose for them first, and on it
+## in ink what they sell: a shirt (ropa), a ring with its stone (complementos), an ordinary shoe (zapatos). The user
+## asked for the ring over the handbag drawn first ("Figuras más reconocibles"), and for an ordinary shoe over the heeled
+## boot that came next ("la bota está rara. Mejor un icono de zapato normal").
+## The shapes are in units of the coin's radius, y down (drawn first in tools/iconos_mapa.py).
+const SHIRT := [Vector2(-0.17, -0.52), Vector2(-0.40, -0.44), Vector2(-0.66, -0.16), Vector2(-0.48, 0.0), Vector2(-0.33, -0.12),
+	Vector2(-0.33, 0.52), Vector2(0.33, 0.52), Vector2(0.33, -0.12), Vector2(0.48, 0.0), Vector2(0.66, -0.16), Vector2(0.40, -0.44),
+	Vector2(0.17, -0.52), Vector2(0.09, -0.40), Vector2(0.0, -0.37), Vector2(-0.09, -0.40)]
+const GEM := [Vector2(-0.17, -0.62), Vector2(0.17, -0.62), Vector2(0.33, -0.46), Vector2(0.0, -0.12), Vector2(-0.33, -0.46)]
+const SHOE := [Vector2(-0.62, -0.28), Vector2(-0.32, -0.20), Vector2(-0.06, -0.34), Vector2(0.20, -0.20), Vector2(0.44, -0.08),
+	Vector2(0.60, 0.05), Vector2(0.64, 0.19), Vector2(0.60, 0.28), Vector2(0.0, 0.28), Vector2(-0.20, 0.17), Vector2(-0.30, 0.17),
+	Vector2(-0.30, 0.34), Vector2(-0.60, 0.34), Vector2(-0.64, 0.06)]
+
+func _glyph(at: Vector2, r: float, pts: Array) -> void:
+	var out := PackedVector2Array()
+	for q in pts:
+		out.append(at + q * r)
+	draw_colored_polygon(out, INK)
+
+func _shop_icon(at: Vector2, r: float, kind: String) -> void:
+	match kind:
+		"ropa":
+			_coin(at, r)
+			_glyph(at, r, SHIRT)
+		"complementos":
+			_coin(at, r)
+			var band := PackedVector2Array()                 # the band, an oval: seen a little from above
+			for i in range(25):
+				var t := TAU * i / 24.0
+				band.append(at + Vector2(cos(t) * 0.44, 0.2 + sin(t) * 0.30) * r)
+			draw_polyline(band, INK, maxf(1.5, r * 0.17), true)
+			_glyph(at, r, GEM)                               # the stone sat on it, cut
+			draw_line(at + Vector2(-0.33, -0.46) * r, at + Vector2(0.33, -0.46) * r, GOLD, maxf(1.0, r * 0.06), true)
+		"zapatos":
+			_coin(at, r)
+			_glyph(at, r, SHOE)
+			draw_line(at + Vector2(0.0, 0.19) * r, at + Vector2(0.58, 0.19) * r, GOLD, maxf(1.0, r * 0.07), true)      # the welt of its sole
+		_:
+			_peseta(at, r)
+
+## a peseta of radius r at `at`: the gold coin, and on it a dark P with two strokes across
+func _peseta(at: Vector2, r: float) -> void:
+	var ink := INK
+	_coin(at, r)
+	var w: float = maxf(1.4, r * 0.17)
+	var x0: float = at.x - r * 0.28
+	var top: float = at.y - r * 0.5
+	var bot: float = at.y + r * 0.52
+	draw_line(Vector2(x0, top), Vector2(x0, bot), ink, w, true)          # the stem
+	var bc := Vector2(x0 + r * 0.16, at.y - r * 0.22)                      # the bowl, to the right of it
+	draw_arc(bc, r * 0.28, -PI / 2.0, PI / 2.0, 12, ink, w, true)
+	draw_line(Vector2(x0, top), Vector2(bc.x, top), ink, w, true)
+	draw_line(Vector2(x0, bc.y + r * 0.28), Vector2(bc.x, bc.y + r * 0.28), ink, w, true)
+	for yy in [at.y - r * 0.3, at.y - r * 0.12]:                         # struck through, twice
+		draw_line(Vector2(at.x - r * 0.52, yy), Vector2(at.x + r * 0.42, yy), ink, maxf(1.0, w * 0.7), true)
 
 func _cell(p: Vector2) -> Vector2i:
 	return Vector2i(int(floor(p.x / CELL)), int(floor(p.y / CELL)))
@@ -117,6 +186,19 @@ func _draw() -> void:
 		var sp: Vector2 = rel + half
 		draw_circle(sp, 6.0, Color("1a1612"))
 		draw_circle(sp, 4.5, Color("e0399b"))
+	for q in saffron_shops:     # a saffron seller: a circle the colour of saffron with its purple flower in the middle
+		var rel2: Vector2 = (q - c) * k
+		if not full and rel2.length() > sz.x / 2.0 - 10.0:
+			continue
+		var sq: Vector2 = rel2 + half
+		draw_circle(sq, 8.0, Color("1a1612"))
+		draw_circle(sq, 6.5, Color("d9461c"))
+		draw_circle(sq, 3.0, Color("8a4fb5"))
+	for q in clothes_shops:     # a clothes, accessories or shoe shop: the peseta's coin with what it sells on it
+		var rel3: Vector2 = (q["p"] - c) * k
+		if not full and rel3.length() > sz.x / 2.0 - 10.0:
+			continue
+		_shop_icon(rel3 + half, 9.0, String(q["kind"]))
 	for q in cops:              # Los Pitufos
 		draw_circle((q - c) * k + half, 5.0, Color("2f6bff") if blink else Color("ffffff"))
 	if target != null:

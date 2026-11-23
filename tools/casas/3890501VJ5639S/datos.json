@@ -1,0 +1,166 @@
+{
+ "rc": "3890501VJ5639S",
+ "record": {
+  "address": "PZ JESUS REQUEJO 1 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Industrial",
+  "built_m2": "25",
+  "year": "1900",
+  "units": [
+   {
+    "use": "INDUSTRIAL",
+    "floor": "00",
+    "door": "",
+    "m2": "25"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "3890501VJ5639S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 24.3,
+   "ring": [
+    [
+     -419.67,
+     166.04
+    ],
+    [
+     -420.12,
+     161.2
+    ],
+    [
+     -415.15,
+     160.73
+    ],
+    [
+     -414.87,
+     163.74
+    ],
+    [
+     -414.69,
+     165.57
+    ],
+    [
+     -415.01,
+     165.6
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      -419.67,
+      166.04
+     ],
+     "b": [
+      -420.12,
+      161.2
+     ],
+     "len": 4.86,
+     "out": [
+      -0.996,
+      0.093
+     ],
+     "street": "",
+     "to_centre": 12.74
+    },
+    {
+     "a": [
+      -420.12,
+      161.2
+     ],
+     "b": [
+      -415.15,
+      160.73
+     ],
+     "len": 4.99,
+     "out": [
+      -0.094,
+      -0.996
+     ],
+     "street": "Calle de Don Jesús Requejo",
+     "to_centre": 8.1
+    },
+    {
+     "a": [
+      -415.15,
+      160.73
+     ],
+     "b": [
+      -414.87,
+      163.74
+     ],
+     "len": 3.02,
+     "out": [
+      0.996,
+      -0.093
+     ],
+     "street": "Calle de Don Jesús Requejo",
+     "to_centre": 5.67
+    },
+    {
+     "a": [
+      -414.87,
+      163.74
+     ],
+     "b": [
+      -414.69,
+      165.57
+     ],
+     "len": 1.84,
+     "out": [
+      0.995,
+      -0.098
+     ],
+     "street": "Calle de Don Jesús Requejo",
+     "to_centre": 5.77
+    },
+    {
+     "a": [
+      -414.69,
+      165.57
+     ],
+     "b": [
+      -415.01,
+      165.6
+     ],
+     "len": 0.32,
+     "out": [
+      0.093,
+      0.996
+     ],
+     "street": "Calle de Don Jesús Requejo",
+     "to_centre": 5.98
+    },
+    {
+     "a": [
+      -415.01,
+      165.6
+     ],
+     "b": [
+      -419.67,
+      166.04
+     ],
+     "len": 4.68,
+     "out": [
+      0.094,
+      0.996
+     ],
+     "street": "Calle de Don Jesús Requejo",
+     "to_centre": 8.48
+    }
+   ],
+   "ground": [
+    -3.91,
+    -3.42
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": -429.120903233773,
+  "z0": 151.7300254566523,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

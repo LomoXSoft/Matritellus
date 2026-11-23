@@ -39,9 +39,18 @@ const EDMUNDO_LOOK := {
 var G
 var edmundo                     # Edmundo Monedero (npc.gd)
 var _rung := false              # (Paca's call asked for, this session: a load asks again if it was never answered)
+var _vizum_rung := false        # (Josefa's Vizum call, the same way)
+const VIZUM_AWAY := 60.0        # metres off from Tía Paca (where she told you of the debt) before Josefa rings with it
 var _edm_due := -1.0            # game hours when Edmundo rings (-1: he is not going to)
 var _t := 0.0
 var _talk_i := 0
+var _tour := false              # Tía Paca telling you how to earn money: the camera goes round what she speaks of
+var _tour_line := -1
+
+# What she shows with each line of "casa_curro" (the user, 23 Nov 2026: "pasará a citarte las maneras de ganar dinero
+# con paneos de cámara"): "paca" is the two of you, over the shoulder; the others, the camera goes to look at them.
+const VIZUM := 20               # euros, for some decent clothes
+const CURRO_SHOTS := ["paca", "paca", "azafran", "henry", "javi", "faenas", "paca", "paca"]
 
 func setup(game) -> void:
 	G = game
@@ -81,8 +90,12 @@ func next_step() -> int:
 
 func restore() -> void:
 	_rung = false
+	_vizum_rung = false
 	_edm_due = -1.0
+	_tour = false
 	data()
+	if stage() in ["deuda", "propia"] and not G.stats.has("curro"):
+		G.stats["curro"] = true                  # (a game saved before 23 Nov 2026, past the debt: what she would have told you, open)
 	_apply()
 
 ## the house as built: Pretil's models take the state (set_state(n), when they have it)
@@ -94,6 +107,7 @@ func _apply() -> void:
 
 # ---------------- the tick ----------------
 func tick(dt: float) -> void:
+	_tour_tick()
 	_t -= dt
 	if _t > 0.0:
 		return
@@ -107,6 +121,16 @@ func tick(dt: float) -> void:
 			if stage() == "":
 				d["st"] = "paca"
 				G.hud.toast(Loc.t("t_fondo_new") % Loc.t("casa_title"), 5.0)})
+	# the Vizum (the user, 23 Nov 2026; Josefa's since the same day, "ya que ella se encarga de las misiones de
+	# negocios"): the debt told and how to earn money, once you are well away from Tía Paca, Josefa rings -- she has
+	# heard, she hears of everything: "ya sé que eres un pobre, pero una cosa es serlo y otra parecerlo", 20 € for some
+	# decent clothes; hung up, the clothes shops open to you (tiendas_ropa.gd)
+	if free and bool(G.stats.get("curro", false)) and not G.stats.has("vizum") and not _vizum_rung and not _tour and G.dlg == null:
+		var paca = G.named.get("paca")
+		var here: Vector2 = G.player.p if G.in_car == null else G.in_car.p
+		if paca != null and here.distance_to(paca.p) > VIZUM_AWAY:
+			_vizum_rung = true
+			G.llamadas.ring({"npc": "josefa", "lines": "josefa_vizum_call", "plain": true, "valid": func(): return not G.stats.has("vizum"), "after": _vizum})
 	if pending_work() >= 0 and int(G.day_n) > int(d.get("obra_dia", -1)) and float(G.clock) >= 7.0:
 		d["estado"] = pending_work()
 		d["obra"] = -1
@@ -204,6 +228,91 @@ func _debt_begins() -> void:
 	d["debe"] = DEBT
 	G.hud.show_card(Loc.t("casa_title"), Loc.t("casa_card") % _eur(DEBT))
 	Sfx.jingle([392, 523, 659, 784])
+	var paca = G.named.get("paca")
+	if paca != null:                             # ...and then, if you are short of money, how to earn it
+		_curro_talk(paca)
+
+## Tía Paca, the debt told (the user, 23 Nov 2026): "que si estás pelao de pasta, que lo que necesitas es doblar el
+## lomo... y pasará a citarte las maneras de ganar dinero con paneos de cámara: vendiendo azafrán que encuentres por el
+## pueblo, haciendo recados a vecinos (Henry, Javi), buscando trabajos (enfocamos al NPC de los trabajos)... La Paca
+## pasará a decir que arrees y vaya trabajando. Terminada la conversación se desbloquean trabajos y puntos de venta de
+## azafrán." They are there from her first word, so that the camera finds them.
+func _curro_talk(paca) -> void:
+	G.stats["curro"] = true
+	if G.get("azafran") != null:
+		G.azafran.show()
+	if G.get("trabajos") != null:
+		G.trabajos.place_giver()
+	_tour = true
+	_tour_line = -1
+	G.say(paca.shown_name(), Loc.t("casa_curro"), paca.voice, func():
+		_tour = false
+		G.cam_fixed = null
+		G.hud.toast(Loc.t("t_curro"), 6.0))
+
+## each frame while she speaks: where the camera looks for this line
+func _tour_tick() -> void:
+	if not _tour:
+		return
+	if G.dlg == null:
+		return
+	var line: int = int(G.dlg["i"])
+	var shot: String = CURRO_SHOTS[mini(line, CURRO_SHOTS.size() - 1)]
+	var who = null
+	match shot:
+		"azafran":
+			if G.get("azafran") != null and not G.azafran.sellers.is_empty():
+				who = G.azafran.nearest(G.player.p)
+		"henry", "javi":
+			who = G.named.get(shot)
+		"faenas":
+			who = G.trabajos.giver if G.get("trabajos") != null else null
+	if who == null or not is_instance_valid(who):
+		G.cam_fixed = null                       # (the two of you, over the shoulder: game.gd's talk camera)
+		return
+	who.visible = true                           # (however far it is from you: game.gd hides the far ones)
+	if line != _tour_line:
+		_tour_line = line
+		var aim: Array = tour_aim(shot, who)
+		var at: Vector2 = aim[0]
+		var f: Vector2 = aim[1]
+		var floor_y: float = aim[2]
+		var eye: Vector2 = at + f * 3.4 + Vector2(-f.y, f.x) * 1.3
+		var space = G.get_world_3d().direct_space_state
+		for turn in [0.0, 0.45, -0.45, 0.9, -0.9, 1.4, -1.4]:      # (a wall in the way: round to where there is none)
+			var g2: Vector2 = f.rotated(-turn)
+			var e2: Vector2 = at + g2 * 3.4 + Vector2(-g2.y, g2.x) * 1.3
+			var ray := PhysicsRayQueryParameters3D.create(Vector3(at.x, floor_y + 1.3, at.y), Vector3(e2.x, floor_y + 1.85, e2.y), 1)
+			if space.intersect_ray(ray).is_empty():
+				eye = e2
+				break
+		G.cam_fixed = [Vector3(eye.x, floor_y + 1.85, eye.y), Vector3(at.x, floor_y + 1.25, at.y)]
+		G.cam_pos = G.cam_fixed[0]                # (a cut to it: the town between is not to be flown through)
+		G.cam_look = G.cam_fixed[1]
+
+## Josefa's Vizum, hung up: 20 € in, and the clothes shops open to you
+func _vizum() -> void:
+	if G.stats.has("vizum"):
+		return
+	G.stats["vizum"] = int(G.day_n)
+	G.stats["vizum_h"] = float(G.day_n) * 24.0 + float(G.clock)      # (Koke el Kokas rings an hour later: koke.gd)
+	G.money += VIZUM
+	G._refresh_counts()
+	Sfx.jingle([784, 988, 1175, 1568], 0.08)
+	G.hud.toast(Loc.t("t_vizum") % VIZUM, 7.0)
+
+## where Tía Paca's camera looks for a shot: [the spot, the way it faces, its floor]. Javi stands behind his counter in
+## the asador's inside, a set of its own away from the town: for him, the shop's front from the street.
+func tour_aim(shot: String, who) -> Array:
+	if shot == "javi":
+		var a = G.world.get("asador") if G.get("world") != null else null
+		if a != null and a.get("door") != null:
+			var door: Vector2 = a.door
+			var r: Dictionary = MapData.nearest_road(door, true)
+			var out: Vector2 = (r["p"] as Vector2) - door
+			out = out.normalized() if out.length() > 0.2 else Vector2(sin(a.rotation.y), cos(a.rotation.y))
+			return [door, out, MapData.foot(door)]
+	return [who.p, Vector2(sin(who.h), cos(who.h)), who.global_position.y]
 
 ## Edmundo sells you the next step: his patter, then the question
 func _offer(n, k: int) -> void:

@@ -2049,6 +2049,54 @@ func _delicias_64() -> void:
 	for o in [[0.3, 3.2, 3.0], [0.6, 1.3, 2.5], [0.86, 0.9, 2.3]]:     # the wooden lintels: [at, width, top]
 		box(W * o[0] - o[1] / 2.0 - 0.15, o[2], 0.0, o[1] + 0.3, 0.18, 0.08, wood)
 
+## Avenida de la Constitución 23: the other front of "df Mecánica" (garage.gd, the Calle del Palo), its shop of car
+## parts in blue tiles. Over the shop window the same board with the tyre and the letters (assets/df_mecanica.png,
+## tools/make_df.py) on its grey frame, and at the north end the blue sign hung out over the pavement, as at the garage.
+func _constitucion_23() -> void:
+	var spec := _unpack(Short.HOUSES[id])
+	_from_spec(spec)
+	var L: float = length
+	var wide := 3.4
+	var high := wide * 400.0 / 1024.0
+	var cx := L * 0.42
+	var cy := 2.42 + high / 2.0
+	box(cx - wide / 2.0 - 0.05, cy - high / 2.0 - 0.05, 0.02, wide + 0.1, high + 0.1, 0.06, 0xc9ced4)
+	var board := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(wide, high)
+	board.mesh = quad
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = Parts.texture("res://assets/df_mecanica.png")
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	m.roughness = 1.0
+	board.material_override = m
+	board.transform = _xf * Transform3D(Basis.IDENTITY, Vector3(cx, cy, 0.09))
+	add_child(board)
+	box(L - 0.34, 3.0, 0.05, 0.08, 0.9, 1.0, 0x1f3fa8)          # the sign hung out, blue...
+	box(L - 0.35, 3.24, 0.34, 0.1, 0.42, 0.42, 0xf4f1e8)        # ...with its white face
+
+## Avenida de la Constitución 91: the brick wall of a lot, PROHIBIDO PEGAR CARTELES painted on it in black, by hand
+func _constitucion_91() -> void:
+	var spec := _unpack(Short.HOUSES[id])
+	_from_spec(spec)
+	var L: float = length
+	box(-0.02, top - 0.08, 0.0, L + 0.04, 0.1, 0.62, 0x9a8a80)          # the coping, cement on the bricks
+	for k in range(5):                                                  # the piers of the wall, a brick proud of it
+		box(k * (L - 0.36) / 4.0, 0.0, 0.0, 0.36, top - 0.08, 0.04, "brick_dark")
+		box(k * (L - 0.36) / 4.0 - 0.03, top + 0.02, -0.02, 0.42, 0.06, 0.66, 0x9a8a80)   # and a cement cap on each
+	var text := "PROHIBIDO PEGAR CARTELES"
+	var px := 64
+	var wide: float = ThemeDB.fallback_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var word := Label3D.new()
+	word.text = text
+	word.font_size = px
+	word.pixel_size = L * 0.9 / maxf(1.0, wide)
+	word.modulate = Parts.col(0x1c1a18)
+	word.outline_size = 0
+	word.double_sided = false
+	word.transform = _xf * Transform3D(Basis.IDENTITY, Vector3(L / 2.0, 1.75, 0.06))        # (in front of the piers, or they would eat letters)
+	add_child(word)
+
 ## One of the five ochre terraced houses of 2008 at the east end of the Calle de las Delicias (Catastro's "21(1)" to
 ## "21(5)"), after Catastro's parts, its photos and Street View (November 2024), built the way the Rosa ones are (_rosa).
 ## Its front, `length` wide, is the line of its yard's wall at the pavement; the house stands 3.2 m behind it. On one

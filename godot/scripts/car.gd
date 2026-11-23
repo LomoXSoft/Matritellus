@@ -41,6 +41,8 @@ const SPECS := {
 		"custom": true, "hub": 0xd8dde2, "smoke": 1.2, "rack_z": -1.7, "colors": [0xd42027, 0x39e639], "turbo": {"max": 1.45, "acc": 1.9}},
 	"grua": {"name": "Grúa El Enganche", "max": 17.0, "acc": 5.0, "turn": 0.6, "mass": 3200.0, "hp": 400.0, "len": 6.0, "wid": 2.1, "body": 0.85, "cab": 0.9, "cab_len": 1.7, "cab_z": 0.85, "wheel": 0.44,
 		"custom": true, "hub": 0xd8dde2, "sound": "diesel", "smoke": 1.8, "rack_z": -1.6, "colors": [0xf4f4f0]},
+	"kokas": {"name": "Z15 del Kokas", "offroad": 0.9, "max": 27.0, "acc": 7.0, "turn": 0.54, "mass": 1150.0, "hp": 140.0, "len": 4.3, "wid": 1.85, "body": 0.75, "cab": 0.68, "cab_len": 1.25, "cab_z": 0.55, "wheel": 0.38, "box": [2.25, 1.3, -1.0],
+		"smoke": 2.4, "colors": [0xf2c81e, 0x1f1f24, 0x3b5fa8], "turbo": {"max": 1.4, "acc": 1.8}},       # Koke el Kokas's taxis (koke.gd): tuned Z15s with nitro, the yellow one his run's
 	"tricornio": {"name": "Nisán Patrulla de los Tricornios", "max": 36.0, "acc": 11.5, "turn": 0.64, "mass": 1400.0, "hp": 9999.0, "len": 4.3, "wid": 1.85, "body": 0.9, "cab": 0.78, "cab_len": 2.5, "cab_z": -0.35, "wheel": 0.42,
 		"offroad": 0.9, "colors": [0xf4f4f0]},
 	"pitufo": {"name": "Zeat Panda de los Pitufos", "max": 28.0, "acc": 8.0, "turn": 0.6, "mass": 900.0, "hp": 9999.0, "len": 3.5, "wid": 1.75, "body": 0.8, "cab": 0.72, "cab_len": 2.3, "cab_z": -0.4, "wheel": 0.36, "colors": [0x2456b8]},
@@ -57,6 +59,8 @@ var r := 1.0             # rough radius, for bumping villagers and street furnit
 var off := 1.0           # nose/tail offset of those bump circles
 var crash_cool := 0.0
 var hp := 100.0          # bodywork: 0 = it will not move again until repaired
+var unbreakable := false # takes no damage at all (Koke's taxi while its run lasts: koke.gd); the knocks are still counted
+var knocks := 0          # how many times it has been hurt (or would have been, if unbreakable)
 var inner: Node3D
 var bottles: Array = []
 var wheels: Array = []
@@ -82,6 +86,7 @@ var _rider_nodes: Array = [null, null]
 var _fp_hide_head := false        # true in first-person driving mode: hide driver's head so POV sits above shoulders
 static var _glass: StandardMaterial3D
 var dozing := false        # parked and far from anybody: taken out of the physics until somebody comes near
+var awake_t := 0.0         # just moved (place): kept in the physics a moment, or its wheels stay where it stood
 var _heads: Array = []     # [mesh, its daytime material]
 var _tails: Array = []
 var _beam: SpotLight3D
@@ -101,6 +106,8 @@ var flip_told := false
 var last_impact := 0.0   # set when the speed changed violently this physics tick; game.gd reads and clears it
 var _ramp_cool := 0.0    # short cooldown after launching off a ramp/stair structure
 static var _slip_mat: PhysicsMaterial
+var soaped := 0            # knocks it slid off (the tests)
+var soap := false          # the car you drive slides off walls it only grazes (set_soap; game.gd _enter_car/_exit_car)
 const RESPRAY := [0x6fb7e6, 0xe6c229, 0xf4f4f0, 0xd42027, 0x3b5fa8, 0xef7f1a, 0x7d3fc4, 0x2f8a3a, 0xef8fa9, 0x1f1f24]
 
 var p: Vector2:
@@ -840,10 +847,13 @@ func show_bottles(n: int) -> void:
 
 ## teleport: put the car on the road at pos, facing heading, standing still
 func place(pos: Vector2, heading: float) -> void:
+	if dozing:
+		doze(false)
 	var up := MapData.normal(pos)                # standing on the slope, not level over it
 	var fwd := Vector3(sin(heading), 0.0, cos(heading))
 	fwd = (fwd - up * fwd.dot(up)).normalized()
 	global_transform = Transform3D(Basis(up.cross(fwd), up, fwd), MapData.at(pos, 0.12))
+	awake_t = 0.5
 	set_speed(Vector2.ZERO)
 	angular_velocity = Vector3.ZERO
 	air_time = 0.0
@@ -864,6 +874,10 @@ func park() -> void:
 	boosting = false
 
 func damage(amount: float) -> void:
+	if amount > 0.0:
+		knocks += 1
+	if unbreakable and amount > 0.0:
+		return
 	hp = maxf(0.0, hp - amount)
 	smoke.emitting = hp < spec["hp"] * 0.35
 
@@ -897,6 +911,68 @@ func broken() -> bool:
 	return hp <= 0.0
 
 ## forward speed in m/s (negative when reversing)
+## The soap (the user, 23 November 2026: "si te das un golpe con el coche con una esquina de una fachada o de lado con
+## el coche el coche para en seco siempre... no se podría hacer como un «efecto jabón» que deslice el coche hacia el
+## lado si el golpe no es demasiado frontal ni demasiado fuerte?"). For the car you drive only:
+##   - its body hardly grips what it rubs against (SOAP_GRIP), so running along a wall does not drag it to a stop;
+##   - a knock against a wall, a corner or another car that is neither head-on (more than SOAP_FRONT of the speed
+##     straight into it) nor hard (SOAP_HARD m/s straight into it) gives back SOAP_KEEP of the speed it had along it,
+##     a little push off it, and turns the nose the way it slides, so it carries on beside the wall;
+##   - what counts as the knock (damage, noise, oil bottles) is the speed it went straight in at, not all it lost.
+## A head-on or hard one is a crash as before: it is left with a third of what it had, whichever way.
+const SOAP_GRIP := 0.03
+const SOAP_FRONT := 0.72       # (cosine: about 44 degrees off the wall's face or less is head-on)
+const SOAP_HARD := 13.0
+const SOAP_KEEP := 0.85
+
+func set_soap(on: bool) -> void:
+	soap = on
+	contact_monitor = on
+	max_contacts_reported = 8 if on else 0
+	if on:
+		if _slip_mat == null:
+			_slip_mat = PhysicsMaterial.new()
+			_slip_mat.friction = SOAP_GRIP
+		physics_material_override = _slip_mat
+	else:
+		physics_material_override = null
+
+## the knock just felt, as the soap sees it: the speed straight into what it hit (and the car sent sliding), or all
+## that was lost (a head-on or hard one: left as the physics had it)
+func _soap(lost: float) -> float:
+	var v0 := Vector3(_prev_v.x, 0.0, _prev_v.z)
+	if v0.length() < 4.0 or Vector3(linear_velocity.x, 0.0, linear_velocity.z).length() > v0.length() - 1.5:
+		return lost                              # (slow, or it was not stopped but shoved: a patrol car ramming it from behind)
+	var st := PhysicsServer3D.body_get_direct_state(get_rid())
+	if st == null:
+		return lost
+	var n := Vector3.ZERO
+	for i in range(st.get_contact_count()):
+		var cn := st.get_contact_local_normal(i)
+		if absf(cn.y) < 0.6:                    # (a wall or a car's side; not the ground nor the top of a kerb)
+			n += Vector3(cn.x, 0.0, cn.z).normalized()
+	if n.length() < 0.1:
+		return lost
+	n = n.normalized()
+	if n.dot(v0) > 0.0:
+		n = -n                                   # (facing back at the car)
+	var into := -v0.dot(n)
+	if into <= 0.0:
+		return lost
+	if into > SOAP_HARD or into / v0.length() > SOAP_FRONT:
+		var flat := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+		linear_velocity = flat * 0.3 + Vector3.UP * linear_velocity.y      # (a crash: the slippery body is not to carry it on)
+		return lost
+	var along := v0 + n * into
+	linear_velocity = along * SOAP_KEEP + n * minf(1.5, into * 0.2) + Vector3.UP * linear_velocity.y
+	var fwd := global_transform.basis.z
+	fwd = Vector3(fwd.x, 0.0, fwd.z).normalized()
+	var aim := along.normalized() * (1.0 if v0.dot(fwd) >= 0.0 else -1.0)
+	var turn := atan2(fwd.cross(aim).y, fwd.dot(aim))
+	angular_velocity = Vector3(angular_velocity.x, clampf(turn * 4.0, -2.5, 2.5), angular_velocity.z)
+	soaped += 1
+	return into * 0.7
+
 func forward_speed() -> float:
 	return linear_velocity.dot(global_transform.basis.z)
 
@@ -968,6 +1044,7 @@ func drive(thr: float, steer: float, hand: bool, on_road: bool, dt: float) -> vo
 	steering = move_toward(steering, steer * lock, 2.6 * dt)
 
 func _physics_process(dt: float) -> void:
+	awake_t = maxf(0.0, awake_t - dt)
 	if (held and not arcade) or (arcade and freeze):
 		return
 	crash_cool -= dt
@@ -978,7 +1055,7 @@ func _physics_process(dt: float) -> void:
 	var dv := (linear_velocity - _prev_v)
 	dv.y = 0.0
 	if dv.length() > 3.0 and _ramp_cool <= 0.0:
-		last_impact = maxf(last_impact, dv.length())
+		last_impact = maxf(last_impact, _soap(dv.length()) if soap else dv.length())
 	_prev_v = linear_velocity
 	if cough != null:
 		_cough -= dt

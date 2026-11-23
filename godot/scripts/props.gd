@@ -409,7 +409,7 @@ func _knock(b: RigidBody3D, v: Vector3) -> void:
 	get_tree().create_timer(40.0).timeout.connect(_tidy.bind(b, int(b.get_meta("knocks"))))
 
 ## after a while the wreck is cleared away (kept, out of sight, to be put back the next day)
-func _tidy(b: RigidBody3D, knocks: int) -> void:
+func _tidy(b, knocks: int) -> void:      # (b untyped: it may be freed before the timer fires)
 	if not is_instance_valid(b) or int(b.get_meta("knocks", 0)) != knocks or b.freeze:
 		return
 	b.freeze = true

@@ -53,6 +53,9 @@ const ClinicaS = preload("res://scripts/clinica.gd")
 const Stana2S = preload("res://scripts/stana2.gd")
 const MiradorS = preload("res://scripts/mirador.gd")
 const BeigeS = preload("res://scripts/beige.gd")
+const MaxiprecioS = preload("res://scripts/maxiprecio.gd")
+const TetoqaS = preload("res://scripts/tetoqa.gd")
+const PisacastanaS = preload("res://scripts/pisacastana.gd")
 const CruceS = preload("res://scripts/cruce.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
@@ -155,6 +158,9 @@ var residencia                  # the old people's home beside it, built by hand
 var paseo                       # the long park of the Paseo del Cristo, from the Calle de los Arcos to the hermitage (paseo.gd)
 var cruce                       # the traffic lights, the mirror and the signs of the crossroads of the traffic lights (cruce.gd): its `heads`, `walk`, set_light() and set_walk() are what the traffic drives them by
 var beige                       # the two-storey house north of the Salvador, on its corner with the avenue at the crossroads of the traffic lights, built by hand on its house of the map (beige.gd)
+var maxiprecio                  # the clothes shop "MaxiPrecio" of the Calle de los Arcos (the HiperTextil Miniprecio), built by hand on its house of the map (maxiprecio.gd), with its hours and its inside
+var tetoqa                      # the accessories shop "Tetoqa" at the corner of Santa Ana and the Cristo (the real Tutoq), built by hand on its house of the map (tetoqa.gd), with its hours and its inside
+var pisacastana                 # the shoe shop "Pisacastaña" at the corner of the Arcos and the Calle Argentina (the real Pisamorena), built by hand on its house of the map (pisacastana.gd), with its hours and its inside
 var mirador                     # the cream house with the bay window, on the corner of the avenue and Santa Ana at the crossroads of the traffic lights, built by hand on its house of the map (mirador.gd)
 var stana2                      # the white house with indigo frames of the Calle de Santa Ana 2, at the crossroads of the traffic lights, built by hand on its house of the map (stana2.gd)
 var clinica                     # the dental clinic "Clínica Dental" of the crossroads of the traffic lights, built by hand on its house of the map (clinica.gd)
@@ -174,7 +180,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the crossroads' traffic lights", _build_cruce], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the shop MaxiPrecio", _build_maxiprecio], ["the shop Tetoqa", _build_tetoqa], ["the shop Pisacastaña", _build_pisacastana], ["the crossroads' traffic lights", _build_cruce], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -331,6 +337,27 @@ func _build_beige() -> void:
 		if String(hd["id"]) == BeigeS.HOUSE:
 			beige = BeigeS.new()
 			beige.build(self, hd)
+			return
+
+func _build_maxiprecio() -> void:
+	for hd in MapData.houses:        # (the clothes shop "MaxiPrecio" of the Calle de los Arcos: maxiprecio.gd, on its house of the map)
+		if String(hd["id"]) == MaxiprecioS.HOUSE:
+			maxiprecio = MaxiprecioS.new()
+			maxiprecio.build(self, hd)
+			return
+
+func _build_tetoqa() -> void:
+	for hd in MapData.houses:        # (the accessories shop "Tetoqa" of the Calle de Santa Ana: tetoqa.gd, on its house of the map)
+		if String(hd["id"]) == TetoqaS.HOUSE:
+			tetoqa = TetoqaS.new()
+			tetoqa.build(self, hd)
+			return
+
+func _build_pisacastana() -> void:
+	for hd in MapData.houses:        # (the shoe shop "Pisacastaña" of the Arcos and the Calle Argentina: pisacastana.gd, on its house of the map)
+		if String(hd["id"]) == PisacastanaS.HOUSE:
+			pisacastana = PisacastanaS.new()
+			pisacastana.build(self, hd)
 			return
 
 func _build_mirador() -> void:

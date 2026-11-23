@@ -95,6 +95,15 @@ func shops() -> Array:
 	var asd = G.world.get("asador") if G.world != null else null
 	if asd != null and asd.get("dentro") != null:  # the roast chicken shop "Javi" of the Calle de los Arcos (its set: asador_dentro.gd)
 		out.append(asd.dentro)
+	var mx = G.world.get("maxiprecio") if G.world != null else null
+	if mx != null and mx.get("dentro") != null and not (G.get("tiendas_ropa") != null and G.tiendas_ropa.shut(mx.dentro)):   # the clothes shop "MaxiPrecio" of the Calle de los Arcos (its set: maxiprecio_dentro.gd; shut to you until Josefa's Vizum: tiendas_ropa.gd)
+		out.append(mx.dentro)
+	var tq = G.world.get("tetoqa") if G.world != null else null
+	if tq != null and tq.get("dentro") != null and not (G.get("tiendas_ropa") != null and G.tiendas_ropa.shut(tq.dentro)):   # the accessories shop "Tetoqa" of Santa Ana and the Cristo (its set: tetoqa_dentro.gd; shut to you until Josefa's Vizum: tiendas_ropa.gd)
+		out.append(tq.dentro)
+	var pc = G.world.get("pisacastana") if G.world != null else null
+	if pc != null and pc.get("dentro") != null and not (G.get("tiendas_ropa") != null and G.tiendas_ropa.shut(pc.dentro)):   # the shoe shop "Pisacastaña" of the Arcos and the Calle Argentina (its set: pisacastana_dentro.gd; shut to you until Josefa's Vizum: tiendas_ropa.gd)
+		out.append(pc.dentro)
 	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
 		out.append(G.casa)
 	return out

@@ -107,7 +107,7 @@ func glyph(action: String) -> String:
 const ICONS := "res://assets/botones/"
 const PAD_ICONS := {"interact": "a", "punch": "x", "box_punch_other": "y", "box_low": "lb", "run": "rb", "handbrake": "b", "horn": "y", "inventory": "y", "radio": "dpad_right", "cam_mode": "dpad_left",
 	"map": "back", "pause": "start", "ok": "a", "esc": "b", "forward": "ls", "back": "ls", "left": "ls", "right": "ls",
-	"tab_prev": "lb", "tab_next": "rb", "turn_left": "lt", "turn_right": "rt", "accel": "rt", "brake": "lt", "look": "rs",
+	"tab_prev": "lb", "tab_next": "rb", "turn_left": "lt", "turn_right": "rt", "col_prev": "lt", "col_next": "rt", "accel": "rt", "brake": "lt", "look": "rs",
 	"random": "y", "m_up": "dpad_up", "m_down": "dpad_down", "m_left": "dpad_left", "m_right": "dpad_right"}
 const PS_ICONS := {"a": "cross", "b": "circle", "x": "square", "y": "triangle", "lb": "l1", "rb": "r1", "lt": "l2", "rt": "r2",
 	"back": "share", "start": "options"}
@@ -145,6 +145,10 @@ func icon(action: String) -> String:
 			key = "Tab"
 		"random":
 			key = "R"
+		"col_prev":                           # (a clothes shop's fitting room: the colour of what you try on)
+			key = "Z"
+		"col_next":
+			key = "X"
 		"turn_left":
 			key = "Q"
 		"turn_right":

@@ -1,0 +1,124 @@
+{
+ "rc": "4396014VJ5649N",
+ "record": {
+  "address": "CL NUEVA 4 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "67",
+  "year": "1983",
+  "units": [
+   {
+    "use": "PORCHE 100%",
+    "floor": "00",
+    "door": "01",
+    "m2": "67"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4396014VJ5649N_part1",
+   "floors": 0,
+   "below": 0,
+   "area": 66.2,
+   "ring": [
+    [
+     76.9,
+     -480.29
+    ],
+    [
+     90.38,
+     -475.28
+    ],
+    [
+     88.79,
+     -470.93
+    ],
+    [
+     75.28,
+     -476.04
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      76.9,
+      -480.29
+     ],
+     "b": [
+      90.38,
+      -475.28
+     ],
+     "len": 14.38,
+     "out": [
+      0.348,
+      -0.937
+     ],
+     "street": "Calle Nueva",
+     "to_centre": 2.97
+    },
+    {
+     "a": [
+      90.38,
+      -475.28
+     ],
+     "b": [
+      88.79,
+      -470.93
+     ],
+     "len": 4.63,
+     "out": [
+      0.939,
+      0.343
+     ],
+     "street": "Calle Nueva",
+     "to_centre": 5.55
+    },
+    {
+     "a": [
+      88.79,
+      -470.93
+     ],
+     "b": [
+      75.28,
+      -476.04
+     ],
+     "len": 14.44,
+     "out": [
+      -0.354,
+      0.935
+     ],
+     "street": "",
+     "to_centre": 7.56
+    },
+    {
+     "a": [
+      75.28,
+      -476.04
+     ],
+     "b": [
+      76.9,
+      -480.29
+     ],
+     "len": 4.55,
+     "out": [
+      -0.934,
+      -0.356
+     ],
+     "street": "Calle Nueva",
+     "to_centre": 4.98
+    }
+   ],
+   "ground": [
+    18.27,
+    18.68
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": 66.27667236392907,
+  "z0": -489.2938172158542,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

@@ -139,6 +139,15 @@ var creator_tab_r: TextureRect         # ...RB (or Tab on the keyboard) after th
 var creator_btns: HBoxContainer
 var creator_rand: Button
 var creator_back: Button
+var creator_rows_box: VBoxContainer      # the rows (hidden while a shop's grid shows instead)
+var shop_scroll: ScrollContainer         # a clothes shop's fitting room: every garment as a picture (show_shop_grid)
+var shop_grid: GridContainer
+var shop_cells: Array = []               # [{"btn", "icon", "name", "tag", "sb"}]
+var shop_colour: HBoxContainer           # under the grid: ‹ the colour of what you try on › (LT / RT, Z / X, or a finger)
+var shop_colour_sw: PanelContainer
+var shop_colour_lab: Label
+var shop_colour_keys: Array = []         # [left picture, right picture]
+const SHOP_COLS := 4
 var creator_next: Button
 var creator_turn: Control              # the arrows round the character
 var creator_turn_l: Array = []         # [arrow, button picture] on each side
@@ -580,6 +589,55 @@ func _ready() -> void:
 	cr_rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	for i in range(CREATOR_ROWS):
 		cr_rows.add_child(_creator_row())
+	creator_rows_box = cr_rows
+	shop_scroll = ScrollContainer.new()            # (the fitting room's grid: in the rows' room, scrolling when it is longer)
+	shop_scroll.custom_minimum_size = Vector2(0, CREATOR_ROWS * (CREATOR_ROW_H + 3) - 52)
+	shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	shop_scroll.visible = false
+	shop_grid = GridContainer.new()
+	shop_grid.columns = SHOP_COLS
+	shop_grid.add_theme_constant_override("h_separation", 8)
+	shop_grid.add_theme_constant_override("v_separation", 8)
+	shop_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_scroll.add_child(shop_grid)
+	shop_colour = HBoxContainer.new()
+	shop_colour.add_theme_constant_override("separation", 10)
+	shop_colour.alignment = BoxContainer.ALIGNMENT_CENTER
+	shop_colour.custom_minimum_size = Vector2(0, 42)
+	shop_colour.visible = false
+	for k in range(2):
+		var b := Button.new()                    # (a click or a finger on either arrow does it too)
+		b.focus_mode = Control.FOCUS_NONE
+		b.flat = true
+		b.text = "‹" if k == 0 else "›"
+		b.add_theme_font_size_override("font_size", 30)
+		b.add_theme_color_override("font_color", Color.BLACK)
+		b.add_theme_color_override("font_hover_color", Color.BLACK)
+		b.add_theme_color_override("font_pressed_color", Color.BLACK)
+		var what: String = "col_prev" if k == 0 else "col_next"
+		b.pressed.connect(func(): creator_pick.emit(what))
+		var key := _icon_rect(30)
+		if k == 0:
+			shop_colour.add_child(key)
+			shop_colour.add_child(b)
+			shop_colour_sw = PanelContainer.new()
+			var ss := StyleBoxFlat.new()
+			ss.set_corner_radius_all(14)
+			ss.border_color = Color.BLACK
+			ss.set_border_width_all(2)
+			shop_colour_sw.add_theme_stylebox_override("panel", ss)
+			shop_colour_sw.custom_minimum_size = Vector2(28, 28)
+			shop_colour_sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			shop_colour_lab = _label(20, Color.BLACK)
+			shop_colour_lab.custom_minimum_size = Vector2(230, 0)
+			shop_colour_lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			shop_colour.add_child(shop_colour_sw)
+			shop_colour.add_child(shop_colour_lab)
+		else:
+			shop_colour.add_child(b)
+			shop_colour.add_child(key)
+		shop_colour_keys.append(key)
 	creator_btns = HBoxContainer.new()
 	creator_btns.add_theme_constant_override("separation", 10)
 	creator_rand = _creator_button(false)
@@ -595,7 +653,7 @@ func _ready() -> void:
 	creator_btns.add_child(cr_spacer)
 	creator_btns.add_child(creator_back)
 	creator_btns.add_child(creator_next)
-	crv.add_child(creator_title); crv.add_child(creator_tabs); crv.add_child(cr_rule); crv.add_child(cr_rows); crv.add_child(creator_text); crv.add_child(creator_foot); crv.add_child(creator_btns)
+	crv.add_child(creator_title); crv.add_child(creator_tabs); crv.add_child(cr_rule); crv.add_child(cr_rows); crv.add_child(shop_scroll); crv.add_child(shop_colour); crv.add_child(creator_text); crv.add_child(creator_foot); crv.add_child(creator_btns)
 	crp.add_child(crv)
 	creator_turn = Control.new()
 	creator_turn.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1335,6 +1393,90 @@ func hide_creator() -> void:
 	creator_slot.visible = false
 	creator_turn.visible = false
 	creator_tabs.visible = true
+	shop_scroll.visible = false
+	shop_colour.visible = false
+	creator_rows_box.visible = true
+
+## A clothes shop's fitting room (game.gd open_shop_ropa; the user, 23 Nov 2026: "En vez de un selector de dos flechas
+## mejor que para seleccionar la ropa salgan los iconos de todo lo disponible (si ocupa más del espacio disponible que
+## se pueda hacer scroll)"): the creator's panel with a grid of pictures in place of its rows, the one you have on in
+## black. `cells`: [{"name", "tag", "icon" (a texture or null)}]; a click on one sends "pick_<n>" (creator_pick).
+func show_shop_grid(title: String, cells: Array, at: int, buy: String, leave: String, colour := {}) -> void:
+	show_creator(title, [], [], 1, 0)
+	creator_tabs.visible = false
+	creator_rand.visible = false
+	creator_back.visible = true
+	creator_back.text = leave
+	creator_next.text = buy
+	creator_rows_box.visible = false
+	shop_scroll.visible = true
+	shop_colour.visible = not colour.is_empty()          # {"name", "colour" (a Color, or null: this one comes in its own)}
+	if shop_colour.visible:
+		shop_colour_lab.text = String(colour.get("name", ""))
+		var c = colour.get("colour")
+		shop_colour_sw.modulate.a = 1.0 if c != null else 0.0
+		if c != null:
+			(shop_colour_sw.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = c
+		_set_icon(shop_colour_keys[0], "col_prev")
+		_set_icon(shop_colour_keys[1], "col_next")
+	while shop_cells.size() < cells.size():
+		var k := shop_cells.size()
+		var btn := Button.new()
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.custom_minimum_size = Vector2(126, 160)
+		var sb := StyleBoxFlat.new()
+		sb.set_corner_radius_all(10)
+		sb.border_color = Color.BLACK
+		sb.set_border_width_all(2)
+		for state in ["normal", "hover", "pressed", "focus"]:
+			btn.add_theme_stylebox_override(state, sb)
+		var v := VBoxContainer.new()
+		v.set_anchors_preset(Control.PRESET_FULL_RECT)
+		v.add_theme_constant_override("separation", 0)
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var icon := TextureRect.new()
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(0, 112)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var nm := _label(15, Color.BLACK)
+		nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var tag := _label(14, Color.BLACK)
+		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(icon)
+		v.add_child(nm)
+		v.add_child(tag)
+		btn.add_child(v)
+		btn.pressed.connect(func(): creator_pick.emit("pick_%d" % k))
+		shop_grid.add_child(btn)
+		shop_cells.append({"btn": btn, "icon": icon, "name": nm, "tag": tag, "sb": sb})
+	var said := ""
+	for i in range(shop_cells.size()):
+		var c: Dictionary = shop_cells[i]
+		(c["btn"] as Button).visible = i < cells.size()
+		if i >= cells.size():
+			continue
+		var here := i == at
+		var ink := Color.WHITE if here else Color.BLACK
+		(c["sb"] as StyleBoxFlat).bg_color = Color.BLACK if here else Color.WHITE
+		(c["name"] as Label).text = String(cells[i]["name"])
+		(c["tag"] as Label).text = String(cells[i]["tag"])
+		(c["name"] as Label).add_theme_color_override("font_color", ink)
+		(c["tag"] as Label).add_theme_color_override("font_color", ink)
+		if cells[i].get("icon") != null:
+			(c["icon"] as TextureRect).texture = cells[i]["icon"]
+		said += "%s: %s\n" % [cells[i]["name"], cells[i]["tag"]]
+	_creator_said = said
+	if at >= 0 and at < cells.size():
+		shop_scroll.ensure_control_visible.call_deferred(shop_cells[at]["btn"])
+
+## one picture of the grid, when it is drawn (they come a few at a time)
+func shop_grid_icon(i: int, tex: Texture2D) -> void:
+	if i >= 0 and i < shop_cells.size():
+		(shop_cells[i]["icon"] as TextureRect).texture = tex
 
 ## The wardrobe at home (game.gd _open_armario): the creator's panel, with no pages, its rows what you can put on.
 ## Volver puts back what you had on; Me lo pongo keeps it.

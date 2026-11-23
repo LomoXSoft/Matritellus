@@ -59,8 +59,14 @@ const TomasaS = preload("res://scripts/tomasa.gd")
 const FondoCasaS = preload("res://scripts/fondo_casa.gd")
 const TrabajosS = preload("res://scripts/trabajos.gd")
 const JaviS = preload("res://scripts/javi.gd")
+const MaxiS = preload("res://scripts/maxi.gd")
+const ManuelaS = preload("res://scripts/manuela.gd")
+const RopaIcon = preload("res://scripts/ropa_icono.gd")
+const TiendasRopaS = preload("res://scripts/tiendas_ropa.gd")
+const KokeS = preload("res://scripts/koke.gd")
 const MarcianoS = preload("res://scripts/marciano.gd")
 const SopissGenteS = preload("res://scripts/sopiss_gente.gd")
+const AzafranS = preload("res://scripts/azafran.gd")
 const SemaforosS = preload("res://scripts/semaforos.gd")
 const FumarS = preload("res://scripts/fumar.gd")
 
@@ -226,6 +232,9 @@ var _input_lock := 0.0
 var _terraza_d := 999.0
 var _terraza_t := 0.0
 var near_steal = null           # a traffic car close and slow enough to steal
+var talk_npc = null             # who you are talking to (talk_to), while the talk lasts
+var _talk_line := -1
+var _talk_side := 1.0
 var _fly_i := -1
 var _fly_t := 0.0
 var _fly_shots: Array = []
@@ -307,7 +316,12 @@ var inventario                  # Animal Crossing-style pocket inventory (invent
 var tomasa                      # Tomasa Malvora & los chinos del Arroyuelo shopkeeper (tomasa.gd)
 var marciano                    # Marciano, across from the café: the eighties and the ruta del bacalao (marciano.gd)
 var sopiss_gente                # the people inside Seguros Sopiss, seen and heard through the glass (sopiss_gente.gd)
+var azafran                     # the four saffron sellers at the real saffron shops' doors (azafran.gd)
 var semaforos                   # the traffic lights of the crossroads: their cycle, and the town's cars stopping (semaforos.gd)
+var tiendas_ropa                # the clothes and accessories shops: shut to you until Josefa's Vizum (tiendas_ropa.gd)
+var koke                        # Koke el Kokas: his call after the Vizum, his fleet on the fairground, the taxi run (koke.gd)
+var maxi                        # Maxi, the clerk of the MaxiPrecio: its clothes at 20 € into your wardrobe (maxi.gd)
+var manuela                     # Manuela Moreno, the clerk of the Pisacastaña: its shoes at 20 € (manuela.gd)
 var javi                        # Javi of the Asador de pollos: his roast-chicken orders on Tuesdays and Sundays (javi.gd)
 var trabajos                    # paid work, over and over: El de las faenas on the square, and Henry's orders (trabajos.gd)
 var fondo_casa                  # the house you inherit, a "de fondo" line: the tax debt, the cash machine, Edmundo Monedero (fondo_casa.gd)
@@ -884,6 +898,8 @@ func _setup_lights() -> void:
 
 ## time goes by: two minutes an hour
 func _advance_clock(dt: float) -> void:
+	if saffron_day >= 0 and day_n != saffron_day:
+		_spread_saffron()                        # (a new day: the streets' saffron somewhere else)
 	clock += dt * 24.0 / DAY_SECONDS
 	if clock >= 24.0:
 		clock -= 24.0
@@ -984,7 +1000,9 @@ func _walker_plan(n) -> void:
 ## a look that matches a standard voice: grey hair for the old, buns and long hair for the women, small for kids
 func _neighbour_look(voice: String) -> Dictionary:
 	var shirts := [0xd9643a, 0x3b5fa8, 0x7fb069, 0xe6c229, 0xef8fa9, 0x2a9d8f, 0x9d4edd, 0xf4f1e8, 0xef7f1a, 0x8a6a48, 0x8d99ae, 0x26262b, 0xb23a3a, 0x4f7d8f]
-	var o := {"shirt": shirts.pick_random(), "skin": [0xf6c9a0, 0xe9b58c, 0xd49a6a, 0xfbd7b5, 0xc98e5f, 0x8d5a3b].pick_random(), "hat_color": shirts.pick_random()}
+	# (the user, 23 Nov 2026: too many with dark skin for the town; dark or black skin, one in twenty)
+	var skin: int = ([0xc98e5f, 0x8d5a3b, 0x5e3a26] if randf() < 0.05 else [0xf6c9a0, 0xe9b58c, 0xd49a6a, 0xfbd7b5]).pick_random()
+	var o := {"shirt": shirts.pick_random(), "skin": skin, "hat_color": shirts.pick_random()}
 	var old := voice.begins_with("old")
 	o["hair"] = [0xd9d9de, 0xcfcfd4, 0xe8e8ea, 0xb9b3a8].pick_random() if old else [0x2a1c14, 0x2a1c14, 0x5a3a22, 0x5a3a22, 0xb5651d, 0x111111, 0xd9a441, 0xb5451b].pick_random()
 	o["build"] = [0.86, 0.94, 1.0, 1.0, 1.08, 1.2].pick_random()
@@ -1036,7 +1054,7 @@ func _neighbour_look(voice: String) -> Dictionary:
 			o["brows"] = 0
 			if randf() < 0.28:                            # traditional Manchego headscarf reserved for elderly women NPCs
 				o["hat"] = "panoleta"
-				o["hat_color"] = [0x1b1b1f, 0x1b1b1f, 0x2a2d36, 0x3b2d26, 0x4b3b4e].pick_random()
+				o["hat_color"] = [0xf2efe6, 0x1b1b1f, 0x2c4a7a].pick_random()      # (the user, 23 Nov 2026: white, black or blue)
 			if randf() < 0.75:
 				o["earrings"] = [1, 5, 5].pick_random()
 			if randf() < 0.55:
@@ -1126,7 +1144,7 @@ func _add_dolores() -> void:
 			mid = MapData.nodes[p[p.size() / 2]]
 	if beat.is_empty():
 		return
-	var d = _add_npc("dolores", {"top": 7, "shirt": 0x2f2f36, "hair": 0xc4c4c9, "hat": "bun", "earrings": 1, "pendant": 3, "glasses": 1, "brows": 0, "scale": 0.88, "build": 1.12}, "old_f", mid, 2.0)      # (a dark flowery housecoat, a little cross)
+	var d = _add_npc("dolores", {"top": 7, "shirt": 0x2f2f36, "hair": 0xd8b25e, "hat": "bun", "earrings": 1, "pendant": 3, "glasses": 1, "brows": 0, "scale": 0.88, "build": 1.12}, "old_f", mid, 2.0)      # (a dark flowery housecoat, a little cross; dyed blonde since 23 Nov 2026, the user)
 	d.walker = true
 	d.beat = beat
 	d.wspeed = 0.85
@@ -1397,6 +1415,51 @@ func firmas_done() -> void:
 
 ## Every saffron flower -- the town's, and those hidden in special places by the hand-built sets -- floats, turns and
 ## has the halo of all that is picked up (pickups.gd dress; the user, 21 Nov 2026)
+## The saffron of the streets. There are two kinds of saffron (the user, 23 Nov 2026, through Pretil: "Y internamente vamos
+## a tener dos azafranes. Los escondidos que solo aparecen una vez por juego. Y los públicos que aparecerán
+## aleatoriamente como hasta ahora y se regenerán cada 24 horas in-game en sitios diferentes"):
+##   - the hidden ones are those with "hidden" (the special places'): one each per game, kept in stats.saffron_hidden
+##     (_take_flower), and left alone here;
+##   - the public ones are SAFFRON_N about the pavements and the residential streets. Each new day of the game
+##     (day_n: at midnight, waking up, or a game loaded) all of them are spread again, those nobody picked too, and
+##     somewhere else (SAFFRON_AWAY m or more from yesterday's).
+const SAFFRON_N := 40
+const SAFFRON_AWAY := 15.0
+var saffron_day := -1           # the day the public ones were last spread
+
+func _spread_saffron() -> void:
+	saffron_day = day_n
+	var before: Array = []
+	for i in range(flowers.size() - 1, -1, -1):
+		if flowers[i].get("hidden", false):
+			continue
+		before.append(flowers[i]["p"])
+		if is_instance_valid(flowers[i]["node"]):
+			flowers[i]["node"].queue_free()
+		flowers.remove_at(i)
+	near_flower = -1
+	var spots := MapData.segs.filter(func(s): return s.road["k"] != 0 or s.road["h"] == "residential")
+	var made := 0
+	var tries := 0
+	while made < SAFFRON_N and tries < SAFFRON_N * 30:
+		tries += 1
+		var s = spots.pick_random()
+		var u: Vector2 = (s.b - s.a).normalized()
+		var fp: Vector2 = s.a + _perp(u) * minf(s.hw + 1.0, maxf(0.8, float(MapData.clr[s.na]) - 0.6)) * (1.0 if randf() < 0.5 else -1.0)
+		if before.any(func(q): return (q as Vector2).distance_squared_to(fp) < SAFFRON_AWAY * SAFFRON_AWAY):
+			continue
+		var g := Node3D.new()
+		g.add_child(Parts.part("cyl", 0x5f9c4a, Vector3(0, 0.3, 0), Vector3(0.03, 0.6, 0.03)))
+		for k in range(5):
+			g.add_child(Parts.part("ball", 0x9b5de5, Vector3(cos(k * 1.257) * 0.12, 0.66, sin(k * 1.257) * 0.12), Vector3(0.11, 0.2, 0.11)))
+		g.add_child(Parts.part("ball", 0xe63946, Vector3(0, 0.74, 0), Vector3(0.05, 0.13, 0.05)))
+		g.position = MapData.at(fp, 0.15)
+		add_child(g)
+		if pickups != null:
+			pickups.dress(g)
+		flowers.append({"node": g, "p": fp})
+		made += 1
+
 func _dress_flowers() -> void:
 	if pickups == null:
 		return
@@ -1551,7 +1614,7 @@ func _setup_places_and_actors() -> void:
 	_add_npc("goat", {"shirt": 0xf4f1e8, "skin": 0xf4f1e8, "hair": null, "hat": "horns", "shoes": 0x3a3a3a, "scale": 0.8}, "goat", mill + Vector2(30, 20), -6.0)
 
 	# day 2: Josefa lives a few doors along from Tía Paca; the V.I.P. shop is at Calle de Santa Ana 14
-	var josefa = _add_npc("josefa", {"glasses": 1, "top": 7, "pendant": 3, "earrings": 5, "shirt": 0x4f7d8f, "hair": 0xe8e8ea, "hair_style": 1, "scale": 0.9, "brows": 0}, "old_f", JOSEFA_DOOR if _start["p"].distance_to(HOME_DOOR) < 12.0 else _start["p"] - su * 16.0, 0.0)
+	var josefa = _add_npc("josefa", {"glasses": 1, "top": 7, "pendant": 3, "earrings": 5, "shirt": 0x4f7d8f, "hair": 0xe8e8ea, "hair_style": 1, "scale": 0.9, "brows": 0, "hat": "panoleta", "hat_color": 0x1b1b1f}, "old_f", JOSEFA_DOOR if _start["p"].distance_to(HOME_DOOR) < 12.0 else _start["p"] - su * 16.0, 0.0)
 	josefa.still = true
 	vip = VipShopS.new()
 	add_child(vip)
@@ -1638,10 +1701,20 @@ func _setup_places_and_actors() -> void:
 	trabajos.setup(self)
 	javi = JaviS.new()
 	javi.setup(self)
+	maxi = MaxiS.new()
+	maxi.setup(self)
+	manuela = ManuelaS.new()
+	manuela.setup(self)
+	tiendas_ropa = TiendasRopaS.new()
+	tiendas_ropa.setup(self)
+	koke = KokeS.new()
+	koke.setup(self)
 	marciano = MarcianoS.new()
 	marciano.setup(self)
 	sopiss_gente = SopissGenteS.new()
 	sopiss_gente.setup(self)
+	azafran = AzafranS.new()
+	azafran.setup(self)
 	semaforos = SemaforosS.new()
 	semaforos.setup(self)
 	fumar = FumarS.new()
@@ -1685,19 +1758,7 @@ func _setup_places_and_actors() -> void:
 		n.wspeed = randf_range(1.05, 1.5) * (0.8 if NEIGHBOUR_VOICES[kind].begins_with("old") else 1.0)
 
 	# saffron flowers (the collectible): only on foot
-	var spots := MapData.segs.filter(func(s): return s.road["k"] != 0 or s.road["h"] == "residential")
-	for i in range(40):
-		var s = spots.pick_random()
-		var u: Vector2 = (s.b - s.a).normalized()
-		var fp: Vector2 = s.a + _perp(u) * minf(s.hw + 1.0, maxf(0.8, float(MapData.clr[s.na]) - 0.6)) * (1.0 if randf() < 0.5 else -1.0)
-		var g := Node3D.new()
-		g.add_child(Parts.part("cyl", 0x5f9c4a, Vector3(0, 0.3, 0), Vector3(0.03, 0.6, 0.03)))
-		for k in range(5):
-			g.add_child(Parts.part("ball", 0x9b5de5, Vector3(cos(k * 1.257) * 0.12, 0.66, sin(k * 1.257) * 0.12), Vector3(0.11, 0.2, 0.11)))
-		g.add_child(Parts.part("ball", 0xe63946, Vector3(0, 0.74, 0), Vector3(0.05, 0.13, 0.05)))
-		g.position = MapData.at(fp, 0.15)
-		add_child(g)
-		flowers.append({"node": g, "p": fp})
+	_spread_saffron()
 	call_deferred("_dress_flowers")
 
 func _setup_markers() -> void:
@@ -2050,6 +2111,9 @@ func _set_map(open: bool) -> void:
 		return
 	map_open = open
 	hud.bigmap.visible = open
+	if open:                                     # (the shops' marks at once: the map's tick may not run while it is open)
+		hud.bigmap.saffron_shops = azafran.marks() if azafran != null else []
+		hud.bigmap.clothes_shops = tiendas_ropa.marks() if tiendas_ropa != null else []
 	_hold_world(open)
 	if open:
 		_map_mouse_was = Input.mouse_mode
@@ -2649,8 +2713,56 @@ func _end_cutscene() -> void:
 	folk.meet("paca")
 	recalls = []
 	comida.reset()
+	if azafran != null:                          # (the saffron sellers and the jobs: not until Tía Paca tells you)
+		azafran.show()
+	if trabajos != null:
+		trabajos.place_giver()
 	set_time(9.0)
 	start_game(0)
+
+## A talk with one of the town's own characters (the user, 23 Nov 2026: "las conversaciones con NPCs únicos deben ser
+## cinemáticas, esto es con la cámara al hombro. Salvo que sea una cinemática especial (recress galaxy, misión de
+## Henry, ...)"): the opening cutscene's over-the-shoulder shots, a cut at each line -- past you to them when they
+## speak, past them to you on the next. A special scene has its own camera (cam_fixed, cine_lock, the riot) and wins;
+## so does a place with a set of its own (entradas.gd), and the car. Out to whichever side of the two has room.
+func _talk_camera() -> bool:
+	if talk_npc == null:
+		return false
+	if not is_instance_valid(talk_npc) or (dlg == null and _ask == null):
+		talk_npc = null
+		_talk_line = -1
+		return false
+	var n = talk_npc
+	if n.id == "" or indoors or in_car != null or cine_lock or cam_fixed != null or not (phase == "play" or phase == "free" or phase == "talking") 			or (recress != null and recress.cine) or n.p.distance_to(player.p) > 6.0:
+		return false
+	var a: Vector2 = player.p
+	var b: Vector2 = n.p
+	var dir := (b - a).normalized()
+	if dir == Vector2.ZERO:
+		return false
+	var right := Vector2(-dir.y, dir.x)
+	var line: int = (int(dlg["i"]) if dlg != null else _talk_line + 1)
+	if line != _talk_line:
+		_talk_line = line
+		var room_r := _clear_to(a, atan2(-right.x, -right.y), 1.9, 1.6)      # (a wall beside you: the other side)
+		var room_l := _clear_to(a, atan2(right.x, right.y), 1.9, 1.6)
+		_talk_side = 1.0 if room_r >= room_l else -1.0
+	var side: Vector2 = right * _talk_side
+	var from: Vector2
+	var look: Vector3
+	var gy: float = MapData.foot(a)
+	if line % 2 == 0:            # past you to them
+		from = a - dir * 1.15 + side * 1.25
+		look = Vector3(a.x + dir.x * 1.1, gy + 1.15, a.y + dir.y * 1.1)
+	else:                        # past them to you
+		from = b + dir * 1.15 + side * 1.25
+		look = Vector3(b.x - dir.x * 1.1, gy + 1.15, b.y - dir.y * 1.1)
+	cam.near = 0.1
+	cam.position = Vector3(from.x, gy + 1.7, from.y)
+	cam.look_at(look)
+	cam_pos = cam.position
+	cam_look = look
+	return true
 
 ## close over-the-shoulder shots that swap sides with every line, Hit & Run style
 func _cine_camera() -> void:
@@ -2680,7 +2792,8 @@ func _cine_camera() -> void:
 	cam_pos = cam.position
 	cam_look = look
 
-## a saffron flower picked: one more, and six euros; one hidden in a special place counts once, and is kept
+## a saffron flower picked by walking over it (the user, 23 Nov 2026: the one thing taken that way, and it no longer
+## pays: it is sold to the saffron sellers, azafran.gd); one hidden in a special place counts once, and is kept
 var near_flower := -1
 func _take_flower(i: int) -> void:
 	if i < 0 or i >= flowers.size():
@@ -2699,7 +2812,8 @@ func _take_flower(i: int) -> void:
 		hud.toast(Loc.t("t_saffron").pick_random(), 2.0)
 	near_flower = -1
 	saffron += 1
-	money += 6
+	if azafran != null:
+		azafran.picked()
 	_refresh_counts()
 	Sfx.jingle([880, 1175], 0.07)
 
@@ -2740,6 +2854,10 @@ func start_game(from_step := 0) -> void:
 		tomasa.restore()
 	if fondo_casa != null:
 		fondo_casa.restore()
+	if azafran != null:
+		azafran.show()
+	if trabajos != null:
+		trabajos.place_giver()
 	for f in flowers:                            # the saffron hidden in special places: gone if this game has had it
 		if f.get("hidden", false):
 			f["gone"] = String(f.get("id", "")) in stats.get("saffron_hidden", [])
@@ -3411,11 +3529,205 @@ func _open_armario() -> void:
 	Sfx.beep(392.0, 0.06, 2, -16.0)
 	_refresh_armario()
 
+## The clothes shop's fitting room (the MaxiPrecio, the user, 23 Nov 2026: "Que aquí se pueda comprar de momento toda la
+## ropa (no zapatos ni complementos ni gorras) y vaya directa al armario del jugador, que de momento todo valga 20€"): the
+## wardrobe's screen with one row, every garment there is. You try them on, buy what you like (it goes to your wardrobe
+## at home: stats["armario"]) and leave as you came in. maxi.gd opens it.
+const ROPA := 15                 # the creator's option for clothes (Creator.OPTIONS "top")
+const ROPA_COLOUR := 2           # ...and for their colour ("shirt"): changed in the shop with LT / RT, Z / X or the row's arrows
+var shop_ropa = null             # {"face", "side", "price", "who", "bought"} while it is open
+
+## What the open shop sells, and the option for its colour: the clothes (the MaxiPrecio's Maxi) or the shoes (the
+## Pisacastaña's Manuela, manuela.gd: the user, 23 Nov 2026, "Las dos opciones me gustan").
+func _so() -> int:
+	return int(shop_ropa.get("opt", ROPA)) if shop_ropa != null else ROPA
+
+func _sc() -> int:
+	return int(shop_ropa.get("col", ROPA_COLOUR)) if shop_ropa != null else ROPA_COLOUR
+
+## the garments a shop has: every one the creator offers (the peña's T-shirt only at home; no going barefoot)
+func ropa_for_sale() -> Array:
+	var out: Array = []
+	var opt := _so()
+	for i in range((Creator.OPTIONS[opt]["values"] as Array).size()):
+		if not Creator.skipped(opt, i) and not (Creator.NOTHING.has(opt) and i == int(Creator.NOTHING[opt])):
+			out.append(i)
+	return out
+
+## `spot` where you stand to try things on, `face` the way you look (the camera comes from there), `side` where it
+## leans to; `who` the shop's clerk; `kind` what it sells if not the clothes: {opt, col, title, poor, bought, have, have_btn}
+## (the creator's options for it and its colour, the screen's title, the clerk's lines when you cannot pay and when you
+## buy, the words for one that is yours already)
+func open_shop_ropa(spot: Vector2, face: float, side: Vector2, price: int, who, kind := {}) -> void:
+	shop_ropa = {"face": face, "side": side.normalized() if side.length() > 0.01 else Vector2(-cos(face), sin(face)), "price": price, "who": who, "bought": 0,
+		"opt": int(kind.get("opt", ROPA)), "col": int(kind.get("col", ROPA_COLOUR)), "title": String(kind.get("title", "arm_shop_title")),
+		"poor": String(kind.get("poor", "maxi_poor")), "bought_line": String(kind.get("bought", "maxi_bought")),
+		"have": String(kind.get("have", "arm_have")), "have_btn": String(kind.get("have_btn", "arm_have_btn"))}
+	_armario_back = phase if phase != "talking" else "play"
+	phase = "armario"
+	_armario_was = look_sel.duplicate()
+	armario_row = 1
+	_face_turn = 0.0
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	player.p = spot
+	entradas.visible = false
+	hud.play_ui.visible = false
+	hud.set_prompt("")
+	Sfx.beep(392.0, 0.06, 2, -16.0)
+	_refresh_armario()
+	_draw_ropa_icons()
+
+## is this garment yours, in the colour you have on now? (the user, 23 Nov 2026: "así solo compras la del color que
+## quieres": you buy it in that colour, and the colour goes into your wardrobe with it)
+func _shop_owns(g: int) -> bool:
+	var own: Dictionary = armario_owned()
+	var sel := look_sel.duplicate()
+	sel[_so()] = g
+	var col_ok: bool = Creator.not_used(sel, _sc()) or (own.get(str(_sc()), []) as Array).has(int(look_sel[_sc()]))
+	return (own.get(str(_so()), []) as Array).has(g) and col_ok
+
+## the fitting room's grid: the arrows and the stick about it, a click on a picture, accept buys, back leaves; the
+## triggers (Z / X, the colour row's arrows) the colour
+func _shop_input(what: String) -> void:
+	var sale: Array = ropa_for_sale()
+	var at: int = maxi(0, sale.find(int(look_sel[_so()])))
+	var cols: int = hud.SHOP_COLS
+	if what == "col_prev" or what == "col_next":
+		if Creator.not_used(look_sel, _sc()):
+			return
+		var nc: int = (Creator.OPTIONS[_sc()]["values"] as Array).size()
+		look_sel[_sc()] = (int(look_sel[_sc()]) + (1 if what == "col_next" else nc - 1)) % nc
+		Sfx.beep(600.0, 0.04, 1, -18.0)
+		_refresh_armario()
+		_draw_ropa_icons()
+		return
+	match what:
+		"left":
+			at = (at + sale.size() - 1) % sale.size()
+		"right":
+			at = (at + 1) % sale.size()
+		"up":
+			if at - cols >= 0:
+				at -= cols
+		"down":
+			if at + cols < sale.size():
+				at += cols
+			elif at / cols < (sale.size() - 1) / cols:      # (nothing right under it on the last row: its last one)
+				at = sale.size() - 1
+		"accept":
+			_shop_buy()
+			return
+		"back":
+			_close_armario(false)
+			return
+		_:
+			if not what.begins_with("pick_"):
+				return
+			at = clampi(int(what.substr(5)), 0, sale.size() - 1)
+	if int(look_sel[_so()]) == int(sale[at]):
+		return
+	look_sel[_so()] = sale[at]
+	Sfx.beep(520.0, 0.04, 1, -18.0)
+	_refresh_armario()
+
+## The grid's pictures: you, from the chest down to the knees, in each garment in your own colours, drawn a few at a time
+## in little worlds of their own (as the saved games' photos are: portrait.gd) and kept while the colours are the same.
+var _ropa_tex := {}
+var _trig_down := [false, false]             # (the triggers held: one colour a press)
+var _ropa_drawing := false
+func _ropa_key(g: int) -> String:
+	var sel: Array = look_sel.duplicate()
+	sel[_so()] = g
+	return _ropa_key_of(g, Creator.look(sel))
+
+func _ropa_key_of(g: int, lk: Dictionary) -> String:
+	return "%d|%d|%s|%s|%s|%s|%s|%s" % [_so(), g, lk.get("shirt"), lk.get("shirt2"), lk.get("shirt3"), lk.get("skin"), lk.get("build"), lk.get("shoes")]
+
+func _draw_ropa_icons() -> void:
+	if _ropa_drawing:
+		return
+	_ropa_drawing = true
+	var sale: Array = ropa_for_sale()
+	var base: Array = look_sel.duplicate()
+	var todo: Array = []
+	for i in range(sale.size()):
+		var sel: Array = base.duplicate()
+		sel[_so()] = sale[i]
+		var lk: Dictionary = Creator.look(sel)
+		var key := _ropa_key_of(sale[i], lk)
+		if not _ropa_tex.has(key):
+			todo.append([i, key, lk])
+	var batch := 6
+	for b in range(0, todo.size(), batch):
+		var vps: Array = []
+		for t in todo.slice(b, b + batch):
+			var vp: SubViewport = RopaIcon.viewport(t[2], Vector2i(224, 224), _so() != ROPA)      # (shoes: your feet)
+			add_child(vp)
+			vps.append([vp, t])
+		for k in range(4):
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		for pair in vps:
+			var tex := ImageTexture.create_from_image((pair[0] as SubViewport).get_texture().get_image())
+			_ropa_tex[pair[1][1]] = tex
+			if shop_ropa != null:
+				hud.shop_grid_icon(int(pair[1][0]), tex)
+			(pair[0] as SubViewport).queue_free()
+		if shop_ropa == null:
+			break
+	_ropa_drawing = false
+	if shop_ropa != null and (look_sel[_sc()] != base[_sc()] or look_sel[21] != base[21] or look_sel[22] != base[22]):
+		_draw_ropa_icons()                       # (the colour changed while they were drawn: those, now)
+
+func _shop_buy() -> void:
+	var sel: int = int(look_sel[_so()])
+	var own: Dictionary = armario_owned()
+	var have: Array = own.get(str(_so()), [])
+	var who = shop_ropa["who"]
+	if _shop_owns(sel):
+		Sfx.beep(330.0, 0.05, 1, -18.0)
+		return
+	var price: int = int(shop_ropa["price"])
+	if money < price:
+		Sfx.beep(196.0, 0.12, 1, -16.0)
+		hud.toast(Loc.t("t_ropa_poor") % price, 3.0)
+		if who != null and is_instance_valid(who):
+			who.bark(Loc.t(String(shop_ropa["poor"])).pick_random(), 3.0)
+		return
+	money -= price
+	_refresh_counts()
+	if not have.has(sel):
+		have.append(sel)
+	own[str(_so())] = have
+	var cols_have: Array = own.get(str(_sc()), [])
+	if not Creator.not_used(look_sel, _sc()) and not cols_have.has(int(look_sel[_sc()])):
+		cols_have.append(int(look_sel[_sc()]))    # (the colour too: yours from now on, in the wardrobe)
+	own[str(_sc())] = cols_have
+	shop_ropa["bought"] = int(shop_ropa["bought"]) + 1
+	stats["ropa_comprada"] = int(stats.get("ropa_comprada", 0)) + 1
+	Sfx.jingle([659, 784, 988], 0.07)
+	hud.toast(Loc.t("t_ropa_armario") % String(Loc.t("c_values")[_so()][sel]), 3.5)
+	if who != null and is_instance_valid(who):
+		who.bark(Loc.t(String(shop_ropa["bought_line"])).pick_random(), 3.0)
+	_refresh_armario()
+
 func _refresh_armario() -> void:
 	_apply_look()
 	var own: Dictionary = armario_owned()
 	var names: Array = Loc.t("c_names")
 	var values: Array = Loc.t("c_values")
+	if shop_ropa != null:                        # the shop: a picture of every garment, and what each costs
+		var sel: int = int(look_sel[_so()])
+		var sale: Array = ropa_for_sale()
+		var cells: Array = []
+		for g in sale:
+			cells.append({"name": String(values[_so()][g]), "tag": Loc.t(String(shop_ropa["have"])) if _shop_owns(g) else Loc.t("arm_price") % int(shop_ropa["price"]),
+				"icon": _ropa_tex.get(_ropa_key(g))})
+		var buy: String = Loc.t(String(shop_ropa["have_btn"])) if _shop_owns(sel) else Loc.t("arm_buy") % int(shop_ropa["price"])
+		var col := {"name": "%s: %s" % [Loc.t("arm_colour"), "—" if Creator.not_used(look_sel, _sc()) else String(values[_sc()][look_sel[_sc()]])],
+			"colour": null if Creator.not_used(look_sel, _sc()) else Creator.swatch(_sc(), look_sel[_sc()])}
+		hud.show_shop_grid(Loc.t(String(shop_ropa["title"])), cells, sale.find(sel), buy, Loc.t("arm_leave"), col)
+		return
 	var shown: Array = []
 	for i in Creator.WARDROBE:
 		var have: Array = own.get(str(i), [look_sel[i]])
@@ -3425,6 +3737,9 @@ func _refresh_armario() -> void:
 
 ## what: up | down | left | right | accept | back
 func _armario_input(what: String) -> void:
+	if shop_ropa != null:
+		_shop_input(what)
+		return
 	var n: int = Creator.WARDROBE.size()
 	armario_row = clampi(armario_row, 1, n)
 	match what:
@@ -3451,6 +3766,10 @@ func _armario_input(what: String) -> void:
 	_refresh_armario()
 
 func _close_armario(keep: bool) -> void:
+	var shop = shop_ropa
+	shop_ropa = null
+	if shop != null:
+		keep = false                             # (out of the shop as you came in: what you bought waits in your wardrobe)
 	if not keep:
 		look_sel = _armario_was.duplicate()
 	_apply_look()
@@ -3460,15 +3779,17 @@ func _close_armario(keep: bool) -> void:
 	hud.play_ui.visible = true
 	if not Touch.on:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	player.h = PI / 2.0                          # (turned to the room, the wardrobe at your back)
+	player.h = PI / 2.0 if shop == null else float(shop["face"])      # (turned to the room, the wardrobe at your back)
 	player.sync()
 	_door_cool = 0.4
 	Sfx.beep(660.0 if keep else 330.0, 0.06, 2, -16.0)
-	if keep:
-		_save(save_si)                           # (what you have on is kept)
+	if keep or (shop != null and int(shop["bought"]) > 0):
+		_save(save_si)                           # (what you have on is kept; what you bought, too)
+	if shop != null and shop["who"] != null and is_instance_valid(shop["who"]):
+		shop["who"].bark(Loc.t("maxi_bye").pick_random(), 3.5)
 
 func _stat_lines() -> Array:
-	return ["%s:  %d" % [Loc.t("st_bumped"), bumped], "%s:  %d" % [Loc.t("st_saffron"), saffron], "%s:  %d" % [Loc.t("st_retries"), retries],
+	return ["%s:  %d" % [Loc.t("st_bumped"), bumped], "%s:  %d" % [Loc.t("st_saffron"), int(stats.get("azafran_cogido", saffron))], "%s:  %d" % [Loc.t("st_retries"), retries],
 		"%s:  %d" % [Loc.t("st_broken"), props.broken_count], "%s:  %d €" % [Loc.t("st_money"), money]]
 
 # ---------- the log, and the minigames you open along the way ----------
@@ -3527,7 +3848,7 @@ func _agenda_page(id: String) -> Dictionary:
 				any = true
 			var hid: Array = hidden_saffron()
 			if saffron > 0 or hid[1] > 0:            # the saffron, and how much of what is hidden
-				var txt: String = Loc.t("log_saffron") % saffron
+				var txt: String = Loc.t("log_saffron") % int(stats.get("azafran_cogido", saffron))
 				if hid[1] > 0:
 					txt += "  ·  " + Loc.t("log_saffron_hidden") % [hid[0], hid[1]]
 				items.append(_plain("%s  ·  %s" % [Loc.t("log_saffron_title"), txt], 17))
@@ -3739,6 +4060,7 @@ func _update_dialog(dt: float) -> void:
 func talk_to(n, chat_only := false) -> void:
 	var face := atan2(player.p.x - n.p.x, player.p.y - n.p.y)
 	n.h = face
+	talk_npc = n                                 # (one of the town's own: the talk is shot over the shoulder, _talk_camera)
 	# hello: they know your face now, and it counts once a day (Alberto and La Chiki only once their mission is done)
 	if n.id != "" and not ((n.id == "alberto" or n.id == "chiki") and si <= _idx("alberto_back") and phase == "play") and not (n.id == "luis" and not sabotaje.done()):
 		folk.greet(n.id, day_n)
@@ -3750,6 +4072,8 @@ func talk_to(n, chat_only := false) -> void:
 	if trabajos != null and trabajos.hand_over(n):    # (an order of Henry's or Javi's, for them: before anything of their own)
 		return
 	if sopiss_gente != null and sopiss_gente.talk(n):     # (through the glass of the insurance office: an answer from inside)
+		return
+	if azafran != null and azafran.talk(n):          # (a saffron seller: what you have on you, sold)
 		return
 	player.h = face + PI
 	var s: Dictionary = steps[si] if phase == "play" and si >= 0 else {}
@@ -3807,6 +4131,12 @@ func talk_to(n, chat_only := false) -> void:
 		feliciano.talk(n)
 		return
 	if marciano != null and (phase == "play" or phase == "free") and marciano.talk(n):
+		return
+	if maxi != null and (phase == "play" or phase == "free") and maxi.talk(n):      # (maxi.gd: the MaxiPrecio's clerk)
+		return
+	if manuela != null and (phase == "play" or phase == "free") and manuela.talk(n):      # (manuela.gd: the Pisacastaña's clerk)
+		return
+	if koke != null and (phase == "play" or phase == "free") and koke.talk(n):      # (koke.gd: Koke el Kokas, by his taxis)
 		return
 	if javi != null and (phase == "play" or phase == "free") and javi.talk(n):      # (javi.gd: Javi himself, and Josefa telling you about him)
 		return
@@ -4016,6 +4346,7 @@ func _refresh_counts() -> void:
 func _enter_car(c) -> void:
 	in_car = c
 	c.doze(false)
+	c.set_soap(true)                             # (it slides off walls it only grazes: car.gd _soap)
 	cuartel_coche.entered(c)                     # (the Tricornios' own, from their door: stealing it, as in _steal)
 	c.seat(Creator.look(look_sel))               # you, at the wheel
 	c.set_driver_head_visible(car_cam != 1)
@@ -4041,6 +4372,8 @@ func _enter_car(c) -> void:
 	Sfx.beep(180.0, 0.08)
 	_show_bottles()
 	_vehicle_context_changed()
+	if koke != null:
+		koke.entered(c)                          # (Koke's yellow taxi: the day's run starts as you sit in it, koke.gd)
 
 func _vehicle_context_changed() -> void:
 	_find_interaction()
@@ -4080,6 +4413,7 @@ func _exit_car() -> void:
 	player.visible = true
 	in_car = null
 	c.park()
+	c.set_soap(false)
 	hud.speed_slot.visible = false
 	_show_bottles()
 	_vehicle_context_changed()
@@ -4531,6 +4865,18 @@ func _unhandled_input(e: InputEvent) -> void:
 				_creator_input("back")
 			return
 		"armario":                               # the wardrobe at home: up and down its rows, left and right through what you have
+			if shop_ropa != null:                # (a shop: the triggers, or Z / X, the colour of what you try on)
+				if e is InputEventJoypadMotion and (e.axis == JOY_AXIS_TRIGGER_LEFT or e.axis == JOY_AXIS_TRIGGER_RIGHT):
+					var right: bool = e.axis == JOY_AXIS_TRIGGER_RIGHT
+					if e.axis_value > 0.6 and not _trig_down[int(right)]:
+						_trig_down[int(right)] = true
+						_armario_input("col_next" if right else "col_prev")
+					elif e.axis_value < 0.3:
+						_trig_down[int(right)] = false
+					return
+				if e is InputEventKey and e.pressed and not e.echo and (e.physical_keycode == KEY_Z or e.physical_keycode == KEY_X):
+					_armario_input("col_next" if e.physical_keycode == KEY_X else "col_prev")
+					return
 			for dir in ["up", "down", "left", "right"]:
 				if e.is_action_pressed("m_" + dir, true):
 					_armario_input(dir)
@@ -4626,7 +4972,8 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif e.is_action_pressed("run") and _has_autopilot(in_car) and not e.is_echo() and (phase == "play" or phase == "free") and mending == null:
 		_toggle_autopilot()
 	elif e.is_action_pressed("radio") and in_car != null:
-		var tuned: Dictionary = Ambience.next_station()
+		var flip = koke.radio_flip() if koke != null else null       # (Koke's cars: Koka y Ná or Traktor, koke.gd)
+		var tuned: Dictionary = flip if flip != null else Ambience.next_station()
 		if not Ambience.song_changed.is_connected(_song_changed):
 			Ambience.song_changed.connect(_song_changed)
 		hud.radio_card(tuned)
@@ -4684,6 +5031,8 @@ func interact() -> void:
 			_steal(near_steal)
 		elif near_car.flipped():
 			_push_car(near_car)
+		elif koke != null and koke.refuses(near_car):      # (Koke's yellow taxi: only for the day's run, koke.gd)
+			pass
 		else:
 			_enter_car(near_car)
 	elif near_tag != null:
@@ -5000,14 +5349,16 @@ func _physics_process(delta: float) -> void:
 		return
 	if phase == "creator" or phase == "armario":          # the character stands in the street, turning slowly, camera close in front
 		# (at the wardrobe, the same: you in front of it, turned to the room, the camera a few steps off towards the door)
-		var face: float = _face if phase == "creator" else PI / 2.0
+		var face: float = _face if phase == "creator" else (float(shop_ropa["face"]) if shop_ropa != null else PI / 2.0)
 		var f := Vector2(sin(face), cos(face))
 		var at: Vector2 = player.p
-		var side: Vector2 = ((_start["p"] as Vector2) - at).normalized() if phase == "creator" else Vector2(0.0, -1.0)      # towards the middle of the street
+		var side: Vector2 = ((_start["p"] as Vector2) - at).normalized() if phase == "creator" else (shop_ropa["side"] if shop_ropa != null else Vector2(0.0, -1.0))      # towards the middle of the street
 		# Q / E, the pad's lower triggers (LT / RT), the right stick, dragging the mouse, or a finger dragged across the
 		# character or the right of a touch screen (touch.gd) turn the character
 		var turn := float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q))
-		turn += Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) - Input.get_joy_axis(0, JOY_AXIS_TRIGGER_LEFT) + Controls.look_stick().x
+		if shop_ropa == null:                    # (in a shop's fitting room the triggers change the colour)
+			turn += Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) - Input.get_joy_axis(0, JOY_AXIS_TRIGGER_LEFT)
+		turn += Controls.look_stick().x
 		_face_turn += clampf(turn, -1.0, 1.0) * 2.6 * dt
 		_face_turn += Touch.take_look().x * 0.012
 		var feet_at: Vector3 = player.global_position
@@ -5018,7 +5369,7 @@ func _physics_process(delta: float) -> void:
 		player.anim(false, dt, 0.0)
 		var eye := at + f * 3.6 + side * 1.1
 		var aim := at + Vector2(f.y, -f.x) * 1.75            # aim to the character's screen-right: they stand left of centre, clear of the panel (bigger since 16 Nov 2026)
-		var floor_y: float = MapData.height(at) if phase == "creator" else MapData.foot(at)
+		var floor_y: float = MapData.height(at) if phase == "creator" else (player.global_position.y if shop_ropa != null else MapData.foot(at))
 		cam.position = Vector3(eye.x, floor_y + 1.45, eye.y)
 		cam.look_at(Vector3(aim.x, floor_y + 1.0, aim.y))
 		if phase == "creator" and not padron.active:     # (not behind the Padrón's sheet: it went with the creator)
@@ -5168,11 +5519,13 @@ func _physics_process(delta: float) -> void:
 		player.anim(moving, dt, speed)
 		comida.pose(player)
 		motin.pose(player)
-		near_flower = -1                         # (a saffron flower within reach: taken with the action button, like anything else)
+		near_flower = -1                         # (a saffron flower underfoot: taken just by walking over it, the one thing that is)
 		for i in range(flowers.size()):
 			if not flowers[i].get("gone", false) and flowers[i]["p"].distance_squared_to(player.p) < 1.6:
 				near_flower = i
 				break
+		if near_flower >= 0 and (phase == "play" or phase == "free") and dlg == null and _ask == null:
+			_take_flower(near_flower)
 	# --- the doors into a place with a set of its own (the V.I.P., the Recress, the Papelería Rocas): a green arrow
 	# before each, and stepping on it takes you in, or back out (entradas.gd). (The V.I.P.'s door still swings open.)
 	_mark("player and car")
@@ -5213,8 +5566,16 @@ func _physics_process(delta: float) -> void:
 		trabajos.tick(dt, pp)
 	if javi != null:
 		javi.tick(dt)
+	if maxi != null:
+		maxi.tick(dt)
+	if manuela != null:
+		manuela.tick(dt)
+	if koke != null:
+		koke.tick(dt)
 	if sopiss_gente != null:
 		sopiss_gente.tick(dt, pp)
+	if azafran != null:
+		azafran.tick(dt, pp)
 	if semaforos != null:
 		semaforos.tick(dt)
 	recress.tick(dt, pp)
@@ -5418,6 +5779,8 @@ func _physics_process(delta: float) -> void:
 		mm.repairs = props.repairs.map(func(e): return e["p"])
 		mm.ramps = props.ramps.map(func(e): return e["p"])
 		mm.spray = pintadas.hinted()
+		mm.saffron_shops = azafran.marks() if azafran != null else []
+		mm.clothes_shops = tiendas_ropa.marks() if tiendas_ropa != null else []
 		mm.blink = int(time * 5.0) % 2 == 0
 		mm.queue_redraw()
 	_mark("hud and map")
@@ -5953,7 +6316,7 @@ func _doze_cars(pp: Vector2) -> void:
 		if c.dozing:
 			if d2 < 62.0 * 62.0:
 				c.doze(false)
-		elif d2 > 75.0 * 75.0 and not c.running and c.vel.length_squared() < 0.05 and not c.flipped():
+		elif d2 > 75.0 * 75.0 and not c.running and c.vel.length_squared() < 0.05 and not c.flipped() and c.awake_t <= 0.0:
 			c.doze(true)
 
 ## how high whoever the camera follows is standing: the car you drive, or your own feet
@@ -6202,6 +6565,8 @@ func _shot_clear(space: PhysicsDirectSpaceState3D, at: Vector3, to: Vector3) -> 
 	var dir := (to - at) / d
 	var start := at + dir * 0.4                  # (off the wall the thing shown is painted on)
 	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(start, to, 1))
+	if hit.is_empty():                           # (and back the other way: a face turned only to the camera, a board, a
+		hit = space.intersect_ray(PhysicsRayQueryParameters3D.create(to, start, 1))      # rail, is not hit from the wall's side)
 	if hit.is_empty():
 		return 1.0
 	return clampf((at.distance_to(hit["position"]) - 0.6) / d, 0.0, 1.0)
@@ -6317,6 +6682,8 @@ func _update_camera(dt: float, pp: Vector2, speed: float, _cl: float) -> void:
 		cam.near = 0.3
 		shake = maxf(0.0, shake - dt * 2.2)
 		comida.tilt(cam)
+		return
+	if _talk_camera():
 		return
 	# --- Stunt-jump airborne slow-motion cinematic camera ---
 	if in_car != null and air_cine:

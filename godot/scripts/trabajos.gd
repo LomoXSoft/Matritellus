@@ -8,12 +8,13 @@ extends RefCounted
 ##   El de las faenas, a generic man on the Plaza del Ayuntamiento, gives three:
 ##     reparto   a load picked up somewhere in town and taken by car to a house across it, against the clock: paid
 ##               200-600 € by how fast and how whole it gets there
-##     taxi      a shift: people on the pavement hail you, you stop by them, they get in and say where; five fares,
-##               each paid by distance and time (100-500 €); get out of the car for long and the shift is over
 ##     jornal    a day in the fields outside town: saffron flowers to pick by hand before the time is up, 25 € each
 ##               (up to 30: 750 €, and a bonus if you pick them all)
 ##   Henry, any day but Thursday (Thursday is the ham's), sends you with an order to somebody you know: it gets cold,
 ##   so the quicker the better (30-150 €, and they like you a little better for it).
+##
+## (He also had a taxi shift; since 23 Nov 2026 the taxi is Koke el Kokas's, once a day against the clock: koke.gd,
+## kind "kokas" here, whose tick, show and abort are his.)
 ##
 ## They take the errand slot (G.side = {id: "trabajo", kind, stage...}): one thing at a time, and a main mission that
 ## starts drops them (abort). The money earned is kept in G.stats["trabajos"] = {kind: total}.
@@ -22,21 +23,16 @@ const GIVER_LOOK := {
 	"top": 3, "shirt": 0x6b8e5a, "skin": 0xe0b48c, "hair": 0x5a4636, "hair_style": 0, "brows": 1, "face": 2,
 	"hat": "cap", "hat_color": 0x2c3e50, "scale": 1.0, "build": 1.12,
 }
-const FARES := 5
 const FIELD_N := 30
 const FIELD_PAY := 25
 const FIELD_ALL := 50
 const FIELD_TIME := 150.0
 const STOP_SPEED := 3.0
-const OUT_OF_CAR := 10.0       # seconds out of the car before a taxi shift is over
 
 var G
 var giver                       # El de las faenas (npc.gd)
 var _dwell := 0.0
 var _out_t := 0.0
-var _hail = null                # the neighbour waving you down (taxi)
-var _rider = null               # ...and once in the car
-var _find_t := 0.0
 var _beat_t := 0.0
 
 func setup(game) -> void:
@@ -48,6 +44,18 @@ func setup(game) -> void:
 		var to: Vector2 = pl.spot(0.0, 60.0) - giver.p          # (facing out over the square)
 		giver.h = atan2(to.x, to.y)
 	giver.sync()
+	place_giver()
+
+## The jobs are there once Tía Paca has told you how to earn money (the user, 23 Nov 2026: "Terminada la conversación se
+## desbloquean trabajos y puntos de venta de azafrán"; fondo_casa.gd _curro_talk): until then El de las faenas is not on
+## the square, and Henry has no orders for you.
+func unlocked() -> bool:
+	return G != null and bool(G.stats.get("curro", false))
+
+func place_giver() -> void:
+	if giver != null and is_instance_valid(giver):
+		giver.away = not unlocked()
+		giver.visible = unlocked()
 
 func _giver_spot() -> Vector2:
 	var pl = G.world.get("plaza")
@@ -84,8 +92,6 @@ func givers(free_hands: bool) -> Array:
 	if free_hands and henry_can() and G.named.has("henry"):
 		out.append(G.named["henry"])
 	if active():
-		if kind() == "taxi" and _hail != null and is_instance_valid(_hail):
-			out.append(_hail)
 		if kind() in ["pedido", "pollo"] and G.side["stage"] == "pedido" and G.named.has(String(G.side.get("who", ""))):
 			out.append(G.named[String(G.side["who"])])
 	return out
@@ -108,7 +114,7 @@ func hand_over(n) -> bool:
 
 ## Henry's counter (game.gd _food_offer) has "Un pedido pa llevar" among its answers when he has one for you
 func henry_can() -> bool:
-	return _henry_day() and _free() and G.negocio("restaurantes")      # (his counter opens once Josefa has sent you to the restaurants)
+	return unlocked() and _henry_day() and _free() and G.negocio("restaurantes")      # (his counter opens once Josefa has sent you to the restaurants, his orders once Tía Paca has told you of them)
 
 func _giver_talk(n) -> void:
 	if active():
@@ -121,7 +127,6 @@ func _giver_talk(n) -> void:
 	G.say(n.shown_name(), Loc.t("faenas_hello").pick_random(), n.voice, func():
 		G.ask(n, n.shown_name(), Loc.t("faenas_q"), [
 			[Loc.t("faenas_opt_reparto"), func(): G.phase = prev; _start_reparto(n)],
-			[Loc.t("faenas_opt_taxi"), func(): G.phase = prev; _start_taxi(n)],
 			[Loc.t("faenas_opt_jornal"), func(): G.phase = prev; _start_jornal(n)],
 			[Loc.t("faenas_opt_no"), func(): G.phase = prev],
 		]))
@@ -182,71 +187,6 @@ func _drivable_spot(from: Vector2, rmin: float, rmax: float) -> Vector2:
 		if sg != null and MapData.drivable(sg):
 			return G._pavement(node)
 	return G._pavement(from + Vector2(rmin, 0.0))
-
-# ---------------- taxi: a shift of fares ----------------
-func _start_taxi(n) -> void:
-	G.say(n.shown_name(), Loc.t("faenas_taxi"), n.voice)
-	_begin("taxi", {"stage": "buscar", "fares": 0, "cash": 0})
-
-func _find_fare() -> void:
-	var c = G.in_car
-	if c == null:
-		return
-	var best = null
-	var bd := 1e9
-	for n in G.npcs:
-		if not is_instance_valid(n) or n.id != "" or n.away or not n.visible or not (n.state in ["idle", "walk"]):
-			continue
-		var d: float = (n.p as Vector2).distance_to(c.p)
-		if d > 40.0 and d < 150.0 and d < bd:
-			best = n
-			bd = d
-	if best == null:
-		return
-	_hail = best
-	_hail.still = true
-	_hail.state = "idle"
-	_hail.home = _hail.p
-	_hail.bark(Loc.t("taxi_hail").pick_random(), 4.0)
-	show()
-
-func _pick_up() -> void:
-	var c = G.in_car
-	_rider = _hail
-	_hail = null
-	_rider.away = true
-	_rider.visible = false
-	c.seat(_rider.look_data, 1)
-	var to: Vector2 = _drivable_spot(c.p, 250.0, 700.0)
-	var dist := to.distance_to(c.p)
-	var t0 := dist / 8.0 + 35.0
-	G.side["stage"] = "llevar"
-	G.side["to"] = to
-	G.side["dist"] = dist
-	G.side["t"] = t0
-	G.side["t0"] = t0
-	G.hud.toast(_with_street([Loc.t("taxi_to").pick_random()], to)[0], 5.0)
-	Sfx.beep(660.0, 0.06, 2, -16.0)
-	_dwell = 0.0
-	show()
-
-func _drop_rider(paid: bool) -> void:
-	if _rider == null or not is_instance_valid(_rider):
-		_rider = null
-		return
-	var c = G.in_car
-	var at: Vector2 = G._free_side(c) if c != null else G.player.p + Vector2(1.2, 0.0)
-	if c != null:
-		c.seat({}, 1)
-	_rider.away = false
-	_rider.visible = true
-	_rider.p = at
-	_rider.home = at
-	_rider.still = false
-	_rider.state = "idle"
-	_rider.sync()
-	_rider.bark(Loc.t("taxi_thanks" if paid else "taxi_angry").pick_random(), 3.5)
-	_rider = null
 
 # ---------------- jornal: a day in the fields ----------------
 func _start_jornal(n) -> void:
@@ -437,42 +377,8 @@ func tick(dt: float, pp: Vector2) -> void:
 					_onfoot()
 				elif float(G.side["t"]) <= 0.0:
 					_fail("faena_fail_reparto")
-		"taxi":
-			if c == null:
-				_out_t += dt
-				if _out_t > OUT_OF_CAR:
-					_taxi_over()
-				return
-			_out_t = 0.0
-			if G.side["stage"] == "buscar":
-				if _hail == null or not is_instance_valid(_hail) or _hail.away:
-					_hail = null
-					_find_t -= dt
-					if _find_t <= 0.0:
-						_find_t = 2.0
-						_find_fare()
-				elif c.p.distance_to(_hail.p) > 220.0:
-					_hail.still = false
-					_hail = null
-				else:
-					_beat_t -= dt
-					if _beat_t <= 0.0:
-						_beat_t = 6.0
-						_hail.bark(Loc.t("taxi_hail").pick_random(), 3.0)
-					if _stay(stopped and c.p.distance_to(_hail.p) < 6.0, dt):
-						_pick_up()
-			else:
-				G.side["t"] = float(G.side["t"]) - dt
-				_timer(true)
-				if _stay(stopped and pp.distance_to(G.side["to"]) < 8.0, dt):
-					var frac: float = clampf(float(G.side["t"]) / float(G.side["t0"]), 0.0, 1.0)
-					var pay: int = clampi(int(round((150.0 + float(G.side["dist"]) * 0.3) * (0.6 + 0.4 * frac) / 10.0)) * 10, 100, 500)
-					_fare_paid(pay)
-				elif float(G.side["t"]) <= 0.0:
-					_drop_rider(false)
-					G.hud.toast(Loc.t("t_taxi_lost"), 4.0)
-					Sfx.beep(196.0, 0.3, 2, -12.0)
-					_next_fare()
+		"kokas":                         # Koke el Kokas's taxi (koke.gd)
+			G.koke.run_tick(dt, pp)
 		"jornal":
 			if G.side["stage"] == "ir":
 				if pp.distance_to(G.side["to"]) < 28.0:
@@ -516,43 +422,6 @@ func _onfoot() -> void:
 		_onfoot_t = Time.get_ticks_msec() / 1000.0
 		G.hud.toast(Loc.t("t_faena_car"), 3.0)
 
-func _fare_paid(pay: int) -> void:
-	_drop_rider(true)
-	_earn("taxi", pay)
-	G.side["cash"] = int(G.side.get("cash", 0)) + pay
-	G.side["fares"] = int(G.side.get("fares", 0)) + 1
-	G.hud.toast(Loc.t("t_taxi_fare") % [_eur(pay), int(G.side["fares"]), FARES], 4.0)
-	Sfx.jingle([880, 1175], 0.06)
-	_next_fare()
-
-func _next_fare() -> void:
-	if int(G.side.get("fares", 0)) >= FARES:
-		_taxi_over()
-		return
-	G.side["stage"] = "buscar"
-	_find_t = 1.5
-	_timer(false)
-	show()
-
-func _taxi_over() -> void:
-	if _rider != null:
-		_drop_rider(false)
-	if _hail != null and is_instance_valid(_hail):
-		_hail.still = false
-	_hail = null
-	var cash: int = int(G.side.get("cash", 0))
-	var fares: int = int(G.side.get("fares", 0))
-	G.side = null
-	_timer(false)
-	G.set_target(null, false)
-	if fares > 0:
-		G.hud.stamp(Loc.t("stamp_done"))
-		G.hud.toast(Loc.t("t_taxi_over") % [fares, _eur(cash)], 5.0)
-		Sfx.jingle([523, 659, 784, 1047], 0.1)
-	else:
-		G.hud.toast(Loc.t("t_taxi_none"), 4.0)
-	G._show_step()
-
 # ---------------- the end of a job ----------------
 func _earn(k: String, pay: int) -> void:
 	var d: Dictionary = G.stats.get("trabajos", {})
@@ -585,8 +454,8 @@ func _fail(key: String) -> void:
 func abort() -> void:
 	if not active():
 		return
-	if kind() == "taxi":
-		_taxi_over()
+	if kind() == "kokas":
+		G.koke.run_over()
 		return
 	if kind() == "jornal":
 		for i in range(int(G.side.get("tot", FIELD_N))):
@@ -609,13 +478,8 @@ func show() -> void:
 			else:
 				G.hud.set_objective(G._tag(), _with_street([Loc.t("obj_reparto_entrega")], G.side["to"])[0])
 				G.set_target(G.side["to"], true)
-		"taxi":
-			if st == "buscar":
-				G.hud.set_objective(G._tag(), Loc.t("obj_taxi_buscar") % [int(G.side.get("fares", 0)), FARES] if G.in_car != null else Loc.t("obj_taxi_coche"))
-				G.set_target(_hail.p if _hail != null and is_instance_valid(_hail) else null, false)
-			else:
-				G.hud.set_objective(G._tag(), _with_street([Loc.t("obj_taxi_llevar")], G.side["to"])[0])
-				G.set_target(G.side["to"], true)
+		"kokas":
+			G.koke.run_show()
 		"jornal":
 			if st == "ir":
 				G.hud.set_objective(G._tag(), Loc.t("obj_jornal_ir"))
@@ -641,7 +505,7 @@ func _order_item():
 
 func _timer(on: bool) -> void:
 	if not on:
-		if active() and kind() in ["reparto", "taxi", "jornal", "pedido", "pollo"] and G.side["stage"] in ["entrega", "llevar", "coger", "pedido"]:
+		if active() and (kind() == "kokas" or kind() in ["reparto", "jornal", "pedido", "pollo"] and G.side["stage"] in ["entrega", "coger", "pedido"]):
 			return
 		if G.hud.timer_slot.visible and not _timer_owner_other():
 			G.hud.timer_slot.visible = false
