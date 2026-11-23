@@ -612,6 +612,18 @@
    "role": "Cuarentón pasado de vueltas: le pueden la fiesta y las drogas. Tiene una flota de Z15 tuneadas y trabaja de taxista. Su último compañero está en coma (se estampó con el taxi a 140 contra la fachada de un colegio).",
    "where": "Con su flota en el recinto ferial, junto a la Z15 amarilla de las llamas y el nitro.",
    "notes": "Pedido por el usuario el 23/11/2026. Te llama una hora de juego después del Vizum de la Josefa. Su taxi, una vez al día y contrarreloj, sustituye al taxi de El de las faenas. A los Pitufos y a los Tricornios les pasa hierba, y por eso le dejan en paz."
+  },
+  {
+   "id": "fatima",
+   "name": "Fátima Corsa",
+   "foto": true,
+   "pos": [
+    8,
+    8
+   ],
+   "role": "La óptica de la Óptica Corsa, con su bata blanca. Te habla de graduarte la vista, de que paece que tiés estrabismo y de sus modelos nuevos y vintage. La primera vez te mira la vista y te regala unas gafas («t'he visto cara de pobre además de cegato»); las demás, a 20 € de momento. Gafas y parches de pirata, derechos a tu armario de casa.",
+   "where": "Tras el mostrador de la Óptica Corsa, en el número 5 de la calle del Salvador, con el horario de la tienda.",
+   "notes": "Pedida por el usuario el 23/11/2026, que le puso el nombre. La tienda y su interior los hace Pretil; te pruebas las gafas en su espejo. 20 € el par «hasta que decida precios»."
   }
  ],
  "links": [
@@ -998,6 +1010,14 @@
    "label": "taxista suyo",
    "detail": "Una vez al día, su Z15 amarilla contrarreloj: base por distancia, propina por rapidez y +30 s por cliente.",
    "source": "koke_call"
+  },
+  {
+   "a": "tu",
+   "b": "fatima",
+   "kind": "negocio",
+   "label": "te vende gafas",
+   "detail": "Todas las gafas a 20 €, menos el parche de pirata, que no es de óptica. Van directas a tu armario de casa.",
+   "source": "fatima_q"
   }
  ],
  "cabos": [

@@ -6,7 +6,7 @@ El nombre es de Luis, el mismo día: «Que llamaremos la cruz verde. La plaza pu
 
 Es la manzana entera entre la avenida de Juan Carlos I (al norte, con la explanada de tierra delante), la calle de Don Jesús Requejo (al este), la calle de las Viñas (al sur, con el parque) y la calle sin nombre del oeste. Delante hay un bloque de pisos de tres plantas con la oficina en la planta baja. Detrás hay dos alas bajas blancas con un patio estrecho entre ellas. La pared sur, el mural, da al parque.
 
-En el juego no sale el nombre ni el emblema de ninguna organización real. Lo nuestro es la «Cruz Verde», con cruz verde y «MATRITELLUS» debajo. No hay número, ni teléfono, ni la placa del partido que hay junto a la puerta (está quitada a propósito).
+En el juego no sale el nombre ni el emblema de ninguna organización real. Lo nuestro es la «Cruz Verde», con cruz verde y «MADRIDEJOS» debajo (hasta el 24/11/2026 ponía MATRITELLUS; Luis: «el pueblo del juego se llama Madridejos. Matritellus es el título»). No hay número, ni teléfono, ni la placa del partido que hay junto a la puerta (está quitada a propósito).
 
 ## Reparto del trabajo
 
@@ -76,7 +76,7 @@ En el juego no sale el nombre ni el emblema de ninguna organización real. Lo nu
   - La trasera tiene ventanas en las dos plantas de arriba.
 - **El ala oeste, la oficina**, a la calle del oeste:
   - la puerta tras una cancela de barrotes;
-  - el letrerito de la cruz y «Cruz Verde / MATRITELLUS» pintado arriba;
+  - el letrerito de la cruz y «Cruz Verde / MADRIDEJOS» pintado arriba;
   - dos ventanas con reja y la persiana bajada;
   - la bajante y la puerta de garaje marrón con su rejilla, hasta el borde del tejado.
 - **El ala este**, a la calle Requejo: zócalo de cemento gris, puerta de garaje de chapa gris acanalada con la placa de vado y una ventana con reja detrás del matorral grande.

@@ -21,7 +21,7 @@ const BUY_REACH := 2.25
 
 const TOMASA_LOOK := {
 	"top": 7, "shirt": 0x8b4a6b, "skin": 0xefc29b, "hair": 0xeeeef0, "hair_style": 26,       # (a Charo: backcombed, white: the user 23 Nov 2026)
-	"brows": 0, "eyes": 0, "eye_color": 0x4a3424, "glasses": 0, "earrings": 5, "pendant": 3,
+	"brows": 0, "eyes": 0, "eye_color": 0x4a3424, "glasses": 8, "glasses_color": 0xf08cb8, "earrings": 5, "pendant": 3,
 	"scale": 0.90, "build": 1.02, "hat": "",
 }
 const CHINO_LOOK := {

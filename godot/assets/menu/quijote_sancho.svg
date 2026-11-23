@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+<!-- Don Quijote on Rocinante and Sancho on his donkey, cut out of black sheet like the sign at the town's entrance on
+     the old road (the user's photo, 23 Nov 2026). Drawn for the game; no outside source. -->
+<g fill="#151311" stroke="#151311" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Rocinante: thin, long in the leg, head hanging -->
+  <path stroke="none" d="M100,170 C108,157 130,154 160,156 C185,157 201,155 211,164 C218,172 215,190 207,197 C190,201 170,199 150,199 C130,200 112,199 104,193 Z"/>
+  <path stroke="none" d="M98,178 L111,162 L96,128 L84,118 L74,121 L86,152 Z"/>
+  <path stroke="none" d="M76,117 L62,124 L49,146 L47,155 L55,158 L64,150 L78,132 L88,124 Z"/>
+  <path stroke="none" d="M80,121 L79,106 L86,118 Z"/>
+  <path fill="none" stroke-width="6" d="M108,194 L103,240 L101,287 M119,196 L125,240 L119,287 M197,194 L205,236 L197,287 M187,197 L178,240 L186,287"/>
+  <path fill="none" stroke-width="4" d="M96,287 L104,287 M114,287 L123,287 M192,287 L201,287 M181,287 L190,287"/>
+  <path fill="none" stroke-width="7" d="M211,167 C222,180 223,205 218,232"/>
+  <!-- Don Quijote: tall and thin, his basin for a helmet, beard, shield and lance -->
+  <path fill="none" stroke-width="7" d="M152,186 L143,221 L151,233"/>
+  <path stroke="none" d="M139,164 L162,164 L163,112 L151,100 L138,111 Z"/>
+  <circle cx="150" cy="89" r="8.5" stroke="none"/>
+  <ellipse cx="150" cy="82" rx="13" ry="3" stroke="none"/>
+  <path stroke="none" d="M142,82 C143,72 157,72 158,82 Z"/>
+  <path fill="none" stroke-width="3" d="M145,95 L139,106"/>
+  <path fill="none" stroke-width="5" d="M156,118 L140,140 L131,138"/>
+  <circle cx="168" cy="134" r="12" stroke="none"/>
+  <path fill="none" stroke-width="3" d="M174,198 L117,6"/>
+  <!-- the donkey: small, big ears -->
+  <path stroke="none" d="M282,206 C292,196 330,196 350,201 C364,205 366,224 358,234 C340,241 305,240 290,235 C280,230 278,214 282,206 Z"/>
+  <path stroke="none" d="M291,214 L278,189 L262,189 L247,204 L245,215 L254,221 L267,216 L282,231 Z"/>
+  <ellipse cx="266" cy="175" rx="4.5" ry="15" transform="rotate(-24 266 175)" stroke="none"/>
+  <ellipse cx="278" cy="175" rx="4.5" ry="15" transform="rotate(8 278 175)" stroke="none"/>
+  <path fill="none" stroke-width="5.5" d="M293,232 L291,287 M303,235 L305,287 M343,234 L347,287 M353,231 L356,287"/>
+  <path fill="none" stroke-width="3" d="M363,212 C372,225 373,238 370,250"/>
+  <!-- Sancho: round, in his hat, his legs short -->
+  <ellipse cx="321" cy="181" rx="21" ry="23" stroke="none"/>
+  <circle cx="318" cy="150" r="10.5" stroke="none"/>
+  <ellipse cx="318" cy="142" rx="16" ry="3.5" stroke="none"/>
+  <path stroke="none" d="M309,142 L311,132 L325,132 L327,142 Z"/>
+  <path fill="none" stroke-width="8" d="M315,200 L305,226"/>
+  <path fill="none" stroke-width="6" d="M307,178 L292,197"/>
+</g>
+</svg>

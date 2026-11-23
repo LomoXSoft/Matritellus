@@ -893,6 +893,84 @@ Una casa no puede quedar suelta, adelantada a sus vecinas y enseñando un trozo 
 - **Fuera:** el 10, que ya estaba hecho (`mon_sp10`).
 - **Hojas:** `fotos/tanda34/sancho_1` a `sancho_3`. En la 3, las fotos del Catastro de las casas C y E son de sus fachadas de la calle del Comisario.
 
+## Avenida de Martín Descalzo, de la rotonda a Ortega y Gasset (tramo sur)
+
+- **Oeste (impares), de norte a sur:**
+  - `md_23b`, `md_23t`: el almacén gris de 2023 con portón galvanizado y la tapia de bloque con la puerta verde entre machones de ladrillo.
+  - `md_21d`, `md_21`: la casa blanca de 2024 con celosía de ladrillo y la nave de bloque con su puerta verde.
+  - `md_19t`, `md_19d`, `md_19`: la tapia baja, la casa blanca con zócalo de piedra y puerta azul, y el almacén blanco del portón grande.
+  - `md_17`, `md_17d`: ladrillo tostado sobre enfoscado rosa con cancela y persiana; enfoscado gris y ladrillo crema con dos seccionales oscuras.
+  - `md_15`, `md_15t`, `md_13t`: las dos casas blancas de zócalo negro, la tapia con puerta galvanizada y la tapia de rasilla de 27 m.
+  - `md_9b`, `md_e2`, `md_9`, `md_9c`, `md_9d`: rasilla con portón, Estrella 2 (beige con escaparates), la tapia beige, la casita blanca y el almacén de ladrillo de puertas azules.
+  - `md_9e`: el electricista del automóvil (rótulo solo «ELECTRICIDAD DEL AUTOMÓVIL», sin el nombre del taller).
+  - `md_7`, `md_5`: la casa salmón de puertas verdes y balcón blanco, la de ladrillo con portón de madera.
+  - `md_c122`, `md_c120`: la esquina con la Constitución (122 y 120), la ocre de toldos azules.
+- **Este (pares), de norte a sur:**
+  - `md_18b`, `md_18a`: la esquina de ladrillo con tres balcones y la de ladrillo crema.
+  - `md_16`: el taller mecánico (rótulo solo «TALLER MECÁNICO», sin el nombre).
+  - `md_14`, `md_12a`, `md_12d`: las ocres de zócalo de piedra (la del 12 con rayas rojas) y la de ladrillo con escalones.
+  - `md_12`: la moderna gris oscura y blanca, de tres plantas y ático, retranqueada 5 m (`clear`).
+  - `md_10`, `md_8`, `md_6`: la nave gris de puerta verde, la de piedra y ladrillo con puerta en arco, la vieja ocre desconchada.
+  - `md_4t`, `md_2`, `md_rot`: la tapia gris con la puerta verde, la blanca con balcones y la esquina de la rotonda con tiendas (sin ficha en el Catastro).
+- **Huecos sin parcela, desde Street View:** tapias y almacenes con `rc` nulo (23t, 19t, 15t, 13t, 9c, 9e, 4t) y frentes alargados con `fill` (21, 19d, 17d, 12).
+- **Hojas:** `fotos/tanda34/descalzo_1` a `descalzo_6` (1 a 4, oeste; 5 y 6, este).
+
+## Avenida de Martín Descalzo, de la rotonda de la Avenida de Europa a la Calle de la Mora (tramo norte)
+
+- **Oeste (impares), de norte a sur:**
+  - `md_e161`: las oficinas de la nave de la esquina con la rotonda (su número es de la Avenida de Europa): planta baja de paneles oscuros y cristal, la de arriba de plaqueta marrón.
+  - `md_57`, `md_55t`: la floristería y el almacén de al lado (enfoscado gris, dos puertas galvanizadas, cartel solo «FLORISTERÍA»), y las tapias de hormigón con la puerta galvanizada y el portón verde.
+  - `md_47d`, `md_47c`: la caseta de la esquina del camino de los silos y el frente largo de la empresa (enfoscado tostado sobre losas de piedra, portón marrón, escaparate).
+  - `md_45d`: las oficinas de dos plantas (ladrillo abajo, paneles claros arriba con el borde verde), con el paso de chapa blanca bajo la planta alta.
+  - `md_47`, `md_45t`: la tapia vieja de ladrillo rojo y la de bloques con dos portones marrones.
+  - `md_43t`, `md_41t`, `md_39t`: la tapia de placas de hormigón, la blanca con zócalo azul en la esquina del callejón y la larga de bloques.
+  - `md_37`, `md_37d`, `md_33`: el almacén blanco, el frente viejo de ladrillo con puertas de madera y ventanas tapiadas, y el almacén nuevo negro y blanco.
+  - `md_31t`, `md_31`, `md_29`: la puerta galvanizada entre machones, la casa de 2010 (ladrillo y crema, balcón corrido) y la blanca de 2003, 3,5 m más adentro.
+  - `md_25t`: la tapia de bloques con su puerta galvanizada, de la Calle de la Mora al almacén de `md_23b`.
+- **Este (pares), de norte a sur** (aquí la línea del mapa va unos 5 m al este del centro real: la acera este va a 3 m de la línea, la del garaje de 4398538 en el Catastro):
+  - `md_80t`, `md_80`, `md_88t`: la tapia baja de celosía blanca del bar, la pared blanca de la nave y la valla de chapa con el seto.
+  - `md_66t`, `md_64`: las placas de hormigón con la caseta de los contadores (la foto del Catastro) y la nave larga de ladrillo con la trampilla verde.
+  - `md_58t`, `md_56`: la puerta de chapa azul y la casa de ladrillo de 2017 con su garaje bajo el tejadillo.
+  - `md_60t`, `md_62n`: otra tapia de placas con puerta galvanizada y la casa blanca nueva junto al solar.
+- **Sin casa:** el solar de antes del callejón de los silos, el de la esquina de la Calle del Triunfo, el parque y el solar del final (oeste y este).
+- **Hojas:** `fotos/tanda34/descalzo_7` a `descalzo_11` (7 a 9, oeste; 10 y 11, este).
+
+## Calle del Salvador: el hueco junto a la óptica
+
+- `salvador_3`: la casa vieja de dos plantas entre `salvador_1` y la óptica de Pretil. No tiene edificio en el Catastro: va con `rc` nulo y la crujía de la calle (4 m). Abajo encalada con zócalo gris; arriba beis desconchado con el ladrillo encalado asomando. Cinco balcones de hierro, la puerta vieja de madera, otra gris con montante, la puerta tapiada de ladrillo, la acristalada marrón y la cochera de tablas (Street View 2024).
+- **Hoja:** `fotos/tanda34/salvador_1`.
+
+## Calle de Consuegra, de la Calle de Tembleque a su final oeste
+
+- **Acera sur** (`co_1` a `co_59`): casas de una y dos plantas, tapias de bloque y de ladrillo, el almacén de materiales con su letrero (solo dice qué vende), la valla verde de malla de un solar y la casa de esquina ocre. Pasado el Camino de las Aspas, casas bajas encaladas y tapias de 2012.
+- **Acera norte** (`co_2` a `co_40`): naves de ladrillo sobre zócalo de piedra, la casa de dos plantas con cochera seccional y balcones (`co_26`), tapias largas y las naves del final.
+- Tapias y enfoscados claros van con color liso (beis, crema): el ladrillo pálido del juego se ve naranja.
+- **Hojas:** `fotos/tanda34/consuegra_1` a `consuegra_6` (1 a 4, acera sur; 5 y 6, acera norte).
+
+## Buero Vallejo y Juan Antonio Jiménez (y Las Cruces entre ellas)
+
+- Dos calles paralelas de adosados de 1990–94, entre Las Cruces y Las Viñas. Abajo, la cochera de madera y un ventanuco con reja en el zócalo de piedra, y el porche con escalera y verja de hierro. Encima, dos plantas con persianas y el balcón de hierro arriba.
+- Lado oeste de Buero Vallejo y las tres de Las Cruces que hacen esquina: ocre tostado y beis alternos. Lado este y Juan Antonio Jiménez: beis y gris-beis.
+- `ja_7`, la de la esquina con Las Viñas, está metida 4,9 m con un patio delante y tiene dos balcones.
+- **Hojas:** `fotos/tanda34/buero_1` a `buero_4` (1 y 2, Buero Vallejo oeste y Las Cruces; 2 y 3, Buero Vallejo este; 3, las dos de Las Cruces del este y la esquina; 4, Juan Antonio Jiménez).
+
+## Calle del Peso, lado impar, y la Calle Rollo (el callejón)
+
+- **Peso, lado impar:** el bloque de cuatro plantas de ladrillo con balcones en el centro y la cochera gris ancha (`peso_b006`); las casas de ladrillo de 1973–80 (`peso_9`, `peso_11`, `peso_13`); el hueco del 15, derribado; la nueva de 2019 de ladrillo salmón con balcón largo (`peso_17`).
+- **Calle Rollo**, el callejón sin salida: a un lado, la casa vieja encalada (`rollo_21d`), la casa crema con balconcillos (`rollo_23`) y la tapia baja con su puerta y dos cocheras (`rollo_23b`). Al otro, la casa gris con cancela y ventana de reja verde (`rollo_37d`), la casa estrecha de ladrillo de tres plantas (`rollo_33`) y la cochera de la trasera del Peso 13 (`peso_13b`). Al fondo, la casa estrecha de ladrillo con la cochera de madera amarilla (`rollo_27`).
+- El callejón está redibujado por donde va de verdad (`RESHAPE` en `bake_godot.py`).
+- **Hojas:** `fotos/tanda34/peso_3` (Peso) y `rollo_callejon_1` (callejón; la foto del Catastro de la casa F es la fachada al Peso de esa misma parcela).
+
+## Calle de Víctor Pradera y Calle de los Pajaritos
+
+- **Cambiadas desde las fotos del Catastro; se ha seguido Street View (2024):** el 3 (`vp_3`) es una casa nueva blanca sobre losas de piedra; el 13 (`vp_13`) es blanco con zócalo de ladrillo, como el almacén de 2018 de al lado (`vp_11`); el 15 (`vp_15`) es de ladrillo naranja con mampostería; el 17 (`vp_17`) está chapado de mampostería.
+- **Sin hacer:** el 5 y el 7 están derribados (un solar vallado de unos 20 m) y se quedan genéricas. El 4, la casa blanca de zócalo de azulejo pegada al cuartel, no se toca: su parcela se mete en lo que construye `cuartel.gd`.
+- **`vp_8`:** no tiene foto del Catastro; va desde Street View (enfoscado gris sobre mampostería, piedra alrededor de las ventanas).
+- **`vp_11` y `vp_13`:** el zócalo de ladrillo sale algo más naranja que el rosado de la foto.
+- **`vp_15`:** el ladrillo sale más vivo que en la foto.
+- **`paj_3`:** el ladrillo caravista crema va pintado (enfoscado crema), porque la textura de ladrillo no aclara tanto.
+- **Hojas:** `fotos/tanda34/pradera_1`, `pradera_2` y `pajaritos_1`.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

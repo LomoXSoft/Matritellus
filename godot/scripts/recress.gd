@@ -29,7 +29,7 @@ const POSTER_REACH := 2.4
 const LOOKS := {
 	"katakumba": {"top": 0, "shirt": 0x1b1b1f, "hair": 0x2a1c14, "hair_style": 3, "face": 5, "glasses": 2, "hat": "cap", "hat_color": 0x111111, "build": 1.2, "scale": 1.04},
 	"comentarista": {"top": 1, "shirt": 0xf2f2f2, "hair": 0x5a3a22, "hair_style": 8, "face": 3, "scale": 0.98},
-	"madre_alcalde": {"top": 7, "shirt": 0x6a3d7a, "hair": 0xd9d9de, "hair_style": 1, "glasses": 1, "earrings": 5, "pendant": 3, "scale": 0.86},
+	"madre_alcalde": {"top": 7, "shirt": 0x6a3d7a, "hair": 0x9a9aa0, "hair_style": 1, "glasses": 1, "earrings": 5, "pendant": 3, "scale": 0.86},
 	"alcaldesa": {"top": 2, "shirt": 0x7a1f3d, "hair": 0x3b2416, "hair_style": 9, "earrings": 6, "pendant": 4, "scale": 0.95},
 }
 

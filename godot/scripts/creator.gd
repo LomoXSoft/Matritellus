@@ -10,7 +10,7 @@ const OPTIONS := [
 	{"key": "hat_color", "values": [0x1f9a55, 0xc0392b, 0x2f6bb5, 0xe6b422, 0x26262b, -1]},      # a cap's colour, or the band round a straw hat (-1: red and gold)
 	{"key": "shirt", "values": [0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f, 0x8a6a48, 0x8d99ae]},
 	{"key": "skin", "values": [0xfbd7b5, 0xf6c9a0, 0xe9b58c, 0xc98e5f, 0x8d5a3b]},
-	{"key": "hair", "values": [0x5a3a22, 0x2a1c14, 0xd9a441, 0xb5451b, 0xd9d9de, null, 0x3b6fd9, 0xe86aa6]},
+	{"key": "hair", "values": [0x5a3a22, 0x2a1c14, 0xd9a441, 0xb5451b, 0xd9d9de, null, 0x3b6fd9, 0xe86aa6, 0x9a9aa0]},
 	{"key": "eyes", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8]},
 	{"key": "eye_color", "values": [0x2a1c14, 0x111111, 0x2f6bb5, 0x3f7d4a, 0xb9812e, 0x7d8a96, 0x7b52ab]},
 	{"key": "brows", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8]},                  # (4-5: from free models, chara.gd CEJAS; 6-8: expressive curved brows)

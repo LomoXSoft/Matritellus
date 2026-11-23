@@ -1,6 +1,9 @@
 extends Control
 ## The menus (main, saves, settings, controls, how to play, credits, pause), drawn as a whitewashed Manchego wall
-## capped with roof tiles, with the options painted on it and a plaque behind whichever one is selected.
+## capped with roof tiles, with the options painted on it by a sign-writer's brush (Kaushan Script, OFL: assets/fuentes).
+## The one selected is not boxed (the user, 23 Nov 2026: "No me gusta que sean textos entre cuadros el texto
+## seleccionado, y la letra es muy básica"; of three looks, "Me gusta la A"): it turns añil, leans a little and grows,
+## with a stroke of almagre brushed under it. The Agenda (the notebook) keeps its own look, plaques and all.
 ##
 ## game.gd supplies the content: `builder.call(page_id)` returns
 ##   {"title": String, "sub": String, "items": Array, "back": String page id | Callable | null}
@@ -12,6 +15,41 @@ extends Control
 const Portrait = preload("res://scripts/portrait.gd")
 const INK := Color("2a221c")
 const LIME := Color("f8f5ec")
+const ANIL := Color("3f5fae")             # the chosen option on the wall
+const ALMAGRE := Color("b0452a")          # the brush stroke under it
+const MUTED := Color("7a6a58")
+const LEAN := -0.035                      # (about two degrees)
+const GROW := 1.08
+const WALL_W := 1000.0                    # the wall at least this wide: a long low wall, not a square (the user, 23 Nov 2026:
+                                          # "lo haría más panorámico, está muy cuadrado (o incluso alargado verticalmente)")
+const PLINTH := 56.0
+const FIGURES := "res://assets/menu/quijote_sancho.svg"      # Don Quijote and Sancho in black sheet, as on the sign at the
+                                          # old road's entrance (the user, 23 Nov 2026: "pondría alguna marca de ladrillo y
+                                          # alguna pequeña grieta, un quijote y sancho en figuras negras en un lado, todo para
+                                          # rellenar el hueco vacío ... (pero nosotros manteniendo el zócalo azul)")
+static var _figs: Texture2D
+static var _paint: Font                   # the sign-writer's letters
+static var _dense: FontVariation          # the same, its lines closer (the long settings pages)
+
+## the painted letters, with the plain font behind them for anything they lack
+static func paint_font() -> Font:
+	if _paint == null:
+		var src = load("res://assets/fuentes/KaushanScript-Regular.ttf") as FontFile
+		if src == null:                     # (not imported yet: the plain letters, rather than an error)
+			return ThemeDB.fallback_font
+		var f: FontFile = src.duplicate()
+		f.fallbacks = [ThemeDB.fallback_font]
+		_paint = f
+	return _paint
+
+## the painted letters with less room above and below them: its lines are tall, and the graphics page has 24 rows
+static func dense_font() -> Font:
+	if _dense == null:
+		_dense = FontVariation.new()
+		_dense.base_font = paint_font()
+		_dense.spacing_top = -5
+		_dense.spacing_bottom = -4
+	return _dense
 
 var builder: Callable
 var page := ""
@@ -125,6 +163,9 @@ func rebuild() -> void:
 	_skin = p.get("skin", "")
 	_tab = int(p.get("tab", 0))
 	_rich_text(_foot, p.get("foot", ""))
+	_dress_heads()
+	var big_rows := _skin == "" and _items.all(func(it): return it.get("plain", false) or int(it.get("size", 26)) >= 24)
+	_list.add_theme_constant_override("separation", -8 if big_rows else 3)
 	if sel < 0 or sel >= _items.size() or (_items[sel].get("plain", false) or _items[sel].has("meter")):
 		sel = 0
 		while sel < _items.size() - 1 and (_items[sel].get("plain", false) or _items[sel].has("meter")):
@@ -176,13 +217,17 @@ func rebuild() -> void:
 			var lab := _text(int(it.get("size", 22)), INK)
 			lab.text = it["text"]
 			lab.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			if _skin == "":
+				_painted(lab, int(it.get("size", 22)))
 			if i == sel:
-				lab.add_theme_stylebox_override("normal", _plaque(Color("f3e2b3"), 2))
+				_mark(lab)
 			row.add_child(lab)
 			row.set_meta("menu_i", i)
 			_list.add_child(row)
 			continue
 		var l := _text(int(it.get("size", 17 if plain else 26)), Color("5a4a3a") if plain else INK)
+		if not plain and _skin == "":
+			_painted(l, int(it.get("size", 26)))
 		var t: String = it["text"]
 		if it.has("value"):
 			t += ":   ‹ " + String(it["value"]) + " ›"
@@ -194,9 +239,9 @@ func rebuild() -> void:
 			l.custom_minimum_size = Vector2(640, 0)
 		else:
 			l.set_meta("menu_i", i)
+			l.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			if i == sel:
-				l.add_theme_stylebox_override("normal", _plaque(Color("f3e2b3"), 2))
-				l.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+				_mark(l)
 		_list.add_child(l)
 	queue_redraw()
 	_redraw_when_laid_out()
@@ -238,6 +283,177 @@ func _figure_grid(it: Dictionary) -> Control:
 
 ## The wall is painted round the box of text, and the box only takes its new size and place on the next frame:
 ## paint it again then, or the wall stays where the previous page had it until something else is pressed.
+## the title and the line over it: painted on the wall, on plaques in the notebook
+func _dress_heads() -> void:
+	if _skin == "":
+		_title.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+		_title.add_theme_font_override("font", paint_font())
+		_title.add_theme_font_size_override("font_size", 52)
+		_sub.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+		_sub.add_theme_font_override("normal_font", paint_font())
+		_sub.add_theme_font_size_override("normal_font_size", 22)
+		_sub.add_theme_color_override("default_color", MUTED)
+	else:
+		_title.add_theme_stylebox_override("normal", _plaque(Color("efe9da"), 3))
+		_title.remove_theme_font_override("font")
+		_title.add_theme_font_size_override("font_size", 46)
+		_sub.add_theme_stylebox_override("normal", _plaque(Color("efe9da"), 2))
+		_sub.remove_theme_font_override("normal_font")
+		_sub.add_theme_font_size_override("normal_font_size", 20)
+		_sub.add_theme_color_override("default_color", INK)
+
+## an option painted on the wall: the brush letters, a little bigger (they are smaller than the plain ones), and room
+## for the lean and the stroke
+func _painted(l: Label, size: int) -> void:
+	var small := size < 24                     # (the rows of the long pages: as they were, closer together)
+	l.set_meta("dense", small)
+	l.add_theme_font_override("font", dense_font() if small else paint_font())
+	l.add_theme_font_size_override("font_size", size + 1 if small else int(round(size * 1.18)))
+	var sb := StyleBoxEmpty.new()
+	sb.content_margin_left = 14; sb.content_margin_right = 14; sb.content_margin_bottom = 0 if small else 4
+	l.add_theme_stylebox_override("normal", sb)
+
+## the option selected: on the wall añil, leaning and grown, the stroke under it (_draw); in the notebook, its plaque
+func _mark(l: Label) -> void:
+	if _skin != "":
+		l.add_theme_stylebox_override("normal", _plaque(Color("f3e2b3"), 2))
+		return
+	l.set_meta("chosen", true)
+	l.add_theme_color_override("font_color", ANIL)
+	l.rotation = LEAN
+	l.scale = Vector2(GROW, GROW)
+	l.pivot_offset = l.size * 0.5
+	l.resized.connect(func(): l.pivot_offset = l.size * 0.5)
+
+## the chosen option on the wall, if there is one
+func chosen() -> Label:
+	for c in _list.find_children("*", "Label", true, false):
+		if c.has_meta("chosen") and c.is_visible_in_tree():
+			return c
+	return null
+
+## the empty wall at both sides of the words: where the lime has come away and the brick shows, a few small cracks,
+## and on the right Don Quijote and Sancho cut out of black sheet, standing on the skirting
+func _draw_wear(r: Rect2, plinth_y: float) -> void:
+	var b := _ink_rect()
+	var lx0 := r.position.x + 18.0
+	var lx1 := b.position.x - 24.0
+	var rx0 := b.end.x + 24.0
+	var rx1 := r.end.x - 18.0
+	var left_w := lx1 - lx0
+	var right_w := rx1 - rx0
+	if left_w > 70.0:
+		var lm := (lx0 + lx1) * 0.5
+		_brick_patch(Vector2(lm - left_w * 0.08, r.position.y + (plinth_y - r.position.y) * 0.42), Vector2(minf(68.0, left_w * 0.36), 36.0), 3)
+		_brick_patch(Vector2(lx0 + left_w * 0.72, plinth_y - 34.0), Vector2(minf(46.0, left_w * 0.24), 22.0), 8)
+		_crack(Vector2(lx0 + left_w * 0.3, r.position.y + 26.0), PI * 0.5 + 0.25, 70.0, 11)
+		_crack(Vector2(lx0 + left_w * 0.55, plinth_y), -PI * 0.5 - 0.2, 40.0, 5)
+	if right_w > 70.0:
+		_brick_patch(Vector2(rx0 + right_w * 0.62, r.position.y + 64.0), Vector2(minf(40.0, right_w * 0.22), 22.0), 14)
+		_crack(Vector2(rx0 + right_w * 0.2, r.position.y + 30.0), PI * 0.5 - 0.3, 52.0, 21)
+	if right_w > 110.0:
+		if _figs == null and ResourceLoader.exists(FIGURES):
+			_figs = load(FIGURES)
+		if _figs != null:
+			var w := minf(300.0, right_w - 6.0)
+			var h := w * float(_figs.get_height()) / float(_figs.get_width())
+			draw_texture_rect(_figs, Rect2(Vector2((rx0 + rx1 - w) * 0.5, plinth_y - h + 3.0), Vector2(w, h)), false)
+
+## where there are words (or the crest) on the wall: each line as wide as what it says, not as the column
+func _ink_rect() -> Rect2:
+	var out := Rect2()
+	var parts: Array = [_crest, _sub, _title, _foot]
+	parts.append_array(_list.get_children())
+	for c in parts:
+		if not (c is Control) or not (c as Control).is_visible_in_tree():
+			continue
+		var cr := Rect2((c as Control).global_position - global_position, (c as Control).size)
+		var w: float = cr.size.x
+		if c is RichTextLabel:
+			w = float((c as RichTextLabel).get_content_width())
+		elif c is BoxContainer or c is GridContainer:
+			w = (c as Control).get_combined_minimum_size().x
+		elif c is TextureRect:
+			w = (c as Control).custom_minimum_size.x
+		var one := Rect2(cr.get_center().x - w * 0.5, cr.position.y, w, cr.size.y)
+		out = one if out.size == Vector2.ZERO else out.merge(one)
+	return out if out.size != Vector2.ZERO else Rect2(_box.global_position - global_position, _box.size)
+
+## a patch where the lime has fallen off: the mortar showing, the bricks in their courses, the lime's broken edge
+func _brick_patch(at: Vector2, size: Vector2, seed_n: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_n
+	var hole := PackedVector2Array()
+	for i in range(16):
+		var t := TAU * i / 16.0
+		var k := rng.randf_range(0.7, 1.12)
+		hole.append(at + Vector2(cos(t) * size.x * 0.5 * k, sin(t) * size.y * 0.5 * k))
+	draw_colored_polygon(hole, Color("cbbca2"))
+	var bw := 17.0
+	var bh := 7.0
+	var y := at.y - size.y * 0.6
+	var row := 0
+	while y < at.y + size.y * 0.6:
+		var x := at.x - size.x * 0.6 - (bw * 0.5 if row % 2 == 1 else 0.0)
+		while x < at.x + size.x * 0.6:
+			var c := Vector2(x + bw * 0.5, y + bh * 0.5)
+			if Geometry2D.is_point_in_polygon(c, hole):
+				var tone: Color = [Color("b65e3b"), Color("a8533a"), Color("c26a45"), Color("9e4c34")][rng.randi() % 4]
+				draw_rect(Rect2(x + 1.0, y + 1.0, bw - 2.0, bh - 2.0), tone)
+			x += bw
+		y += bh
+		row += 1
+	var edge := hole.duplicate()
+	edge.append(hole[0])
+	draw_polyline(edge, Color("d8d2c3"), 2.0, true)
+	for i in range(5, 12):                           # (the shadow under the lime's lip, on the lower side)
+		draw_line(hole[i], hole[i + 1], Color(0.45, 0.4, 0.34, 0.45), 1.5, true)
+
+## a hairline crack: a crooked line from `from` that wanders about `heading`, thinning out, with a short branch
+func _crack(from: Vector2, heading: float, length: float, seed_n: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_n
+	var p := from
+	var steps := 7
+	var ink := Color(0.38, 0.34, 0.3, 0.7)
+	for i in range(steps):
+		var q := p + Vector2.from_angle(heading + rng.randf_range(-0.6, 0.6)) * (length / steps)
+		draw_line(p, q, ink, lerpf(1.8, 0.7, float(i) / steps), true)
+		if i == 2:
+			var br := q
+			for j in range(3):
+				var bq := br + Vector2.from_angle(heading + 0.9 + rng.randf_range(-0.4, 0.4)) * (length / steps * 0.7)
+				draw_line(br, bq, ink, lerpf(1.1, 0.5, j / 3.0), true)
+				br = bq
+		p = q
+
+## the stroke of almagre under the chosen option: thick in the middle, thin at both ends, its top edge wavering, and as
+## long as the word and a little more, leaning with it
+func _draw_stroke() -> void:
+	var l := chosen()
+	if l == null or l.size.x < 4.0:
+		return
+	var r := Rect2(l.global_position - global_position, l.size)
+	var c := r.get_center()
+	var dense: bool = l.get_meta("dense", false)
+	var w := (r.size.x - 20.0) * GROW * 1.06
+	var y := r.size.y * 0.5 * GROW + (1.0 if dense else -9.0)     # (the close rows' letters hang below their box)
+	var k := 0.6 if dense else 1.0
+	var top := PackedVector2Array()
+	var bot := PackedVector2Array()
+	var n := 24
+	for i in range(n + 1):
+		var t := float(i) / n
+		var x := -w * 0.5 + w * t
+		var th := (3.0 + 6.0 * sin(t * PI) + sin(t * 17.0) * 0.8) * k
+		var mid := y + sin(t * 5.0 + 0.6) * 1.6 - t * 2.0
+		top.append(Vector2(x, mid - th * 0.5))
+		bot.append(Vector2(x + 2.0, mid + th * 0.5))
+	bot.reverse()
+	draw_set_transform(c, LEAN, Vector2.ONE)
+	draw_colored_polygon(top + bot, Color(ALMAGRE, 0.92))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
 func _redraw_when_laid_out() -> void:
 	if not is_inside_tree():
 		return
@@ -464,7 +680,8 @@ func _draw() -> void:
 	if _skin == "notebook":
 		_draw_notebook()
 		return
-	var r := Rect2(_box.global_position - global_position, _box.size).grow_individual(70, 46, 70, 104)
+	var side := maxf(70.0, (WALL_W - _box.size.x) * 0.5)
+	var r := Rect2(_box.global_position - global_position, _box.size).grow_individual(side, 38, side, PLINTH + 22.0)
 	draw_rect(Rect2(r.position + Vector2(10, 14), r.size), Color(0, 0, 0, 0.28))
 	# an uneven top edge, like a wall built by eye
 	var top := PackedVector2Array()
@@ -477,7 +694,7 @@ func _draw() -> void:
 	wall.append(Vector2(r.position.x, r.position.y + r.size.y))
 	draw_colored_polygon(wall, LIME)
 	# the skirting: añil blue, as on every whitewashed wall in La Mancha, a little uneven along the top and scuffed
-	var plinth := Rect2(r.position.x, r.position.y + r.size.y - 78, r.size.x, 78)
+	var plinth := Rect2(r.position.x, r.position.y + r.size.y - PLINTH, r.size.x, PLINTH)
 	var skirt := PackedVector2Array()                 # painted by hand: the top line wanders a little
 	for i in range(steps + 1):
 		skirt.append(Vector2(plinth.position.x + plinth.size.x * i / steps, plinth.position.y + sin(i * 0.9) * 1.8 + sin(i * 0.31 + 2.0) * 1.6))
@@ -487,17 +704,18 @@ func _draw() -> void:
 	draw_rect(Rect2(plinth.position.x, plinth.position.y + plinth.size.y - 14.0, plinth.size.x, 14.0), Color("36529a"))      # darker where the mop reaches
 	for k in range(9):                                # scuffs: the lime shows through
 		var sx := plinth.position.x + plinth.size.x * fposmod(k * 0.371 + 0.08, 1.0)
-		var sy := plinth.position.y + 14.0 + fposmod(k * 23.0, 40.0)
+		var sy := plinth.position.y + 12.0 + fposmod(k * 23.0, PLINTH - 34.0)
 		draw_rect(Rect2(sx, sy, 10.0 + fposmod(k * 7.0, 16.0), 3.0), Color(0.93, 0.92, 0.88, 0.5))
 	# stones showing through
 	for s in _stones:
-		var p := Vector2(r.position.x + 24 + s[0] * (r.size.x - 48), r.position.y + 34 + s[1] * (r.size.y - 150))
-		if absf(p.x - (r.position.x + r.size.x / 2)) < 290 and p.y > r.position.y + 20:
+		var p := Vector2(r.position.x + 24 + s[0] * (r.size.x - 48), r.position.y + 34 + s[1] * (r.size.y - PLINTH - 72.0))
+		if absf(p.x - (r.position.x + r.size.x / 2)) < _box.size.x * 0.5 + 40.0 and p.y > r.position.y + 20:
 			continue                             # keep the lettering clear
 		draw_set_transform(p, 0.0, Vector2(s[3], 1.0))
 		draw_circle(Vector2.ZERO, s[2], Color("8a6f58"))
 		draw_circle(Vector2(-1.5, -1.5), s[2] * 0.6, Color("a58a70"))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_wear(r, plinth.position.y)
 	# the row of clay tiles along the top
 	for i in range(top.size() - 1):
 		var a := top[i]
@@ -509,3 +727,4 @@ func _draw() -> void:
 		draw_arc(c, 11.0, PI, TAU, 10, Color("7d3f24"), 2.0)
 	draw_polyline(PackedVector2Array([wall[wall.size() - 2], wall[wall.size() - 1], top[0]]), Color("c9c2b2"), 2.0)
 	draw_line(top[top.size() - 1], wall[wall.size() - 2], Color("c9c2b2"), 2.0)
+	_draw_stroke()

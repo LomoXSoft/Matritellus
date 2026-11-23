@@ -2,11 +2,12 @@ extends RefCounted
 ## A garment's picture for a clothes shop's fitting room (game.gd _draw_ropa_icons; the user, 23 Nov 2026: "que para
 ## seleccionar la ropa salgan los iconos de todo lo disponible"): you wearing it, from a little under the chin to the
 ## knees, turned a little, on white, in a little world of its own (as portrait.gd draws the saved games' photos).
-## For the shoe shop (feet: the Pisacastaña, manuela.gd) your feet instead, from the shins down, turned half side on.
+## For the shoe shop (feet: the Pisacastaña, manuela.gd) your feet instead, from the shins down, turned half side on;
+## for the optician (face: the Óptica Corsa, fatima.gd) your face, from the chin up, turned a little.
 
 const Chara = preload("res://scripts/chara.gd")
 
-static func viewport(look: Dictionary, px := Vector2i(224, 224), feet := false) -> SubViewport:
+static func viewport(look: Dictionary, px := Vector2i(224, 224), feet := false, face := false) -> SubViewport:
 	var vp := SubViewport.new()
 	vp.own_world_3d = true
 	vp.size = px
@@ -32,12 +33,17 @@ static func viewport(look: Dictionary, px := Vector2i(224, 224), feet := false) 
 	who.setup(lk)
 	who.collision_layer = 0
 	who.collision_mask = 0
-	who.rotation.y = 0.9 if feet else 0.35
+	who.rotation.y = 0.9 if feet else (0.3 if face else 0.35)
 	var tall: float = float(look.get("scale", 1.0))
 	var cam := Camera3D.new()
 	cam.fov = 30.0
 	cam.position = Vector3(0.0, 0.42 * tall, 1.5 * tall) if feet else Vector3(0.0, 0.72 * tall, 2.55 * tall)
+	var aim := Vector3(0.0, 0.12 * tall, 0.0) if feet else Vector3(0.0, 0.66 * tall, 0.0)
+	if face:                                     # (the saved games' photos frame the head at 1.3; closer, for the glasses)
+		cam.fov = 22.0
+		cam.position = Vector3(0.0, 1.4 * tall, 2.5 * tall)
+		aim = Vector3(0.0, 1.36 * tall, 0.0)
 	vp.add_child(cam)
-	cam.look_at_from_position(cam.position, Vector3(0.0, 0.12 * tall, 0.0) if feet else Vector3(0.0, 0.66 * tall, 0.0))
+	cam.look_at_from_position(cam.position, aim)
 	cam.current = true
 	return vp

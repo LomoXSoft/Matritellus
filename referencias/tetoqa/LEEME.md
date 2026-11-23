@@ -56,7 +56,7 @@ Es la tienda de complementos (bolsos, zapatos, sombreros, pañuelos, bisutería 
 - una sala de 7 × 9 m, paredes blancas, suelo de tarima clara y focos redondos en el techo;
 - a la izquierda al entrar, baldas de cubos blancos con bolsos, zapatos, sombrereras y pañuelos doblados;
 - a la derecha, el mostrador con la caja y una pared rosa detrás con baldas de cajas de regalo y bolsos; pasado el mostrador, una barra de ropa con una fila de ganchos encima, con sombreros y pañuelos;
-- en medio, una vitrina de bisutería y relojes, una torre giratoria de gafas de sol, una mesa redonda de pañuelos y sombreros y un sombrerero;
+- en medio, una vitrina de bisutería y relojes, una torre giratoria de coleteros y pinzas (era de gafas de sol hasta que Luis dijo, el 23/11, «gafas en las ópticas y complementos en las tiendas de complementos»), una mesa redonda de pañuelos y sombreros y un sombrerero;
 - al fondo, «Tetoqa» en letra rosa sobre un banco bajo de sombrereras y un espejo ovalado;
 - en la esquina del fondo a la derecha, el probador con cortina rosa, espejo largo y taburete.
 
@@ -66,7 +66,7 @@ Dentro no hay maniquíes ni figuras. **El azafrán escondido** está en la últi
 
 Es el mismo de `maniqui.gd` que el del MaxiPrecio: figura del juego en plástico blanco, sin cara ni pelo, sobre su peana. Lo pone `tetoqa.gd` en la acera de Santa Ana, junto a la esquina, un poco girado hacia la puerta del chaflán.
 
-- Como es de una tienda de complementos (`trinkets`), lleva **siempre sombrero** y casi siempre gafas, pendientes y algo al cuello: cadena, medalla, perlas, bufanda, flores, gargantilla o pañuelo de fiestas.
+- Como es de una tienda de complementos (`trinkets`), lleva **siempre sombrero** y casi siempre pendientes y algo al cuello: cadena, medalla, perlas, bufanda, flores, gargantilla o pañuelo de fiestas. Gafas, ninguna desde el 23/11: se venden en las ópticas (Luis: «gafas en las ópticas y complementos en las tiendas de complementos»).
 - Cambia cada día como el otro: la semilla es el día, así que un mismo día viste siempre igual.
 - Es mobiliario de la calle (`props.gd`): un puñetazo o un coche lo tiran y al día siguiente vuelve.
 - Solo está fuera mientras la tienda está abierta.

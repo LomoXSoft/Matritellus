@@ -8,7 +8,7 @@ extends "res://scripts/obra.gd"
 ## accessories as the town's are, as its windows show it -- white walls, a floor of pale wood, little round lights in the
 ## ceiling. Along the wall at your left as you come in, white cube shelves of handbags, shoes and hat boxes; along the
 ## other, past the counter, a rail of clothes and a row of hooks of hats and scarves over it; in the middle a glass case
-## of jewellery and watches, a tower of sunglasses, a round table of scarves and hats, a hat stand; on the back wall
+## of jewellery and watches, a tower of hair things, a round table of scarves and hats, a hat stand; on the back wall
 ## the shop's name in pink handwriting (the game's own) over a low bench of hat boxes, an oval mirror; the counter with
 ## the till at your right as you come in, a pink wall behind it with shelves of gift boxes and bags; the fitting room in
 ## the far corner behind a pink curtain. Nobody is modelled (no mannequins either: the user decides figures).
@@ -440,7 +440,7 @@ func _picture_back(x0: float, x1: float, y0: float, y1: float, z: float, key) ->
 # ---------------- the middle of the room ----------------
 func _middle() -> void:
 	_jewellery(Vector2(0.9, 3.0))
-	_glasses_tower(Vector2(1.9, 5.3))
+	_hair_tower(Vector2(1.9, 5.3))
 	_round_table(Vector2(-0.7, 5.6))
 	_hat_stand(Vector2(1.0, 7.3))
 
@@ -485,14 +485,14 @@ func _jewellery(at: Vector2) -> void:
 		box(c.x - 0.012, c.y, c.z - 0.012, 0.024, y1 - 0.7 + 0.01, 0.024, 0xc0c4c8)
 	solid(Vector3(at.x, 0.5, at.y), Vector3(w, 1.0, dd))
 
-## a turning tower of sunglasses: a post, four faces of little shelves, a pair on each
-func _glasses_tower(at: Vector2) -> void:
+## a turning tower of hair things: a post, four faces of little shelves, two scrunchies and a clip on each. (It was of
+## sunglasses until the user said "gafas en las ópticas y complementos en las tiendas de complementos", 23 Nov 2026.)
+func _hair_tower(at: Vector2) -> void:
 	props += 1
 	bar(Vector3(at.x, 0.0, at.y), Vector3(at.x, 1.75, at.y), 0.05, 0.05, 0xc0c4c8)
 	drum(Vector3(at.x, 0.0, at.y), 0.28, 0.28, 0.03, 0xc0c4c8, 14)
-	box(at.x - 0.14, 1.75, at.y - 0.14, 0.28, 0.24, 0.28, 0xf4f4f0)              # its little sign: a pink pair of glasses on it
-	for s in [-1.0, 1.0]:
-		drum(Vector3(at.x + s * 0.045, 1.86, at.y - 0.142), 0.035, 0.035, 0.004, PINK, 10)
+	box(at.x - 0.14, 1.75, at.y - 0.14, 0.28, 0.24, 0.28, 0xf4f4f0)              # its little sign: a big pink scrunchie on it
+	drum(Vector3(at.x, 1.99, at.y), 0.075, 0.06, 0.05, PINK, 12)
 	for face_ in range(4):
 		var yaw := face_ * PI / 2.0
 		_put(Vector3(at.x, 0.0, at.y), yaw)
@@ -500,9 +500,9 @@ func _glasses_tower(at: Vector2) -> void:
 			var y := 0.35 + row * 0.19
 			box(-0.13, y, 0.1, 0.26, 0.012, 0.06, 0xd8dce0)
 			var col := _colour(row + face_)
-			for s in [-0.035, 0.035]:                                               # the pair: two dark lenses, a frame across
-				box(s - 0.03, y + 0.02, 0.16, 0.06, 0.04, 0.008, 0x1a1a1c)
-			box(-0.07, y + 0.055, 0.162, 0.14, 0.012, 0.01, col)
+			for s in [-0.075, 0.075]:                                               # two scrunchies...
+				drum(Vector3(s, y + 0.012, 0.13), 0.035, 0.03, 0.03, col, 10)
+			box(-0.03, y + 0.012, 0.11, 0.06, 0.014, 0.05, 0x1a1a1c if row % 2 == 0 else 0xc8a050)      # ...and a clip between them
 		home()
 	solid(Vector3(at.x, 0.9, at.y), Vector3(0.5, 1.8, 0.5))
 

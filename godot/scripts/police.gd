@@ -36,7 +36,7 @@ func setup(game_) -> void:
 	game = game_
 
 func add_heat(amount: float) -> void:
-	if muted or game.get("dev_no_heat"):         # (developer mode: no police)
+	if muted or game.get("dev_no_heat") or game.get("chavisca"):         # (developer mode, and the Modo Chavisca: no police)
 		return
 	amount *= game.heat_scale()                  # (half, with a mission under way)
 	heat = minf(100.0, heat + amount)

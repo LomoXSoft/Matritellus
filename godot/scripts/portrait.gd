@@ -5,8 +5,9 @@ extends RefCounted
 
 const Chara = preload("res://scripts/chara.gd")
 
-## the photo as a little window onto its own world; `look` is what chara.gd takes
-static func viewport(look: Dictionary, px := Vector2i(96, 118)) -> SubViewport:
+## the photo as a little window onto its own world; `look` is what chara.gd takes; `body`: the whole of them, from the
+## hat to the shoes, turned a little (the self-test's --portraits --cuerpo, to look over the characters' looks)
+static func viewport(look: Dictionary, px := Vector2i(96, 118), body := false) -> SubViewport:
 	var vp := SubViewport.new()
 	vp.own_world_3d = true
 	vp.size = px
@@ -34,8 +35,13 @@ static func viewport(look: Dictionary, px := Vector2i(96, 118)) -> SubViewport:
 	var cam := Camera3D.new()
 	cam.fov = 26.0
 	cam.position = Vector3(0.0, 1.36 * tall, 3.3 * tall)
+	var aim := Vector3(0.0, 1.3 * tall, 0.0)
+	if body:
+		who.rotation.y = 0.35
+		cam.position = Vector3(0.0, 1.05 * tall, 5.4 * tall)
+		aim = Vector3(0.0, 0.86 * tall, 0.0)
 	vp.add_child(cam)
-	cam.look_at_from_position(cam.position, Vector3(0.0, 1.3 * tall, 0.0))
+	cam.look_at_from_position(cam.position, aim)
 	cam.current = true
 	return vp
 

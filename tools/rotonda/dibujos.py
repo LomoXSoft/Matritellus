@@ -6,7 +6,8 @@ Writes into godot/assets/rotonda/:
   bandera.png   the flag: red, yellow, red (1:2:1), plain -- as the barracks' and the patrol cars' (no arms)
   emblema.png   the iron emblem on the monolith, as a cut-out: a crown over the tricorn of the Tricornios' own badge
                 (assets/tricornios/logo.png), a sword and a baton crossed behind -- ours, not the real one
-  placa.png     the plaque: dark bronze in a gold rim, the town's crest (assets/logo.png) and the Tricornios' badge,
+  placa.png     the plaque: dark bronze in a gold rim, the town's crest (assets/logo.png, its ribbon with MATRITELLUS:
+                the town's old name may be there, the user, 24 Nov 2026) and the Tricornios' badge,
                 the words in gold
   grava.png     the white gravel of the island (repeats without a seam)
   mantillo.png  the dark bark of its beds
@@ -18,7 +19,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(HERE, '..', '..', 'godot', 'assets')
 OUT = os.path.join(ASSETS, 'rotonda')
 FONTS = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts')
-WORDS = ['MATRITELLUS', 'EN HONOR A LOS TRICORNIOS,', 'EJEMPLO DE SERVICIO, ENTREGA', 'Y COMPROMISO CON NUESTRO PUEBLO']
+WORDS = ['MADRIDEJOS',                # (the town's name: Matritellus is the game's title -- the user, 23 Nov 2026)
+         'EN HONOR A LOS TRICORNIOS,', 'EJEMPLO DE SERVICIO, ENTREGA', 'Y COMPROMISO CON NUESTRO PUEBLO']
 DATE = '12 de octubre'
 rnd = random.Random(1210)
 

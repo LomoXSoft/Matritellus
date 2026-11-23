@@ -32,7 +32,7 @@ const ATM_REACH := 1.3
 const AMOUNTS := [100, 500, 1000]
 
 const EDMUNDO_LOOK := {
-	"top": 11, "shirt": 0x262b38, "shirt2": 0xf2f0ea, "pendant": 6, "skin": 0xf7e3d6, "hair": 0x3a2e26, "hair_style": 0,
+	"top": 11, "shirt": 0x262b38, "shirt2": 0xf2f0ea, "pendant": 6, "skin": 0xf4cdbd, "hair": 0x3a2e26, "hair_style": 0,
 	"brows": 1, "eyes": 1, "eye_color": 0x3a4a5a, "glasses": 1, "face": 1, "scale": 1.0, "build": 1.0, "hat": "",
 }
 

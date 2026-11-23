@@ -48,6 +48,7 @@ const GarageS = preload("res://scripts/garage.gd")
 const PuenteS = preload("res://scripts/puente.gd")
 const PasarelaS = preload("res://scripts/pasarela.gd")
 const SkyS = preload("res://scripts/sky.gd")
+const SierrasS = preload("res://scripts/sierras.gd")
 const LightsS = preload("res://scripts/lights.gd")
 const MenuS = preload("res://scripts/menu.gd")
 const BoxingS = preload("res://scripts/boxing.gd")
@@ -62,6 +63,7 @@ const TrabajosS = preload("res://scripts/trabajos.gd")
 const JaviS = preload("res://scripts/javi.gd")
 const MaxiS = preload("res://scripts/maxi.gd")
 const ManuelaS = preload("res://scripts/manuela.gd")
+const FatimaS = preload("res://scripts/fatima.gd")
 const RopaIcon = preload("res://scripts/ropa_icono.gd")
 const TiendasRopaS = preload("res://scripts/tiendas_ropa.gd")
 const KokeS = preload("res://scripts/koke.gd")
@@ -147,7 +149,11 @@ var police
 var traffic
 var money := 0
 var checkpoint: Dictionary      # where you come back to after being caught
-var save_prefix := "user://matritellus_save_"     # three slots: ..._1.json, ..._2.json, ..._3.json
+var save_prefix := "user://matritellus_save_"     # three slots: ..._1.json, ..._2.json, ..._3.json (..._chavisca_1.json... for that mode)
+## The Modo Chavisca (the user, 23 Nov 2026: "Un modo con sus guardados aparte sin misiones, sin heat level, sin azafrán.
+## Solo dar vueltas por el pueblo y hablar con los NPCs"): chosen on the main menu, its saves apart (_slot_path).
+var chavisca := false
+var _home_pavement := Vector2.ZERO      # (where a Modo Chavisca game puts you: in front of your door)
 var clock := 9.0                # the hour of the day, 0..24
 var weekday := 0                # 0 = Monday … 6 = Sunday
 var unlocked := {}              # minigames you can play from the log: {"box": levels open}
@@ -161,6 +167,7 @@ var _map_tick := 0
 var tow                         # breakdowns and the tow truck (tow.gd)
 var folk                        # the neighbours you know and how far they trust you (folk.gd)
 var sky_fx                      # clouds, birds, moon and stars (sky.gd)
+var sierras                     # the mountains on the horizon (sierras.gd)
 var lights                      # lanterns, shop lights (lights.gd)
 var taller                      # Talleres Valdeacero: the garage the tow truck knows (one of `garages`)
 var garages: Array = []         # the garages you drive into (garage.gd)
@@ -323,6 +330,7 @@ var tiendas_ropa                # the clothes and accessories shops: shut to you
 var koke                        # Koke el Kokas: his call after the Vizum, his fleet on the fairground, the taxi run (koke.gd)
 var maxi                        # Maxi, the clerk of the MaxiPrecio: its clothes at 20 € into your wardrobe (maxi.gd)
 var manuela                     # Manuela Moreno, the clerk of the Pisacastaña: its shoes at 20 € (manuela.gd)
+var fatima                      # Fátima Corsa, the optician of the Óptica Corsa: its glasses at 20 € (fatima.gd)
 var javi                        # Javi of the Asador de pollos: his roast-chicken orders on Tuesdays and Sundays (javi.gd)
 var trabajos                    # paid work, over and over: El de las faenas on the square, and Henry's orders (trabajos.gd)
 var fondo_casa                  # the house you inherit, a "de fondo" line: the tax debt, the cash machine, Edmundo Monedero (fondo_casa.gd)
@@ -564,6 +572,8 @@ func apply_graphics() -> void:
 	cam.far = 900.0 if near_only else 1600.0
 	env.fog_density = 0.0009 if near_only else 0.0003          # (the haze hides where the town stops being drawn)
 	env.fog_sky_affect = 0.12
+	if sierras != null:
+		sierras.visible = not bool(d.get("silent", false))
 	if bool(d.get("silent", false)):         # "Modo Silent Hill" (the user, 15 November 2026): for the humblest machines,
 		draw = 0.3                           # next to nothing drawn beyond a street or two, and a thick fog all round
 		cam.far = 170.0                      # to hide where it stops
@@ -765,6 +775,8 @@ func _setup_sky() -> void:
 	sky_fx = SkyS.new()
 	add_child(sky_fx)
 	sky_fx.setup(self)
+	sierras = SierrasS.new()
+	add_child(sierras)
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	env = Environment.new()
@@ -867,6 +879,7 @@ func _apply_sky() -> void:
 	moment = moment_of(clock)
 	# overhead: clouds change colour, the moon and the stars come out; down here the lamps come on
 	sky_fx.update(clock, top, hor)
+	sierras.paint(top, hor, sky_fx.night)
 	var dark: float = sky_fx.night
 	if clock < SUNRISE or clock > SUNSET:        # the night light comes from wherever the moon is
 		var from: Vector3 = sky_fx.moon_dir()
@@ -1019,7 +1032,7 @@ func _neighbour_look(voice: String) -> Dictionary:
 	var skin: int = ([0xc98e5f, 0x8d5a3b, 0x5e3a26] if randf() < 0.05 else [0xf6c9a0, 0xe9b58c, 0xd49a6a, 0xfbd7b5]).pick_random()
 	var o := {"shirt": shirts.pick_random(), "skin": skin, "hat_color": shirts.pick_random()}
 	var old := voice.begins_with("old")
-	o["hair"] = [0xd9d9de, 0xcfcfd4, 0xe8e8ea, 0xb9b3a8].pick_random() if old else [0x2a1c14, 0x2a1c14, 0x5a3a22, 0x5a3a22, 0xb5651d, 0x111111, 0xd9a441, 0xb5451b].pick_random()
+	o["hair"] = [0xd9d9de, 0xe8e8ea, 0xb9b3a8, 0xb4b4ba, 0x9a9aa0, 0x7d7d84].pick_random() if old else [0x2a1c14, 0x2a1c14, 0x5a3a22, 0x5a3a22, 0xb5651d, 0x111111, 0xd9a441, 0xb5451b].pick_random()
 	o["build"] = [0.86, 0.94, 1.0, 1.0, 1.08, 1.2].pick_random()
 	o["scale"] = randf_range(0.93, 1.06)
 	o["eyes"] = ([0, 1, 4, 5, 7] if voice == "kid" else ([0, 0, 1, 3, 5, 7] if voice == "adult_f" else ([0, 0, 2, 5, 6] if voice == "old_f" else ([0, 0, 2, 2, 6, 8] if voice == "old_m" else [0, 0, 0, 2, 3, 4, 6, 8])))).pick_random()
@@ -1234,7 +1247,7 @@ func _setup_bridge() -> void:
 	pasarela.build(self)
 	var here: Dictionary = MapData.nearest_road(bridge.spot(0.0, -5.0))
 	places["bridge"] = here
-	var alberto = _make_npc("alberto", {"pendant": 5, "top": 3, "shirt": 0xb23a3a, "hair": 0x5a3a22, "face": 2, "brows": 1, "hat": "cap", "hat_color": 0x1f8a55, "emblem": 0xf2c230},
+	var alberto = _make_npc("alberto", {"pendant": 5, "top": 3, "shirt": 0xb23a3a, "hair": 0x111111, "hair_style": 15, "barba3": 1, "face": 0, "brows": 1, "hat": "cap", "hat_color": 0x1f8a55, "emblem": 0xf2c230},
 		"adult_m", bridge.spot(bridge.open * (bridge.kerb() - 0.25), -5.2))
 	alberto.still = true
 	alberto.h = atan2(-bridge.u.x, -bridge.u.y)
@@ -1442,7 +1455,7 @@ const SAFFRON_N := 40
 const SAFFRON_AWAY := 15.0
 var saffron_day := -1           # the day the public ones were last spread
 
-func _spread_saffron() -> void:
+func _spread_saffron() -> void:          # (in the Modo Chavisca: the old ones taken away, no new ones)
 	saffron_day = day_n
 	var before: Array = []
 	for i in range(flowers.size() - 1, -1, -1):
@@ -1453,6 +1466,8 @@ func _spread_saffron() -> void:
 			flowers[i]["node"].queue_free()
 		flowers.remove_at(i)
 	near_flower = -1
+	if chavisca:
+		return
 	var spots := MapData.segs.filter(func(s): return s.road["k"] != 0 or s.road["h"] == "residential")
 	var made := 0
 	var tries := 0
@@ -1555,6 +1570,7 @@ func _setup_places_and_actors() -> void:
 	player.car_floor = car_floor_at              # (the player can stand on a car: chara.gd _stand)
 	var home_side := -1.0 if (HOME_DOOR - (_start["p"] as Vector2)).dot(_perp(su)) < 0.0 else 1.0       # on the pavement in front of your own door
 	player.p = _start["p"] + _perp(su) * home_side * minf(_start["seg"].hw + 1.0, maxf(1.0, MapData.side_room(_start) - 0.7))
+	_home_pavement = player.p
 	home_spot = player.p
 	cam_yaw = atan2(su.x, su.y)
 	_face = atan2(su.x, su.y)          # character creation looks along the street, where there is always room
@@ -1601,7 +1617,7 @@ func _setup_places_and_actors() -> void:
 	paca.p = player.p + su * 3.5
 	paca.home = paca.p
 	paca.still = true
-	var loli = _make_npc("loli", {"top": 5, "hair_style": 5, "earrings": 1, "shirt": 0x7d8f3a, "hair": 0x2a1c14, "hat": "cap", "hat_color": 0x1f8a55, "emblem": 0xf2c230}, "adult_f", MapData.coop_point(float(MapData.coop.get("gate", 114.0)) - 4.9, 8.2))      # on the pavement, by the gate
+	var loli = _make_npc("loli", {"top": 5, "hair_style": 15, "earrings": 1, "shirt": 0x7d8f3a, "hair": 0x2a1c14, "hat": "cap", "hat_color": 0x1f8a55, "emblem": 0xf2c230}, "adult_f", MapData.coop_point(float(MapData.coop.get("gate", 114.0)) - 4.9, 8.2))      # on the pavement, by the gate
 	loli.still = true
 	var eus = _add_npc("eusebio", {"face": 4, "top": 1, "build": 1.2, "shirt": 0xffffff, "hair": 0x2a1c14, "skin": 0xe9b58c}, "adult_m", places["kiosk"]["p"], -5.0)
 	eus.still = true
@@ -1720,6 +1736,8 @@ func _setup_places_and_actors() -> void:
 	maxi.setup(self)
 	manuela = ManuelaS.new()
 	manuela.setup(self)
+	fatima = FatimaS.new()
+	fatima.setup(self)
 	tiendas_ropa = TiendasRopaS.new()
 	tiendas_ropa.setup(self)
 	koke = KokeS.new()
@@ -1867,7 +1885,7 @@ func _set_lang(to: String) -> void:
 	Settings.apply()
 	Settings.save()
 	if si >= 0 and si < steps.size() and steps[si].has("obj") and phase != "title":
-		hud.set_objective(_tag(), Loc.t(steps[si]["obj"]))
+		hud.set_objective(_tag(), Loc.t("obj_chavisca" if chavisca else steps[si]["obj"]))
 		_refresh_counts()
 
 ## the next (or previous) way of scaling the 3D up, of those there are here
@@ -1896,29 +1914,41 @@ func _menu_page(id: String) -> Dictionary:
 	var items: Array = []
 	var back := {"text": Loc.t("m_back"), "do": _goto.bind("main")}
 	match id:
-		"main":
-			if _any_save():
-				items.append({"text": Loc.t("menu_continue"), "do": _goto.bind("slots")})
-			items.append({"text": Loc.t("menu_new"), "do": _menu_new})
+		"main":                                  # the two ways to play, each with its own saves (the user, 23 Nov 2026: "en vez de
+			# Continuar y Nueva partida estas dos opciones estarán dentro de Modo Historia. Debajo de modo historia estará
+			# Modo Chavisca")
+			items.append({"text": Loc.t("menu_story"), "do": _open_mode.bind(false)})
+			items.append({"text": Loc.t("menu_chavisca"), "do": _open_mode.bind(true)})
 			items.append({"text": Loc.t("m_settings"), "do": _open_settings.bind("main")})
 			items.append({"text": Loc.t("m_howto"), "do": _goto.bind("howto")})
 			items.append({"text": Loc.t("m_credits"), "do": _goto.bind("credits")})
 			items.append({"text": Loc.t("m_quit"), "do": _quit_app})
 			return {"title": "", "sub": Loc.t("m_place"), "crest": true, "items": items, "foot": Loc.t("m_foot")}      # (no name on its plaque: it has just faded in and out over the town, the user, 14 Nov 2026)
+		"story", "chavisca":                     # Continuar (with a save of that mode) and Nueva partida
+			if _any_save():
+				items.append({"text": Loc.t("menu_continue"), "do": _goto.bind("slots")})
+			items.append({"text": Loc.t("menu_new"), "do": _menu_new})
+			items.append(back)
+			return {"title": Loc.t("menu_story_t" if id == "story" else "menu_chavisca_t"), "sub": Loc.t("menu_story_sub" if id == "story" else "menu_chavisca_sub"),
+				"items": items, "back": "main", "foot": Loc.t("m_foot")}
 		"slots":
 			for i in range(3):
 				if _load_slot(i) == null:
 					items.append(_plain(_slot_label(i), 22))
 				else:
 					items.append({"text": _slot_label(i), "do": _continue.bind(i), "face": Creator.look(Creator.clean(_load_slot(i).get("look")))})
-			items.append(back)
-			return {"title": Loc.t("m_saves"), "items": items, "back": "main", "foot": Loc.t("m_foot")}
+			var to_mode := {"text": Loc.t("m_back"), "do": _goto.bind(_mode_page())}
+			items.append(to_mode)
+			return {"title": Loc.t("m_saves"), "items": items, "back": _mode_page(), "foot": Loc.t("m_foot")}
 		"newslot":
 			for i in range(3):
 				items.append({"text": _slot_label(i), "do": _new_game.bind(i)})
-			items.append(back)
-			return {"title": Loc.t("m_overwrite"), "sub": Loc.t("m_overwrite_sub"), "items": items, "back": "main", "foot": Loc.t("m_foot")}
-		"graphics":                                  # everything that costs frames, one row each
+			items.append({"text": Loc.t("m_back"), "do": _goto.bind(_mode_page())})
+			return {"title": Loc.t("m_overwrite"), "sub": Loc.t("m_overwrite_sub"), "items": items, "back": _mode_page(), "foot": Loc.t("m_foot")}
+		"graphics", "graphics_adv":                  # everything that costs frames, one row each: the five everybody touches on
+			# "graphics", the rest under Avanzados (the user, 23 Nov 2026: "Vamos a dejar Calidad, Resolución, Ventana,
+			# Brillo y Filtro. Las demás opciones dentro de \"Avanzados\"")
+			var adv: bool = id == "graphics_adv"
 			var d: Dictionary = Settings.data
 			var res: Vector2i = Settings.RESOLUTIONS[int(d["res"])]
 			var cap: int = Settings.FPS_CAPS[int(d["fps"])]
@@ -1928,12 +1958,19 @@ func _menu_page(id: String) -> Dictionary:
 				return (Loc.t(names) as Array)[int(d[key])]
 			var flip := func(label: String, key: String) -> Dictionary:
 				return {"text": Loc.t(label), "value": Loc.t("s_yes") if d[key] else Loc.t("s_no"), "size": 19, "left": Settings.toggle.bind(key), "right": Settings.toggle.bind(key)}
-			var now: int = Settings.preset()
-			items.append({"text": Loc.t("s_preset"), "value": (Loc.t("s_presets") as Array)[now] if now >= 0 else Loc.t("s_custom"), "size": 21,
-				"left": Settings.step_preset.bind(-1), "right": Settings.step_preset.bind(1)})
-			items.append(row.call("s_res", "%d × %d" % [res.x, res.y], "res", Settings.RESOLUTIONS.size()))
-			items.append(row.call("s_screen", pick.call("window", "s_windows"), "window", 3))
-			items.append(row.call("s_bright", "%d %%" % roundi(Settings.BRIGHT[int(d.get("bright", 6))] * 100.0), "bright", Settings.BRIGHT.size()))
+			if not adv:
+				var now: int = Settings.preset()
+				items.append({"text": Loc.t("s_preset"), "value": (Loc.t("s_presets") as Array)[now] if now >= 0 else Loc.t("s_custom"), "size": 26,
+					"left": Settings.step_preset.bind(-1), "right": Settings.step_preset.bind(1)})
+				items.append(row.call("s_res", "%d × %d" % [res.x, res.y], "res", Settings.RESOLUTIONS.size()))
+				items.append(row.call("s_screen", pick.call("window", "s_windows"), "window", 3))
+				items.append(row.call("s_bright", "%d %%" % roundi(Settings.BRIGHT[int(d.get("bright", 6))] * 100.0), "bright", Settings.BRIGHT.size()))
+				items.append(row.call("s_filtro", pick.call("filtro", "s_filtro_v"), "filtro", 4))
+				for it in items:
+					it["size"] = 26                  # (five rows: the big painted letters, like the other pages)
+				items.append({"text": Loc.t("s_advanced"), "do": _goto.bind("graphics_adv")})
+				items.append({"text": Loc.t("m_back"), "do": _goto.bind("settings")})
+				return {"title": Loc.t("s_graphics").to_upper(), "items": items, "back": "settings", "foot": Loc.t("m_foot_set")}
 			items.append(flip.call("s_vsync", "vsync"))
 			items.append(row.call("s_fps", Loc.t("s_nolimit") if cap == 0 else str(cap), "fps", Settings.FPS_CAPS.size()))
 			items.append(row.call("s_shadows", pick.call("shadows", "s_shadow_v"), "shadows", 4))
@@ -1951,10 +1988,9 @@ func _menu_page(id: String) -> Dictionary:
 			items.append(flip.call("s_lod", "lod"))
 			items.append(flip.call("s_occlusion", "occlusion"))
 			items.append(flip.call("s_silent", "silent"))
-			items.append(row.call("s_filtro", pick.call("filtro", "s_filtro_v"), "filtro", 4))
 			items.append(row.call("s_traffic", pick.call("traffic", "s_traffic_v"), "traffic", 2))
-			items.append({"text": Loc.t("m_back"), "do": _goto.bind("settings"), "size": 21})
-			return {"title": Loc.t("s_graphics").to_upper(), "items": items, "back": "settings", "foot": Loc.t("m_foot_set")}
+			items.append({"text": Loc.t("m_back"), "do": _goto.bind("graphics"), "size": 21})
+			return {"title": Loc.t("s_advanced").to_upper(), "items": items, "back": "graphics", "foot": Loc.t("m_foot_set")}
 		"settings":                                  # three pages: the graphics, the sound, and the playing itself (the user, 14 November 2026)
 			items.append({"text": Loc.t("s_graphics"), "do": _goto.bind("graphics")})
 			items.append({"text": Loc.t("s_sound"), "do": _goto.bind("sound")})
@@ -2030,9 +2066,16 @@ func _menu_page(id: String) -> Dictionary:
 			return {"title": _choice.get("title", ""), "items": items, "foot": Loc.t("m_foot")}
 		"log", "log_side", "log_bg", "log_games", "log_folk", "log_gacha", "log_radio":
 			return _agenda_page(id)
+		"minijuegos":
+			items.append_array(_minigame_items())
+			items.append({"text": Loc.t("m_back"), "do": _goto.bind("pause")})
+			return {"title": Loc.t("m_minigames").to_upper(), "items": items, "back": "pause", "foot": Loc.t("m_foot")}
 		"pause":
 			items.append({"text": Loc.t("m_resume"), "do": _close_pause})
-			items.append({"text": Loc.t("m_log"), "do": _goto.bind("log")})
+			if chavisca:                         # (no Agenda in the Modo Chavisca: its minigames, on a page of their own)
+				items.append({"text": Loc.t("m_minigames"), "do": _goto.bind("minijuegos")})
+			else:
+				items.append({"text": Loc.t("m_log"), "do": _goto.bind("log")})
 			items.append({"text": Loc.t("m_save"), "do": _pause_save})
 			items.append({"text": Loc.t("m_settings"), "do": _open_settings.bind("pause")})
 			if Settings.data.get("dev", false):
@@ -2046,6 +2089,14 @@ func _menu_page(id: String) -> Dictionary:
 			return {"title": Loc.t("m_quit").to_upper(), "sub": Loc.t("m_quit_confirm"), "items": items, "back": "pause", "foot": Loc.t("m_foot")}
 	return {"title": "", "items": [back]}
 
+## the story or the Modo Chavisca: from here on the saves are that mode's
+func _open_mode(free: bool) -> void:
+	chavisca = free
+	menu.open(_mode_page())
+
+func _mode_page() -> String:
+	return "chavisca" if chavisca else "story"
+
 func _menu_new() -> void:
 	for i in range(3):
 		if _load_slot(i) == null:
@@ -2057,6 +2108,7 @@ func _menu_new() -> void:
 ## moves it, the right zooms it (or WASD and the wheel; on a phone the stick and a drag on the right). The photos of who
 ## has a mission for you stay the same size however close it is (the user, 15 November 2026).
 const MAP_ZOOM_MAX := 8.0
+var map_pin = null              # your own marker on the big map (Vector2), or null
 var track_pick := "auto"        # "auto" | "none" | "giver:<id>" — mission selected from the big map
 var _raw_beacon := false
 var _map_mouse_was := Input.MOUSE_MODE_CAPTURED
@@ -2064,6 +2116,10 @@ var _map_mouse_was := Input.MOUSE_MODE_CAPTURED
 func _guide_target():
 	if track_pick == "none":
 		return null
+	if track_pick == "pin":                      # (your own marker on the big map)
+		if map_pin != null:
+			return map_pin
+		track_pick = "auto"
 	if track_pick.begins_with("giver:"):
 		var gid := track_pick.substr(6)
 		var n = named.get(gid)
@@ -2085,9 +2141,28 @@ func _map_missions() -> Array:
 		for n in marcas.givers():
 			var np: Vector2 = vip.door_out if n.id == "vip" and vip != null else n.p
 			out.append({"id": "giver:" + n.id, "label": n.shown_name(), "p": np})
+	if map_pin != null:
+		out.append({"id": "pin", "label": Loc.t("map_pin"), "p": map_pin})
+	out.append({"id": "pin_here", "label": Loc.t("map_pin_here"), "p": null})
 	return out
 
+## your marker, where the big map's cross is (or where you clicked on it), and the arrow to it
+func put_pin(at: Vector2) -> void:
+	map_pin = at
+	track_pick = ""                              # (so that select_mission takes it, not drops it)
+	select_mission("pin")
+	if map_open:
+		hud.bigmap.missions = _map_missions()
+		for i in range(hud.bigmap.missions.size()):
+			if String(hud.bigmap.missions[i]["id"]) == "pin":
+				hud.bigmap.map_sel = i
+		hud.bigmap.queue_redraw()
+	Sfx.beep(700.0, 0.05, 2, -16.0)
+
 func select_mission(id: String) -> void:
+	if id == "pin_here":
+		put_pin(hud.bigmap.cross())
+		return
 	if id == track_pick and id != "none":
 		track_pick = "none"
 	else:
@@ -2381,7 +2456,7 @@ func _quit_app() -> void:
 
 # ---------- saving: three slots ----------
 func _slot_path(i: int) -> String:
-	return "%s%d.json" % [save_prefix, i + 1]
+	return "%s%s%d.json" % [save_prefix, "chavisca_" if chavisca else "", i + 1]      # (the Modo Chavisca's saves apart)
 
 func _load_slot(i: int):
 	if not FileAccess.file_exists(_slot_path(i)):
@@ -2399,6 +2474,8 @@ func _slot_label(i: int) -> String:
 	var d = _load_slot(i)
 	if d == null:
 		return "%s %d — %s" % [Loc.t("m_slot"), i + 1, Loc.t("m_empty")]
+	if chavisca:                                 # (no missions to name)
+		return "%s %d — %s · %d €" % [Loc.t("m_slot"), i + 1, Loc.t("wd_%d" % (int(d.get("weekday", 0)) % 7)), int(d.get("money", 0))]
 	var mission := ""
 	for k in range(_saved_step(d), -1, -1):
 		if steps[k].has("card"):
@@ -2422,7 +2499,7 @@ func _saved_step(d: Dictionary) -> int:
 func _save(step: int) -> void:
 	save_si = step
 	var data := {"day_n": day_n, "folk": folk.data, "weekday": weekday, "clock": clock, "unlocked": unlocked, "stats": stats, "si": step, "look": look_sel, "money": money, "saffron": saffron, "bumped": bumped, "retries": retries,
-		"delivered": delivered, "delivery_time": delivery_time, "meals": [comida.day, comida.meals], "pc": pc}
+		"delivered": delivered, "delivery_time": delivery_time, "meals": [comida.day, comida.meals], "pc": pc, "chavisca": chavisca}
 	var f := FileAccess.open(_slot_path(slot), FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(data))
@@ -2466,6 +2543,9 @@ func _new_game(into_slot := -1) -> void:
 	hud.hide_overlay()
 	hud.fade.modulate.a = 1.0
 	story_i = 0
+	if chavisca:                                 # (no story: straight to your character)
+		_start_creator()
+		return
 	hud.show_story(Loc.t("prologue")[0], Loc.t("story_next"))
 
 func _story_next() -> void:
@@ -2658,8 +2738,97 @@ func _finish_creator() -> void:
 	_hide_easel()
 	money = 0; saffron = 0; bumped = 0; retries = 0; pc = 0
 	padron.open(func():                          # (the town hall puts you on its roll first: your name. padron.gd)
+		if chavisca:
+			_start_chavisca_flyover()
+			return
 		_save(0)
 		_start_flyover())
+
+## every minigame open in the Modo Chavisca (the user, 23 Nov 2026: "Todos los minijuegos deberán estar desbloqueados,
+## Recress, Ajedrez"): the boxing, the ham riot and the mayor's chess, the Galaxy Recress open with its Tokken 9, the
+## chess mission done
+func _chavisca_unlock() -> void:
+	for mg in Missions.MINIGAMES:
+		if int(unlocked.get(mg, 0)) < 1:
+			unlocked[mg] = 1
+	if String((stats.get("recress", {}) as Dictionary).get("stage", "")) != "hecho":
+		stats["recress"] = {"stage": "hecho", "posters": []}
+	if not stats.has("ajedrez"):
+		stats["ajedrez"] = day_n
+
+## The Modo Chavisca's opening (the user, 23 Nov 2026: "una nueva cinemática introductoria para el modo Chavisca. Que
+## hable de que hoy parece un día tranquilo. De que deberías ir a tomar el fresco, hablar con los vecinos. Que se
+## encuadren varios de los edificios más complejos que hemos hecho"): the town crier over the hand-built places, one
+## camera move a line, and down to your own door. CHAVISCA_SHOTS: [the world's field, the bearing the camera starts
+## from and the one it ends at (degrees round the place, 0 = from the north... as atan2(x, z)), how far out (x its size)].
+const CHAVISCA_SHOTS := [["petril", 200.0, 150.0, 2.2], ["plaza", 30.0, -20.0, 1.2], ["toros", 120.0, 70.0, 1.7],
+	["molino", 250.0, 200.0, 2.4], ["almazara", 160.0, 110.0, 1.6], ["caridad", 300.0, 250.0, 1.2]]
+func _start_chavisca_flyover() -> void:
+	phase = "flyover"
+	set_time(9.0)
+	player.p = _home_pavement
+	player.sync()
+	named["paca"].visible = false
+	hud.cine(true)
+	_fly_shots = []
+	for c in CHAVISCA_SHOTS:
+		_fly_shots.append(_place_shot(world.get(c[0]) if world != null else null, deg_to_rad(c[1]), deg_to_rad(c[2]), c[3]))
+	var u: Vector2 = _start["u"]                  # down the street to your door, as the story's fly-over ends
+	var to_door: Vector2 = HOME_DOOR - (_start["p"] as Vector2)
+	to_door = (to_door - u * to_door.dot(u)).normalized()
+	var road_mid: Vector2 = _start["p"]
+	var stand: Vector2 = road_mid - to_door * minf(1.9, MapData.room_at(road_mid - to_door * 2.0) + 1.0) - u * 6.0
+	var high: Vector2 = road_mid - to_door * 16.0 - u * 85.0
+	var aim: Vector2 = player.p + to_door * 0.6
+	var gy: float = MapData.height(player.p)
+	_fly_shots.append([Vector3(high.x, gy + 55.0, high.y), Vector3(stand.x, gy + 2.3, stand.y), Vector3(aim.x, gy + 1.5, aim.y)])
+	_fly_i = -1
+	say(Loc.t("n_narrator"), Loc.t("flyover_chavisca"), "old_m", func():
+		hud.cine(false)
+		_chavisca_begin())
+
+## a camera move round one of the hand-built places: from bearing a0 to a1, coming in and down; over the church if
+## the place is not there
+func _place_shot(node, a0: float, a1: float, out: float) -> Array:
+	var mid := Vector3(_title_center.x, MapData.height(_title_center), _title_center.y)
+	var r := 40.0
+	var tall := 12.0
+	if node != null:
+		var box := AABB()
+		var first := true
+		for mi in node.find_children("*", "MeshInstance3D", true, false):
+			var b: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
+			if b.size.x > 250.0 or b.size.z > 250.0:
+				continue                         # (a ground under it all)
+			box = b if first else box.merge(b)
+			first = false
+		if not first:
+			var c := box.get_center()
+			mid = Vector3(c.x, MapData.height(Vector2(c.x, c.z)), c.z)
+			r = clampf(maxf(box.size.x, box.size.z) / 2.0, 10.0, 70.0)
+			tall = clampf(box.end.y - mid.y, 4.0, 40.0)
+	var d0 := Vector3(sin(a0), 0.0, cos(a0))
+	var d1 := Vector3(sin(a1), 0.0, cos(a1))
+	return [mid + d0 * r * out * 1.25 + Vector3.UP * (tall + r * 0.9), mid + d1 * r * out + Vector3.UP * (tall * 0.7 + r * 0.45),
+		mid + Vector3.UP * tall * 0.4]
+
+## The Modo Chavisca's start, after the Padrón: no fly-over, no Tía Paca; a clean game as the cutscene's end makes it,
+## out on your own pavement at the end of the story (the "tbc" step: nothing to do), saved there.
+func _chavisca_begin() -> void:
+	weekday = 0
+	unlocked = {}
+	var nombre = stats.get("nombre")
+	stats = {}
+	if nombre != null:
+		stats["nombre"] = nombre
+	stats["armario"] = Creator.wardrobe_from(look_sel)
+	day_n = 0
+	folk.reset()
+	recalls = []
+	comida.reset()
+	set_time(9.0)
+	start_game(_idx("tbc"))
+	_save(si)
 
 ## Before meeting Tía Paca: the camera drifts over the town while the town crier explains the place.
 ## One camera move per line; the last one comes down to the street where she is waiting.
@@ -2812,7 +2981,7 @@ func _cine_camera() -> void:
 ## pays: it is sold to the saffron sellers, azafran.gd); one hidden in a special place counts once, and is kept
 var near_flower := -1
 func _take_flower(i: int) -> void:
-	if i < 0 or i >= flowers.size():
+	if i < 0 or i >= flowers.size() or chavisca:
 		return
 	if flowers[i].get("hidden", false):          # (the user, 21 Nov 2026: it counts once, saved)
 		flowers[i]["gone"] = true
@@ -2859,6 +3028,9 @@ func clock_text() -> String:
 
 func start_game(from_step := 0) -> void:
 	hud.ov_logo.visible = false
+	hud.bare = chavisca                          # (no calendar, slate or minimap in the Modo Chavisca)
+	if chavisca:
+		_chavisca_unlock()
 	if not _tags_done:
 		_tags_done = true
 		pintadas.assign(look_sel[11])     # every wall back to the peña that painted it (not yours: pintadas.gd)
@@ -2876,9 +3048,11 @@ func start_game(from_step := 0) -> void:
 		trabajos.place_giver()
 	for f in flowers:                            # the saffron hidden in special places: gone if this game has had it
 		if f.get("hidden", false):
-			f["gone"] = String(f.get("id", "")) in stats.get("saffron_hidden", [])
+			f["gone"] = String(f.get("id", "")) in stats.get("saffron_hidden", []) or chavisca      # (none at all in the Modo Chavisca)
 			if is_instance_valid(f["node"]):
 				f["node"].visible = not f["gone"]
+	if chavisca:
+		_spread_saffron()                        # (the street's taken away)
 	if stats.has("puente") and not stats.has("puente_h"):
 		stats["puente_h"] = llamadas.now()        # (a game saved before this was kept: Alberto's call counts from now)
 	hud.hide_overlay()
@@ -2886,12 +3060,19 @@ func start_game(from_step := 0) -> void:
 	hud.fade.modulate.a = 0.0
 	phase = "play"
 	indoors = false
-	bridge.close_off(not stats.has("puente"))    # (fenced off until you unlock it)
+	bridge.close_off(not stats.has("puente") and not chavisca)    # (fenced off until you unlock it; open in the Modo Chavisca)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED        # the mouse looks around from here on
 	named["paca"].visible = true
 	_refresh_counts()
 	Sfx.jingle([523, 659, 784])
-	if from_step == 0:
+	if chavisca:                    # the Modo Chavisca: on foot, on your own pavement
+		if in_car != null:
+			in_car.set_speed(Vector2.ZERO)
+			_exit_car()
+		player.p = _home_pavement
+		player.sync()
+		checkpoint = places["home"]
+	elif from_step == 0:
 		named["paca"].bark(Loc.t("paca_call"), 6.0)
 	else:                           # continuing: pick up in the car at the last place the story took you
 		var at: Dictionary = places[steps[from_step - 1].get("place", "home")]
@@ -2931,7 +3112,7 @@ func begin_step(i: int) -> void:
 	if s.has("card") and not _is_offer(s):       # (a mission that is offered shows its card when you take it: _accept)
 		hud.show_card(Loc.t(s["card"]), "")          # (the day is on the calendar leaf in the corner, and nowhere else)
 	if s.has("obj"):
-		hud.set_objective(_tag(), Loc.t(s["obj"]))
+		hud.set_objective(_tag(), Loc.t("obj_chavisca" if chavisca else s["obj"]))
 	match s["type"]:
 		"talk":
 			target_npc = named[s["npc"]]
@@ -3044,6 +3225,8 @@ func _is_offer(s: Dictionary) -> bool:
 ## Saying no gets you a nasty remark and "talk to me later" -- or, on the phone, another call once you have finished
 ## some other mission (or whenever you ring them yourself, from the Agenda).
 func _offer(n, title: String, on_yes: Callable, by_phone := false, kind := "step", on_no = null) -> void:
+	if chavisca:                                 # (no missions in the Modo Chavisca)
+		return
 	var back := "play" if phase == "talking" else phase
 	_choice = {"offer": true, "title": title.to_upper(), "options": [
 		[Loc.t("offer_si" if by_phone else "offer_accept"), func():
@@ -3561,12 +3744,18 @@ func _so() -> int:
 func _sc() -> int:
 	return int(shop_ropa.get("col", ROPA_COLOUR)) if shop_ropa != null else ROPA_COLOUR
 
+## no colour to choose: what the shop sells comes in its own (the optician's glasses: col -1), or this one takes none
+func _col_off() -> bool:
+	return _sc() < 0 or Creator.not_used(look_sel, _sc())
+
+const GLASSES := 12              # the creator's option for glasses (Creator.OPTIONS "glasses"): the opticians' (fatima.gd)
+
 ## the garments a shop has: every one the creator offers (the peña's T-shirt only at home; no going barefoot)
 func ropa_for_sale() -> Array:
 	var out: Array = []
 	var opt := _so()
 	for i in range((Creator.OPTIONS[opt]["values"] as Array).size()):
-		if not Creator.skipped(opt, i) and not (Creator.NOTHING.has(opt) and i == int(Creator.NOTHING[opt])):
+		if not Creator.skipped(opt, i) and not (Creator.NOTHING.has(opt) and i == int(Creator.NOTHING[opt])) 				and not (shop_ropa != null and (shop_ropa.get("skip", []) as Array).has(i)):
 			out.append(i)
 	return out
 
@@ -3578,7 +3767,8 @@ func open_shop_ropa(spot: Vector2, face: float, side: Vector2, price: int, who, 
 	shop_ropa = {"face": face, "side": side.normalized() if side.length() > 0.01 else Vector2(-cos(face), sin(face)), "price": price, "who": who, "bought": 0,
 		"opt": int(kind.get("opt", ROPA)), "col": int(kind.get("col", ROPA_COLOUR)), "title": String(kind.get("title", "arm_shop_title")),
 		"poor": String(kind.get("poor", "maxi_poor")), "bought_line": String(kind.get("bought", "maxi_bought")),
-		"have": String(kind.get("have", "arm_have")), "have_btn": String(kind.get("have_btn", "arm_have_btn"))}
+		"have": String(kind.get("have", "arm_have")), "have_btn": String(kind.get("have_btn", "arm_have_btn")), "skip": kind.get("skip", []),
+		"free": kind.get("free")}      # (a first one given: {stat, then, line}; Fátima's first pair)
 	_armario_back = phase if phase != "talking" else "play"
 	phase = "armario"
 	_armario_was = look_sel.duplicate()
@@ -3599,7 +3789,7 @@ func _shop_owns(g: int) -> bool:
 	var own: Dictionary = armario_owned()
 	var sel := look_sel.duplicate()
 	sel[_so()] = g
-	var col_ok: bool = Creator.not_used(sel, _sc()) or (own.get(str(_sc()), []) as Array).has(int(look_sel[_sc()]))
+	var col_ok: bool = _sc() < 0 or Creator.not_used(sel, _sc()) or (own.get(str(_sc()), []) as Array).has(int(look_sel[_sc()]))
 	return (own.get(str(_so()), []) as Array).has(g) and col_ok
 
 ## the fitting room's grid: the arrows and the stick about it, a click on a picture, accept buys, back leaves; the
@@ -3609,7 +3799,7 @@ func _shop_input(what: String) -> void:
 	var at: int = maxi(0, sale.find(int(look_sel[_so()])))
 	var cols: int = hud.SHOP_COLS
 	if what == "col_prev" or what == "col_next":
-		if Creator.not_used(look_sel, _sc()):
+		if _col_off():
 			return
 		var nc: int = (Creator.OPTIONS[_sc()]["values"] as Array).size()
 		look_sel[_sc()] = (int(look_sel[_sc()]) + (1 if what == "col_next" else nc - 1)) % nc
@@ -3657,7 +3847,8 @@ func _ropa_key(g: int) -> String:
 	return _ropa_key_of(g, Creator.look(sel))
 
 func _ropa_key_of(g: int, lk: Dictionary) -> String:
-	return "%d|%d|%s|%s|%s|%s|%s|%s" % [_so(), g, lk.get("shirt"), lk.get("shirt2"), lk.get("shirt3"), lk.get("skin"), lk.get("build"), lk.get("shoes")]
+	return "%d|%d|%s|%s|%s|%s|%s|%s|%s|%s|%s" % [_so(), g, lk.get("shirt"), lk.get("shirt2"), lk.get("shirt3"), lk.get("skin"), lk.get("build"), lk.get("shoes"),
+		lk.get("hair"), lk.get("hair_style"), lk.get("face")]      # (the last three for the optician's pictures: your face)
 
 func _draw_ropa_icons() -> void:
 	if _ropa_drawing:
@@ -3677,7 +3868,7 @@ func _draw_ropa_icons() -> void:
 	for b in range(0, todo.size(), batch):
 		var vps: Array = []
 		for t in todo.slice(b, b + batch):
-			var vp: SubViewport = RopaIcon.viewport(t[2], Vector2i(224, 224), _so() != ROPA)      # (shoes: your feet)
+			var vp: SubViewport = RopaIcon.viewport(t[2], Vector2i(224, 224), _so() != ROPA and _so() != GLASSES, _so() == GLASSES)      # (shoes: your feet; glasses: your face)
 			add_child(vp)
 			vps.append([vp, t])
 		for k in range(4):
@@ -3692,7 +3883,7 @@ func _draw_ropa_icons() -> void:
 		if shop_ropa == null:
 			break
 	_ropa_drawing = false
-	if shop_ropa != null and (look_sel[_sc()] != base[_sc()] or look_sel[21] != base[21] or look_sel[22] != base[22]):
+	if shop_ropa != null and ((_sc() >= 0 and look_sel[_sc()] != base[_sc()]) or look_sel[21] != base[21] or look_sel[22] != base[22]):
 		_draw_ropa_icons()                       # (the colour changed while they were drawn: those, now)
 
 func _shop_buy() -> void:
@@ -3715,16 +3906,24 @@ func _shop_buy() -> void:
 	if not have.has(sel):
 		have.append(sel)
 	own[str(_so())] = have
-	var cols_have: Array = own.get(str(_sc()), [])
-	if not Creator.not_used(look_sel, _sc()) and not cols_have.has(int(look_sel[_sc()])):
-		cols_have.append(int(look_sel[_sc()]))    # (the colour too: yours from now on, in the wardrobe)
-	own[str(_sc())] = cols_have
+	if not _col_off():
+		var cols_have: Array = own.get(str(_sc()), [])
+		if not cols_have.has(int(look_sel[_sc()])):
+			cols_have.append(int(look_sel[_sc()]))    # (the colour too: yours from now on, in the wardrobe)
+		own[str(_sc())] = cols_have
 	shop_ropa["bought"] = int(shop_ropa["bought"]) + 1
 	stats["ropa_comprada"] = int(stats.get("ropa_comprada", 0)) + 1
 	Sfx.jingle([659, 784, 988], 0.07)
 	hud.toast(Loc.t("t_ropa_armario") % String(Loc.t("c_values")[_so()][sel]), 3.5)
+	var line := String(shop_ropa["bought_line"])
+	var free = shop_ropa.get("free")
+	if free != null:                             # the one given: taken, the rest at their price
+		stats[String(free["stat"])] = day_n
+		shop_ropa["price"] = int(free["then"])
+		shop_ropa["free"] = null
+		line = String(free["line"])
 	if who != null and is_instance_valid(who):
-		who.bark(Loc.t(String(shop_ropa["bought_line"])).pick_random(), 3.0)
+		who.bark(Loc.t(line).pick_random(), 3.5)
 	_refresh_armario()
 
 func _refresh_armario() -> void:
@@ -3740,8 +3939,8 @@ func _refresh_armario() -> void:
 			cells.append({"name": String(values[_so()][g]), "tag": Loc.t(String(shop_ropa["have"])) if _shop_owns(g) else Loc.t("arm_price") % int(shop_ropa["price"]),
 				"icon": _ropa_tex.get(_ropa_key(g))})
 		var buy: String = Loc.t(String(shop_ropa["have_btn"])) if _shop_owns(sel) else Loc.t("arm_buy") % int(shop_ropa["price"])
-		var col := {"name": "%s: %s" % [Loc.t("arm_colour"), "—" if Creator.not_used(look_sel, _sc()) else String(values[_sc()][look_sel[_sc()]])],
-			"colour": null if Creator.not_used(look_sel, _sc()) else Creator.swatch(_sc(), look_sel[_sc()])}
+		var col := {} if _sc() < 0 else {"name": "%s: %s" % [Loc.t("arm_colour"), "—" if _col_off() else String(values[_sc()][look_sel[_sc()]])],
+			"colour": null if _col_off() else Creator.swatch(_sc(), look_sel[_sc()])}      # (none at all: the glasses come in their own)
 		hud.show_shop_grid(Loc.t(String(shop_ropa["title"])), cells, sale.find(sel), buy, Loc.t("arm_leave"), col)
 		return
 	var shown: Array = []
@@ -3813,6 +4012,27 @@ func _stat_lines() -> Array:
 ## the radio). The first row turns the page.
 const AGENDA := ["log", "log_side", "log_bg", "log_games", "log_folk", "log_gacha", "log_radio"]
 
+## the minigames, each level a row to play it (the Agenda's page, and the Modo Chavisca's own page in the pause menu)
+func _minigame_items() -> Array:
+	var items: Array = []
+	for mg in Missions.MINIGAMES:
+		var info: Dictionary = Missions.MINIGAMES[mg]
+		var open: int = int(unlocked.get(mg, 0))
+		if open <= 0:
+			items.append(_plain("???  ·  %s" % Loc.t("log_closed"), 17))
+			items.append(_plain(Loc.t(info["unlock"]), 14))
+			continue
+		if in_mission() or side != null:
+			items.append(_plain(Loc.t("log_not_now"), 14))
+		var levels: Array = info["levels"]
+		for lv in range(levels.size() if info.get("all_open", false) else mini(open, levels.size())):     # (ajedrez: every level at once, each with its own name)
+			var foe: String = Loc.t(levels[lv]["name"]) if levels[lv].has("name") else named[levels[lv]["npc"]].shown_name()
+			items.append({"text": Loc.t("log_level") % [Loc.t(info["title"]), lv + 1, foe], "do": _play_minigame.bind(mg, lv), "size": 19})
+		items.append(_plain(Loc.t("log_best") % [int(stats.get(mg + "_wins", 0)), int(stats.get(mg + "_fights", 0)), int(stats.get(mg + "_best", 0))], 15))
+		if not chavisca:
+			items.append(_plain(Loc.t("log_opened") % Loc.t(info["unlock"]), 13))
+	return items
+
 func _agenda_page(id: String) -> Dictionary:
 	var n: int = AGENDA.find(id)
 	var titles := ["log_main", "log_side", "log_bg_title", "log_games", "log_folk", "log_gacha", "log_radio"]
@@ -3873,21 +4093,7 @@ func _agenda_page(id: String) -> Dictionary:
 				items.append(_plain(Loc.t("log_bg_none"), 15))
 			items.append(_plain(Loc.t("log_bg_how"), 12))
 		3:
-			for mg in Missions.MINIGAMES:
-				var info: Dictionary = Missions.MINIGAMES[mg]
-				var open: int = int(unlocked.get(mg, 0))
-				if open <= 0:
-					items.append(_plain("???  ·  %s" % Loc.t("log_closed"), 17))
-					items.append(_plain(Loc.t(info["unlock"]), 14))
-					continue
-				if in_mission() or side != null:
-					items.append(_plain(Loc.t("log_not_now"), 14))
-				var levels: Array = info["levels"]
-				for lv in range(levels.size() if info.get("all_open", false) else mini(open, levels.size())):     # (ajedrez: every level at once, each with its own name)
-					var foe: String = Loc.t(levels[lv]["name"]) if levels[lv].has("name") else named[levels[lv]["npc"]].shown_name()
-					items.append({"text": Loc.t("log_level") % [Loc.t(info["title"]), lv + 1, foe], "do": _play_minigame.bind(mg, lv), "size": 19})
-				items.append(_plain(Loc.t("log_best") % [int(stats.get(mg + "_wins", 0)), int(stats.get(mg + "_fights", 0)), int(stats.get(mg + "_best", 0))], 15))
-				items.append(_plain(Loc.t("log_opened") % Loc.t(info["unlock"]), 13))
+			items.append_array(_minigame_items())
 		4:
 			for r in recalls:                        # somebody you said no to on the phone: ring them
 				if named.has(r["npc"]):
@@ -4093,6 +4299,12 @@ func talk_to(n, chat_only := false) -> void:
 		return
 	player.h = face + PI
 	var s: Dictionary = steps[si] if phase == "play" and si >= 0 else {}
+	if chavisca:                                 # (the Modo Chavisca: only their talk; no errands, offers, sales, letters)
+		if n.id == "vip" and not chat_only and vip != null and int(unlocked.get("box", 0)) > 0:
+			_vip_spar()                          # (but Fonsi's ring: every minigame is open here)
+			return
+		_chat(n, {})
+		return
 	if s.get("type", "") == "sign" and firmas != null:
 		_ask_signature(n)
 		return
@@ -4152,6 +4364,8 @@ func talk_to(n, chat_only := false) -> void:
 		return
 	if manuela != null and (phase == "play" or phase == "free") and manuela.talk(n):      # (manuela.gd: the Pisacastaña's clerk)
 		return
+	if fatima != null and (phase == "play" or phase == "free") and fatima.talk(n):        # (fatima.gd: the Óptica Corsa's optician)
+		return
 	if koke != null and (phase == "play" or phase == "free") and koke.talk(n):      # (koke.gd: Koke el Kokas, by his taxis)
 		return
 	if javi != null and (phase == "play" or phase == "free") and javi.talk(n):      # (javi.gd: Javi himself, and Josefa telling you about him)
@@ -4162,17 +4376,21 @@ func talk_to(n, chat_only := false) -> void:
 		return
 	if n.id in ["tomasa", "chino"] and tomasa != null and (phase == "play" or phase == "free") and tomasa.talk(n):
 		return
+	_chat(n, s)
+
+## what they say when there is nothing else to it: their own lines (a step's, a mission's after it) or the common stock
+func _chat(n, s: Dictionary) -> void:
 	var who: String = n.shown_name() if n.id != "" else Loc.t("generic_names")[int(n.display_name)]
 	var key: String = n.lines_key
 	match n.id:
 		"paca": key = "paca_coop" if s.get("id", "") in ["loli", "load"] else ("paca_kiosk" if s.get("type", "") == "deliver" else "paca_idle")
 		"loli": key = "loli_busy" if s.get("type", "") == "deliver" else "loli_idle"
-		"eusebio": key = "eusebio_wait" if si <= _idx("deliver") and phase == "play" else "eusebio_done"
+		"eusebio": key = "eusebio_wait" if (si <= _idx("deliver") and phase == "play") or chavisca else "eusebio_done"
 		"josefa": key = "josefa_no_more" if stats.has("menu_done") else "josefa_idle"
 		"henry": key = "henry_idle"
 		"luis": key = "luis_idle"
-		"alberto": key = "alberto_after" if _protest_over else "alberto_idle"
-		"chiki": key = "chiki_after" if _protest_over else "chiki_idle"
+		"alberto": key = "alberto_after" if _protest_over and not chavisca else "alberto_idle"
+		"chiki": key = "chiki_after" if _protest_over and not chavisca else "chiki_idle"
 		"vip": key = "vip_idle"
 	if key == "generic" and n.voice == "kid":
 		key = "generic_kid"
@@ -4357,7 +4575,7 @@ func _show_bottles() -> void:
 func _refresh_counts() -> void:
 	hud.counts.text = "%d €      %s  %d      %s  %d      %s  %d/%d" % [money, Loc.t("saffron"), saffron, Loc.t("bumped"), bumped,
 		Loc.t("pintadas"), props.tags_owned(look_sel[11]), props.tags.size()]
-	hud.set_counts(money, saffron, pc if pc_on() else -1, props.tags_owned(look_sel[11]) if pintadas.unlocked() else -1, props.tags.size())
+	hud.set_counts(money, -1 if chavisca else saffron, pc if pc_on() else -1, props.tags_owned(look_sel[11]) if pintadas.unlocked() else -1, props.tags.size())
 
 func _enter_car(c) -> void:
 	in_car = c
@@ -4674,7 +4892,7 @@ func _turbo(c, dt: float) -> void:
 	if _turbo_look <= 0.0:
 		_turbo_look = 0.2
 		for e in traffic.list:
-			if e["car"].kind == "pitufo" and not police.muted and police._can_see(e["car"], c.p):
+			if e["car"].kind == "pitufo" and not police.muted and not chavisca and police._can_see(e["car"], c.p):
 				traffic.list.erase(e)
 				police.spotted(e["car"], c.p)
 				break
@@ -4967,6 +5185,10 @@ func _unhandled_input(e: InputEvent) -> void:
 			var gid: String = mm.giver_at(click_at)
 			if gid != "":
 				select_mission("giver:" + gid)
+				return
+			var w = mm.world_at(click_at)        # anywhere else on the town: your marker there
+			if w != null:
+				put_pin(w)
 				return
 		return
 	if dlg != null:
@@ -5586,6 +5808,8 @@ func _physics_process(delta: float) -> void:
 		maxi.tick(dt)
 	if manuela != null:
 		manuela.tick(dt)
+	if fatima != null:
+		fatima.tick(dt)
 	if koke != null:
 		koke.tick(dt)
 	if sopiss_gente != null:
@@ -5647,7 +5871,13 @@ func _physics_process(delta: float) -> void:
 			MapData.update_route(map_p)
 		else:
 			MapData.clear_route()
-	arrow.visible = guide != null and (phase == "play" or side != null or track_pick.begins_with("giver:")) and not indoors and dlg == null and not cine_lock and not hud_hidden      # (not while somebody is talking, nor in a scene, nor when deselected on map, nor when HUD hidden)
+	if track_pick == "pin" and guide != null and (guide as Vector2).distance_to(pp) < 7.0:
+		map_pin = null                           # (there: the marker is taken away)
+		track_pick = "none"
+		select_mission("none")
+		hud.toast(Loc.t("t_pin_there"), 3.0)
+		guide = null
+	arrow.visible = guide != null and (phase == "play" or side != null or track_pick.begins_with("giver:") or track_pick == "pin") and not indoors and dlg == null and not cine_lock and not hud_hidden      # (not while somebody is talking, nor in a scene, nor when deselected on map, nor when HUD hidden)
 	if guide != null:
 		# Straight at the place itself, walls or no walls: the minimap already shows the streets (the user, 15 November
 		# 2026; it used to point down the next street of the route, nose up to the sky)
@@ -5950,6 +6180,8 @@ func _side_drop() -> void:
 ## at La Cocina de Henry. Three minutes to fetch it and bring it to them. Every neighbour you run over on the way adds
 ## three seconds, and Los Pitufos take no notice of anything until it is over.
 func _weekly_call() -> void:
+	if chavisca:
+		return
 	if weekday != 3 or clock < 8.0 or clock >= 12.0 or int(stats.get("thu", -1)) == day_n or side != null or police.chasing or in_mission() or not negocio("restaurantes"):
 		return
 	if phone_call != null or indoors or dlg != null or menu.visible or not (phase == "play" or phase == "free") or (steps[si]["type"] in ["call", "deliver", "sleep"] and _step_flag != "declined") \
@@ -6001,7 +6233,7 @@ func _show_step() -> void:
 	var s: Dictionary = steps[si]
 	if phase == "free" or s["type"] == "tbc":
 		set_target(null, false)
-		hud.set_objective(_tag(), Loc.t("obj_free"))
+		hud.set_objective(_tag(), Loc.t("obj_chavisca" if chavisca else "obj_free"))
 		return
 	if s.has("obj"):
 		hud.set_objective(_tag(), Loc.t(s["obj"]))

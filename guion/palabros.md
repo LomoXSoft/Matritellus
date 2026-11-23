@@ -16,7 +16,7 @@ Las definiciones están resumidas con mis palabras; el trabajo original, con sus
 Copias descargadas (solo para consulta, no van en el juego): `tools/palabros_src/`.
 
 Reglas de la casa que ya teníamos: «Enga» (no «Ea»), «La'é» (la he), «Lé» (lo he), «l'á» (le ha), participios en
--ao / -ío, «pa», «to», «na», «tiés», «semos», «entoavía».
+-ao / -ío, «pa», «tó», «ná», «tiés», «semos», «entoavía».
 
 Y dos más (Luis, 12-11-2026):
 
@@ -40,6 +40,27 @@ Y más (Luis, 15-11-2026). Estas dos van en boca de todos, como «apreta», no s
   «¿Por dónde se habrá ido?» → **«¿Ande se habrá ido?»**. Con un nombre detrás basta con «ande», sin el verbo:
   «allí donde vive Julián» → **«allí ande Julián»**.
 - La prueba `palabros` avisa si algún texto en castellano dice «aprieta», «tienes», «dónde» o «por ande».
+
+Y más (Luis, 23-11-2026), también en boca de todos:
+
+- **«Somos» → «semos»:** **«Semos tos amigos aquí»**.
+- **«Se te» → «te se»:** «se te ha caído la cartera» → **«te se ha caío la cartera»**; los mayores lo acortan:
+  **«te s'á caío la cartera»**.
+- **«Vi» → «vide»:** «hace mucho que la vi» → **«hace mucho que la vide»**.
+- **«Parece» → «paece»:** **«Paece que va a llover»**; y todo el verbo: «paeces», «paecen», «paecerlo». Menos el
+  participio, que ya tiene su forma: «parecido» es **«parecío»** («semos mu parecíos») (Luis, 23-11-2026).
+- **«De donde» → «d'ande»:** **«¿D'ande sales tú?»**.
+- **«Todo» → «tó», «toda» → «toa»:** **«No te digo ná y te lo digo tó»**, **«¡Me cago en tó!»**, **«Ha venío toa la
+  gente del pueblo»**. Con tilde, «tó» (antes se escribía «to»); y «to la» era un error: es «toa la».
+- **«Nada» → «ná»**, también con tilde (antes «na»): **«No te digo ná»**, «Na, que solo miraba» → **«Ná, que solo miraba»**.
+- **«Sentido» → «sentío»:** **«¡Que me has dao en tó el sentío!»**, «Y no en el buen sentío».
+- **Sin arcaísmos:** las formas viejas de «Cómo hablan los mayores» (abora, cimenterio, escuro, dispierto, poblema,
+  bueso, uguas, mujuer, ebros, busanillo…) no van en los diálogos: «Son demasiado arcaicas» (Luis, 23-11-2026).
+- **«Bordillo» → «cerquillo»:** **«Ese cerquillo no estaba ahí»**. La peña sigue llamándose «El Bordillo».
+- **Golismero / golismera:** el cotilla (abajo, en «Cómo es la gente»). La Maruja: «Que no soy golismera, {hermoso|hermosa}.
+  Yo archivo.»
+- **«Moto» → «amoto»:** **«me he comprao una amoto»**; los mayores lo contraen: **«me' comprao una amoto»**.
+- La prueba `palabros` avisa también si algún texto dice «se te», «vi», «parec…» (menos «parecío»), «de ande», «moto», «to» o «na» sin tilde, «sentido» o «bordillo» (menos la peña El Bordillo).
 
 Y la prueba `palabros` vigila también las reglas de la casa (Luis, 17-11-2026: el Niño Negro Gordo de Pueblo se las
 saltaba): «lé», «la'é», «l'á», el participio en -ao / -ío detrás de «haber» («he leío», «ha ganao»), «pa», «to / toa /
@@ -71,6 +92,16 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
   En el juego es la carretera que cruza el mapa de norte a sur por el este; los vecinos la nombran así (en los dichos
   de mayores, de los demás y de los críos), y los que andan por ella tienen sus frases (`ruta_colesterol` en loc.gd).
   Foto: `referencias/ruta_colesterol/`.
+
+- **Gentilicios** (Luis, 23-11-2026):
+
+  | Pueblo | Formal | De andar por casa | Burlón |
+  |---|---|---|---|
+  | Madridejos | madridejense | **barrudo / barruda** | — |
+  | Consuegra | consaburense | **cabezón / cabezona** | **consuegrero / consuegrera** (despectivo) |
+  | Camuñas | camuñero / camuñera | — | **de Coconia** |
+
+  Fino solo lo dice el alcalde (o un cartel); los demás dicen «barrudos», «los cabezones» o «los de Coconia».
 
 - **Las peñas** (en el juego, los grafitis de cada una salen por las paredes del pueblo; Luis hizo sus logos):
   - **Nietos de Marzo**: azul y naranja, un sol sobre un tejado en triángulo. (Hasta el 13/11/2026 se llamaban «Nietos de
@@ -134,7 +165,7 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
 - **Ir regular** — sirve para bien y para mal: «¡Regular iba cuando salía del bar!».
 - **Ni más más ni más menos** — y punto; para zanjar.
 - **No me cogía de susto** — se veía venir.
-- **No te digo na y te lo digo to** — sin comentarios.
+- **No te digo ná y te lo digo tó** — sin comentarios.
 - **No sabes con quién te juegas los cuartos / las fincas** — cuidado con ese.
 - **No salirse de las carrilás** — ir por lo marcado.
 - **Oler a cuquillo** — oler mal. **Oler a chinforro** — oler a humo.
@@ -146,6 +177,7 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
 - **Tener más entresijos que un mondongo** — ser complicadísimo.
 - **Trote gorrinero** — manera de correr de algunos.
 - **Tener ahogaciones / ardorás** — ahogos / sofocos.
+- **En tó lo alto** — arriba del todo («pa eso lo pusieron en tó lo alto»; Luis, 23/11/2026).
 
 ## Exclamaciones
 
@@ -158,7 +190,7 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
 ## Cosas
 
 apichusques (trastos sin valor) · atalines (cuerdas) · cacharra (recipiente, garrafa) · cerquillo (el bordillo:
-el escalón de la puerta de la calle y el de la acera; «cerquillo» y «bordillo» se dicen igual, son lo mismo) · guaril (el pequeño de un montón) · guisopo (fregona, brocha gorda) · hato (la ropa) ·
+el escalón de la puerta de la calle y el de la acera; «cerquillo» y «bordillo» se dicen igual, son lo mismo; pa tomar el fresco uno se sienta **en un cerquillo**, no «en un poyo»: Luis, 23/11/2026) · guaril (el pequeño de un montón) · guisopo (fregona, brocha gorda) · hato (la ropa) ·
 nidos (rincones donde se amontona todo) · paereja (tapia de linde) · ruillo (apero para amontonar la parva) ·
 salicón (la bola de pinchos seca que rueda por el campo; en Consuegra, calamino) · senapismo (trasto inútil, cosa
 o persona).
@@ -199,6 +231,7 @@ Salen en las frases de la pantalla de carga (loc.gd «loading_chores»).
 | chumeco | gracioso, amigo de hacer gracias |
 | disponianta | la que lo dispone y lo manda todo |
 | escuelante | estudiante («buen / mal escuelante») |
+| golismero / golismera | cotilla: el que todo lo curiosea y se mete en lo de los demás (Luis, 23-11-2026) |
 | lanterillo | viejo, dicho con retintín |
 | medios | mellizos |
 | monillo | pequeño y bonito |
@@ -283,7 +316,7 @@ propias frases (`generic_old`, `whisper_old`, `ouch_old` en `loc.gd`).
 
 ### Cómo se pronuncia (para escribir las frases de los mayores)
 
-- **Se comen la -d- y la -r-:** pasao, comío; almoha (almohada), temporá, na; lañaor (lañador), herraúra.
+- **Se comen la -d- y la -r-:** pasao, comío; almoha (almohada), temporá, ná; lañaor (lañador), herraúra.
   Con pronombre detrás, el verbo pierde la -r: «convidalo», «remojalo». Y a veces se lleva una -n: «al vesen, se
   abrazaron». «Le tién envidia» (tiene).
 - **La l y la r se cambian:** arbañil, barcón / alfileles, talleles; trastol.
@@ -338,7 +371,7 @@ propias frases (`generic_old`, `whisper_old`, `ouch_old` en `loc.gd`).
 | eres peor que Arrancao | eres malo, o muy trasto |
 | hacer la gandinga | hacer como que se hace algo |
 | tener a uno al retrotero | no dejarle parar |
-| parece que hay de muda | va a cambiar el tiempo |
+| paece que hay de muda | va a cambiar el tiempo |
 | empozarse el sol | ponerse el sol entre nubes |
 | hincar el rejo | caerse de boca |
 | carne huída | el dolor del golpe o del esguince |
@@ -355,8 +388,8 @@ propias frases (`generic_old`, `whisper_old`, `ouch_old` en `loc.gd`).
   espirituao (en los huesos), escuchimizao, fanegas (gordo), gumia (tragón), galgo (goloso), mazámpulas, mameluco,
   pavisoso, pánfilo, resabiao, tarambanas, zaragatas (pendenciero), zamuzo (vergonzoso, callado),
   zanguango, zopenco, zocato (zurdo), manero (ambidiestro), chache/chacha (el hermano mayor), cosuegro.
-- **El cuerpo y los males:** chiribizo y monago (el estómago), belorta (la cabeza), sentido (la sien: «en to el
-  sentido»), cocote, canilla, espeletre (escalofrío), chabasque (crujido de la pierna), arrichucho (achuchón de
+- **El cuerpo y los males:** chiribizo y monago (el estómago), belorta (la cabeza), sentío (la sien: «en tó el
+  sentío»), cocote, canilla, espeletre (escalofrío), chabasque (crujido de la pierna), arrichucho (achuchón de
   salud), cabrillas (manchas de estar al brasero), costalá (caída de espaldas), escalabraura, mataura (rozadura de los muslos), regüeldo,
   morrina (sueño pesado), murria (tristeza).
 - **El tiempo que hace:** canina (calor: «¡vaya canina!»), bochorno, calima, gris y biruji (frío que corta),

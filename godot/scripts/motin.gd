@@ -88,7 +88,7 @@ func wanted() -> bool:
 		return true
 	if G.side != null or G.in_mission():         # (with a mission under way nothing else is on: no events, no minigames)
 		return false
-	return G.unlocked.has("jamon") and G.weekday == 3 and G.clock >= 8.0 and G.clock < 21.0 and int(G.stats.get("jamon_day", -1)) != int(G.day_n) and G.negocio("restaurantes") 		and not G.sabotaje.active()              # (Don Luis's delivery lorry comes down this very street: not while it is about)
+	return G.unlocked.has("jamon") and G.weekday == 3 and G.clock >= 8.0 and G.clock < 21.0 and int(G.stats.get("jamon_day", -1)) != int(G.day_n) and (G.negocio("restaurantes") or G.chavisca) 		and not G.sabotaje.active()              # (Don Luis's delivery lorry comes down this very street: not while it is about)
 
 ## (game.gd asks: is the ham to be had by walking up to the door, or does it have to be fought for?)
 func in_the_way() -> bool:

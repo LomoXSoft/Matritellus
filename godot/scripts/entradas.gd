@@ -104,6 +104,9 @@ func shops() -> Array:
 	var pc = G.world.get("pisacastana") if G.world != null else null
 	if pc != null and pc.get("dentro") != null and not (G.get("tiendas_ropa") != null and G.tiendas_ropa.shut(pc.dentro)):   # the shoe shop "Pisacastaña" of the Arcos and the Calle Argentina (its set: pisacastana_dentro.gd; shut to you until Josefa's Vizum: tiendas_ropa.gd)
 		out.append(pc.dentro)
+	var op = G.world.get("optica") if G.world != null else null
+	if op != null and op.get("dentro") != null and not (G.get("tiendas_ropa") != null and G.tiendas_ropa.shut(op.dentro)):   # the optician "Óptica Corsa" of the Calle del Salvador (its set: optica_dentro.gd; shut to you until Josefa's Vizum: tiendas_ropa.gd)
+		out.append(op.dentro)
 	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
 		out.append(G.casa)
 	return out

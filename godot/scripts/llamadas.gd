@@ -28,6 +28,8 @@ func now() -> float:
 
 ## Somebody wants to ring you with this call. If the line is free it rings now; if not, it waits its turn.
 func ring(call: Dictionary) -> void:
+	if G.chavisca:                               # (nobody rings with a job in the Modo Chavisca)
+		return
 	if call.has("lines") and String(call["lines"]) != "":      # (the same call made again takes the place of the one waiting)
 		queue = queue.filter(func(q): return String(q["call"].get("lines", "")) != String(call["lines"]))
 	if G.phone_call != null:

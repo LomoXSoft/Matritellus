@@ -16,8 +16,9 @@ extends RigidBody3D
 ##
 ## setup(world, at, heading, y, trinkets): `at` where it stands (the map's x, z), `y` its foot in its parent's frame;
 ## `trinkets` for an accessories shop's (the Tetoqa's, tetoqa.gd: the user, 23 Nov 2026, "Mismo tratamiento que con
-## MiniPrecio pero esta vez para complementos"): always a hat, and nearly always glasses, earrings and something at its
-## neck (a necklace, pearls, a scarf, flowers, a choker), changing each day as the rest. `in_window`: one standing behind
+## MiniPrecio pero esta vez para complementos"): always a hat, and nearly always earrings and something at its neck (a
+## necklace, pearls, a scarf, flowers, a choker), changing each day as the rest; no glasses (those are the opticians':
+## the user, 23 Nov 2026, "gafas en las ópticas y complementos en las tiendas de complementos"). `in_window`: one standing behind
 ## a shop's glass (the Tetoqa's windows: the user, 23 Nov 2026, to "Maniquíes en los escaparates": "Si a las tres
 ## recomendaciones"): nothing reaches it (no punch, no car: it is not street furniture), it is there whether the shop
 ## is open or not, and it is dressed anew each day as the rest, while nobody is looking. `with_shoes`: a shoe shop's (the
@@ -38,7 +39,6 @@ const SHOES := [0x4a3424, 0x1b1b1f, 0xf8f8f8, 0xb23a3a, 0x3b5fa8, 0x3f7d4a, 0xe6
 const NECK := [5, 6, 7, 9, 11, 12]               # sometimes: a fiesta neckerchief, a tie, a bow tie, a scarf, flowers, a choker
 const KERCHIEFS := [0x2f63d6, 0xf28a00, 0xf2c200, 0x8cc63f, 0xd42a1e, 0x1e8c3a]
 const TRINKET_NECK := [1, 1, 2, 4, 4, 9, 11, 12, 5]   # an accessories shop's: a chain, a medal, pearls, a scarf, flowers, a choker, a neckerchief
-const TRINKET_GLASSES := [1, 2, 5, 6, 8, 9]          # (chara.gd: thin, thick, sunglasses, aviators, cat's eyes, hearts)
 const TRINKET_EARRINGS := [1, 2, 4, 5, 6, 7]         # (studs, hoops, drops, pearls, silver hoops, flowers)
 const SHOWY_SHOES := [1, 5, 8, 9, 10, 12, 13]     # a shoe shop's: boots, trainers, sandals, flats, cowboy boots, heels, Sunday shoes
 const STAND := 0xf4f4f0                          # (its stand of shoes: white)
@@ -58,7 +58,7 @@ var _props = null
 var _t := 0.0
 var out := true                                  # whether the shop wants it out (it is open)
 var away := false                                # taken in, the shop shut
-var trinkets := false                            # an accessories shop's: hat, glasses, earrings, necklace
+var trinkets := false                            # an accessories shop's: hat, earrings, necklace
 var window := false                              # behind a shop's glass: not street furniture
 var shoes := false                               # a shoe shop's: showy shoes and a stand of the day's pair by it
 var _stand: Node3D
@@ -110,7 +110,9 @@ func outfit(d: int) -> Dictionary:
 	o["kerchief"] = KERCHIEFS[rng.randi() % KERCHIEFS.size()]
 	o["glasses"] = [5, 6][rng.randi() % 2] if rng.randf() < 0.2 else 0
 	if trinkets:                                     # (drawn after the rest: the clothes of a day stay as they were)
-		o["glasses"] = TRINKET_GLASSES[rng.randi() % TRINKET_GLASSES.size()] if rng.randf() < 0.8 else 0
+		if rng.randf() < 0.8:                          # (where its glasses were drawn: the draw is kept, so each day's other
+			rng.randi()                                  # things stay as they were)
+		o["glasses"] = 0                               # (none: glasses are sold at the opticians, "gafas en las ópticas y complementos en las tiendas de complementos")
 		o["earrings"] = TRINKET_EARRINGS[rng.randi() % TRINKET_EARRINGS.size()] if rng.randf() < 0.9 else 0
 		o["pendant"] = TRINKET_NECK[rng.randi() % TRINKET_NECK.size()] if rng.randf() < 0.9 else 0
 	if shoes:

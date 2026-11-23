@@ -55,6 +55,8 @@ var tally: Array = []           # the counters on the slate: [icon, label] for m
 var _tally_was: Array = ["", "", "", ""]
 var _tally_vals: Array = []     # the numbers it showed last (to say how much each has gone up or down)
 var tally_slot: MarginContainer
+var bare := false               # the Modo Chavisca: no calendar, no slate and no minimap (the user, 23 Nov 2026: "Aquí no
+                                # hace falta saber la hora ni el dinero ni el azafrán que tienes. Ni tampoco el minimapa")
 var _tally_tween: Tween
 const TALLY_UP := -96           # where it waits, off the top of the screen
 const TALLY_DOWN := 16
@@ -990,6 +992,8 @@ func phone_point() -> Vector2:
 func set_counts(money: int, saffron: int, pc: int, mine: int, walls: int) -> void:
 	var vals := [money, saffron, maxi(pc, 0), maxi(mine, 0)]
 	var now := ["%d €" % money, str(saffron), str(maxi(pc, 0)), "%d/%d" % [maxi(mine, 0), walls]]
+	tally[1][0].visible = saffron >= 0          # (none in the Modo Chavisca)
+	tally[1][1].visible = saffron >= 0
 	tally[2][0].visible = pc >= 0
 	tally[2][1].visible = pc >= 0
 	tally[3][0].visible = mine >= 0             # (the walls: not until La Chiki has given you a spray, pintadas.gd)
@@ -1059,6 +1063,9 @@ func _process(dt: float) -> void:
 			change.global_position = Vector2(mid - change.size.x / 2.0, box.global_position.y + box.size.y - 2.0)
 	# While somebody is talking, or a scene is playing between its black bars, the map and the errand are of no use and
 	# only take up room: off the screen they go, to the left, and back when it is over.
+	for slot in [obj_slot, tally_slot, map_slot]:
+		if slot.visible == bare:
+			slot.visible = not bare
 	var away: bool = box_slot.visible or dlg_slot.visible or bar_top.offset_bottom > 1.0
 	var was := stowed
 	stowed = move_toward(stowed, 1.0 if away else 0.0, dt * 3.5)

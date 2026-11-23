@@ -27,7 +27,7 @@ func setup(game) -> void:
 ## the neighbours who have a mission for you right now
 func givers() -> Array:
 	var out: Array = []
-	if G.phase != "play" and G.phase != "free":
+	if (G.phase != "play" and G.phase != "free") or G.chavisca:      # (no missions in the Modo Chavisca)
 		return out
 	var s: Dictionary = G.steps[G.si] if G.phase == "play" and G.si >= 0 and G.si < G.steps.size() else {}
 	# the story: the first step of a mission, face to face, not yet taken

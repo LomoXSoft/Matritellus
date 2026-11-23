@@ -1,0 +1,231 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-11-23T22:51:06Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 13443050957,
+  "lat": 39.4531817,
+  "lon": -3.6083694,
+  "tags": {
+    "access": "customers",
+    "alt_name": "Castillo de Consuegra",
+    "castle_type": "defensive",
+    "description": "Con más de ochocientos años de antigüedad, el castillo de Consuegra es una fortaleza de gran singularidad y atractivo.",
+    "fee": "yes",
+    "height": "30",
+    "historic": "castle",
+    "mapillary": "884797509588080",
+    "name": "Castilo de la Muela",
+    "name:de": "Schloss von Consuegra",
+    "name:en": "Castle Consuegra",
+    "name:fr": "Château de la Muela",
+    "name:it": "Castello di Consuegra",
+    "name:pt": "Castelo de Consuegra",
+    "name:ru": "Замок Консуэгра",
+    "name:zh": "城堡",
+    "opening_hours": "Mo-Su 10:00-14:00, 15:30-18:00",
+    "phone": "+34 925 47 57 31",
+    "website": "https://www.consuegra.es/es/descubre/monumentos/castillo-de-consuegra",
+    "wikidata": "Q1049172",
+    "wikipedia": "es:Castillo de Consuegra"
+  }
+},
+{
+  "type": "way",
+  "id": 700192906,
+  "center": {
+    "lat": 39.4590343,
+    "lon": -3.6063823
+  },
+  "tags": {
+    "building": "yes",
+    "historic": "castle",
+    "man_made": "tower",
+    "name": "Torre del Palacio Prioral",
+    "tower:type": "defensive"
+  }
+},
+{
+  "type": "way",
+  "id": 770352109,
+  "center": {
+    "lat": 39.4567551,
+    "lon": -3.6075226
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "mapillary": "1396885850898870",
+    "name": "Mambrino"
+  }
+},
+{
+  "type": "way",
+  "id": 770352110,
+  "center": {
+    "lat": 39.4566889,
+    "lon": -3.6080847
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "mapillary": "704492601628663",
+    "name": "Bolero"
+  }
+},
+{
+  "type": "way",
+  "id": 770352111,
+  "center": {
+    "lat": 39.4562176,
+    "lon": -3.6077772
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "name": "Sancho"
+  }
+},
+{
+  "type": "way",
+  "id": 770352112,
+  "center": {
+    "lat": 39.4559425,
+    "lon": -3.6079994
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "name": "Mochilas"
+  }
+},
+{
+  "type": "way",
+  "id": 770352113,
+  "center": {
+    "lat": 39.4548729,
+    "lon": -3.6087121
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "mapillary": "262727526789885",
+    "name": "Vista Alegre"
+  }
+},
+{
+  "type": "way",
+  "id": 846036402,
+  "center": {
+    "lat": 39.4478816,
+    "lon": -3.6061755
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "name": "Clavileño"
+  }
+},
+{
+  "type": "way",
+  "id": 846036403,
+  "center": {
+    "lat": 39.4485327,
+    "lon": -3.6065583
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "mapillary": "1289506362188778",
+    "name": "Espartero"
+  }
+},
+{
+  "type": "way",
+  "id": 846036404,
+  "center": {
+    "lat": 39.4491548,
+    "lon": -3.6070303
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "mapillary": "929260655822593",
+    "name": "Rucio"
+  }
+},
+{
+  "type": "way",
+  "id": 846036405,
+  "center": {
+    "lat": 39.4496611,
+    "lon": -3.6073433
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "name": "Caballero del Verde Gabán"
+  }
+},
+{
+  "type": "way",
+  "id": 846036406,
+  "center": {
+    "lat": 39.4502103,
+    "lon": -3.6076309
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "name": "Chispas"
+  }
+},
+{
+  "type": "way",
+  "id": 846036407,
+  "center": {
+    "lat": 39.4506439,
+    "lon": -3.6077127
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "mapillary": "337621009016554",
+    "name": "Alcancía"
+  }
+},
+{
+  "type": "way",
+  "id": 846036408,
+  "center": {
+    "lat": 39.4510506,
+    "lon": -3.6076952
+  },
+  "tags": {
+    "building": "yes",
+    "height": "11",
+    "man_made": "windmill",
+    "mapillary": "765942468702482",
+    "name": "Cardeño"
+  }
+}
+
+  ]
+}

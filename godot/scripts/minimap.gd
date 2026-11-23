@@ -77,6 +77,14 @@ func _shop_icon(at: Vector2, r: float, kind: String) -> void:
 			_coin(at, r)
 			_glyph(at, r, SHOE)
 			draw_line(at + Vector2(0.0, 0.19) * r, at + Vector2(0.58, 0.19) * r, GOLD, maxf(1.0, r * 0.07), true)      # the welt of its sole
+		"gafas":                                         # the opticians: a pair of round glasses on the coin
+			_coin(at, r)
+			var w := maxf(1.4, r * 0.15)
+			for sx in [-1.0, 1.0]:
+				draw_arc(at + Vector2(sx * 0.3, 0.08) * r, r * 0.22, 0.0, TAU, 18, INK, w, true)
+			draw_arc(at + Vector2(0.0, 0.08) * r, r * 0.1, PI * 1.15, PI * 1.85, 6, INK, w * 0.8, true)      # the bridge
+			draw_line(at + Vector2(-0.52, 0.02) * r, at + Vector2(-0.66, -0.1) * r, INK, w * 0.8, true)      # the arms
+			draw_line(at + Vector2(0.52, 0.02) * r, at + Vector2(0.66, -0.1) * r, INK, w * 0.8, true)
 		_:
 			_peseta(at, r)
 
@@ -233,6 +241,9 @@ func _draw() -> void:
 				_giver_hits.append([at, r + 6.0, gid])
 		if round and not full:
 			draw_set_transform(mid, spin - PI, Vector2.ONE)
+	if full:                    # the cross in the middle: where "Marcador aquí" puts your marker
+		draw_line(mid - Vector2(12, 0), mid + Vector2(12, 0), Color("4a3424"), 2.0)
+		draw_line(mid - Vector2(0, 12), mid + Vector2(0, 12), Color("4a3424"), 2.0)
 	var pp := (center - c) * k + half
 	var arrow := PackedVector2Array()
 	for v in [Vector2(0, -10), Vector2(7, 8), Vector2(0, 4), Vector2(-7, 8)]:
@@ -275,6 +286,22 @@ func _draw() -> void:
 		draw_rect(fbox, Color("f8f2e2e0"))
 		draw_rect(fbox, Color("4a3424"), false, 1.5)
 		draw_string(font, Vector2(fbox.position.x + 12.0, fbox.position.y + 18.0), foot, HORIZONTAL_ALIGNMENT_LEFT, fbox.size.x - 24.0, 13, Color("4a3424"))
+
+## the big map: the point of the town under its cross (its middle), and under a spot of the screen (null off the town)
+func _frame() -> Array:
+	var k: float = minf(size.x / (MapData.xmax - MapData.xmin), size.y / (MapData.zmax - MapData.zmin)) * zoom
+	var c := Vector2((MapData.xmax + MapData.xmin) / 2.0, (MapData.zmax + MapData.zmin) / 2.0) + pan
+	return [k, c]
+
+func cross() -> Vector2:
+	return _frame()[1]
+
+func world_at(global_pos: Vector2):
+	var f := _frame()
+	var w: Vector2 = (global_pos - global_position - size / 2.0) / float(f[0]) + (f[1] as Vector2)
+	if w.x < MapData.xmin or w.x > MapData.xmax or w.y < MapData.zmin or w.y > MapData.zmax:
+		return null
+	return w
 
 func row_at(global_pos: Vector2) -> int:
 	var lp := global_pos - global_position

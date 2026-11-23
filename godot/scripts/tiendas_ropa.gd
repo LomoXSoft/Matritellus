@@ -13,11 +13,15 @@ extends RefCounted
 
 ## The Tetoqa is Pretil's accessories shop at Santa Ana and the Cristo; the Pisacastaña, Pretil's shoe shop at Arcos and
 ## Argentina ("Mismo tratamiento que las otras dos tiendas pero solo con zapatos", the user). One not built yet has no mark.
-const KINDS := ["ropa", "complementos", "zapatos"]
+## Glasses are the opticians' and only theirs (the user, 23 Nov 2026, of the Óptica Corsa of the Calle del Salvador:
+## "icono de gafas, y dividimos las tiendas entre complementos y gafas, gafas en las ópticas y complementos en las
+## tiendas de complementos"): Pretil's optica.gd, Fátima Corsa inside (fatima.gd).
+const KINDS := ["ropa", "complementos", "zapatos", "gafas"]
 const SHOPS := {
 	"maxiprecio": "ropa",
 	"tetoqa": "complementos",
 	"pisacastana": "zapatos",
+	"optica": "gafas",
 }
 
 var G

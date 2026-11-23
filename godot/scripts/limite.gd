@@ -60,7 +60,7 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 func _start(pp: Vector2) -> void:
 	warning = false
 	left = WARN
-	if G.police.muted:                             # (the Thursday ham run: they are all at lunch, even for this)
+	if G.police.muted or G.chavisca:              # (the Modo Chavisca: no chase; the Thursday ham run: they are all at lunch, even for this)
 		return
 	hunting = true
 	added = 0

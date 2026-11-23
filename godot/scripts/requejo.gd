@@ -8,7 +8,7 @@ extends "res://scripts/esquina.gd"
 ## aerial (tools/ign/cruzroja.jpg) and Catastro.
 ##
 ## The game shows no real organisation's name or emblem: it is the "Cruz Verde", with a green cross (the user, the same
-## day: "Que llamaremos la cruz verde. La plaza puede mantener el nombre"; the square keeps its real name). The town is "MATRITELLUS" on its signs. No number, telephone or party's sign on it.
+## day: "Que llamaremos la cruz verde. La plaza puede mantener el nombre"; the square keeps its real name). The town is "MADRIDEJOS" on its signs (Matritellus is the game's title). No number, telephone or party's sign on it.
 ##
 ##   - the block of flats (Catastro: three floors, 21.1 x 9.3 m): cream render on a foot of brown rubble, brick
 ##     pilasters at its corners, a brick band at the first floor, a hipped roof of old tiles over a brick cornice. To the

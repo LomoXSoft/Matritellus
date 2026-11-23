@@ -1,0 +1,130 @@
+{
+ "rc": "4398812VJ5649N",
+ "record": {
+  "address": "AV MARTIN DESCALZO 9 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Industrial",
+  "built_m2": "176",
+  "year": "1989",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "01",
+    "m2": "73"
+   },
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "02",
+    "m2": "103"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4398812VJ5649N_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 166.3,
+   "ring": [
+    [
+     67.46,
+     -666.62
+    ],
+    [
+     73.59,
+     -674.57
+    ],
+    [
+     88.53,
+     -665.35
+    ],
+    [
+     83.03,
+     -658.21
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      67.46,
+      -666.62
+     ],
+     "b": [
+      73.59,
+      -674.57
+     ],
+     "len": 10.04,
+     "out": [
+      -0.792,
+      -0.611
+     ],
+     "street": "",
+     "to_centre": 13.21
+    },
+    {
+     "a": [
+      73.59,
+      -674.57
+     ],
+     "b": [
+      88.53,
+      -665.35
+     ],
+     "len": 17.56,
+     "out": [
+      0.525,
+      -0.851
+     ],
+     "street": "Calle de la Estrella",
+     "to_centre": 8.12
+    },
+    {
+     "a": [
+      88.53,
+      -665.35
+     ],
+     "b": [
+      83.03,
+      -658.21
+     ],
+     "len": 9.01,
+     "out": [
+      0.792,
+      0.61
+     ],
+     "street": "Avenida de Martín Descalzo",
+     "to_centre": 6.71
+    },
+    {
+     "a": [
+      83.03,
+      -658.21
+     ],
+     "b": [
+      67.46,
+      -666.62
+     ],
+     "len": 17.7,
+     "out": [
+      -0.475,
+      0.88
+     ],
+     "street": "",
+     "to_centre": 15.82
+    }
+   ],
+   "ground": [
+    21.29,
+    22.13
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": 58.463583784015015,
+  "z0": -683.5689531024651,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

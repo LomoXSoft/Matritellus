@@ -98,6 +98,24 @@ RENAME = [((-796.2, -377.4), (-908.5, -462.8), 'Calle de los Segadores'), ((-769
 for (ax, az), (bx, bz), name in RENAME:
     hit = [r for r in roads if min(math.dist(npts[r['p'][0]], (ax, az)) + math.dist(npts[r['p'][-1]], (bx, bz)), math.dist(npts[r['p'][0]], (bx, bz)) + math.dist(npts[r['p'][-1]], (ax, az))) < 8.0]
     for r in hit: r['n'] = name
+# Streets the map's source draws metres off where they run, redrawn through the given points (the first and last move
+# the street's own end points; a shared end only slides along the street it joins). The Calle Rollo, the dead-end lane
+# off the Calle del Rollo: drawn ~5 m east of itself, through the house at its mouth (orthophoto, Catastro, Street View;
+# Texturas, 23 November 2026). New middle points are numbered after every other, so no other street's numbers change.
+RESHAPE = [('Calle Rollo', (-510.0, 122.0), (-520.0, 86.0), [(-517.0, 124.0), (-518.0, 108.0), (-520.0, 95.0), (-523.0, 86.0), (-524.3, 79.0)])]
+for name, a, b, pts in RESHAPE:
+    for r in roads:
+        if r['n'] != name or len(r['p']) < 2: continue
+        e0, e1 = r['p'][0], r['p'][-1]
+        if math.dist(npts[e0], a) < 4.0 and math.dist(npts[e1], b) < 4.0: na, nb = e0, e1
+        elif math.dist(npts[e1], a) < 4.0 and math.dist(npts[e0], b) < 4.0: na, nb = e1, e0
+        else: continue
+        npts[na], npts[nb] = pts[0], pts[-1]
+        mid = []
+        for q in pts[1:-1]:
+            mid.append(len(npts)); npts.append(q)
+        r['p'] = [na] + mid + [nb] if e0 == na else [nb] + mid[::-1] + [na]
+        print('reshaped: %s through %d points' % (name, len(pts)))
     print('street renamed: %s (%d stretch%s)' % (name, len(hit), '' if len(hit) == 1 else 'es'))
 # Streets that are pedestrian and paved in setts from a given node on, though the map's source has them for cars: the
 # Calle Real from its crossroads with Colón and La Palma down to the end, among the shops (Street View, November 2024;
@@ -1061,6 +1079,11 @@ for k in np.nonzero(_front)[0]:
     _by_part.setdefault(int(eown[k]), []).append(k)
 _moved = 0
 for i, ks in _by_part.items():
+    # "base_from": [street, ...] on a house: only its walls on those streets set its level (rro_19, on the corner of the
+    # Calle Rollo once that lane was redrawn, took it from a side wall on the lane, uphill, and stood 0.9 m above its door)
+    _only = HOUSES.get(parts[i].get('hand') or '', {}).get('base_from')
+    if _only:
+        ks = [k for k in ks if roads[_near[k]]['n'] in _only] or ks
     xs = np.concatenate([np.linspace(ex1[k], ex2[k], 5) for k in ks]); zs = np.concatenate([np.linspace(ez1[k], ez2[k], 5) for k in ks])
     hs = hfun(xs, zs)
     base = float(hs.min() + 0.9 * (hs.max() - hs.min()))      # near the top of its stretch of street: a door may need a step up to it, but is never dug in

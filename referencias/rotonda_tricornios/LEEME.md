@@ -33,8 +33,8 @@ lo que el juego pintaba antes.
 ## Lo que no es como el real (a propósito)
 - **El emblema de forja es nuestro**: una corona sobre el tricornio del logo de los Tricornios, con una espada y una
   vara cruzadas detrás (`tools/rotonda/dibujos.py`). No es el emblema real de la Guardia Civil, como en el cuartel.
-- **La placa**: el escudo de Matritellus (el del juego) y el logo de los Tricornios; dice «MATRITELLUS / EN HONOR A LOS
-  TRICORNIOS, / EJEMPLO DE SERVICIO, ENTREGA / Y COMPROMISO CON NUESTRO PUEBLO / 12 de octubre», sin año.
+- **La placa**: el escudo del pueblo (el del juego, con su cinta) y el logo de los Tricornios; dice «MADRIDEJOS / EN HONOR A LOS
+  TRICORNIOS, / EJEMPLO DE SERVICIO, ENTREGA / Y COMPROMISO CON NUESTRO PUEBLO / 12 de octubre», sin año. (Hasta el 24/11/2026 ponía MATRITELLUS; Luis: el pueblo del juego se llama Madridejos, y Matritellus es el título. La cinta del escudo sigue diciendo MATRITELLUS: Luis, «No, deja Matritellus en el escudo, ahí puede estar, ya que es su nombre antiguo».)
 - **La bandera, sin escudo**, como todas las del juego.
 - **La corona de laurel** de las fotos (la del acto) no está: era de ese día.
 

@@ -1742,6 +1742,80 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - **Azafrán escondido, puesto.** Luis eligió el sitio: «1. En el parque». Va al pie del taraje encalado, detrás del tronco visto desde el paseo (`_saffron` en `requejo.gd`, `id` "requejo", `"hidden": true`). En `selftest.gd`, `_requejo_checks()` lleva una comprobación más, y `--requejo` una vista más (`azafran`). `requejo`: 4 ok ([log](logs/selftest_requejo_20261123_152141.log)).
   - Sin commit.
 
+### 2026-11-23 · Óptica Corsa, la óptica de la calle del Salvador 5 (Claude · Edificios Especiales)
+
+- **Luis**, con una captura de Street View del Centro Óptico Corts: «Vamos con el centro óptico cors (que llamaremos Óptica Corsa, en C. Salvador, 5 … Igual que Tutoq, icono de complementos, no, mejor, icono de gafas, y dividimos las tiendas entre complementos y gafas, gafas en las ópticas y complementos en las tiendas de complementos. aquí el NPC será una Óptica con bata blanca y solo venderá gafas … Se llamará Fátima Corsa».
+- **Texturas** cedió `salvador_5` (`["obra"]` en `casas_calles.gd`). Sin rehorneado. El solar de al lado por el oeste estaba vacío en el mapa; Texturas lo rellena con la parcela 4192011VJ5649S.
+- **Hecho**:
+  - `godot/scripts/optica.gd` (`world.optica`), sobre `esquina.gd`, desde el Street View de marzo de 2013:
+    - planta baja de granito con las gafas en relieve en su brazo, la persiana del garaje, el escaparate y la entrada metida medio metro;
+    - la banda verde «ÓPTICA CORSA», la placa granate de la óptica, la alarma y el portal de madera en ladrillo;
+    - dos plantas en vuelo de ladrillo beige con su moldura de dientes, los aires acondicionados y la parabólica, y el alero;
+    - el horario real de Google Maps (lunes a viernes 10–14 y 18–21, sábados 10–14, domingos cerrada); cerrada, una persiana gris sobre la entrada.
+  - `godot/scripts/optica_dentro.gd` (`world.optica.dentro`): el interior en (2150, 650), con flecha verde. Lleva el mostrador, la pared «Novedades», la vitrina «Vintage», la torre de gafas de sol, la vitrina baja, el espejo, y el gabinete de graduar tras un tabique (sillón, foróptero, optotipo, caja de lentes, autorrefractómetro). Expone `clerk_spot`, `client_spot`, `probador_spot` y `chair_spot` con sus rumbos.
+  - Dibujos nuevos en `tools/optica/dibujos.py` → `godot/assets/optica/`.
+- **Fátima Corsa** es de Sistemas (`fatima.gd`): está tras el mostrador mientras abre y te lleva al espejo; las gafas, a 20 €. Su prueba `fatima` da 4/4 con este interior.
+- **Gafas solo en las ópticas**, como pidió Luis y a petición de Sistemas:
+  - los maniquíes de la Tetoqa ya no llevan gafas (`maniqui.gd`; se mantiene la tirada para que el resto de la ropa de cada día no cambie);
+  - la torre de gafas de sol del interior de la Tetoqa es ahora de coleteros y pinzas (`tetoqa_dentro.gd`, `_hair_tower`);
+  - `_tetoqa_checks` cuenta pendientes y collares y exige cero gafas.
+- **Archivos compartidos**, solo inserciones y avisando a Sistemas:
+  - `world.gd`: `OpticaS`, `var optica`, el paso «the optician Óptica Corsa» y `_build_optica()`;
+  - `entradas.gd`: la óptica en `shops()`, con la puerta de `tiendas_ropa.shut`;
+  - `selftest.gd`: `_optica_checks()` (también en la prueba completa) y el modo `--optica`.
+- **Lección.** Los dibujos con brillo propio necesitan `emission_operator = EMISSION_OP_MULTIPLY`, como `obra._glow`. Con el operador por defecto, `emission = WHITE` echa un velo gris de toda la energía, y el verde del rótulo salía color salvia de día y de noche. Lo tienen también otros sitios míos (asador, correos, tetoqa, pisacastaña, maxiprecio…), donde casi no se nota porque los rótulos son claros. No los he tocado: es cosa de Luis si se corrigen.
+- **Pruebas.** `optica`: 5 ok ([log](logs/selftest_optica_20261123_210734.log)). Tras el cambio de los maniquíes y la torre, `tetoqa`: 10 ok ([log](logs/selftest_tetoqa_20261123_211036.log)). No he pasado la prueba completa.
+- **Pendiente.**
+  - **Aprobada** por Luis: «Visto bueno, y c».
+  - **Azafrán escondido, puesto** (la «c»): detrás del optotipo del gabinete. La caja del optotipo está ahora separada 20 cm de la pared sobre dos soportes, con su cable y enchufe, y la flor pequeña está de pie en el soporte de abajo, asomando un poco de morado por el lado (`_saffron` en `optica_dentro.gd`, `id` "optica", `"hidden": true`). En `selftest.gd`, `_optica_checks()` lleva una comprobación más, y `--optica` una vista más (`dentro_azafran`). `optica`: 6 ok ([log](logs/selftest_optica_20261123_212809.log)).
+  - Texturas rellenó el hueco del oeste con `salvador_3`.
+  - Luis, con la captura del azafrán delante: «Visto bueno». Nada pendiente de la óptica.
+  - Sin maniquí en la puerta, salvo que Luis lo pida.
+  - Sin commit.
+- [LEEME](referencias/optica/LEEME.md) · capturas en `guion/fotos/optica/`.
+
+### 2026-11-23 · Los carteles de la entrada norte: el muro del Quijote y el del hermanamiento (Claude · Edificios Especiales)
+
+- **Luis**, con tres capturas de Street View de la N-IVa (noviembre de 2024) y dos enlaces de Maps: «Hay dos carteles en la entrada de Madridejos que me gustaría añadir». Después, cuando puse MATRITELLUS en ellos: «Habíamos quedado que el pueblo del juego se llama Madridejos. Matritellus es el título y su nombre original en latín». Los carteles dicen MADRIDEJOS, como los reales.
+- **Dónde**: en la tierra del lado oeste de la carretera vieja de Madrid a Cádiz, antes de la rotonda de la avenida de la Constitución. El muro está en (258.5, −1625.1) y su cara mira a 12°; el cartel, en (263.0, −1650.9), mira a 30°. Los dos miran a quien llega del norte. Lo dan los rumbos de seis panorámicas de Street View, que coinciden con medio metro de diferencia, y la ortofoto del PNOA (`tools/ign/entrada_norte.*`). Sin rehorneado y sin tocar el mapa.
+- **Hecho**:
+  - `godot/scripts/entrada.gd` (`world.entrada`, sobre `obra.gd`):
+    - el muro encalado (5,10 × 3,18 m, 0,5 de grueso) con su borde ondulado, el remate de piedra parda y el zócalo, hundido un metro en la tierra;
+    - las piedras metidas en la cal;
+    - los azulejos «Un lugar de la Mancha» y «MADRIDEJOS»;
+    - don Quijote a caballo en chapa oxidada, separado 4,5 cm de la cal, con la lanza por encima del muro.
+  - `entrada.cartel`, el mismo script en otro nodo: la placa de 1,20 × 0,87 m sobre dos postes galvanizados, con sus travesaños por detrás. Al ser dos sitios aparte, las matas secas no crecen en ellos, pero sí en el campo de en medio.
+  - `godot/data/quijote.json`: la silueta, calcada con `tools/entrada/silueta.py` de una foto de Street View que ve el muro de frente (la foto se queda fuera del repositorio; el LEEME dice cómo bajarla).
+  - `tools/entrada/dibujos.py` → `godot/assets/entrada/` (importados): los dos azulejos y la cara del cartel, amarillenta y sucia como la real. Lleva el escudo del juego (`assets/logo.png` sin la cinta) y otro nuestro para Nérac (castillo de oro sobre un río, en azul).
+- **Archivos compartidos**, solo inserciones:
+  - `world.gd`: `EntradaS`, `var entrada`, el paso «the signs at the north entrance» y `_build_entrada()`;
+  - `selftest.gd`: `_entrada_checks()` (también en la prueba completa, tras la óptica) y el modo `--entrada`, con las vistas de Street View (mismo rumbo y ángulo, para compararlas), dos de noche y ocho de cerca.
+- **Pruebas.** `entrada`: 8 ok ([log](logs/selftest_entrada_20261123_235045.log)). No he pasado la prueba completa.
+- **Memoria corregida**: en mis notas seguía la decisión vieja de llamar Matritellus al pueblo, junto a la buena. **El pueblo es Madridejos**; Matritellus es el título del juego.
+- **24/11, Luis: «Si, cambialos por Madridejos. Esconde azafrán en la opción 1»**
+  - **MADRIDEJOS en los demás carteles** míos que ponían MATRITELLUS como nombre del pueblo:
+    - la palabra pintada de la Cruz Verde (`tools/requejo/dibujos.py`, `TOWN` → `assets/requejo/rotulo.png`);
+    - la placa de la rotonda de los Tricornios (`tools/rotonda/dibujos.py` → `assets/rotonda/placa.png`);
+    - la última fila del optotipo de la óptica (`tools/optica/dibujos.py` → `assets/optica/optotipo.png`).
+
+    Al volver a dibujarlos solo han cambiado esos tres dibujos (comparados archivo a archivo con una copia).
+  - **El escudo, con su cinta**: la cinta del escudo del juego dice MATRITELLUS. Luis: «No, deja Matritellus en el escudo, ahí puede estar, ya que es su nombre antiguo».
+    - Le quité la cinta un momento y lo he deshecho: `tools/make_logo.py` vuelve a estar como en git, y el `assets/escudo.png` que añadí ya no existe.
+    - La placa de la rotonda lleva el escudo de antes; su dibujo solo cambia donde está la palabra.
+    - El cartel del hermanamiento lleva ahora el escudo entero, con la cinta (`logo.png` recortado a lo dibujado). Antes llevaba el escudo sin cinta y con la punta cortada.
+  - **El azafrán escondido**, al pie del muro por detrás (`entrada._saffron`, `"id": "entrada"`).
+    - La flor está entre matas secas. Son las mismas del campo (`matojos.gd`, `_tuft_mesh`, en un MultiMesh propio) y van también a lo largo de toda la espalda del muro.
+    - El muro la tapa a quien llega del norte, y se llega a ella desde el campo de atrás.
+    - Lo comprueba `_entrada_checks()`, y el modo `--entrada` saca su vista «azafran».
+  - **El cartel del hermanamiento, cuadrado** (Luis: «La placa de Madridejos y Nerac está un poco descentrada, cuadrala un poco»). La placa estaba centrada en sus postes; lo descentrado era el dibujo.
+    - Ahora los dos escudos van en una columna y las palabras en otra, y el conjunto queda centrado con el mismo margen a cada lado.
+    - Hay el mismo aire arriba, en medio y abajo, y cada palabra se centra por su tinta (`sign()` en `tools/entrada/dibujos.py`).
+  - `entrada`: 9 ok ([log](logs/selftest_entrada_20261124_002212.log)).
+- **Aprobado.** Luis, 24/11: «Visto bueno». Están los dos carteles, el azafrán, MADRIDEJOS en los carteles, el escudo con su cinta y el cartel cuadrado.
+- **Pendiente.**
+  - Sin commit.
+- [LEEME](referencias/entrada/LEEME.md) · capturas en `guion/fotos/entrada/` (`entrada_03_azafran.jpg`, el azafrán).
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
@@ -2496,3 +2570,287 @@ Para cambios del juego, seguir las normas de [PROJECT_STATE.md](PROJECT_STATE.md
   - Pretil: la «Cruz Verde», el parque de Requejo, la caseta del transformador y su azafrán escondido.
   - Texturas: las calles de las Terradas y de Sancho Panza.
 - **Sin probar** en el móvil ni en la Steam Machine.
+
+### Seis palabras manchegas más: semos, te se, vide, paece, d'ande, amoto (23/11, Claude · Worldbuilding)
+
+- **Por qué.** El usuario las dio con ejemplos: «Semos tos amigos aquí», «te se ha caío la cartera» (o «te s'a caío»), «hace mucho que la vide», «Paece que va a llover», «¿d'ande sales tú?», «me he comprao una amoto» (contraído «me' comprao una amoto», solo para ancianos).
+- **Textos (`loc.gd`, CRLF guardado).**
+  - 20 «se te» pasan a «te se» («ni te se ocurra», «¿Qué te se ofrece?», «Te se han ido %d horas en humo»…); los dos «se t'á» que ya iban contraídos pasan a «te s'á» (Alberto y `t_firmas_late`).
+  - Tres «vi» pasan a «vide» (copistería, la mili, el chisme del jamón).
+  - Cinco «parece» pasan a «paece». Primero lo puse en todo el verbo; el usuario lo corrigió: «"paece" es solo para "parece"», «"parecío" es para "parecido"». Luego precisó: «También valen "paeces", "paecen", "paecerlo". Es el participio el que no cambia porque ya tiene otra forma: "parecío"». Quedan paece, paeces, paecen, paecemos y paecerlo; «parecío» y «parecíos» no cambian. La llamada de la Josefa (`_vizum_checks`) busca «paecerlo».
+  - «Somos», «de donde» y «moto» ya no salían: los textos dicen «semos», «de ande» no aparece y el viejo ya decía «amoto».
+- **Prueba.** `_palabros_checks` (selftest.gd) vigila cinco reglas más: «se te / se t'», «vi», «parec…» (menos «parecío/a/os/as»), «de ande», «moto(s)».
+- **Escrito en** `guion/palabros.md` (las reglas de la casa, 23-11-2026).
+- **Resultado.**
+  - `palabros`: 3 ok. Tras la corrección del usuario, otra vez `palabros` y `maxi`.
+  - `maxi`: 8 ok. En su log hay un SCRIPT ERROR de `menu.gd:28` (`paint_font`), que es de un cambio sin guardar de otra sesión, no de esto.
+- Sin commit.
+
+### Menú principal: rótulo pintao (23/11, Claude · Sistemas)
+
+Luis: «No me gusta que sean textos entre cuadros el texto seleccionado, y la letra es muy básica. Propón tres alternativas». Le enseñé tres maquetas en HTML (artefacto https://claude.ai/artifact/2D3SeoHpeH9ZwE7Wnu1CME): A, rótulo pintao en la pared; B, cartel de fiestas; C, pizarra del bar. Eligió la A («Me gusta la A»).
+
+- `godot/assets/fuentes/KaushanScript-Regular.ttf` y `OFL_KaushanScript.txt`, de google/fonts. `Menu.paint_font()` le pone de respaldo la letra por defecto, para los glifos que le falten.
+- Solo cambia la pared (`_skin == ""`): título, subtítulo y opciones pintados, sin placas (`_dress_heads`, `_painted`). La opción elegida (`_mark`) va en ANIL, con LEAN −0,035 rad y GROW 1,08, y el brochazo ALMAGRE se dibuja en `_draw_stroke` después de la pared, debajo de las letras. La Agenda (`notebook`) mantiene sus placas.
+- Las filas de menos de 24 px (las de Gráficos, Sonido, Gameplay y partidas) usan `dense_font()`: una FontVariation con spacing_top −5 y spacing_bottom −4, sin agrandar. Si no, la página de Gráficos se salía de la pantalla.
+- Los textos de párrafo (créditos, cómo jugar) y la línea de teclas siguen en Open Sans, por legibilidad.
+- Créditos (loc.gd): «Tipografía: Open Sans y Kaushan Script (licencia SIL Open Font).». Se lo avisé antes a Worldbuilding, que estaba tocando loc.gd.
+- Pruebas: `titulo` 2/2 y `mando` 1/1. `menu shots` ahora saca también graphics y gameplay.
+
+### Avenida de Martín Descalzo, tramo sur: 35 entradas (23/11, Claude · Texturas)
+
+- **Qué.** Las dos aceras de la rotonda a Ortega y Gasset, con la esquina de la Constitución (120 y 122) y Estrella 2. Desde Street View 2024 y el Catastro.
+- **Huecos.** Entre las parcelas del Catastro hay tapias, almacenes y el electricista que no tienen ficha: van con `rc` nulo (`md_23t`, `19t`, `15t`, `13t`, `9c`, `9e`, `4t`) o alargando el frente de la vecina con `fill` (`md_21`, `19d`, `17d`, `12`).
+- **Retranqueos reales.** `md_16` 3 m, `md_12d` 2,5 m, `md_12` 5 m (`clear` 5, porque una parte de dos plantas quedaba delante), `md_17` 0,5 m. `alinea.py` sin fachadas sueltas.
+- **`md_rot`.** La esquina de la rotonda (4397114) no tiene ficha: va con líneas `lado` y el rótulo «CAFETERÍA».
+- **`md_13t`.** La tapia de 27 m no llegaba a 12 piezas: lleva machones y una caja de contador con `parche`.
+- **Mapa.** Frente a la copia (`map_before_md.json` en el scratchpad): 35 casas nuevas, ninguna quitada, árboles 2943 iguales, relieve igual; un nodo de despeje de 9,5 a 7,5 m.
+- **Pruebas.** `casas solo=md_` OK. Hojas en `guion/fotos/tanda34/descalzo_1..6`. Aprobada: «Visto bueno y siguiente». Nada en commit.
+- **Siguiente.** El tramo norte de Martín Descalzo y después Consuegra.
+
+### Gráficos en dos páginas: «Avanzados» (23/11, Claude · Sistemas)
+
+Luis: «En gráficos hay muchas opciones. Vamos a dejar Calidad, Resolución, Ventana, Brillo y Filtro. Las demás opciones dentro de "Avanzados"».
+
+- `game._menu_page`: «graphics» y «graphics_adv» comparten la misma rama, y `adv` decide qué filas salen.
+- «graphics» tiene 7 filas: Calidad, Resolución, Pantalla, Brillo, Filtro, Avanzados y Volver. Van a tamaño 26, la letra pintada grande.
+- «graphics_adv» tiene 17 filas: Sincronía vertical … Modo Silent Hill, Tráfico y Volver. Tanto Volver como Esc llevan de vuelta a «graphics».
+- loc.gd: `s_advanced`, «Avanzados» / «Advanced».
+- Pruebas que he cambiado en selftest:
+  - `_reglas_checks` ahora comprueba la lista de Gráficos y que Avanzados tenga 17 filas;
+  - `_run` comprueba 7 y 17 filas;
+  - `_mando_checks` recorre «graphics_adv», la página más larga;
+  - `--menu` saca también la foto de graphics_adv.
+- Resultados: `reglas` 56/56, `mando` 1/1.
+
+### La pared del menú, más panorámica (23/11, Claude · Sistemas)
+
+Luis: «lo haría más panorámico, está muy cuadrado (o incluso alargado verticalmente)». Cambios en `menu.gd` `_draw`:
+
+- La pared mide al menos `WALL_W` = 1000 px de ancho.
+- El zócalo es ahora `PLINTH` = 56 px; antes, 78.
+- El margen de arriba baja a 38 px y el de abajo es PLINTH + 22.
+- Las piedras se apartan del texto según el ancho de `_box`, no a 290 px fijos.
+
+En `rebuild`, cuando todas las filas de la pared son grandes (24 px o más), la separación de `_list` pasa a −8. Las páginas de filas pequeñas siguen con 3.
+
+`titulo` 2/2, `mando` 1/1 y fotos con `menu shots`.
+
+### La pared del menú, gastada y con Don Quijote y Sancho (23/11, Claude · Sistemas)
+
+Luis: «Mucho mejor, pondría alguna marca de ladrillo y alguna pequeña grieta, un quijote y sancho en figuras negras en un lado, todo para rellenar el hueco vacío». Su referencia fue la foto del cartel de chapa de la entrada del pueblo por la antigua N-IV, «pero nosotros manteniendo el zócalo azul».
+
+En `menu.gd`, `_draw_wear(r, plinth_y)` se llama justo después de las piedras. Pinta en los huecos a izquierda y derecha de `_ink_rect()`, que es la unión de lo que ocupa cada línea de texto y el escudo, no la columna entera:
+- `_brick_patch`: un desconchón irregular con argamasa, ladrillos en hiladas y el borde de la cal.
+- `_crack`: grietas finas, con una rama.
+- Las figuras: `assets/menu/quijote_sancho.svg`, una silueta hecha a mano porque no había ninguna libre en vector. Van a la derecha, de pie sobre el zócalo, hasta 300 px de ancho, y solo si queda un hueco de más de 110 px.
+
+`titulo` OK, `mando` OK. Fotos con `titulo shots` y `menu shots`.
+
+### Fátima Corsa y las gafas de la Óptica Corsa (23/11, Claude · Sistemas)
+
+El encargo lo pasó Pretil, con las palabras de Luis (ver PROJECT_STATE). La tienda (optica.gd) y su interior (optica_dentro.gd: open, clerk_spot/clerk_h, probador_spot/probador_h) son de Pretil.
+
+- `fatima.gd`: copia el esquema de manuela.gd. LOOK lleva top 24 (la bata) en blanco y gafas 7. PRICE vale 20, como todo, «hasta que decida precios» (Luis). SKIP = [11]: el parche de pirata no se vende. `try_on` abre `open_shop_ropa` con opt 12 y col −1.
+- `game.gd`:
+  - `_col_off()`: con col −1 no hay color. Sale en `_shop_owns`, en col_prev/next, en el redibujado, en `_shop_buy` (no añade la clave "-1" al armario) y en `_refresh_armario`, que pasa una fila de color vacía y así la oculta.
+  - `kind["skip"]` llega a `ropa_for_sale`.
+  - `_ropa_key_of` incluye ahora pelo, peinado y barba, porque la foto de la óptica es de tu cara.
+  - El cableado de `fatima`: setup, talk y tick.
+- `ropa_icono.gd`: nuevo parámetro `face` (cámara a 2,5 de distancia, fov 22, apuntando a 1,36 de alto).
+- `tiendas_ropa.gd`: el tipo "gafas" y "optica": "gafas". `minimap.gd` `_shop_icon` dibuja "gafas" como unas gafas redondas sobre la moneda.
+- loc.gd (CRLF):
+  - las frases de Fátima: n_fatima, fatima_hello, fatima_chat, fatima_q, fatima_yes, fatima_no, fatima_bought, fatima_poor y fatima_bye;
+  - los textos de la tienda: arm_shop_title_gafas, arm_have_gafas y arm_have_btn_gafas;
+  - las firmas: firma_si_fatima y firma_no_fatima.
+- selftest: `_fatima_checks`, el modo `--fatima` (3/3) y la llamada en `_run`. Sin el interior de Pretil, prueba solo el espejo.
+- Relaciones: Fátima en guion/relaciones.json, en [8, 8], sin foto hasta que salga en el juego. Hay que sacarle la foto con `--portraits` cuando esté.
+- Le pedí a Pretil que quite las gafas de TRINKET_GLASSES en maniqui.gd (los maniquíes de la Tetoqa) para completar la separación.
+
+### Avenida de Martín Descalzo, tramo norte: 27 entradas (23/11, Claude · Texturas)
+
+- **Qué.** Las dos aceras de la rotonda de la Avenida de Europa a la Calle de la Mora, desde Street View 2024 y el Catastro. Sobre todo naves, tapias y almacenes. Las tapias van con `rc` nulo.
+- **Mapa.** La línea de la avenida (OSM) va unos 5 m al este del centro real.
+  - El oeste está en sus fachadas del Catastro, a 8-10 m de la línea. El este va a 3 m, la línea del garaje de 4398538, y junto al bar a 5,8 m, porque a 3 m el despeje del nodo 865 bajaba a 3,0 y estrechaba la calzada a 5 m.
+  - `mdn_write.py` (scratchpad) da las posiciones con `P(s, d)`: s a lo largo de la línea desde la rotonda, d al oeste (+) o al este (−).
+- **Con referencia.** `md_e161` (4402008, la esquina con la rotonda, número de la Avenida de Europa), `md_57`, `md_47d`, `md_45d` (`reach` 15), `md_47`, `md_37`, `md_37d` (con `fill`), `md_33`, `md_31`, `md_29`, `md_66t` (4398536: la foto del Catastro es la tapia de placas, con la caseta de contadores detrás), `md_56` (4398538, con `fill`).
+- **Lo que no tiene ficha.** La tapia blanca de celosía del bar y la valla de chapa, el frente largo de la empresa del 47 (una parte de 0 plantas en el Catastro: `md_47c` va como caja de 8 m) y la casa blanca nueva del final (`md_62n`).
+- **Rótulo.** Solo «FLORISTERÍA». Los nombres de las empresas no salen.
+- **Pruebas.** Test `casas` de las 27 OK, tras dar más piezas a `md_43t`, `md_80t` y `md_80`. `md_58t` con fondo de 0,6 m se caía por no llegar a 5 m²; ahora tiene 1,8. Hojas en `guion/fotos/tanda34/descalzo_7..11`. Esperando el visto bueno. Nada en commit.
+- **Siguiente.** Consuegra.
+
+### Fotos de cuerpo entero de los personajes únicos (23/11, Claude · Sistemas)
+
+Luis: «Puedes de paso mostrarme todos los NPCs únicos. Quiero ajustar el aspecto de algunos».
+
+- `--selftest --portraits --cuerpo` saca a cada personaje de cuerpo entero en `guion/fotos/cuerpos/<id>.png` y escribe `nombres.json` con id → nombre. Usa `portrait.gd` `viewport(look, px, body=true)`. Sin `--cuerpo`, el modo hace lo de siempre.
+- Fátima entra en las fotos aunque su interior no esté hecho.
+- La hoja `guion/personajes_unicos.png` reúne los 38, numerados y con su id. Se hizo con PIL a partir de esas fotos.
+- Las gafas de Fátima van a 20 €, como todo: «De momento todo a 20€ hasta que decida precios».
+
+### Retoques de aspecto de seis personajes únicos (23/11, Claude · Sistemas)
+
+Luis, sobre la hoja de los únicos: «A Edmundo ponle un tono de piel más rosado / A la Josefa el moño le clippea el pañuelo. / A Una Señora Mayor ponle el pelo gris en vez de blanco (deberíamos tener opciones de gris y blanco para ancianos, no solo blanco) / La Loli y a el Alberto ponles pelo largo, mantén la gorra. / A Tomasa Malvora ponle gafas de esas de ojo de gato rosa / El Alberto cambiale a pelo negro».
+
+- **Edmundo** (`fondo_casa.gd` EDMUNDO_LOOK): piel 0xf4cdbd, antes 0xf7e3d6.
+- **Josefa**: el moño (hair_style 1) ya no se dibuja bajo un pañuelo o una gorra (`chara.gd` `_hair`). Queda recogido bajo la tela. Abajo en la nuca también asomaba.
+- **La madre del alcalde** («Una señora mayor», `recress.gd`): pelo gris 0x9a9aa0.
+- **Canas para los mayores.** Los vecinos mayores sacan blanco o gris (`game.gd`: 0xd9d9de, 0xe8e8ea, 0xb9b3a8, 0xb4b4ba, 0x9a9aa0, 0x7d7d84). El creador tiene un color nuevo, «Canoso» (gris 0x9a9aa0), añadido al final; el antiguo «Canoso» blanco se llama ahora «Blanco». Las partidas guardadas no cambian.
+- **Loli**: melena larga (hair_style 15, `pelo_melena_larga`) bajo la gorra.
+- **Alberto**: pelo negro 0x111111. Pasó por la melena desfilada (30) y la ondulada (28); la última es la siguiente.
+- **Alberto, con la melena de Loli.** Probé a rellenarle la cabeza del color del pelo bajo la gorra: «Sigue teniendo calvas». Luego, un rapado negro bajo la melena: «No, se sigue viendo mal. Probemos a ponerle el mismo peinado que la Loli, pero en negro y poniéndole dejadez». Lleva la melena larga (hair_style 15, `pelo_melena_larga`) en negro, sin barba (`face` 0) y con la barba de tres días (`barba3` 1, «Dejadez»). Los rellenos y el rapado bajo el pelo se han quitado del código; Loli no ha cambiado. Fotos en `guion/retoque_alberto.png`. **Aprobado por Luis el 23/11: «Perfecto. Visto bueno».**
+- **Tomasa**: gafas de ojo de gato (8) en rosa. Hay una clave nueva, `"glasses_color"`, que `chara.gd` `_glasses(kind, col)` usa para la montura de las gafas modeladas.
+- **Fotos de lado y de espalda.** `--portraits` acepta `--giro=<rad>`, que gira al personaje y guarda `<id>_giro.png`.
+- **Pruebas.** Test `nuevo` 8/8: el creador dice Blanco y Canoso, y tiene tantos nombres como colores. Fotos rehechas en `guion/fotos/cuerpos/` y `guion/fotos/`, y `relaciones.html` reconstruido. Antes y después en `guion/retoques_antes_despues.png`. Nada en commit.
+
+### Fátima regala las primeras gafas y vende el parche (23/11, Claude · Sistemas)
+
+Luis: «Cuando Fátima te termine las pruebas dirá que te regala las primeras gafas, que te ha visto cara de pobre además de cegato. Si quieres más tendrás que pagarlas. También añadiría parche en el ojo, ya que lo considero cosa de ojos».
+
+- **La primera vez.** Tras el saludo, Fátima te mira la vista (`fatima_test`): las letras, «más dioptrías que el tío Gerardo» y «las primeras te las regalo, que t'he visto cara de pobre además de {cegato|cegata}. Si quieres más, ya te tocará pagarlas».
+- **El espejo.** Hasta que te llevas un par (stats `fatima_regalo`), la pregunta es `fatima_q_free` y el espejo abre a 0 €. Al coger el primero, ella dice `fatima_gift` y el resto vuelve a 20 €.
+- **Cómo va.** Es genérico: `open_shop_ropa` acepta `kind["free"] = {stat, then, line}`, y `_shop_buy` lo aplica.
+- **Parche de pirata.** Se vende en la óptica (`SKIP` vacío). Su frase de charla ahora dice que tiene parches «que eso también es cosa de ojos».
+- **Pruebas.** `fatima` 4/4 con ventana: el primero a 0 € y el segundo a 20 €. Sin ventana fallan las fotos. `maxi` 8/8. Nada en commit.
+
+### El hueco de la Calle del Salvador: `salvador_3` (23/11, Claude · Texturas)
+
+- **Por qué.** Pretil avisó de que no había casa entre `salvador_1` (x −123) y su óptica (`salvador_5`, x −104), en la acera norte.
+- **Qué hay.** El Catastro no tiene ningún edificio ahí (la carpeta 4192011 está vacía). La foto aérea muestra una crujía estrecha a la calle y detrás un corral con maleza. En Street View 2024 es una casa vieja de dos plantas, vacía.
+- **Cómo va.** `rc` nulo, fondo 4 m, 2 plantas, h 7,6, cornisa. La puerta tapiada va como `paño` de ladrillo, porque un `parche` en planta baja queda tapado por el zócalo. Encima, un parche blanco hasta el forjado.
+- **Pruebas.** Alineada con sus dos vecinas (`alinea.py`: 0,0). Horneado: una casa nueva y nada más (el despeje del nodo 455 pasa de 3,7 a 2,5, igual que sus vecinos). Test `casas` OK. Hoja `guion/fotos/tanda34/salvador_1.jpg`.
+- El tramo norte de Martín Descalzo quedó aprobado: «Visto bueno y siguiente».
+
+### Calle de Consuegra: 36 entradas `co_*` (23/11, Claude · Texturas)
+
+- **Qué.** Las dos aceras, de la Calle de Tembleque (x −198) al final oeste (x −702). Línea en el scratchpad `co_line.py`; textos en `co_write.py`. En `casas_calles.gd` van tras `md_62n`.
+- **Trampa del cruce con Ugena.** La línea de Consuegra comparte 8 m con Ugena (s 189,4–197,6). Las primeras tapias acababan dentro del cruce y el despeje de los nodos 764/765 caía de 17,8 a 2,0. Ahora `co_17t` acaba en s 182, `co_25f` y `co_18t` empiezan en s 203 y 205: despejes 4,9 y 4,4.
+- **Tiras finas del Catastro delante de la fachada.** En `co_26` tapaban la cochera y la puerta: `clear: 1.5` las corta. El `paño out` (mirador) se quitó, hacía tiras raras.
+- **Colores.** `brick_pale` y `brick_salmon` se ven naranjas: tapias claras con hex liso (`d6c8a2`, `cdb48c`).
+- **Pruebas.** Horneado: 36 nuevas, nada quitado ni cambiado. Test `casas` OK (las 36). Hojas `guion/fotos/tanda34/consuegra_1..6.jpg`. Esperando el visto bueno. Nada en commit.
+
+### Modo Historia y Modo Chavisca en el menú principal (23/11, Claude · Sistemas)
+
+Luis: «Un cambio en el menú: en vez de Continuar y Nueva partida estas dos opciones estarán dentro de Modo Historia. Debajo de modo historia estará Modo Chavisca. Un modo con sus guardados aparte sin misiones, sin heat level, sin azafrán. Solo dar vueltas por el pueblo y hablar con los NPCs».
+
+- **Menú principal:** Modo Historia, Modo Chavisca, Ajustes, Cómo jugar, Créditos, Salir.
+  - Cada modo abre su página («story» / «chavisca» en `game.gd` `_menu_page`), con un rótulo bajo el título. Tiene Continuar (si hay partida de ese modo), Nueva partida y Volver.
+  - Las páginas de huecos («slots», «newslot») vuelven a la página de su modo.
+  - `_open_mode(free)` pone `game.chavisca`.
+- **Guardados aparte:** `_slot_path` añade `chavisca_` (`user://matritellus_save_chavisca_1.json`…). El hueco no nombra misión, solo día y dinero. El guardado lleva `"chavisca": true`.
+- **Partida nueva:**
+  - Sin prólogo, derecho al creador; tras el Padrón, `_chavisca_begin()`. No hay vuelo sobre el pueblo ni Tía Paca.
+  - Las stats quedan limpias como al final de la cinemática y empiezas en el paso «tbc» (fin de la historia: nada que hacer), a pie, en tu acera (`_home_pavement`).
+  - El objetivo dice `obj_chavisca`. El puente de hierro está abierto.
+- **Sin misiones:**
+  - `talk_to` solo da la charla. La charla corriente está ahora en `_chat(n, s)`. No hay recados, ofertas, firmas, ventas, cartas ni sparring. Alberto y la Chiki usan sus frases «idle».
+  - `_offer`, `_weekly_call` y `llamadas.ring` no hacen nada.
+  - `marcas.givers()` está vacía: nadie sale en el mapa ni lleva flecha.
+  - Lo demás (Recress, faenas, Koke, la tienda de la Josefa, el motín…) ya depende de stats que en este modo nunca se ponen.
+- **Sin Tricornios:**
+  - `police.add_heat` no suma.
+  - Los pitufos de ronda no te ven el turbo.
+  - El borde del mapa no da persecución (`limite._start`).
+- **Sin azafrán:** no hay flores en la calle (`_spread_saffron` borra las de la calle y no pone nuevas). Las escondidas tampoco salen, `_take_flower` no coge nada y el contador de azafrán no aparece en la pizarra (`hud.set_counts` con −1).
+- **Sin tocar:** la Agenda sigue con sus páginas, también las de misiones, que salen vacías o con lo de la historia. Las tiendas con flecha, la máquina de bolas y el ajedrez de los tableros siguen.
+- **Pruebas:**
+  - `chavisca` 6/6. Fotos `shots/chavisca_menu` y `chavisca_pagina`, juntas en `guion/menu_chavisca.png`.
+  - Cambiadas sin pasar las dos comprobaciones del menú principal de la prueba completa: en `_mayhem_checks`, «Continue» está en la página «story». La prueba completa no se ha pasado.
+- Nada en commit.
+
+### Buero Vallejo, Juan Antonio Jiménez y Las Cruces 26–36: 25 entradas (23/11, Claude · Texturas)
+
+- **Qué.** Los adosados de 1990–94 de las dos calles y las cinco casas de Las Cruces entre ellas. Escritas por el scratchpad `bv_write.py`, que mete las entradas en `calles.json` y las líneas en `casas_calles.gd` tras `co_40`. Mismo kit que `vin_bv14`.
+- **Cuartos traseros.** Con `floors` 3 (lo que da `house_street.py`), las partes de dos plantas del Catastro quedaban fuera y se pintaban como casas genéricas con ventanas azules dentro de la manzana (28 paredes). Con `floors` 2 quedan 11, todas de otros solares.
+- **Color.** El ocre `e0b050` de `vin_bv14` se ve amarillo limón al sol; aquí va `c4964e`.
+- **Pruebas.** Horneado: 25 nuevas, nada quitado; `cruces_38` solo cambia su medianera. Test `casas` OK. Street View de esta zona sale muy lavado: se compara sobre todo con las fotos del Catastro. Aprobada: «Visto bueno y seguimos». Nada en commit.
+
+### Modo Chavisca: cinemática, minijuegos abiertos, sin Agenda ni barras ni minimapa, marcador en el mapa (23/11, Claude · Sistemas)
+
+Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductoria para el modo Chavisca. Que hable de que hoy parece un día tranquilo. De que deberías ir a tomar el fresco, hablar con los vecinos. Que se encuadren varios de los edificios más complejos que hemos hecho. Todos los minijuegos deberán estar desbloqueados, Recress, Ajedrez. Que no salgan las dos barras de arriba. Aquí no hace falta saber la hora ni el dinero ni el azafrán que tienes. Ni tampoco el minimapa, si el jugador quiere ir a algún sitio siempre puede poner un marcador en el mapa al abrirlo».
+
+- **Cinemática.**
+  - Tras el Padrón, `_start_chavisca_flyover()`: el pregonero con `flyover_chavisca`, siete líneas, y una toma por línea.
+  - Las seis primeras rodean edificios hechos a mano (`CHAVISCA_SHOTS`: Petril, plaza del Ayuntamiento, plaza de toros, molino, almazara y Caridad). Cada toma se calcula con `_place_shot` a partir de la caja de sus mallas.
+  - La última baja hasta tu puerta, como la de la historia, pero sin Tía Paca. Al acabar llama a `_chavisca_begin()`.
+  - Fotos: `guion/chavisca_intro.png` y la prueba `chavisca_intro`.
+- **Sin Agenda.** En la pausa, «Minijuegos» sustituye a la Agenda y lleva a la página «minijuegos». Su contenido es el mismo que la página 3 de la Agenda, que ahora sale de `_minigame_items()`.
+- **Todo abierto.** `_chavisca_unlock()` se ejecuta en cada `start_game` de este modo:
+  - abre `unlocked` de box, jamon y ajedrez;
+  - pone el Recress en «hecho», así que la sala está abierta con su Tokken 9;
+  - da la misión del ajedrez por hecha, con los tableros de la plaza disponibles.
+  - Fonsi te ofrece guantes al hablar con él.
+  - El motín del jamón sale los jueves sin el menú de la Josefa (`motin.wanted`).
+- **Sin barras ni minimapa.** `hud.bare` oculta el calendario y el objetivo, la pizarra de dinero y azafrán, y el minimapa.
+- **Marcador propio en el mapa grande (en los dos modos).**
+  - Una cruz marca el centro del mapa. La fila «Poner marcador en la cruz» pone el marcador ahí; con ratón o dedo, clic en cualquier punto del pueblo.
+  - La flecha y la ruta llevan al marcador (`map_pin`, `track_pick` «pin», `put_pin`). Al llegar a menos de 7 m se quita, con el aviso `t_pin_there`.
+  - `minimap.gd` tiene `cross()` y `world_at()`.
+- **Pruebas.** `chavisca` 8/8 y `chavisca_intro` 2/2. Nada en commit.
+
+### «Tó», «toa» y «golismera» (23/11, Claude · Worldbuilding)
+
+- **Por qué.** El usuario: «"tó" en vez de "todo". Ej: "No te digo ná y te lo digo tó" // "¡Me cago en tó!"»; «"toa" en vez de "toda"»; y «golismero (o golismera)» = cotilla, que le gustó en boca de la Maruja.
+- **Textos (`loc.gd`, CRLF guardado).** 73 «to» de los textos en castellano pasan a «tó»; dos «to la» (la cabeza, la vida) pasan a «toa la». La Maruja dice ahora «Que no soy golismera, {hermoso|hermosa}. Yo archivo.» (en: «I’m not nosy»).
+- **Prueba.** Regla nueva en `_palabros_checks`: «to» sin tilde. La de Luis («en el amor y en kebab tó vale») busca la frase nueva.
+- **Escrito en** `guion/palabros.md`.
+- Sin commit.
+- **Después, «cerquillo» por «bordillo»** (usuario: «"cerquillo" en vez de "bordillo"»). El único texto era el tropiezo (`t_trip`): «Ese cerquillo no estaba ahí.». La peña «El Bordillo» conserva el nombre (pendiente de que el usuario diga si pasa a «El Cerquillo»). La prueba `palabros` avisa de «bordillo», menos en «el bordillo».
+
+### «Ná», «sentío» y repaso de los diálogos con palabros.md (23/11, Claude · Worldbuilding)
+
+- **Por qué.** El usuario pidió repasar todos los diálogos con la documentación de palabras al día y que le dijera los cambios. Le propuse tres bloques y contestó: «A. Genial. B. No me gusta ninguna. Son demasiado arcaicas. No apliques estas. C. Bien, y añade que aquí es "sentío" en vez de "sentido"».
+- **A, aplicado.** 80 «na» de los textos en castellano pasan a «ná», con tilde como «tó».
+- **B, descartado.** Eran formas viejas de «Cómo hablan los mayores» (abora, cimenterio, escuro, dispierto, poblema, bueso, uguas, mujuer, ebros, busanillo) para la Paca, la Josefa, la Dolores, el Diurno, el Nocturno, la Tomasa y los viejos genéricos. No van: queda apuntado en `palabros.md` como «sin arcaísmos».
+- **C, aplicado.** `palabros.md` sin contradicciones: «ná / tó», «paece que hay de muda», «en tó el sentío». Y «sentido» → «sentío» en los textos: «¡Que me has dao en tó el sentío!» (viejos) y «Y no en el buen sentío» (Koke).
+- **Prueba.** `_palabros_checks` avisa también de «na» sin tilde y de «sentido».
+- **De paso.** La prueba `palabros` fallaba por dos frases nuevas de la Fátima, sin commit y de otra sesión. Quedan en «¡Mira bien ande vas!» y «Firmo, que lé leío bien…». Avisado a Sistemas.
+- Sin commit.
+
+### Gentilicios de Madridejos, Consuegra y Camuñas (23/11, Claude · Worldbuilding)
+
+- **Por qué.** El usuario dio los gentilicios: Madridejos madridejense / barrudo; Consuegra consaburense / cabezón / consuegrero (despectivo); Camuñas camuñero / «de Coconia» (burlón).
+- **Escrito en** `guion/palabros.md`, en una tabla de «El pueblo por dentro».
+- **Textos (`loc.gd`).**
+  - Viejos que cuchichean: «Por lo menos es {consuegrero|consuegrera}.».
+  - Sopiss: «Es por los cabezones, que siempre llegan tarde.».
+  - El testigo sigue con «Seguro que es {camuñero|camuñera}», porque al usuario le gusta más cómo suena.
+- **Prueba.** `palabros` pasa.
+- Sin commit.
+
+### Peso impar y Calle Rollo: 12 entradas, `RESHAPE` y `base_from` (23/11, Claude · Texturas)
+
+- **Qué.** El lado impar del Peso, del 7 al 17, y el callejón sin salida «Calle Rollo». Escritas por el scratchpad `ro_write.py` (en `casas_calles.gd`, tras `ja_7`).
+- **`RESHAPE` (bake_godot.py, tras `RENAME`).** Redibuja una calle por puntos dados: mueve sus dos extremos y añade los del medio con números nuevos al final, así que ninguna otra calle cambia de número. Solo se usa para la Calle Rollo: estaba ~5 m al este y su pasillo se comía la casa de la boca (`rro_37`). La boca queda sobre la recta de la Calle del Rollo, así que esa calle no se mueve.
+- **`base_from` (calles.json).** Lista de calles de las que una casa toma su nivel. Puesta en `rro_19`, que al acercarse el callejón tomaba el nivel de una pared lateral cuesta arriba y quedaba 0,9 m por encima de su puerta.
+- **Despiste.** Escribí la hoja nueva encima de `guion/fotos/tanda34/rollo_1.jpg`, que ya existía. La vieja se recuperó con `git restore` (estaba en el commit) y la nueva se llama `rollo_callejon_1.jpg`.
+- **Pruebas.** Horneado: 12 nuevas, nada quitado. Test `casas` OK (con `rro_19`, `rro_37` y `rro_39`). APROBADA por el usuario («Visto bueno y siguiente»). Nada en commit.
+
+### Las sierras en el horizonte (23/11, Claude · Sistemas)
+
+- Luis, con un Street View del Camino de Toledo 76: «unas texturas o algo de fondo en la lejanía para que se viesen las montañas en el horizonte como en algunos puntos del pueblo».
+- `tools/sierras.py` baja el MDT200 del IGN (EPSG:4258, CC BY 4.0) para ±0,45° de latitud y ±0,58° de longitud alrededor del origen del mapa. Lo guarda en `tools/ign/mdt200_ll.asc` y escribe `godot/data/sierras.json`: la rejilla en float16 base64 y sus bordes en metros del juego. Rejilla lat/long porque el mapa es un escalado lineal de lat/long.
+- `godot/scripts/sierras.gd` es una MeshInstance3D creada en `game._setup_sky` y pintada en `_apply_sky` (`paint(top, hor, night)`). El shader recorre cada rumbo desde la cámara en tres franjas (2,5-9, 9-25 y 25-48 km), con la curvatura de la tierra y ×`K` = 2,2. Escribe `POSITION.z` casi a 0 (la profundidad va al revés), así el pueblo siempre la tapa y el cielo no. `fog_disabled`. Se oculta con «silent».
+- Trampa: `Parts.thin` esconde de lejos las mallas pequeñas por el tamaño de su AABB (no mira `custom_aabb`). Por eso los vértices van ×1000 aunque el shader los coloque.
+- Créditos (loc.gd): MDT200 añadido junto al MDT05.
+- Probado con fotos (vistas= desde el Camino de Toledo y al sur del pueblo, a las 11, 20.6 y 22.5 h): `guion/sierras_horizonte.png`. Sin test propio; nada commiteado.
+- Luis después: «Ponlo a x2.5. Como lo demás» (`K` = 2,5) y «que se vea el castillo de consuegra y los molinos». Están en `hitos` de sierras.json: el castillo de la Muela y los 12 molinos del Cerro Calderico, de una consulta a Overpass guardada en `tools/ign/consuegra_osm.json` (sin la torre del Palacio Prioral). `sierras.gd` los dibuja con una segunda malla (`_make_hitos`, `HITO_SHADER`): siluetas planas `MOLINO` y `CASTILLO` en metros, ×`HITO_K` = 2,5, de cara a la cámara, 5 m metidas en la loma, con `discard` si un cerro más cercano las tapa, un pelo por delante de las sierras. Los colores de vértice van con pow 2,2 (si no, salen lavados).
+- La banda cercana pasa de 40 a 64 pasos: con 40 la cresta salía más baja que la tierra bajo los molinos, y flotaban.
+- Luis: «que se iluminasen al atardecer y por la noche. Como en la vida real, que tienen focos». Uniform `lit` = smoothstep(0,06, 0,4, `sky_fx.night`): se encienden hacia las 20:45 y del todo a las 21:30. El color va de `day` a `flood` = (1, 0,60, 0,26) × 1,3 al pie y 0,75 arriba (`v_up`). Cada parte toma el foco según `UV2.x` (1, y 0,35 las aspas). Con ×1,9 salía blanco crema por el tonemap. Fotos a las 21.3 y 23 h: `guion/consuegra_focos.png`.
+
+### Víctor Pradera y Pajaritos: 11 entradas (24/11, Claude · Texturas)
+
+- **Qué.** El lado impar de Víctor Pradera (1, 3, 9, 11, 13, 15, 17), el 8, y Pajaritos 3, 4 y 5. Escritas por el scratchpad `vp_write.py` (en `casas_calles.gd`, tras `rollo_27`).
+- **El cuartel.** `vp_4` (Víctor Pradera 4, 4397002) llegó a escribirse y se quitó: su parcela pisa 8,5 m² del contorno `cuartel_built` de `cuartel.gd`. El usuario: «No le pises nunca el trabajo a Pretil». Antes de describir una casa junto a un sitio hecho a mano, mido su parcela contra la zona de ese sitio en `bake_godot.py`.
+- **Despiste.** Un `sed s/brick_pale/brick_buff/g` cambió también 9 casas viejas de `casas_calles.gd`. Se devolvieron al momento, línea a línea desde la copia de antes; fuera del bloque nuevo, el archivo es idéntico.
+- **Pruebas.** Horneado: 11 nuevas, nada quitado; `nueva_3` solo oculta una medianera. Test `casas` OK. APROBADA por el usuario («Visto bueno y paramos»): la tanda se detiene aquí. Nada en commit.
+
+### Versión 0.1.1 (24/11, Claude · Sistemas)
+
+- Luis: «Procedamos a preparar release. Si todo sale bien publícalo». Pretil, Texturas y Worldbuilding congelados durante la preparación.
+- Prueba completa 1: 1063 ok y 2 fallos, los dos de la prueba:
+  - «houses meet their street» con 3481 fachadas; el umbral pasa de 3500 a 3000, porque los sitios hechos a mano se quedan con las suyas.
+  - El espejo de la Óptica sin ventana no dibuja retratos; se acepta como en la Pisacastaña.
+- Prueba completa 2: 1065/1065.
+- Memoria con el renderizador del móvil: 789 MB estática y 2141 MB de vídeo. En 0.1.0 eran 592 y 1805; en 0.0.23, 773 y 2075.
+- Contenido: Modo Chavisca, marcador del mapa, sierras con Consuegra y sus focos, Óptica Corsa y Fátima, carteles de la entrada norte, menú nuevo, retoques de personajes y las calles de Texturas.

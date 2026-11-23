@@ -3,7 +3,8 @@ park behind it (the user, 23 November 2026: "Ahora la cruz roja y el parque que 
 manzana"). The game shows no real organisation's name or emblem: the cross is green and the name is NAME below, the
 user's ("Que llamaremos la cruz verde. La plaza puede mantener el nombre"). No telephone, no address, no social
 network; the town is
-"MATRITELLUS" on signs, as everywhere in the game.
+"MADRIDEJOS" on signs, as everywhere in the game (the user, 23 Nov 2026: "el pueblo del juego se llama
+Madridejos. Matritellus es el título y su nombre original en latín").
 
     python tools/requejo/dibujos.py
 
@@ -36,7 +37,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', '..', 'godot', 'assets', 'requejo')
 os.makedirs(OUT, exist_ok=True)
 NAME = 'Cruz Verde'                  # (the user's name for it, 23 Nov 2026)
-TOWN = 'MATRITELLUS'
+TOWN = 'MADRIDEJOS'
 GREEN = (22, 150, 72)
 INK = (44, 40, 40)
 WHITE = (250, 250, 248)

@@ -401,7 +401,7 @@ func set_look(o: Dictionary) -> void:
 		_:
 			if SOMBREROS.has(hat):                   # (from free models: in the colour chosen; red for the red-and-gold)
 				_wear(SOMBREROS[hat], hatc if hatc >= 0 else 0xc0392b, true)
-	_glasses(int(o.get("glasses", 0)))
+	_glasses(int(o.get("glasses", 0)), int(o.get("glasses_color", -1)))
 	_earrings(int(o.get("earrings", 0)))
 	_pendant(int(o.get("pendant", 0)), int(o.get("kerchief", 0xd23b3b)))
 	if int(o.get("panuelo", 0)) == 1:
@@ -1012,8 +1012,9 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 		if not hatted:                       # ...and over the crown and the top of the forehead, which it left bare (the user, 16 Nov 2026: "Arreglaría esta calva también")
 			_add("dome", hair, Vector3(0, 1.665, 0.0), Vector3(0.43, 0.232, 0.43))
 	match style:
-		1:      # bun (bigger: the user, 17 Nov 2026)
-			_add("ball", hair, Vector3(0, 1.76, -0.46), Vector3(0.27, 0.25, 0.27))
+		1:      # bun (bigger: the user, 17 Nov 2026); none under a kerchief or a cap, it is tucked under the cloth (it came
+			if not hatted:                  # through Josefa's kerchief, even low on the nape: the user, 23 Nov 2026, "el moño le clippea el pañuelo")
+				_add("ball", hair, Vector3(0, 1.76, -0.46), Vector3(0.27, 0.25, 0.27))
 		2:      # long, down to the shoulders
 			_add("ball", hair, Vector3(0, 1.22, -0.2), Vector3(0.5, 0.52, 0.36))
 		4:      # afro (0.0.22: scaled closer to the head and centered so it no longer dwarfs the body)
@@ -1614,13 +1615,16 @@ func _beard(kind: int, hair_c: int, skin: int) -> void:
 			chin.rotation.x = 0.35
 
 # ---------------- glasses ----------------
-func _glasses(kind: int) -> void:
+## `col`: a colour of their own for the frames (Tomasa's pink cat's eyes: the user, 23 Nov 2026); -1, the model's own
+func _glasses(kind: int, col := -1) -> void:
 	if kind <= 0:
 		return
 	if GAFAS.has(kind):                              # custom sculpted glasses/eyepatch meshes in their own colours
 		var gname: String = GAFAS[kind]
 		var gm := pieza(gname)
-		if gm != null:
+		if gm != null and col >= 0:
+			_wear(gname, col, true)
+		elif gm != null:
 			var gsrc := gm.surface_get_material(0)
 			var gc: Color = (gsrc as BaseMaterial3D).albedo_color if gsrc is BaseMaterial3D else Color(0.15, 0.15, 0.15)
 			_wear(gname, (int(gc.r * 255.0) << 16) | (int(gc.g * 255.0) << 8) | int(gc.b * 255.0), true)
