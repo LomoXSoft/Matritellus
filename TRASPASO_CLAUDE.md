@@ -1670,6 +1670,78 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Visto bueno de Luis**: «Visto bueno» (23/11), a la Pisacastaña entera.
 - **Pendiente.** Lo de Sistemas (dependiente y zapatos en el banco). Sin commit: lo hace Sistemas.
 
+### La «Cruz Verde» y el parque de la plaza de Jesús Requejo (23/11, Claude · Edificios Especiales)
+
+- **Petición de Luis**, con una captura de Google Maps de la manzana marcada en rojo: «Ahora la cruz roja y el parque que tiene detrás, los dos lados de la misma manzana. Tiene varias 360 así que debería ser fácil».
+  - El nombre, el mismo día: «Que llamaremos la cruz verde. La plaza puede mantener el nombre».
+- **Hecho**, todo en `godot/scripts/requejo.gd` (nuevo), sobre `esquina.gd`, en la casa `vin_jr3` que cedió Texturas (`["obra"]`), sin rehorneado:
+  - **El bloque de pisos**:
+    - revoco crema, zócalo de mampostería, pilastras e imposta de ladrillo, cornisa de ladrillo y tejado a cuatro aguas de teja vieja gris;
+    - a la avenida: ventanas con persianas marrones y rejas abajo, el cuerpo de ladrillo con la puerta, el balcón con el cartel «Cruz Verde», la farola de brazo, aires, placa y letrerito;
+    - costados con foco, contadores, aires y bajantes, como en Street View.
+  - **Las dos alas**:
+    - la oficina, con la cancela, «Cruz Verde / MATRITELLUS» pintado, dos ventanas con reja y el garaje marrón;
+    - el ala este, con el garaje gris, la placa de vado y el zócalo de cemento;
+    - entre las dos, el patio. La pared sur es el mural, un pueblo pintado de los nuestros.
+  - **Delante**: la explanada de tierra, las vallas rojas, el árbol joven, hierbajos y matorrales en el costado este, y la señal de prohibido de la esquina del transformador.
+  - **Detrás, el parque**: el paseo de adoquín con cuatro bancos y papelera, el césped con bordillo, cinco tarajes (uno encalado, con su claro de tierra), el tablón, el árbol grande en su alcorque y la señal de prohibido.
+  - **El relieve**: el del juego cae 2,5 veces más que el real. Las alas tienen la coronación en un plano a 3,2 m del suelo en tres esquinas, y el zócalo baja un 60 % de lo que cae el suelo. Así las proporciones quedan como en las fotos.
+  - **Los dibujos** son nuestros (`tools/requejo/dibujos.py` → `godot/assets/requejo/`): el rótulo, el cartel, la placa, el letrerito de la cruz, el mural, el tablón y el vado. Sin el nombre ni el emblema de nadie real, sin teléfono y sin la placa del partido que hay junto a la puerta.
+- **Archivos compartidos** (solo líneas insertadas, avisando antes a Sistemas):
+  - `world.gd`: `RequejoS`, `var requejo`, el paso «the Plaza de Jesús Requejo» tras el de la Pisacastaña, y `_build_requejo()`;
+  - `selftest.gd`: `_requejo_checks()`, el modo `--requejo` y la llamada tras `_pisacastana_checks()` en la prueba completa.
+- **Texturas**: cedió `vin_jr3`. Quita en su próximo horneado los dos árboles del mapa de delante de la fachada (`NO_TREES`), y dejó el transformador `requejo_1` blanco liso, con puerta de chapa.
+- **Pruebas.** `requejo`: 3 ok ([log](logs/selftest_requejo_20261123_143043.log)). Comprueba la obra, la casa cedida, el transformador intacto, que paran las seis fachadas, el tejado entero y que nada pisa el asfalto. Saca 22 vistas desde las cámaras de Street View, dos desde arriba y una de noche. No he pasado la prueba completa.
+  - Después de las hojas:
+    - el tejado, de naranja a teja vieja gris;
+    - el revoco, más cálido;
+    - la tierra, más gris;
+    - las alas, siguiendo la cuesta;
+    - el rótulo, del ancho de las palabras;
+    - persianas bajadas en la oficina;
+    - el cartel del balcón, en su mitad oeste;
+    - los tubos del costado oeste, en su sitio;
+    - tarajes más altos y tupidos;
+    - el matorral grande del ala este;
+    - el vado.
+- **Pendiente.**
+  - El visto bueno de Luis.
+  - Solo propuesto: el azafrán escondido.
+  - Sin commit: lo hace Sistemas.
+- **Detalle**: [referencias/requejo/LEEME.md](referencias/requejo/LEEME.md).
+
+### La caseta del transformador de la plaza de Jesús Requejo (23/11, Claude · Edificios Especiales)
+
+- **Luis**, sobre la hoja de Street View de la «Cruz Verde», con la caseta rodeada: «En general muy bien. Pero este edificio no se parece nada».
+- **Texturas** cedió `requejo_1` (`["obra"]` en `casas_calles.gd`). Su línea «ciego» de `casas.gd` sigue para otras casetas.
+- **Hecho** en `godot/scripts/requejo.gd` (`_hut()` y sus cuatro paredes), con el resto de la manzana:
+  - una torre blanca de cal de 5 × 4,9 m;
+  - la pared llega a 6,7 m sobre el pie de la avenida;
+  - tejado a dos aguas de teja vieja parda, con la cumbrera de este a oeste, la moldura blanca y las bocas de las tejas en los aleros.
+  - **A la avenida**:
+    - la puerta de chapa gris de dos hojas, con su marco, el escalón y los triángulos de peligro;
+    - el armario de chapa con el logo de la peña Costrola;
+    - la chapa vieja y la placa «PLAZA / D. JESÚS / REQUEJO»;
+    - la rejilla de lamas;
+    - el mazo de cables colgando de su soporte y enroscado en la esquina;
+    - la farola de brazo, y un cable que baja por la otra esquina.
+  - **Los otros lados**:
+    - el hastial este, con la flecha del Camino;
+    - el costado sur, con el nicho de respiraderos y los ganchos;
+    - el hastial oeste, con la barra de aisladores, un desconchón y el logo de Croquetilla al pie.
+  - La señal de prohibido pasa al costado este, con la azul de girar a la derecha debajo, como en la foto.
+  - Sin el número de encima de la puerta ni la pegatina de la compañía de la luz.
+  - **Dibujos nuevos** en `tools/requejo/dibujos.py`: `aviso`, `chapa`, `calle`, `camino` y `desconchon`.
+- **Medidas.** Salen de ocho vistas de Street View alrededor de la caseta. Cada foto se ajustó con las dos esquinas de la pared que se ve (`caseta_fit.py`, en el scratchpad), porque las cámaras de la avenida tienen el rumbo torcido hasta 10°.
+- **Archivos compartidos**, avisando a Sistemas:
+  - en `selftest.gd`, `_requejo_checks()` comprueba ahora que la caseta está cedida y hecha a mano, y que su fachada para;
+  - el modo `--requejo` saca ocho vistas más (`h_…`).
+- **Pruebas.** `requejo`: 3 ok ([log](logsselftest_requejo_20261123_150807.log)). No he pasado la prueba completa.
+- **Pendiente.**
+  - Nada de la obra. **Aprobado** por Luis: «Me habré confundido. Cruz verde está bien. Visto bueno». Lo de «Cruz Naranja» fue una confusión suya; se queda «Cruz Verde».
+  - **Azafrán escondido, puesto.** Luis eligió el sitio: «1. En el parque». Va al pie del taraje encalado, detrás del tronco visto desde el paseo (`_saffron` en `requejo.gd`, `id` "requejo", `"hidden": true`). En `selftest.gd`, `_requejo_checks()` lleva una comprobación más, y `--requejo` una vista más (`azafran`). `requejo`: 4 ok ([log](logs/selftest_requejo_20261123_152141.log)).
+  - Sin commit.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
@@ -2336,4 +2408,91 @@ Para cambios del juego, seguir las normas de [PROJECT_STATE.md](PROJECT_STATE.md
   - Sistemas: Koke el Kokas y su taxi, el «efecto jabón», Maxi, Manuela Moreno y su banco de zapatos, el Vizum de la Josefa, los iconos del mapa, los dos azafranes, la charla del curro y la cámara al hombro.
   - Pretil: el MaxiPrecio, la Tetoqa y la Pisacastaña.
   - Texturas: Constitución, Ugena, Nueva, la Flor, los huecos del centro y las fachadas en línea.
+- **Sin probar** en el móvil ni en la Steam Machine.
+
+### Calle de las Terradas: 15 entradas (23/11, Claude · Texturas)
+
+- **Qué.** Las dos aceras. Desde Street View 2024 y la ortofoto del PNOA, que encaja con la calle del mapa.
+- **El Catastro aquí está mal.**
+  - Dibuja el bar (3789001), el 9 (3689713), el 10 (3789005), el 13 (3689720) y el 15 (3689711) 8 m más al sur de donde están. La casa del 1 (3689717) sí cuadra.
+  - Faltan tres edificios: la casa de la esquina con la avenida, la obra a medio hacer y la casa baja del 11.
+- **Clave nueva en `bake_godot.py`: `"shift": [dx, dz]`.** Mueve todas las partes de la referencia de esa casa antes de cualquier otra cosa (`SHIFT_RC`, justo después de leer cada parte y antes del pasillo de las calles). Solo actúa donde una entrada la lleva.
+- **Fachadas.** Todas en la calle a 5 m de su línea (`te_write.py` en el scratchpad, por distancia `s` a lo largo de la calle). La casa del 9 va 2,5 m detrás de su tapia, como en la foto. La del 10 queda tras su jardín.
+- **Partidas.**
+  - La casa del 1 en tres entradas: `1e` con `rc` nulo, `1g` (`only: 1`, `reach`, `porch`) y `1`.
+  - El 9 en cuatro: el garaje como caja de `rc` nulo delante, la casa con `clear` 4.5, la tapia y la verja del porche.
+  - El bar en dos por alturas (`only: 1` para la parte baja).
+- **Trampas.**
+  - Un trozo de la parte de 1 planta del 1 asomaba 2,2 m delante de la casa de ladrillo, porque `clear` solo corta de -1 a L+1. Se arregló alargando el tramo de la tapia hasta 5,7 m.
+  - La verja del porche se quedaba en 4,6 m² y el horneado la tiraba: lleva `deep` 1.0.
+- **Mapa.** Frente a la copia, 15 casas nuevas, ninguna quitada ni cambiada. Cambia el despeje de los nodos de la avenida en la esquina (de 15,4 a 6,8 m, por encima de la mitad del ancho de la avenida). Cambian unos pocos árboles: el reparto de olivos depende del orden aleatorio.
+- **También.**
+  - `vin_jr3` pasa a `["obra"]` para Pretil (la Cruz Roja de la plaza de Jesús Requejo).
+  - Las tapias bajas con `rc` nulo dejaban asomar ventanas azules con reja por encima. `casas.gd` trata su cara de atrás, que da a un patio abierto, como fachada a otra calle y le pone las ventanas de la casa. Pasaba también en las ya publicadas de Florido (`flo_p14t` a `_26t`), `toledo_20`/`_20b`, `delicias_39t` y `ugena_3t`. Las 13, más `terradas_9p`, llevan ahora un `"lado wall=..."` en blanco. Hoja `guion/fotos/tanda34/tapias_lado.jpg`.
+- **Línea nueva `"ciego"` en `casas.gd`.** Deja lisos todos los costados que dan a otra calle, también los que no alcanzan las líneas `lado` (esas solo van al costado más largo). Se usa en `requejo_1`, la caseta del transformador de Pretil: era blanca lisa con una celosía arriba y una puerta de chapa, y salían ventanas con reja en el costado. En `bake_godot.py`, `NO_TREES` quita los dos árboles que pidió Pretil en (-430.7, 173.8) y (-417.7, 173.9); entra en vigor en el siguiente horneado.
+- **Después:** `requejo_1` pasó a `["obra"]`. Pretil la hace a mano en `requejo.gd`, porque el usuario dijo «este edificio no se parece nada». La línea `ciego` sigue en `casas.gd` para otras casetas.
+- **Pruebas.** `casas solo=terradas_,flo_p,toledo_20,delicias_39t,ugena_3t`: 4 ok. Hojas `guion/fotos/tanda34/terradas_1..3`. Aprobada por el usuario. Nada en commit.
+
+### Filtros de pantalla: prototipo para comparar (23/11, Claude · Sistemas)
+
+- **Qué pidió el usuario.** «Proponme filtros para el juego. CRT o tipo falso PSX», y después «Comparame los tres». Es un prototipo: falta su elección.
+- **`filtros.gd` (nuevo).** Es un CanvasLayer en la capa 0 (el HUD va en la 1), con una sola pasada de sombreador sobre la imagen acabada. `Settings.data["filtro"]`:
+  - 0: ninguno.
+  - 1: «Consola de los 90». El 3D se dibuja a 270 filas (`scaling_3d_scale`, bilineal, sin MSAA ni resolución dinámica) y se agranda en bloques, con 24 tonos por canal y tramado Bayer 4×4. La niebla, un poco más cerca.
+  - 2: «Tele vieja». Líneas de barrido, cristal curvado, esquinas oscuras, colores separados en los bordes, las rayas del fósforo y un poco de resplandor.
+  - 3: las dos.
+- **Menú.** Gráficos tiene ahora una fila «Filtro». Las dos pruebas que contaban 21 filas cuentan ahora 22.
+- **Prueba.** Modo `filtros`: la plaza y la calle de Henry, de día y de noche, con los cuatro filtros, y el tiempo de GPU de cada uno. Las hojas están en `guion/filtros_*.png`.
+- **GPU a 1280×720.** Se midió con otro Godot abierto: vale para comparar, no como cifra absoluta.
+  - Ninguno: 5,8–6,7 ms.
+  - Consola: 4,8–5,5 ms.
+  - Tele: +0,05 ms.
+  - Las dos: igual que la consola.
+- **Otras pruebas.** `reglas`: 56 ok. Nada en commit.
+
+### Calle de Sancho Panza: 20 entradas (23/11, Claude · Texturas)
+
+- **Qué.**
+  - Las dos aceras de los tres tramos: de las Monjas a Don Quijote, de Don Quijote a la curva, y la subida a los Cipreses.
+  - Desde Street View 2024 y la ortofoto.
+  - Entran también las casas de número de otra calle que solo dan aquí: Cipreses 25, Don Quijote 3 y 4, y las traseras de Comisario 24 y 28.
+- **Catastro y mapa.**
+  - El Catastro cuadra con la ortofoto. Es la línea del mapa (OSM) la que va unos 2,5 m al sur del centro real.
+  - No se ha movido la calle. El norte va en una línea a 5 m. El sur va a 2,5 m, donde el pasillo de 2,4 m ya dejaba la trasera de `com_38`. El ancho real entre fachadas, unos 8 m, se mantiene.
+  - `sp_write.py` en el scratchpad da las posiciones por tramo (s a lo largo, d a la izquierda).
+- **Traseras de la calle del Comisario.**
+  - `com_24` y `com_28` llevan `floors` 2, así que sus partes de una planta en Sancho Panza no las tomaba nadie y faltaban.
+  - Ahora entran `sancho_c24` y `sancho_c28` (`only: 1`, `reach: 2`). Las otras partes de una planta de esas parcelas siguen siendo genéricas.
+- **Correcciones con la foto del Catastro.**
+  - El 25 de los Cipreses es enfoscado naranja, no ladrillo.
+  - La casa de Don Quijote 3 es de ladrillo salmón (en la foto de 2024 se ve borroso, como enfoscado).
+- **Mapa.**
+  - Frente a la copia: 20 casas nuevas, ninguna quitada. Fuera los dos árboles de Pretil (`NO_TREES`).
+  - Cambian banderas de bordes en `com_38`, `com_24`, `cip_23` y `cip_19`, por sus vecinas nuevas.
+  - Cambia el despeje de tres nodos (Don Quijote: de 7,5 a 3,8 m).
+- **Pruebas.** `casas solo=sancho_,com_38,cip_19`: 4 ok. Hojas en `guion/fotos/tanda34/sancho_1..3`. Aprobada por el usuario. Nada en commit.
+- **La elección del usuario: «El primero sin temblor».** Queda solo la «Consola de los 90»: el filtro es 0 o 1, y un 2 o 3 guardado pasa a 1. La tele vieja y «Las dos» se han quitado, y el filtro no hace temblar los vértices. `filtros` (2 × 2 × 2 fotos): consola 4,8–5,5 ms frente a 5,8–6,7 sin filtro, ya sin otro Godot abierto. `reglas`: 56 ok.
+- **Después, otra vez los tres** (el usuario: «Déjame los tres filtros disponibles en las opciones gráficas. Así los pruebo yo en la próxima versión»). Gráficos → Filtro: Ninguno, Consola de los 90, Tele vieja, Las dos. Ninguno vibra (sin temblor de vértices). `filtros` (16 fotos) y `reglas` (56 ok), bien.
+- **El HUD también, sin los textos** (el usuario: «Se puede hacer que también afecten al HUD pero no a los textos?»). Mientras juegas, `filtros.gd` hace dos pasadas.
+  - Debajo del HUD (capa 0): el 3D, con la curva del cristal, el brillo y los colores separados.
+  - Encima de los dibujos del HUD (un rect en `hud.root`, z 2000): bloques, tramado, rayas, franjas y esquinas oscuras sobre el minimapa, los iconos y las cajas.
+  - Los textos (Label, RichTextLabel, Button, LineEdit y la radio del coche) suben a z 3000 y quedan nítidos. Se recogen los nuevos con `node_added`.
+  - El HUD no se curva, porque un texto nítido no puede curvarse con su caja.
+  - En el menú, el mapa grande y la mochila (o sin HUD de juego) vuelve a ser una sola pasada, y los textos vuelven a su z.
+  - Lo dibujado con `draw_string` sí se filtra: la «N» del minimapa, los números del indicador, «€», «PC», «3G».
+  - `filtros`: OK, con una prueba nueva (11 de 11 textos subidos, todos de vuelta en el menú, nada con el filtro quitado) y fotos `filtro_hud_0..3`. Hoja en `guion/filtros_hud.png` y `guion/filtros_hud_detalle.png`. Nada en commit.
+
+### Publicación de la 0.1.0 en GitHub (23/11, Claude · Sistemas)
+
+- **Por qué.** Lo pidió el usuario: «Vale, con todo esto creo que ya tenemos suficiente contenido para un loop jugable decente. Prepara una release para la 0.1.0 (la 0.2.0 será tener modeladas ~100% las calles del pueblo)». Antes, Pretil y Texturas pararon y confirmaron que no les quedaba nada a medias.
+- **Pruebas.** Dos pasadas completas.
+  - La primera dio 11 fallos. Uno era el recuento de paredes: quedan 23 977 genéricas y el umbral pasa de 24 000 a 22 000. Los otros diez eran de coches y Tricornios (robar, pintar, taller, esquivar, patrullas), con el pueblo quieto: 0,00 m.
+  - La segunda, con un diagnóstico nuevo (`_why_still()` en el mensaje del robo y de las patrullas), dio 1046 ok, 0 fallos. Si vuelve a salir, el mensaje dirá la fase, la pausa y el mapa abierto.
+  - Por si no salen las patrullas, `_mayhem_checks` ya no da error: corta ahí.
+- **Memoria con el renderizador del móvil:** 592 MB estática y 1805 MB de vídeo al final de la carga. En la 0.0.23 eran 773 y 2075.
+- **Paquetes.** Están en `dist/v0.1.0/`: `Matritellus-0.1.0-{Windows.exe,Android.apk,Linux.tar.gz}` y `SHA256SUMS.txt` (dos espacios). El APK lleva la versión 0.1.0 (código 100).
+- **Contenido.**
+  - Sistemas: los tres filtros de pantalla, con el HUD filtrado y sus textos nítidos.
+  - Pretil: la «Cruz Verde», el parque de Requejo, la caseta del transformador y su azafrán escondido.
+  - Texturas: las calles de las Terradas y de Sancho Panza.
 - **Sin probar** en el móvil ni en la Steam Machine.

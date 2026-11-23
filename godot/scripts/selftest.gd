@@ -4150,6 +4150,56 @@ func _tetoqa_checks() -> void:
 	_check(edge > 0.1 and edge < 1.2 and off_door > 0.8 and adopted and flips >= 1 and amber_only and red and felled and dark and up_again,
 		"a traffic light stands before the chamfer, on the pavement by the kerb (%.2f m from the road), clear of the door (%.1f m), as street furniture (%s); its amber blinks (%d changes, the rest dark: %s), it shows what it is told (red: %s); a punch knocks it over (%s), dark (%s), and it is back the next day (%s)" % [edge, off_door, adopted, flips, amber_only, red, felled, dark, up_again])
 
+## The Plaza de Jesús Requejo (requejo.gd): the Red Cross's block (its name in the game: requejo.gd's NAME) and the park
+## behind it, built by hand on its house of the map: the block of flats, its two wings, the mural, the barriers of the
+## square, the park's trees and benches, and the transformer hut on the corner (Texturas's requejo_1, handed over too);
+## its fronts stop you, its roof closes, nothing of it stands in a street.
+## why the town might be standing still (a failing check's message): what stops game._physics_process early
+func _why_still() -> String:
+	return "phase %s, paused %s, map %s, tree paused %s, time scale %.2f, in car %s, indoors %s" % [g.phase, g.paused, g.map_open,
+		get_tree().paused, Engine.time_scale, g.in_car != null, g.indoors]
+
+func _requejo_checks() -> void:
+	var a = g.world.get("requejo")
+	if a == null:
+		print("  (no Plaza de Jesús Requejo on this map yet: its checks skipped)")
+		return
+	_check(a.pieces > 600 and a.openings >= 40 and a.barriers >= 4 and a.trees >= 7 and a.benches == 4,
+		"the Plaza de Jesús Requejo is built by hand (%d pieces, %d windows and doors; %d barriers, %d trees, %d benches)" % [a.pieces, a.openings, a.barriers, a.trees, a.benches])
+	var calles = load("res://scripts/casas_calles.gd")
+	var handed: bool = calles.HOUSES.has(a.HOUSE) and (calles.HOUSES[a.HOUSE] as Array).size() == 1 and String(calles.HOUSES[a.HOUSE][0]) == "obra"
+	var hut: bool = calles.HOUSES.has(a.HUT) and String(calles.HOUSES[a.HUT][0]) == "obra" and a.hut_pieces > 80
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var n_office: Vector2 = a._outward(a.F, a.G)
+	var n_park: Vector2 = a._outward(a.G, a.S)
+	var n_east: Vector2 = a._outward(a.S, a.C)
+	var rays: Array = [[a.door, a._nn], [a.office, n_office], [a.park, n_park], [a._along(a.S, a.C, 7.0) + n_east * 1.4, n_east],
+		[a._along(a.C, a.B, 4.5) + a._ne * 1.4, a._ne], [a._along(a.A, a.F, 4.6) + a._nw * 1.4, a._nw],
+		[a._along(a.H_NE, a.H_NW, 1.0) + a._outward(a.H_NE, a.H_NW) * 1.4, a._outward(a.H_NE, a.H_NW)]]
+	var stops := 0
+	for q in rays:
+		var p: Vector2 = q[0]
+		var e: Vector2 = p - (q[1] as Vector2) * 4.0
+		var y := MapData.height(p) + 1.2
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(p.x, y, p.y), Vector3(e.x, y, e.y), 1)).is_empty():
+			stops += 1
+	var streets: Array = []
+	for q in [a.door, a.office, a.park]:
+		streets.append(String(MapData.nearest_road(q)["seg"].road["n"]))
+	var roofed: bool = a.roof_pieces >= 4 and absf(a.roof_area - a.roof_outline) < 0.05 * a.roof_outline and a.ridge_top > a.TOP + 1.0
+	_check(handed and hut and stops == rays.size() and String(streets[2]).contains("Vi") and roofed,
+		"it stands on its house of the map, handed over as [\"obra\"] (%s), the transformer hut on the corner handed over too and built (%s); its fronts stop you (%d of %d); it gives on to %s; its hipped roof covers the block (%d pieces, %.1f of %.1f m2, %.1f m up)" % [handed, hut, stops, rays.size(), ", ".join(streets), a.roof_pieces, a.roof_area, a.roof_outline, a.ridge_top])
+	var nearest := 1000.0
+	for q in a.yard:
+		nearest = minf(nearest, MapData.road_edge_dist(q))
+	_check(a.yard.size() >= 20 and nearest >= 0.2, "nothing of it stands in a street: of %d barriers, trees, benches and signs the nearest to the asphalt is %.1f m off" % [a.yard.size(), nearest])
+	var hidden := false
+	for f in g.flowers:
+		if String(f.get("id", "")) == "requejo" and bool(f.get("hidden", false)) and (f["p"] as Vector2).distance_to(a.saffron_spot) < 0.01:
+			hidden = true
+	_check(hidden and a.saffron_spot.distance_to(Vector2(-426.3, 210.2)) < 0.8 and MapData.road_edge_dist(a.saffron_spot) > 2.0,
+		"its hidden saffron grows at the foot of the whitewashed tamarisk in the park (%.1f m from its trunk), counted with the hidden ones (%s)" % [a.saffron_spot.distance_to(Vector2(-426.3, 210.2)), hidden])
+
 ## The shoe shop "Pisacastaña" of the corner of the Arcos and the Calle Argentina (pisacastana.gd,
 ## pisacastana_dentro.gd): built on its house of the map, shoes in its windows, its fronts stop you, its roof closes, its
 ## hours (the real shop's: two spells on weekdays, Saturday mornings, Sundays shut), its states, its set far off and
@@ -5679,7 +5729,8 @@ func _relief_checks() -> void:
 	# 30000 when 33142 were left, 17 Nov 2026)
 	# Fewer generic walls remain as hand-built places and Texturas' houses replace them.
 	# (25000 since 21 Nov 2026: 26808 left once the Cristo del Prado block, the Paseo and the silo were built by hand)
-	_check(aw["n"] > 24000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
+	# (22000 since 23 Nov 2026: 23977 left with the Cruz Verde, the Terradas and Sancho Panza)
+	_check(aw["n"] > 22000 and aw["gap"] < -0.5, "all %d walls reach the ground: the shallowest foot is still %.2f m under it" % [aw["n"], -aw["gap"]])
 	# (the fronts too: 5000 became 4000 on 21 Nov 2026, when 4807 were left after the Florido, Viñas and Cipreses houses
 	# and the Cristo del Prado block)
 	_check(aw["fronts"] > 3500 and aw["odd"] < aw["fronts"] * 0.01 and aw["high"] < 4.0 and aw["deep"] < 0.8,
@@ -6135,7 +6186,7 @@ func _mayhem_checks() -> void:
 	victim_e["halt"] = true                 # (stopped beside you: it waits there)
 	stolen.set_speed(Vector2.ZERO)
 	await _frames(6)
-	_check(g.near_steal != null and g.near_car == stolen, "a neighbour's car stopped beside you can be stolen (npc %s, car %s, its distance %.1f, speed %.1f, list %d)" % [str(g.near_npc.id if g.near_npc != null else "-"), str(g.near_car.kind if g.near_car != null else "-"), stolen.p.distance_to(g.player.p), stolen.vel.length(), g.traffic.list.size()])
+	_check(g.near_steal != null and g.near_car == stolen, "a neighbour's car stopped beside you can be stolen (npc %s, car %s, its distance %.1f, speed %.1f, list %d; %s)" % [str(g.near_npc.id if g.near_npc != null else "-"), str(g.near_car.kind if g.near_car != null else "-"), stolen.p.distance_to(g.player.p), stolen.vel.length(), g.traffic.list.size(), _why_still()])
 	var people_before: int = g.npcs.size()
 	g.interact()
 	_check(g.in_car == stolen and g.cars.has(stolen) and not g.traffic.list.has(victim_e), "stealing it puts you at the wheel")
@@ -6337,7 +6388,10 @@ func _mayhem_checks() -> void:
 	g.police.add_heat(250.0)
 	_check(g.police.chasing and g.police.cops.is_empty(), "full heat starts the chase, and gives you a head start: nobody is here yet")
 	await _frames(100)
-	_check(g.police.cops.size() == 2, "three seconds later two patrol cars turn up")
+	_check(g.police.cops.size() == 2, "three seconds later two patrol cars turn up (%d; %s)" % [g.police.cops.size(), _why_still()])
+	if g.police.cops.is_empty():
+		g.police.reset()
+		return
 	var cop = g.police.cops[0]["car"]
 	var d0: float = cop.p.distance_to(c.p)
 	var best := d0
@@ -6913,7 +6967,7 @@ func _reglas_checks(pictures := false) -> void:
 	# the graphics options: each row does something, and the defaults are the game as it always was
 	_check(Settings.preset() == 2 and g.get_viewport().msaa_3d == Viewport.MSAA_4X and g.env.ssao_enabled and g.sun.shadow_enabled and is_equal_approx(g.cam.fov, 55.0) and PartsS.draw == 1.0,
 		"the graphics options start at High: the game as it always was")
-	_check(g._menu_page("graphics")["items"].size() == 21 and is_equal_approx(g.env.adjustment_brightness, 1.0), "(twenty-one rows on the graphics page; Brillo at 100 %, as it always was)")
+	_check(g._menu_page("graphics")["items"].size() == 22 and is_equal_approx(g.env.adjustment_brightness, 1.0), "(twenty-two rows on the graphics page, Filtro the last added on 23 Nov 2026; Brillo at 100 %, as it always was)")
 	var bright_row: Array = g._menu_page("graphics")["items"].filter(func(it): return String(it["text"]) == Loc.t("s_bright"))
 	if bright_row.size() == 1:
 		bright_row[0]["left"].call()
@@ -14763,6 +14817,77 @@ func _run() -> void:
 		print("TETOQA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--requejo"):     # just the Plaza de Jesús Requejo: the Red Cross's block and the park behind it, from where the Street View pictures were taken (referencias/requejo), and from above
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var rq = g.world.get("requejo")
+		if rq == null:
+			print("REQUEJO FAILED (not built)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = Vector2(-380.0, 120.0)
+		var sv := {"ja": Vector2(-435.22, 156.01), "jb": Vector2(-425.30, 153.72), "jc": Vector2(-413.78, 153.26),
+			"wb": Vector2(-444.32, 172.34), "wc": Vector2(-445.34, 182.63), "wd": Vector2(-448.08, 196.29), "we": Vector2(-448.57, 204.84),
+			"eb": Vector2(-408.86, 169.69), "ed": Vector2(-410.09, 189.47), "ee": Vector2(-411.10, 199.86), "ef": Vector2(-412.38, 210.48),
+			"sa": Vector2(-439.21, 212.09), "sb": Vector2(-429.53, 216.96), "sc": Vector2(-420.45, 221.88)}
+		var views: Array = [["jb", "jb", Vector2(-428.0, 186.0), 8.0, 110.0], ["wc", "wc", Vector2(-428.0, 186.0), 8.0, 110.0],
+			["ed", "ed", Vector2(-428.0, 186.0), 8.0, 110.0], ["sb", "sb", Vector2(-428.0, 186.0), 8.0, 110.0],
+			["n_frente", "jb", Vector2(-429.0, 179.0), 14.0, 70.0], ["n_frente_alto", "jb", Vector2(-429.0, 179.0), 30.0, 70.0],
+			["n_puerta", "jb", Vector2(-428.5, 179.0), 4.0, 35.0], ["n_oeste", "ja", Vector2(-433.0, 179.0), 14.0, 70.0],
+			["n_este", "jc", Vector2(-424.0, 179.0), 14.0, 70.0], ["w_esquina", "wb", Vector2(-439.3, 179.0), 18.0, 90.0],
+			["w_frente", "wc", Vector2(-439.5, 183.5), 22.0, 100.0], ["w_ala", "wd", Vector2(-438.5, 196.0), 8.0, 85.0],
+			["w_ala_sur", "we", Vector2(-438.5, 199.0), 8.0, 90.0], ["e_esquina", "eb", Vector2(-418.3, 180.5), 18.0, 90.0],
+			["e_lado", "ed", Vector2(-418.4, 185.0), 22.0, 100.0], ["e_ala", "ee", Vector2(-419.0, 196.0), 8.0, 90.0],
+			["e_ala_sur", "ef", Vector2(-420.0, 201.0), 8.0, 90.0], ["s_mural", "sb", Vector2(-430.0, 201.0), 6.0, 95.0],
+			["s_mural_oeste", "sa", Vector2(-436.0, 201.0), 6.0, 95.0], ["s_mural_este", "sc", Vector2(-423.0, 201.0), 6.0, 95.0],
+			["s_parque_sw", "sa", Vector2(-430.0, 212.0), -12.0, 110.0], ["s_parque_se", "sc", Vector2(-430.0, 212.0), -12.0, 110.0]]
+		sv.merge({"ea": Vector2(-410.25, 156.90), "ec": Vector2(-409.46, 179.43)})          # (and the transformer hut on the corner, from round it)
+		views += [["h_jc", "jc", Vector2(-417.4, 163.4), 18.0, 70.0], ["h_jb", "jb", Vector2(-417.4, 163.4), 15.0, 60.0], ["h_ja", "ja", Vector2(-417.4, 163.4), 12.0, 50.0], ["h_ea", "ea", Vector2(-417.4, 163.4), 18.0, 75.0], ["h_eb", "eb", Vector2(-417.4, 163.4), 15.0, 70.0], ["h_ec", "ec", Vector2(-417.4, 163.4), 10.0, 60.0], ["h_puerta", "jc", Vector2(-416.78, 160.68), -4.0, 45.0], ["h_oeste", "ja", Vector2(-421.74, 162.58), 2.0, 30.0]]
+		views += [["azafran", "sb", Vector2(-426.72, 210.62), -24.0, 50.0]]          # (its hidden saffron at the foot of the whitewashed tamarisk)
+		var aspect := 1280.0 / 720.0
+		g.weekday = 1
+		g.set_time(12.0)
+		await _frames(6)
+		for v in views:
+			var eye: Vector2 = sv[v[1]]
+			var dir: Vector2 = (v[2] as Vector2 - eye).normalized()
+			var e3 := Vector3(eye.x, MapData.height(eye) + 2.5, eye.y)
+			g.cam.position = e3
+			g.cam.look_at(e3 + Vector3(dir.x, tan(deg_to_rad(v[3])), dir.y))
+			g.cam.fov = rad_to_deg(2.0 * atan(tan(deg_to_rad(v[4]) / 2.0) / aspect))      # (Street View's angle is across; Godot's is up and down)
+			await _frames(6)
+			await _shot("requejo_%s" % v[0])
+		var mid := Vector3(-429.0, MapData.height(Vector2(-429.0, 190.0)), 190.0)
+		for v in [["arriba_no", Vector3(-24.0, 26.0, -26.0)], ["arriba_se", Vector3(22.0, 24.0, 28.0)]]:
+			g.cam.position = mid + v[1]
+			g.cam.look_at(mid)
+			g.cam.fov = 60.0
+			await _frames(6)
+			await _shot("requejo_%s" % v[0])
+		g.set_time(21.5)                                 # (at night: its street lamp on its bracket)
+		await _frames(6)
+		var e4 := Vector3(-425.30, MapData.height(Vector2(-425.30, 153.72)) + 2.5, 153.72)
+		g.cam.position = e4
+		g.cam.look_at(Vector3(-428.5, e4.y + 1.5, 179.0))
+		g.cam.fov = rad_to_deg(2.0 * atan(tan(deg_to_rad(80.0) / 2.0) / aspect))
+		await _frames(6)
+		await _shot("requejo_noche")
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _requejo_checks()
+		print("REQUEJO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--pisacastana"):     # just the shoe shop Pisacastaña: from where the Street View pictures were taken (referencias/pisacastana), open (a Monday at midday), shut (a Sunday), at dusk and at night; its mannequin over six days; its windows; its inside
 		shots = true
 		g.menu.close()
@@ -18683,6 +18808,92 @@ func _run() -> void:
 			await _shot("coop_" + v[0])
 		get_tree().quit(0)
 		return
+	if OS.get_cmdline_user_args().has("--filtros"):       # the screen filter against none (the user, 23 Nov 2026: "Comparame los tres"; all three kept in the options): two views, day and night, with what the GPU takes
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = true                     # (the HUD is left on: it stays sharp under the filter)
+		var fhall: Dictionary = MapData.townhall
+		var fhm := Vector2(fhall["m"][0], fhall["m"][1])
+		var fhu := Vector2(fhall["u"][0], fhall["u"][1])
+		var fhn := Vector2(-fhu.y, fhu.x)
+		var fst: Vector2 = g.places["henry"]["p"]
+		var fsu: Vector2 = g.places["henry"]["u"]
+		var rid: RID = get_viewport().get_viewport_rid()
+		RenderingServer.viewport_set_measure_render_time(rid, true)
+		var was_f = Settings.data.get("filtro", 0)
+		var gpu := {}
+		for hour in [13.0, 21.6]:
+			g.set_time(hour)
+			for view in [["plaza", fhm + fhn * 34.0 + fhu * 4.0, 13.0, fhm, 5.0], ["calle", fst - fsu * 24.0 + Vector2(-fsu.y, fsu.x) * 1.5, 2.4, fst + fsu * 6.0, 2.2]]:
+				var from: Vector2 = view[1]
+				var at: Vector2 = view[3]
+				g.player.p = at
+				g.player.sync()
+				for m in range(4):                       # (the three are kept in the options, for the user to try: 23 Nov 2026)
+					Settings.data["filtro"] = m
+					g.apply_graphics()
+					g.cam.position = MapData.at(from, view[2])
+					g.cam.look_at(MapData.at(at, view[4]))
+					g.sky_fx.tick(0.016, g.cam.global_position, at)
+					g.lights._t = 0.0
+					g.lights.tick(0.016, at)
+					await _frames(20)
+					var ms := 0.0
+					for k in range(60):
+						await get_tree().process_frame
+						g.cam.position = MapData.at(from, view[2])
+						g.cam.look_at(MapData.at(at, view[4]))
+						ms += RenderingServer.viewport_get_measured_render_time_gpu(rid)
+					var key := "%s_%s_%d" % [view[0], "dia" if hour < 20.0 else "noche", m]
+					gpu[key] = ms / 60.0
+					await _shot("filtro_" + key)
+		for key in gpu.keys():
+			print("  GPU %-16s %6.2f ms" % [key, gpu[key]])
+		# the HUD with words on it (a line of talk, a toast), under each filter
+		g.set_time(13.0)
+		var hv_from: Vector2 = fst - fsu * 24.0 + Vector2(-fsu.y, fsu.x) * 1.5
+		var hv_at: Vector2 = fst + fsu * 6.0
+		g.player.p = hv_at
+		g.player.sync()
+		var hv_voice: String = String(g.manuela.n.voice) if g.get("manuela") != null and g.manuela.n != null else ""
+		for m in range(4):
+			Settings.data["filtro"] = m
+			g.apply_graphics()
+			g.say("Manuela Moreno", ["¡Pisa con cuidao, que mañana hay más pisaofertas!"], hv_voice)
+			g.hud.toast("Filtro: " + String(Loc.t("s_filtro_v")[m]), 30.0)
+			g.hud.dlg_text.visible_characters = -1      # (the line typed out at once: the typing waits for play)
+			for k in range(40):
+				await get_tree().process_frame
+				g.cam.position = MapData.at(hv_from, 2.4)
+				g.cam.look_at(MapData.at(hv_at, 2.2))
+			await _shot("filtro_hud_%d" % m)
+			await _skip_dialog(false)
+		# the HUD under the filter while you play, its words over it; in the menu, all back as it was
+		var ffail := 0
+		var words: Array = g.hud.root.find_children("*", "Label", true, false).filter(func(l): return l.is_visible_in_tree())
+		Settings.data["filtro"] = 3
+		g.apply_graphics()
+		await _frames(3)
+		var lifted: int = words.filter(func(l): return l.z_index == g.filtros.WORDS_Z and not l.z_as_relative).size()
+		var in_play: bool = g.filtros.over_on and g.filtros._over.visible and lifted == words.size() and words.size() > 0
+		g.menu.open("graphics")
+		await _frames(3)
+		var back: int = words.filter(func(l): return l.z_index == 0 and l.z_as_relative).size()
+		var in_menu: bool = not g.filtros.over_on and not g.filtros._over.visible and back == words.size()
+		g.menu.close()
+		Settings.data["filtro"] = 0
+		g.apply_graphics()
+		await _frames(3)
+		var off_ok: bool = not g.filtros.over_on and not g.filtros._over.visible
+		if not (in_play and in_menu and off_ok):
+			ffail += 1
+		print("  %s  the HUD under the filter while you play (%d of %d words lifted over it), nothing of it in the menu (%d back), none with the filter off" % ["ok  " if in_play and in_menu and off_ok else "FAIL", lifted, words.size(), back])
+		Settings.data["filtro"] = was_f
+		g.apply_graphics()
+		print("FILTROS %s (%d failed)  %d pictures" % ["OK" if ffail == 0 else "FAILED", ffail, gpu.size()])
+		get_tree().quit(0)
+		return
 	if OS.get_cmdline_user_args().has("--lights"):        # the sky and the lamps through the day: three views at each hour, then quit
 		shots = true
 		g.menu.close()
@@ -18756,6 +18967,7 @@ func _run() -> void:
 	await _maxiprecio_checks()
 	await _tetoqa_checks()
 	await _pisacastana_checks()
+	await _requejo_checks()
 	await _rize_checks()
 	await _travesia_checks()
 	await _sopiss_checks()
@@ -18808,7 +19020,7 @@ func _run() -> void:
 	g._menu_page("graphics")["items"][1]["right"].call()
 	var set_items: Array = g._menu_page("settings")["items"].map(func(it): return it["text"])
 	_check(Settings.data["res"] == (before_res + 1) % Settings.RESOLUTIONS.size() and set_items == [Loc.t("s_graphics"), Loc.t("s_sound"), Loc.t("s_gameplay"), Loc.t("m_back")]
-		and g._menu_page("graphics")["items"].size() == 21 and g._menu_page("sound")["items"].size() == 4 and g._menu_page("gameplay")["items"].size() == 5,
+		and g._menu_page("graphics")["items"].size() == 22 and g._menu_page("sound")["items"].size() == 4 and g._menu_page("gameplay")["items"].size() == 5,
 		"settings in three: Gráficos (resolution, display... occlusion), Sonido (three volumes), Gameplay (language, field of view, controls)")
 	Settings.data["res"] = before_res
 	await _frames(5)

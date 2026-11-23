@@ -791,6 +791,7 @@ static func _word(s: String):
 ## A line that begins "lado " is a floor of the house's longest wall to another street, ground floor first, written the
 ## same way (positions along that wall from its left end as you face it; its notices, signs, awnings and lean-tos go on it). Without them that wall
 ## gets a plain row of the house's own windows; a floor written "lado wall=..." with nothing else is a blank wall.
+## A line "ciego" makes every side to another street a blank wall (the ones the "lado" lines do not reach too).
 static func _unpack(a: Array) -> Dictionary:
 	var spec := {"eaves": String(a[0]), "floors": []}
 	var usual := {"win": [1.1, 1.0, 1.2], "bal": [1.1, 2.2], "door": [1.1, 2.3], "gar": [2.8, 2.6], "shop": [3.0, 2.6], "arc": [1.6, 0.1, 2.4]}
@@ -802,6 +803,9 @@ static func _unpack(a: Array) -> Dictionary:
 			line = line.substr(5).strip_edges()
 			if not spec.has("flank"):
 				spec["flank"] = []
+		if line == "ciego":                     # every side to another street a blank wall (huts, sheds: Texturas, 23 Nov 2026)
+			spec["blind"] = true
+			continue
 		if line == "=":
 			spec[into].append(spec[into][-1])
 			continue
@@ -1183,7 +1187,7 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 		var f: Dictionary = floors[i]
 		var h: float = gh if i == 0 else (top - gh) / float(n - 1)
 		var fly: float = 0.0 if side else float(f.get("fly", prev_fly))
-		var ops: Array = _rhythm(f, L, i == 0) if side else f.get("open", [])
+		var ops: Array = ([] if spec.get("blind", false) else _rhythm(f, L, i == 0)) if side else f.get("open", [])
 		var panels: Array = [] if side else f.get("panels", [])
 		if side and _flank and spec.has("flank") and i < (spec["flank"] as Array).size():
 			f = f.duplicate()                    # (the long side as it is in the photos: its own openings, render, foot)

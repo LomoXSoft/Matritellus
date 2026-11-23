@@ -328,6 +328,8 @@ const TX := {
 	"s_lod": {"es": "LOD automático", "en": "Automatic LOD"},
 	"s_occlusion": {"es": "Occlusion culling", "en": "Occlusion culling"},
 	"s_silent": {"es": "Modo Silent Hill", "en": "Silent Hill mode"},
+	"s_filtro": {"es": "Filtro", "en": "Filter"},
+	"s_filtro_v": {"es": ["Ninguno", "Consola de los 90", "Tele vieja", "Las dos"], "en": ["None", "90s console", "Old TV", "Both"]},
 	"s_dev": {"es": "Modo desarrollador", "en": "Developer mode"},
 	"m_dev": {"es": "Desarrollador", "en": "Developer"},
 	"dev_fps": {"es": "Mostrar FPS", "en": "Show FPS"},

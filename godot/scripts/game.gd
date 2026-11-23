@@ -4,6 +4,7 @@ extends Node3D
 const Parts = preload("res://scripts/parts.gd")
 const Chara = preload("res://scripts/chara.gd")
 const NpcS = preload("res://scripts/npc.gd")
+const FiltrosS = preload("res://scripts/filtros.gd")      # the screen filters: the 90s console, the old TV, both (23 Nov 2026)
 const CarS = preload("res://scripts/car.gd")
 const WorldS = preload("res://scripts/world.gd")
 const HudS = preload("res://scripts/hud.gd")
@@ -577,6 +578,19 @@ func apply_graphics() -> void:
 		Parts.retune(self)
 	if traffic != null:
 		traffic.max_cars = TrafficS.MAX_CARS if int(d["traffic"]) == 1 else 6      # (light: 6; it was 8 of 14 until 17 Nov 2026)
+	# the screen filter (filtros.gd): the 90s console draws the 3D small, LINES rows, with no smoothing of edges
+	var fm := clampi(int(d.get("filtro", 0)), 0, 3)
+	d["filtro"] = fm
+	if filtros == null:
+		filtros = FiltrosS.new()
+		filtros.G = self
+		add_child(filtros)
+	filtros.set_mode(fm)
+	if FiltrosS.small(fm):
+		vp.msaa_3d = Viewport.MSAA_DISABLED
+		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+		vp.scaling_3d_scale = clampf(FiltrosS.LINES / maxf(1.0, float(get_window().size.y)), 0.25, 1.0)
+		env.fog_density = maxf(env.fog_density, 0.0016)          # (a little closer, as then)
 
 ## Dynamic resolution (the user, 14 November 2026): once a second, if the frames are falling short of what they
 ## should be (the cap, or the screen's own rate with vsync, or 60), the 3D is drawn a step smaller; with room to
@@ -584,8 +598,9 @@ func apply_graphics() -> void:
 var _base_scale := 1.0
 var _dyn_k := 1.0                    # how much of the chosen scale is being drawn now
 var _dyn_next := 0
+var filtros                          # the screen filter (filtros.gd), made by apply_graphics
 func _dynres() -> void:
-	if not bool(Settings.data["dynres"]) or Settings.testing:
+	if not bool(Settings.data["dynres"]) or Settings.testing or FiltrosS.small(int(Settings.data.get("filtro", 0))):
 		return
 	var now := Time.get_ticks_msec()
 	if now < _dyn_next:
@@ -1936,6 +1951,7 @@ func _menu_page(id: String) -> Dictionary:
 			items.append(flip.call("s_lod", "lod"))
 			items.append(flip.call("s_occlusion", "occlusion"))
 			items.append(flip.call("s_silent", "silent"))
+			items.append(row.call("s_filtro", pick.call("filtro", "s_filtro_v"), "filtro", 4))
 			items.append(row.call("s_traffic", pick.call("traffic", "s_traffic_v"), "traffic", 2))
 			items.append({"text": Loc.t("m_back"), "do": _goto.bind("settings"), "size": 21})
 			return {"title": Loc.t("s_graphics").to_upper(), "items": items, "back": "settings", "foot": Loc.t("m_foot_set")}

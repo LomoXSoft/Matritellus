@@ -744,6 +744,10 @@ if os.path.exists(_calles):
 # "strip": <m> on a house: the lower parts of its plot that lie within that many metres of its front line (thin strips
 # Catastro draws along a front: an overhang, a step) are dropped instead of standing as little houses against the front
 STRIP_RC = {hd['rc']: name for name, hd in HOUSES.items() if hd.get('strip') and hd.get('rc')}
+# "shift": [dx, dz] on a house: every part of its plot moved that far on the map before anything else is done with it,
+# where Catastro draws a whole row metres away from where it stands (the south half of the Calle de las Terradas, 8 m
+# too far south against the orthophoto and Street View; Texturas, 23 November 2026)
+SHIFT_RC = {hd['rc']: tuple(hd['shift']) for name, hd in HOUSES.items() if hd.get('shift') and hd.get('rc')}
 # "with": [<reference>, ...] on a house: other plots it takes in whole, where one building stands on several and
 # Catastro has one inside another's front (Calle de Roma 8 wraps round no. 10): one front, not two laid over each other
 def house_of(bid, floors, p=None):
@@ -814,6 +818,7 @@ for pid, floors, v in raw:
     if not inside(x.mean(), z.mean()): continue
     p = Polygon(np.column_stack([x, z])).buffer(0)
     if p.is_empty: continue
+    if bid in SHIFT_RC: p = shapely.affinity.translate(p, *SHIFT_RC[bid])
     if p.intersects(corridor): p = p.difference(corridor)
     for gi, bay in enumerate(garage_bays):
         if p.intersects(bay):
@@ -1328,6 +1333,10 @@ trees = [t for t in trees if not ferial_park.contains(Point(t[0], t[1]))]      #
 trees = [t for t in trees if not sebastian_zone.contains(Point(t[0], t[1]))]   # ...and the park of San Sebastián and round its hermitage (sebastian.gd plants its own)
 trees = [t for t in trees if not cristoprado_zone.contains(Point(t[0], t[1]))]   # ...and round the hermitage of the Cristo del Prado (cristoprado.gd plants its own)
 trees = [t for t in trees if not almazara_zone.contains(Point(t[0], t[1]))]     # ...and the oil mill's plot and the verge before it (almazara.gd plants its own pines)
+# single trees Street View no longer has: the two before the Red Cross on the earth square of the Av. Juan Carlos I
+# (Street View 2024: red barriers and one young tree, which requejo.gd plants; Pretil, 23 November 2026)
+NO_TREES = [(-430.7, 173.8), (-417.7, 173.9)]
+trees = [t for t in trees if not any(abs(t[0] - x) < 0.6 and abs(t[1] - z) < 0.6 for x, z in NO_TREES)]
 print('the Petril: %d of the town\'s trees taken out of it' % (_n_trees - len(trees)))
 
 pois = []

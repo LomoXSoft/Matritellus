@@ -9,7 +9,7 @@ var testing := false
 var intro_seen := false                          # so going back to the main menu does not replay the studio logo
 var data := {"res": 0, "fullscreen": false, "vsync": true, "fps": 0, "master": 8, "music": 7, "sfx": 8, "lang": "es", "keys": {},
 	"window": 0, "shadows": 2, "textures": 2, "draw": 1, "fov": 55, "fx": 2, "aa": 2, "ssao": true, "glow": true, "scale": 4, "traffic": 1,
-	"dynres": false, "upscale": 1, "lod": true, "occlusion": true, "silent": false, "dev": false,
+	"dynres": false, "upscale": 1, "lod": true, "occlusion": true, "silent": false, "filtro": 0, "dev": false,
 	"r9_camera": false, "r9_fx": false, "r9_rumble": true,
 	"bright": 6, "warm": ""}         # (warm: which version of the game has had its shaders made on this graphics card: calentar.gd)
 

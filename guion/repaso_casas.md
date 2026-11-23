@@ -855,6 +855,44 @@ Una casa no puede quedar suelta, adelantada a sus vecinas y enseñando un trozo 
 - **Fuera:** Travesía de Valencia 1 y Juan XXIII 10 dan a sus calles.
 - **Hojas:** `fotos/tanda34/flor_1` y `flor_2`.
 
+## Calle de las Terradas (el Catastro corre la mitad sur 8 m hacia el sur: `shift`)
+
+- **`terradas_1e`:** la casa de la esquina con la avenida (no está en el Catastro): ladrillo rojo sobre zócalo de losas de granito, granito alrededor de los huecos, rejas, puerta de hierro y balcones de hierro arriba, también en el costado de la avenida.
+- **`terradas_1g`:** la tapia de su patio, con el portón de madera entre jambas de granito. **`terradas_1`:** la casa de ladrillo de dos plantas, con la puerta tapiada con celosía de ladrillo, una reja, el portón de tablas marrón y las persianas bajadas.
+- **`terradas_5o`:** sin Catastro, una casa a medio hacer: la estructura de hormigón abierta arriba, bloque gris y un portón galvanizado abajo.
+- **`terradas_9g`, `terradas_9`, `terradas_9t`, `terradas_9p`:** el chalé del 9. El garaje blanco con puerta verde va en la calle, la casa 2,5 m atrás tras su patio (contraventanas verdes), la tapia de mampostería con la cancela gris y la verja verde del porche bajo su tejadillo. Las rejas y el seto sobre la tapia no están hechos.
+- **`terradas_11`:** sin Catastro, la casa baja de color crema sobre zócalo gris, con dos rejas y un portón ancho de chapa marrón.
+- **`terradas_13` y `terradas_15`:** las dos gemelas de 2007, de ladrillo tostado con tejadillo a lo largo de la planta baja. La 15 hace esquina: mampostería abajo, una cortina en la puerta y el portón marrón en el costado.
+- **`terradas_2` y `terradas_2b`:** el bar (Catastro: ocio y hostelería), de ocre sobre un zócalo alto marrón oscuro. La parte de dos plantas tiene el portón de madera, la puerta con escalones y las celosías; la baja de la esquina, el ventanal. Sin rótulo, porque en la foto no se lee ninguno. La terraza bajo los árboles no está hecha.
+- **`terradas_10t` y `terradas_10`:** la tapia de mampostería del jardín del 10 (blanca en la esquina) y la casa crema detrás, con ladrillo alrededor de las ventanas. Los pilares, las rejas y los setos no están hechos.
+- **Fuera:** el solar entre el bar y el 10, y el jardín entre el 1 y la obra.
+- **Hojas:** `fotos/tanda34/terradas_1` a `terradas_3`.
+
+## Calle de Sancho Panza (las casas de su número y las traseras que solo dan a ella)
+
+- **Norte, de las Monjas a Don Quijote, en una línea a 5 m:**
+  - `sancho_c25`: el almacén de Cipreses 25, de enfoscado naranja con una reja y un portón grande de chapa oscura.
+  - `sancho_12t` y `sancho_12`: la tapia de ladrillo del 12 y la casa de 2008, de ladrillo tostado sobre losas claras, con el alero de vigas de madera, la ventana grande con reja de forja y la puerta tras una cancela.
+  - `sancho_6t`: el 6, una tapia gris con las puertas tapiadas de ladrillo.
+  - `sancho_4t` y `sancho_4`: la tapia larga y agrietada del 4 y su portón verde bajo un tejadillo.
+  - `sancho_dq3`: la casa de ladrillo de la esquina, con la puerta en arco y un balcón (su número es de Don Quijote).
+- **Sur, a 2,5 m, donde ya estaban las traseras de la calle del Comisario:**
+  - `sancho_t8`: la tapia ocre con el portón de chapa.
+  - `sancho_9`: el almacén de 2015 con dos portones marrones.
+  - `sancho_7`: la casa vieja de barro con dos ventanucos.
+  - `sancho_7v` y `sancho_7t`: la chapa ondulada y la tapia de tierra hasta la esquina.
+- **Norte, de Don Quijote a la curva:**
+  - `sancho_2d`: el almacén del 2 D, blanco en la esquina.
+  - `sancho_2`: el almacén con el portón gris bajo un tejadillo.
+  - `sancho_2t`: la tapia hasta la curva.
+- **Sur, de Don Quijote a la curva:**
+  - `sancho_dq4`: el almacén crema de Don Quijote 4.
+  - `sancho_c28` y `sancho_c24`: las traseras de dos casas de la calle del Comisario, que faltaban en el mapa.
+  - `sancho_g`: entre ellas, el garaje blanco de puerta verde, que no está en el Catastro.
+- **Subida a los Cipreses:** `sancho_ct`, la tapia del lado este. El lado oeste es el costado de `cip_19`, que ya estaba hecho.
+- **Fuera:** el 10, que ya estaba hecho (`mon_sp10`).
+- **Hojas:** `fotos/tanda34/sancho_1` a `sancho_3`. En la 3, las fotos del Catastro de las casas C y E son de sus fachadas de la calle del Comisario.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.
