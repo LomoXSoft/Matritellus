@@ -20,8 +20,8 @@ PREV = args[1] if len(args) > 1 else ''
 C = Vector((0.0, 0.0, 1.38))
 R = 0.5
 EPS = 0.006
-N_PHI = 44            # along the head, front to back
-N_LAT = 26            # across
+N_PHI = 32            # along the head, front to back (kept low-poly for clean outlines)
+N_LAT = 22            # across
 STRANDS = 11.0        # ridges across the top
 
 
@@ -44,7 +44,7 @@ def lat_max(phi):     # how far down the sides it reaches (degrees from the top 
 def height(phi, b):   # how far it stands off the head (m)
     p0 = phi0(b)
     rise = smoothstep(p0, p0 + 20.0, phi) ** 0.75
-    top = 0.25 if phi <= 54.0 else 0.035 + 0.215 * math.exp(-((phi - 54.0) / 42.0) ** 2)
+    top = 0.205 if phi <= 54.0 else 0.03 + 0.175 * math.exp(-((phi - 54.0) / 42.0) ** 2)
     end = 1.0 - smoothstep(95.0, PHI1, phi)
     across = max(0.0, 1.0 - abs(b) ** 3) ** 0.55
     ridge = 1.0 + 0.03 * math.sin(b * math.pi * STRANDS + phi * 0.012)
@@ -53,7 +53,7 @@ def height(phi, b):   # how far it stands off the head (m)
 
 def lean(phi, b):     # the front leaning forward over the forehead (m)
     across = max(0.0, 1.0 - abs(b) ** 2)
-    return 0.055 * math.exp(-((phi - 50.0) / 13.0) ** 2) * across
+    return 0.042 * math.exp(-((phi - 50.0) / 13.0) ** 2) * across
 
 
 def point(phi, b):

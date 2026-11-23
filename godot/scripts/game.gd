@@ -989,25 +989,40 @@ func _neighbour_look(voice: String) -> Dictionary:
 	o["hair"] = [0xd9d9de, 0xcfcfd4, 0xe8e8ea, 0xb9b3a8].pick_random() if old else [0x2a1c14, 0x2a1c14, 0x5a3a22, 0x5a3a22, 0xb5651d, 0x111111, 0xd9a441, 0xb5451b].pick_random()
 	o["build"] = [0.86, 0.94, 1.0, 1.0, 1.08, 1.2].pick_random()
 	o["scale"] = randf_range(0.93, 1.06)
-	o["eyes"] = [0, 0, 0, 1, 2].pick_random()
-	o["eye_color"] = [0x2a1c14, 0x2a1c14, 0x111111, 0x2f6bb5, 0x3f7d4a, 0xb9812e].pick_random()
+	o["eyes"] = ([0, 1, 4, 5, 7] if voice == "kid" else ([0, 0, 1, 3, 5, 7] if voice == "adult_f" else ([0, 0, 2, 5, 6] if voice == "old_f" else ([0, 0, 2, 2, 6, 8] if voice == "old_m" else [0, 0, 0, 2, 3, 4, 6, 8])))).pick_random()
+	o["eye_color"] = [0x2a1c14, 0x2a1c14, 0x111111, 0x2f6bb5, 0x3f7d4a, 0xb9812e, 0x7d8a96].pick_random()
+	if voice == "adult_f" and randf() < 0.55:
+		o["lashes"] = [1, 1, 2, 3].pick_random()
+	elif voice == "old_f" and randf() < 0.25:
+		o["lashes"] = 1
 	o["kerchief"] = Creator.KERCHIEFS.pick_random()
 	if randf() < (0.5 if old else 0.22):
-		o["glasses"] = ([1, 1, 2, 2, 4] if old else [1, 2, 2, 5, 5, 6]).pick_random()
+		if voice == "old_f":
+			o["glasses"] = [1, 1, 2, 4, 8].pick_random()
+		elif voice == "old_m":
+			o["glasses"] = [1, 1, 2, 2, 4, 7].pick_random()
+		elif voice == "adult_f":
+			o["glasses"] = [1, 2, 5, 5, 6, 7, 8].pick_random()
+		else:
+			o["glasses"] = [1, 2, 2, 5, 5, 6, 7].pick_random()
 	match voice:
 		"kid":
 			o["scale"] = randf_range(0.6, 0.74)
-			o["hat"] = ["", "", "cap"].pick_random()
+			o["hat"] = ["", "", "", "cap", "beisbol", "beisbol_atras"].pick_random()
 			o["hair_style"] = [0, 0, 3, 5, 6, 7, 7, 11].pick_random()
-			o["top"] = [0, 2, 2, 4, 4, 5].pick_random()
+			o["top"] = [0, 19, 4, 4, 5, 12, 18].pick_random()
+			o["shoe_type"] = [0, 0, 5, 5].pick_random()
+			o["shoes"] = [0x1b1b1f, 0xf8f8f8, 0xb23a3a, 0x3b5fa8, 0x3f7d4a].pick_random()
 			o["brows"] = [0, 3].pick_random()
 		"adult_f":
 			o["hair_style"] = [2, 2, 1, 5, 5, 9, 9, 11, 12, 4, 7].pick_random()
-			o["top"] = [0, 0, 1, 2, 3, 4, 8].pick_random()
-			o["hat"] = ["", "", "", "", "straw"].pick_random()
+			o["top"] = [0, 0, 1, 3, 4, 8, 12, 16, 19, 22, 22].pick_random()
+			o["hat"] = ["", "", "", "", "straw", "pamela", "diadema"].pick_random()
+			o["shoe_type"] = [0, 2, 5, 8, 9, 9, 12].pick_random()
+			o["shoes"] = [0x4a3424, 0x1b1b1f, 0xf8f8f8, 0xb23a3a, 0xef8fa9].pick_random()
 			o["brows"] = 0
 			if randf() < 0.65:
-				o["earrings"] = [1, 2, 2, 4, 5].pick_random()
+				o["earrings"] = [1, 2, 2, 4, 5, 6, 7].pick_random()
 			if randf() < 0.4:
 				o["pendant"] = [1, 2, 4, 5, 5].pick_random()
 			if randf() < 0.08:
@@ -1015,28 +1030,37 @@ func _neighbour_look(voice: String) -> Dictionary:
 		"old_f":
 			o["hair_style"] = [1, 1, 9, 9, 11, 0].pick_random()
 			o["scale"] = randf_range(0.86, 0.96)
-			o["top"] = [7, 7, 7, 1, 0].pick_random()
+			o["top"] = [7, 7, 7, 16, 16, 1, 0].pick_random()
+			o["shoe_type"] = [2, 9, 9, 11, 13].pick_random()
+			o["shoes"] = [0x1b1b1f, 0x4a3424, 0x4a3424].pick_random()
 			o["brows"] = 0
+			if randf() < 0.28:                            # traditional Manchego headscarf reserved for elderly women NPCs
+				o["hat"] = "panoleta"
+				o["hat_color"] = [0x1b1b1f, 0x1b1b1f, 0x2a2d36, 0x3b2d26, 0x4b3b4e].pick_random()
 			if randf() < 0.75:
 				o["earrings"] = [1, 5, 5].pick_random()
 			if randf() < 0.55:
-				o["pendant"] = [2, 3, 3, 4].pick_random()
+				o["pendant"] = [2, 3, 3, 4, 9].pick_random()
 		"old_m":
-			o["hat"] = ["beret", "beret", "straw", "", "cap"].pick_random()
+			o["hat"] = ["beret", "beret", "parpusa", "straw", "", "cap"].pick_random()
 			o["hair_style"] = [0, 10, 10, 3].pick_random()
 			o["face"] = [0, 1, 1, 2, 4, 4, 5, 6, 7].pick_random()
 			o["brows"] = 1
-			o["top"] = [1, 1, 3, 6, 6, 8, 0].pick_random()
+			o["top"] = [1, 1, 3, 6, 6, 13, 15, 0].pick_random()
+			o["shoe_type"] = [1, 2, 6, 13, 13].pick_random()
+			o["shoes"] = [0x4a3424, 0x1b1b1f].pick_random()
 			if randf() < 0.2:
-				o["pendant"] = [2, 3].pick_random()
+				o["pendant"] = [2, 3, 9].pick_random()
 		_:
-			o["hat"] = ["", "", "", "cap", "cap", "straw"].pick_random()
+			o["hat"] = ["", "", "", "cap", "cap", "beisbol", "straw"].pick_random()
 			o["hair_style"] = [0, 0, 3, 3, 8, 8, 4, 6, 5, 10, 11].pick_random()
 			o["face"] = [0, 0, 0, 1, 2, 3, 5, 5, 7, 8].pick_random()
 			o["brows"] = [0, 1, 1, 2].pick_random()
-			o["top"] = [0, 0, 1, 2, 3, 4, 5, 8].pick_random()
-			if randf() < 0.1:
-				o["earrings"] = 3
+			o["top"] = [0, 0, 1, 2, 3, 4, 5, 12, 14, 18, 23].pick_random()
+			o["shoe_type"] = [0, 1, 5, 5, 6, 10, 13].pick_random()
+			o["shoes"] = [0x4a3424, 0x1b1b1f, 0xf8f8f8, 0x3b5fa8].pick_random()
+			if randf() < 0.12:
+				o["earrings"] = [3, 3, 8, 9].pick_random()
 			if randf() < 0.28:
 				o["pendant"] = [1, 1, 3, 5, 5].pick_random()
 			if randf() < 0.07:
@@ -2525,7 +2549,7 @@ func _creator_input(what: String) -> void:
 			while Creator.skipped(opt, look_sel[opt]):              # (what only the wardrobe has, or what is now an option of its own: not here)
 				look_sel[opt] = (look_sel[opt] + (1 if what == "right" else count - 1)) % count
 		"random":
-			look_sel = Creator.random()
+			look_sel = Creator.random_tab(look_sel, creator_tab)
 		"tab", "tab_prev":                       # the next page (or the one before), wherever the cursor is
 			creator_tab = (creator_tab + (1 if what == "tab" else Creator.TABS.size() - 1)) % Creator.TABS.size()
 			creator_row = clampi(creator_row, 1, Creator.TABS[creator_tab].size())
@@ -4495,7 +4519,7 @@ func _unhandled_input(e: InputEvent) -> void:
 				if e.is_action_pressed("m_" + dir, true):
 					_creator_input(dir)
 					return
-			if e.is_action_pressed("radio"):
+			if e.is_action_pressed("radio") or (e is InputEventJoypadButton and e.pressed and e.button_index == JOY_BUTTON_Y):
 				_creator_input("random")
 			elif e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_TAB:
 				_creator_input("tab_prev" if e.shift_pressed else "tab")

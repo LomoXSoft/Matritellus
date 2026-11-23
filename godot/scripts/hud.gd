@@ -133,10 +133,11 @@ var creator_tab_boxes: Array = []      # [panel, label] for each page of the cre
 ## The creator's buttons (the user, 13 November 2026): no instructions written out; the button pictures by the page
 ## tabs say how to turn the page; at the foot, on Lustre "Siguiente", on Pintas "Volver" and "Así me quedo", each with
 ## the picture of its button; and curved arrows either side of the character, with theirs, say it can be turned.
-signal creator_pick(what: String)      # a creator button clicked: "accept" | "back"
+signal creator_pick(what: String)      # a creator button clicked: "accept" | "back" | "random"
 var creator_tab_l: TextureRect         # LB (on a pad) before the tabs...
 var creator_tab_r: TextureRect         # ...RB (or Tab on the keyboard) after them
 var creator_btns: HBoxContainer
+var creator_rand: Button
 var creator_back: Button
 var creator_next: Button
 var creator_turn: Control              # the arrows round the character
@@ -580,12 +581,18 @@ func _ready() -> void:
 	for i in range(CREATOR_ROWS):
 		cr_rows.add_child(_creator_row())
 	creator_btns = HBoxContainer.new()
-	creator_btns.add_theme_constant_override("separation", 14)
-	creator_btns.alignment = BoxContainer.ALIGNMENT_END
+	creator_btns.add_theme_constant_override("separation", 10)
+	creator_rand = _creator_button(false)
+	var cr_spacer := Control.new()
+	cr_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cr_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	creator_back = _creator_button(false)
 	creator_next = _creator_button(true)
+	creator_rand.pressed.connect(func(): creator_pick.emit("random"))
 	creator_back.pressed.connect(func(): creator_pick.emit("back"))
 	creator_next.pressed.connect(func(): creator_pick.emit("accept"))
+	creator_btns.add_child(creator_rand)
+	creator_btns.add_child(cr_spacer)
 	creator_btns.add_child(creator_back)
 	creator_btns.add_child(creator_next)
 	crv.add_child(creator_title); crv.add_child(creator_tabs); crv.add_child(cr_rule); crv.add_child(cr_rows); crv.add_child(creator_text); crv.add_child(creator_foot); crv.add_child(creator_btns)
@@ -1334,6 +1341,7 @@ func hide_creator() -> void:
 func show_wardrobe(title: String, rows: Array, at := 0) -> void:
 	show_creator(title, rows, [], 1, at)
 	creator_tabs.visible = false
+	creator_rand.visible = false
 	creator_back.visible = true
 	creator_back.text = Loc.t("c_back")
 	creator_next.text = Loc.t("arm_wear")
@@ -1362,10 +1370,10 @@ func _set_icon(r: TextureRect, action: String) -> void:
 func _creator_button(main: bool) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", 25)
-	b.add_theme_constant_override("icon_max_width", 36)
-	b.add_theme_constant_override("h_separation", 10)
-	b.custom_minimum_size = Vector2(0, 52)
+	b.add_theme_font_size_override("font_size", 22)
+	b.add_theme_constant_override("icon_max_width", 30)
+	b.add_theme_constant_override("h_separation", 8)
+	b.custom_minimum_size = Vector2(0, 50)
 	for state in ["normal", "hover", "pressed"]:
 		var sb := StyleBoxFlat.new()            # black with white letters (the main one), white with black (the other)
 		var bg := Color.BLACK if main else Color.WHITE
@@ -1375,7 +1383,7 @@ func _creator_button(main: bool) -> Button:
 		sb.set_corner_radius_all(10)
 		sb.border_color = Color.BLACK
 		sb.set_border_width_all(3)
-		sb.content_margin_left = 14; sb.content_margin_right = 18; sb.content_margin_top = 6; sb.content_margin_bottom = 6
+		sb.content_margin_left = 11; sb.content_margin_right = 14; sb.content_margin_top = 6; sb.content_margin_bottom = 6
 		b.add_theme_stylebox_override(state, sb)
 	for c in ["font_color", "font_hover_color", "font_pressed_color"]:
 		b.add_theme_color_override(c, Color.WHITE if main else Color.BLACK)
@@ -1388,10 +1396,12 @@ func _creator_controls(tab: int) -> void:
 	_set_icon(creator_tab_r, "tab_next")
 	creator_tabs.move_child(creator_tab_l, 0)
 	creator_tabs.move_child(creator_tab_r, -1)
+	creator_rand.visible = true
+	creator_rand.text = Loc.t("c_random")
 	creator_back.visible = tab == 1
 	creator_back.text = Loc.t("c_back")
 	creator_next.text = Loc.t("c_next") if tab == 0 else Loc.t("c_done")
-	for pair in [[creator_back, "esc"], [creator_next, "ok"]]:
+	for pair in [[creator_rand, "random"], [creator_back, "esc"], [creator_next, "ok"]]:
 		var path := Controls.icon(pair[1])
 		pair[0].icon = load(path) if path != "" else null
 	_set_icon(creator_turn_l[1], "turn_left")

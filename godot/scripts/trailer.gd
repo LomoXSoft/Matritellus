@@ -21,8 +21,8 @@ const BPM := 128.0
 const BEAT := 60.0 / BPM          # 0.46875 s
 const BAR := BEAT * 4.0           # 1.875 s
 const PHASE := 0.200              # First downbeat offset in the WAV file
-const TARGET_SIZE := Vector2i(2160, 3840)   # True 4K 9:16 Ultra-HD vertical resolution (Reels / Stories / TikTok)
-const FOV_9X16_BOOST := 11.5      # Widens vertical FOV so 9:16 preserves the full horizontal span of each 3D composition
+const TARGET_SIZE := Vector2i(1920, 1080)   # True Full-HD 16:9 Widescreen resolution
+const FOV_9X16_BOOST := 0.0       # Full original vertical span preserved; horizontal span widened to 16:9
 const RECORD_FPS := 30
 
 var G
@@ -100,8 +100,8 @@ func _configure_viewport_4x5() -> void:
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 		var scr := DisplayServer.screen_get_usable_rect()
-		var win_h := mini(1350, maxi(800, scr.size.y - 40))
-		var win_w := int(round(win_h * 9.0 / 16.0))
+		var win_w := mini(1280, maxi(960, scr.size.x - 80))
+		var win_h := int(round(win_w * 9.0 / 16.0))
 		DisplayServer.window_set_size(Vector2i(win_w, win_h))
 		DisplayServer.window_set_position(scr.position + Vector2i((scr.size.x - win_w) / 2, (scr.size.y - win_h) / 2))
 
@@ -269,11 +269,11 @@ func _build_nodes() -> void:
 	title_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	title_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	title_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title_logo.anchor_left = 0.05
-	title_logo.anchor_right = 0.95
-	title_logo.anchor_top = 0.16
-	title_logo.anchor_bottom = 0.31
-	title_logo.pivot_offset = Vector2(TARGET_SIZE.x * 0.45, TARGET_SIZE.y * 0.075)
+	title_logo.anchor_left = 0.20
+	title_logo.anchor_right = 0.80
+	title_logo.anchor_top = 0.12
+	title_logo.anchor_bottom = 0.36
+	title_logo.pivot_offset = Vector2(TARGET_SIZE.x * 0.30, TARGET_SIZE.y * 0.12)
 	title_logo.modulate.a = 0.0
 	title_holder.add_child(title_logo)
 
@@ -281,14 +281,14 @@ func _build_nodes() -> void:
 	title_sub.name = "TitleSub"
 	title_sub.text = "MADRIDEJOS  ·  MUNDO ABIERTO"
 	title_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_sub.add_theme_font_size_override("font_size", 54)
+	title_sub.add_theme_font_size_override("font_size", 36)
 	title_sub.add_theme_color_override("font_color", Color("fff6e0"))
 	title_sub.add_theme_color_override("font_outline_color", Color(0.10, 0.06, 0.03, 0.92))
-	title_sub.add_theme_constant_override("outline_size", 20)
-	title_sub.anchor_left = 0.04
-	title_sub.anchor_right = 0.96
-	title_sub.anchor_top = 0.315
-	title_sub.anchor_bottom = 0.365
+	title_sub.add_theme_constant_override("outline_size", 14)
+	title_sub.anchor_left = 0.10
+	title_sub.anchor_right = 0.90
+	title_sub.anchor_top = 0.37
+	title_sub.anchor_bottom = 0.45
 	title_sub.modulate.a = 0.0
 	title_holder.add_child(title_sub)
 
@@ -316,17 +316,17 @@ func _compute_shot_keypoints() -> void:
 	var s1_l1 := MapData.at(ch.spot(26.0, -14.0), 7.0)
 	_shot_keypoints[1] = {"p0": s1_p0, "p1": s1_p1, "l0": s1_l0, "l1": s1_l1}
 
-	# Shot 2 (3.95 - 7.70s): Apertura 2 — Plaza del Ayuntamiento (20 arches, fountain, gardens)
+	# Shot 2 (3.95 - 7.70s): Apertura 2 — Plaza del Ayuntamiento (20 arches, boards, coat of arms, unobstructed by trees)
 	var pz = G.world.plaza
-	var s2_e0: Vector2 = pz.spot(-18.0, 50.0)
-	var s2_e1: Vector2 = pz.spot(-5.0, 40.0)
-	var s2_a0: Vector2 = pz.spot(-1.0, 6.0)
-	var s2_a1: Vector2 = pz.spot(2.0, 2.0)
+	var s2_e0: Vector2 = pz.spot(-14.0, 27.0)
+	var s2_e1: Vector2 = pz.spot(4.0, 22.0)
+	var s2_a0: Vector2 = pz.spot(-2.0, 2.0)
+	var s2_a1: Vector2 = pz.spot(2.0, 1.0)
 	_shot_keypoints[2] = {
-		"p0": Vector3(s2_e0.x, pz.level + 22.0, s2_e0.y),
-		"p1": Vector3(s2_e1.x, pz.level + 15.5, s2_e1.y),
-		"l0": Vector3(s2_a0.x, pz.level + 4.5, s2_a0.y),
-		"l1": Vector3(s2_a1.x, pz.level + 5.2, s2_a1.y),
+		"p0": Vector3(s2_e0.x, pz.level + 14.5, s2_e0.y),
+		"p1": Vector3(s2_e1.x, pz.level + 10.5, s2_e1.y),
+		"l0": Vector3(s2_a0.x, pz.level + 5.2, s2_a0.y),
+		"l1": Vector3(s2_a1.x, pz.level + 5.0, s2_a1.y),
 	}
 
 	# Shot 3 (7.70 - 11.45s): Vida 1 — Avenida de Juan Carlos I (Viejo Colegio & Ermita de la Caridad traffic)

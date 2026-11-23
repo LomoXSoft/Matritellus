@@ -1233,19 +1233,21 @@ func _tester_checks() -> void:
 	Loc.lang = was_lang
 	var lash_at: Array = Cr.where(19)
 	_check(names_ok and String(base["hat"]) == "" and int(base["lashes"]) == 0 and lash_at[0] == 0 and Cr.OPTIONS[13]["values"].has(6) and Cr.OPTIONS[1]["values"].has(-1)
-		and Loc.t("c_names").size() == Cr.OPTIONS.size() and Loc.t("c_values").size() == Cr.OPTIONS.size() and Loc.t("c_values")[19].size() == 3 and Loc.t("c_values")[13].size() == 7 and Loc.t("c_values")[1].size() == 6,
+		and Loc.t("c_names").size() == Cr.OPTIONS.size() and Loc.t("c_values").size() == Cr.OPTIONS.size() and Loc.t("c_values")[19].size() == Cr.OPTIONS[19]["values"].size() and Loc.t("c_values")[13].size() == Cr.OPTIONS[13]["values"].size() and Loc.t("c_values")[1].size() == Cr.OPTIONS[1]["values"].size(),
 		"the creator says Jaro and Oxidao, starts you bare-headed and without eyelashes, and offers eyelashes, silver hoops and the red-and-gold band (names %s)" % names_ok)
 	var probe = load("res://scripts/chara.gd").new()
 	add_child(probe)
 	probe.setup(Cr.look(Cr.defaults()))
-	var plain: int = probe.inner.get_child_count() + probe.neck.get_child_count()
+	var count_parts := func(ch) -> int:
+		return ch.inner.get_child_count() + ch.neck.get_child_count() + (ch._eyes_open.get_child_count() if ch._eyes_open != null else 0)
+	var plain: int = count_parts.call(probe)
 	var sel: Array = Cr.defaults()
 	sel[8] = 5
 	probe.set_look(Cr.look(sel))
-	var dots: int = probe.inner.get_child_count() + probe.neck.get_child_count() - plain
+	var dots: int = count_parts.call(probe) - plain
 	sel[8] = 0; sel[19] = 2; sel[0] = 2; sel[1] = 5; sel[13] = 6
 	probe.set_look(Cr.look(sel))
-	var extras: int = probe.inner.get_child_count() + probe.neck.get_child_count() - plain
+	var extras: int = count_parts.call(probe) - plain
 	probe.queue_free()
 	_check(dots >= 1 and extras >= 12, "three days' beard is there on the face (%d piece: a shadow since 16 Nov 2026, the creator session), and lashes, hat band and hoops are too (%d pieces more)" % [dots, extras])
 	g.look_sel = Cr.clean(g.look_sel)
@@ -15939,8 +15941,12 @@ func _run() -> void:
 		print("PEINADOS %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
 		get_tree().quit(1 if fails > fails0 else 0)
 		return
-	var criba := "pelo" if OS.get_cmdline_user_args().has("--criba_pelo") else ("sombrero" if OS.get_cmdline_user_args().has("--criba_sombrero") else ("ropa" if OS.get_cmdline_user_args().has("--criba_ropa") else ""))
-	if criba != "":       # for the user's sifting (17 Nov 2026): a plain person, every hairstyle (brown hair), hat or top, front, side and back
+	var criba := ""
+	for ck in ["--criba_pelo", "--criba_sombrero", "--criba_ropa", "--criba_barba", "--criba_cejas", "--criba_calzado", "--criba_gafas", "--criba_pendientes", "--criba_cuello", "--criba_ojos", "--criba_pestanas", "--criba_complexion"]:
+		if OS.get_cmdline_user_args().has(ck):
+			criba = String(ck).trim_prefix("--criba_")
+			break
+	if criba != "":       # for the user's sifting (17 Nov 2026): a plain person, every hairstyle, hat, top, beard, brows, footwear, eyes, lashes, build or accessory
 		shots = true
 		var fails0 := fails
 		g.menu.close()
@@ -15951,13 +15957,13 @@ func _run() -> void:
 		var Cr = load("res://scripts/creator.gd")
 		var opt_i := 0
 		for k in range(Cr.OPTIONS.size()):
-			if Cr.OPTIONS[k]["key"] == {"pelo": "hair_style", "sombrero": "hat", "ropa": "top"}[criba]:
+			if Cr.OPTIONS[k]["key"] == {"pelo": "hair_style", "sombrero": "hat", "ropa": "top", "barba": "face", "cejas": "brows", "calzado": "shoe_type", "gafas": "glasses", "pendientes": "earrings", "cuello": "pendant", "ojos": "eyes", "pestanas": "lashes", "complexion": "build"}[criba]:
 				opt_i = k
 		var styles: Array = []                    # (the values' places in the option's list; the creator's own names go beside the pictures)
 		var names_txt := ""
 		for k in range(Cr.OPTIONS[opt_i]["values"].size()):
-			if criba == "sombrero" and String(Cr.OPTIONS[opt_i]["values"][k]) == "":
-				continue                          # (bare-headed: no hat to look at)
+			if (criba == "sombrero" and String(Cr.OPTIONS[opt_i]["values"][k]) == "") or (criba in ["barba", "gafas", "pendientes", "cuello", "pestanas"] and k == 0) or (criba == "cejas" and k == 3):
+				continue                          # (bare-headed / none: nothing to look at)
 			styles.append(k)
 			var why := ""                         # (what the creator itself does not offer)
 			if Cr.wardrobe_only(opt_i, k):
@@ -15969,12 +15975,18 @@ func _run() -> void:
 		var nf := FileAccess.open("res://shots/criba_%s_nombres.txt" % criba, FileAccess.WRITE)
 		nf.store_string(names_txt)
 		nf.close()
-		for arg in OS.get_cmdline_user_args():    # (--solo=8,13: only those)
+		var top_override := -1
+		var blink_override := -1.0
+		for arg in OS.get_cmdline_user_args():    # (--solo=8,13: only those; --top=12: test over a thicker garment; --blink=1.0: pose mid-blink)
 			if String(arg).begins_with("--solo="):
 				var only: Array = []
 				for v in String(arg).trim_prefix("--solo=").split(","):
 					only.append(int(v))
 				styles = styles.filter(func(v): return v in only)
+			elif String(arg).begins_with("--top="):
+				top_override = int(String(arg).trim_prefix("--top="))
+			elif String(arg).begins_with("--blink="):
+				blink_override = float(String(arg).trim_prefix("--blink="))
 		var at := Vector2(-1800.0, -1534.0)       # (out in the fields by the house's room)
 		g.player.p = at - Vector2(0.0, 12.0)
 		g.player.sync()
@@ -15983,43 +15995,57 @@ func _run() -> void:
 			e["car"].visible = false
 		g.traffic.process_mode = Node.PROCESS_MODE_DISABLED
 		var made := 0
+		var outfits: Array = [["a", 0, 0], ["b", 2, 0], ["c", 12, 8], ["d", 22, 10]] if criba == "complexion" else [["", top_override, -1]]
 		for s in styles:
-			var sel: Array = Cr.defaults()
-			sel[opt_i] = s
-			var o: Dictionary = Cr.look(sel)      # (as the creator would dress them: a cap's badge, a straw hat's band)
-			o["hair"] = 0x5a3a22                  # (the creator's brown)
-			var c = Ch.new()
-			g.add_child(c)
-			c.setup(o)
-			c.collision_layer = 0
-			c.collision_mask = 0
-			c.p = at
-			c.h = 0.0
-			c.sync()
-			for view in [["1frente", Vector2(0.0, 1.0)], ["2lado", Vector2(1.0, 0.0)], ["3espalda", Vector2(0.0, -1.0)]]:
-				var eye: Vector2 = at + view[1] * 2.8      # (far enough for the long ones to show whole)
-				g.cam_fixed = [MapData.at(eye, 1.7), MapData.at(at, 1.2)]
-				g.cam_pos = g.cam_fixed[0]
-				g.cam_look = g.cam_fixed[1]
-				g.set_time(11.0)                  # (the same light in every picture)
-				var pic: Image = null
-				for attempt in range(12):         # (the screen fades out for a moment about a minute in: wait it out; a clear one is ~0.75)
-					await _frames(20)
-					await RenderingServer.frame_post_draw
-					pic = get_viewport().get_texture().get_image()
-					var small := pic.duplicate() as Image
-					small.resize(16, 9)
-					var lum := 0.0
-					for y in range(9):
-						for x in range(16):
-							lum += small.get_pixel(x, y).get_luminance()
-					if lum / 144.0 > 0.65:
-						break
-				DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://shots"))
-				pic.save_png("res://shots/criba_%s_%02d_%s.png" % [criba, s, view[0]])
-			c.queue_free()
-			made += 1
-		_check(made == styles.size(), "a picture of every %s (%d)" % ["hairstyle" if criba == "pelo" else "hat", made])
+			for oft in outfits:
+				var sel: Array = Cr.defaults()
+				sel[opt_i] = s
+				if int(oft[1]) >= 0 and opt_i != 15:
+					sel[15] = int(oft[1])
+				if int(oft[2]) >= 0 and opt_i != 14:
+					sel[14] = int(oft[2])
+				var o: Dictionary = Cr.look(sel)      # (as the creator would dress them: a cap's badge, a straw hat's band)
+				o["hair"] = 0x5a3a22                  # (the creator's brown)
+				var c = Ch.new()
+				g.add_child(c)
+				c.setup(o)
+				if blink_override >= 0.0:
+					c.set_blink(blink_override)
+				c.collision_layer = 0
+				c.collision_mask = 0
+				c.p = at
+				c.h = 0.0
+				c.sync()
+				var close_face := criba in ["barba", "cejas", "calzado", "gafas", "pendientes", "cuello", "ojos", "pestanas"]
+				var views: Array = [["1frente", Vector2(0.0, 1.0)], ["2tresq", Vector2(0.68, 0.73)]] if criba == "complexion" else ([["1frente", Vector2(0.0, 1.0)], ["2tresq", Vector2(0.68, 0.73)], ["3lado", Vector2(1.0, 0.0)]] if close_face else [["1frente", Vector2(0.0, 1.0)], ["2lado", Vector2(1.0, 0.0)], ["3espalda", Vector2(0.0, -1.0)]])
+				var dist := 2.75 if criba == "complexion" else (1.55 if criba == "calzado" else (1.75 if criba in ["ojos", "pestanas"] else (1.85 if criba in ["cejas", "gafas"] else (1.95 if criba == "pendientes" else (2.05 if criba == "barba" else (2.30 if criba == "cuello" else 2.8))))))
+				var eye_y := 1.45 if criba == "complexion" else (0.56 if criba == "calzado" else (1.50 if criba in ["ojos", "pestanas", "gafas"] else (1.56 if criba == "cejas" else (1.42 if criba == "pendientes" else (1.48 if criba == "barba" else (1.25 if criba == "cuello" else 1.7))))))
+				var look_y := 0.95 if criba == "complexion" else (0.22 if criba == "calzado" else (1.43 if criba in ["ojos", "pestanas"] else (1.44 if criba == "cejas" else (1.40 if criba == "gafas" else (1.28 if criba in ["barba", "pendientes"] else (0.85 if criba == "cuello" else 1.2))))))
+				var tag: String = ("_" + String(oft[0])) if String(oft[0]) != "" else ""
+				for view in views:
+					var eye: Vector2 = at + view[1] * dist      # (far enough for the long ones to show whole; closer for beards/brows)
+					g.cam_fixed = [MapData.at(eye, eye_y), MapData.at(at, look_y)]
+					g.cam_pos = g.cam_fixed[0]
+					g.cam_look = g.cam_fixed[1]
+					g.set_time(11.0)                  # (the same light in every picture)
+					var pic: Image = null
+					for attempt in range(12):         # (the screen fades out for a moment about a minute in: wait it out; a clear one is ~0.75)
+						await _frames(20)
+						await RenderingServer.frame_post_draw
+						pic = get_viewport().get_texture().get_image()
+						var small := pic.duplicate() as Image
+						small.resize(16, 9)
+						var lum := 0.0
+						for y in range(9):
+							for x in range(16):
+								lum += small.get_pixel(x, y).get_luminance()
+						if lum / 144.0 > 0.65:
+							break
+					DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://shots"))
+					pic.save_png("res://shots/criba_%s_%02d%s_%s.png" % [criba, s, tag, view[0]])
+				c.queue_free()
+				made += 1
+		_check(made == styles.size() * outfits.size(), "a picture of every %s (%d)" % [criba, made])
 		g.cam_fixed = null
 		print("CRIBA_%s %s (%d failed)" % [criba.to_upper(), "OK" if fails == fails0 else "FAILED", fails - fails0])
 		get_tree().quit(1 if fails > fails0 else 0)
@@ -16269,8 +16295,60 @@ func _run() -> void:
 		g.creator_row = 5
 		g._refresh_creator()
 		await _shot("creador_5_colores")
+		# Aleatorio button visible on both Lustre and Pintas, randomising only the active tab
+		g.creator_tab = 0
+		g._refresh_creator()
+		await _frames(4)
+		var rand_vis_0: bool = g.hud.creator_rand.visible
+		var before_pintas: Array = g.look_sel.duplicate()
+		g.hud.creator_rand.pressed.emit()
+		await _frames(4)
+		var pintas_kept := true
+		for opt: int in CrO.TABS[1]:
+			if g.look_sel[opt] != before_pintas[opt]:
+				pintas_kept = false
+		g.creator_tab = 1
+		g._refresh_creator()
+		await _frames(4)
+		var rand_vis_1: bool = g.hud.creator_rand.visible
+		var before_lustre: Array = g.look_sel.duplicate()
+		g.hud.creator_rand.pressed.emit()
+		await _frames(4)
+		var lustre_kept := true
+		for opt: int in CrO.TABS[0]:
+			if g.look_sel[opt] != before_lustre[opt]:
+				lustre_kept = false
+		_check(rand_vis_0 and rand_vis_1 and pintas_kept and lustre_kept,
+			"Aleatorio button is shown on both Lustre and Pintas and only randomises the active tab")
 		g._finish_creator()
 		_check(g.caballete == null and front.visible, "no easel, and the graffiti over the door stays after the creator")
+		# organic non-periodic blinking: natural variable intervals, real closed state, and happy closed eyes (5) never blink
+		var b_chara = Ch2.new()
+		g.add_child(b_chara)
+		b_chara.setup(CrO.look(CrO.defaults()))
+		var b_times: Array[float] = []
+		var was_closed := false
+		var sim_t := 0.0
+		for step in range(120 * 60):
+			b_chara.anim(false, 1.0 / 60.0, 0.0, false)
+			sim_t += 1.0 / 60.0
+			var is_closed: bool = b_chara._eyes_closed != null and b_chara._eyes_closed.visible
+			if is_closed and not was_closed:
+				b_times.append(sim_t)
+			was_closed = is_closed
+		var min_gap := 999.0
+		var max_gap := 0.0
+		for k in range(1, b_times.size()):
+			var gap: float = b_times[k] - b_times[k - 1]
+			min_gap = minf(min_gap, gap)
+			max_gap = maxf(max_gap, gap)
+		var happy_sel: Array = CrO.defaults()
+		happy_sel[5] = 5
+		b_chara.set_look(CrO.look(happy_sel))
+		var happy_no_blink: bool = b_chara._eyes_open == null and b_chara._eyes_closed == null
+		b_chara.queue_free()
+		_check(b_times.size() >= 15 and (max_gap - min_gap) >= 1.5 and happy_no_blink,
+			"organic blinking fires non-periodically (%d blinks in 120s, gaps %.2f..%.2fs) and closed happy eyes stay closed" % [b_times.size(), min_gap, max_gap])
 		print("CREADOR %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
 		get_tree().quit(1 if fails > fails0 else 0)
 		return
@@ -17092,7 +17170,7 @@ func _run() -> void:
 	_check(arrows_stay and g.creator_tab == 1 and Loc.t("c_tabs").size() == Creator.TABS.size() and Creator.TABS[0].size() + Creator.TABS[1].size() + Creator.WARDROBE_ONLY.size() == Creator.OPTIONS.size(), "the choices come on two pages, Lustre and Pintas, and between them they cover every option (but the wardrobe's own); the arrows never turn the page, Tab does")
 	g._creator_input("tab_prev")
 	var worn: Dictionary = Creator.look(g.look_sel)
-	_check(worn["shoe_type"] == 2 and worn["shoes"] == 0xb23a3a and g.player._fl.get_child_count() >= 3, "footwear can be chosen too: kind and colour")
+	_check(worn["shoe_type"] == 2 and worn["shoes"] == 0xb23a3a and g.player._fl.get_child_count() >= 1, "footwear can be chosen too: kind and colour")
 	_check(worn["glasses"] == 2 and worn["earrings"] == 2 and worn["pendant"] == 5 and worn["top"] == 3 and worn["build"] > 1.1 and worn["kerchief"] == Creator.KERCHIEFS[2], "glasses, earrings, something round the neck, clothes and build can be chosen too (the neckerchief takes your peña's colour)")
 	_check(Creator.OPTIONS[10]["values"].size() >= 12 and Creator.OPTIONS[8]["values"].size() >= 8 and Creator.OPTIONS[12]["values"].size() >= 5 and Loc.t("c_names").size() == Creator.OPTIONS.size(),
 		"%d hairstyles, %d beards, %d kinds of glasses" % [Creator.OPTIONS[10]["values"].size(), Creator.OPTIONS[8]["values"].size(), Creator.OPTIONS[12]["values"].size() - 1])

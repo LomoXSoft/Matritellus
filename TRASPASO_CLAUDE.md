@@ -1529,7 +1529,7 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 
 - **Hecho.** [RELEVO_EDIFICIOS_ESPECIALES.md](RELEVO_EDIFICIOS_ESPECIALES.md), en la raíz: qué es el papel, qué leer antes, lo que puede estropear el trabajo (git, Godot, horneado, archivos compartidos y de otros, nombres que usan `semaforos.gd` y `props.gd`), las normas de Luis que solo estaban en la memoria de Claude, cómo se hace un lugar, el estado del cruce y qué dejar escrito al terminar.
 - **Archivos.** `RELEVO_EDIFICIOS_ESPECIALES.md` (nuevo) y este registro. Sin cambios en el juego: no hay prueba.
-- **Pendiente.** Casi todo el cruce son archivos sin seguimiento de git. Conviene un commit de Sistemas antes de que empiece la otra IA; se le ha dicho a Luis, que decide.
+- **Copia antes del relevo.** Luis pidió commit y versión («Pidele commit y release, asi tenemos un backup de todo antes de tocar con la otra IA») y Sistemas publicó la 0.0.21 (`8c49e83` y `61f3781`, etiqueta `v0.0.21`), con todo el cruce dentro y el árbol limpio. Después se puso al día la hoja: ya no dice que el cruce está sin commit, y añade los finales de línea y los dos umbrales justos de la prueba completa. Ese cambio de la hoja queda sin commit.
 - **Para Claude al volver.** Leer las entradas posteriores a esta, con `git status --short` y `git diff`, antes de tocar nada.
 
 ### Semáforos que funcionan, el último tramo de Santa Ana y lo roto que vuelve (22/11, Claude · Sistemas)
@@ -1724,3 +1724,176 @@ Para cambios del juego, seguir las normas de [PROJECT_STATE.md](PROJECT_STATE.md
   - Están en `dist/v0.0.21/`, con [sus SHA-256](dist/v0.0.21/SHA256SUMS.txt) comprobados.
   - Release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.21
 - **Sin probar:** no se ha probado en móvil ni en Steam Machine.
+
+### Peinados reajustados y nuevos «Cortito» y «Cuatro pelos» para 0.0.22 (22/11, Antigravity · Creador)
+
+22 de noviembre de 2026. Encargo de Luis sobre `v0.0.21`: corregir los peinados demasiado grandes o mal encajados (viseras frontales, colas horizontales, huecos, clipping con manos) manteniendo la dirección artística low-poly Animal Crossing + outlines sin aumentar complejidad geométrica.
+
+- **Cambios en el pipeline de Blender (`tools/creador/pelo.py`, `tools/creador/piezas.json`):**
+  - Solo afecta a `kind == "pelo"` (sombreros, ropa, barbas, cejas y calzado sin tocar).
+  - Nueva escala proporcional del exceso fuera del cráneo (`far_excess`) para encoger volumen/vuelo sin aplastar moños ni afros contra la esfera (`R = 0.50 m`).
+  - Nueva pasada `refine_pelo()`: recorte de visera frontal (`front_max`), caída vertical pegada a la espalda sin repisa horizontal (`clean_drop`, `z_min`, `drape_back`), despeje de la zona de manos (`side_back`), redondeo del afro (`round_k`), suavizado laplaciano controlado de vértices interiores (`smooth_passes`), subdivisión selectiva solo de aristas largas (`max_edge`) para evitar que las cuerdas planas entren en la esfera y pase final de holgura (`head_eps`).
+  - `fill_scalp()` pasa de `96 × 48` a `32 × 18` con recorte estricto dentro del borde real del pelo (sin asomar bajo la nuca en `25 · Coletas bajas`). `subd: 0` en los peinados de OverScore Proxy.
+  - Los 19 `godot/assets/creador/pelo/pelo_*.glb` regenerados con Blender 4.5.9 y reimportados en Godot: total de triángulos de **83.562 → 23.804 tris (−71,5 %)** y 0 % penetración.
+- **Tupé (`tools/creador/tupe.py`):** altura y avance frontal reducidos ~8 % (`Ymax 2.07 → 2.03`, `2.288 → 1.408 tris`). Visto bueno de Luis: «El nuevo tupé está bien».
+- **Primitivas de `godot/scripts/chara.gd`:** `4 · Afro` centrado y proporcionado (`1.36 → 1.20 m`), `7 · Ensaimadas` pegadas a la sien con gomas limpias, `11 · Rizos` compactados en silueta continua y `12 · Trenza` con eslabones más solapados.
+- **Dos estilos nuevos aprobados («Me gustan los nuevos estilos. Para dentro»):**
+  - **`17 · Cortito` (`Buzz cut`)** en lugar de `Pelusilla` (que era casi idéntica a `14 · Tazón`): rapado al 1–2 pegado al cráneo (`_cortito()` en `chara.gd`, `_shave_zone`) en el color del pelo elegido (`0.86` alfa) con línea frontal, patillas sutiles y degradado en nuca. `pelo_rapao_ella.glb` se conserva en disco porque `31 · Rulos` lo sigue usando como base.
+  - **`34 · Cuatro pelos` (`Four hairs`)** añadido al final en `creator.gd` y `loc.gd` (compatible con guardados antiguos): 4 mechones tubulares curvos asimétricos sobre la coronilla despejada (`_cuatro_pelos()` en `chara.gd`), ocultos automáticamente bajo cualquier sombrero.
+- **Archivos tocados:**
+  - `tools/creador/pelo.py`, `tools/creador/piezas.json`, `tools/creador/tupe.py`;
+  - `godot/assets/creador/pelo/pelo_*.glb` (los 19 de pelo);
+  - Compartidos (solo añadidos / cambios localizados): `godot/scripts/chara.gd`, `godot/scripts/creator.gd`, `godot/scripts/loc.gd`;
+  - Notas: `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:**
+  - `criba_pelo` (23 peinados modificados + 7 pulidos + `14, 17, 33, 34`, 3 ángulos): OK, 0 fallos ([log 1](logs/selftest_criba_pelo_solo_4_7_8_11_12_13_14_15_16_17_18_19_20_21_22_23_20261122_133319.log), [log 2](logs/selftest_criba_pelo_solo_23_24_25_26_27_29_30_20261122_134239.log), [log 3](logs/selftest_criba_pelo_solo_14_17_33_34_20261122_153827.log)).
+  - `creador`: 19 ok, 0 fallos ([log](logs/selftest_creador_20261122_154745.log)).
+  - `ropa`: 2 ok, 0 fallos ([log](logs/selftest_ropa_20261122_135134.log)).
+  - `palabros`: 3 ok, 0 fallos ([log](logs/selftest_palabros_20261122_154604.log)).
+- **Pendiente:** sin commit (esperando orden de Luis o cierre con el resto del creador para 0.0.22). Sin pasar la prueba completa todavía.
+
+### Barbas reajustadas para 0.0.22 (22/11, Antigravity · Creador)
+
+22 de noviembre de 2026. Encargo de Luis tras aprobar los peinados: «Vamos a hacer lo mismo con barbas».
+
+- **Modo de fotos nuevo (`godot/scripts/selftest.gd`):** `--criba_barba` (en el bloque `criba`, con vistas cercanas de frente, 3/4 y perfil para las 12 barbas).
+- **Barbas CC0 (`tools/creador/pelo.py`, `tools/creador/piezas.json` y los 4 `.glb`):**
+  - Nueva pasada `refine_barba()` solo para `kind == "barba"`: ciñe patillas/mejillas a la esfera (`cheek_off`, `sideburn_top`), controla el avance frontal (`front_max`), suaviza puntas largas (`z_min`, `smooth_passes`) y garantiza 0 % de penetración.
+  - `9 · Barba arreglá` (`barba_recortada.glb`): de `W = 1.11 m` con alas en sienes y flecha hasta `Y = 0.80` a `W = 1.02 m`, `Y = 0.93..1.39`.
+  - `10 · Barba de pastor` (`barba_poblada.glb`): de `W = 1.16 m` con alas laterales a `W = 1.04 m`, `Y = 0.93..1.42`, picos inferiores suavizados.
+  - `11 · Bigotillo y perilla` (`barba_candao.glb`) y `12 · Bigote de morsa` (`bigote_morsa.glb`): pegados al labio/mentón (`Zmax 0.56 → 0.52 m`).
+- **Primitivas y `Dejadez` (`godot/scripts/chara.gd`):**
+  - Nuevo generador `_add_face_tube()` para mallas curvas cerradas sobre la esfera (`_bigote_mesh`, `_mostacho_mesh`, `_patillas_mesh`, `_candao_mesh`): `1 · Bigote`, `4 · Mostacho`, `7 · Patillas` y `8 · Candao` dejan de ser cajas planas flotantes y abrazan la cara. En `8 · Candao`, Luis pidió mantener la perilla completa («creo que pierde demasiada perilla y parece más una boca que una barba»); ajustado con arco curvo + perilla sólida y aprobado («Ahora sí. Visto bueno»).
+  - `2 · Barba`, `3 · Perilla` y `6 · Barbaza`: metidas hacia la mandíbula con transición suave a mejillas (sin efecto hocico ni cintura de muñeco de nieve).
+  - `5 · Dejadez` (`_barba3`): degradado lateral más orgánico de perfil.
+- **Archivos tocados:** `tools/creador/pelo.py`, `tools/creador/piezas.json`, los 4 `godot/assets/creador/pelo/{barba_*,bigote_morsa}.glb`, `godot/scripts/chara.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:** `criba_barba` OK (0 fallos; [log completo](logs/selftest_criba_barba_20261122_161138.log), [log Candao](logs/selftest_criba_barba_solo_8_20261122_170225.log)); `creador` 19 ok, 0 fallos ([log](logs/selftest_creador_20261122_161442.log)).
+- **Pendiente:** sin commit. Sin pasar la prueba completa todavía.
+
+### Cejas reajustadas y 3 nuevas expresivas para 0.0.22 (22/11, Antigravity · Creador)
+
+22 de noviembre de 2026. Encargo de Luis tras aprobar las barbas: «Vamos con cejas».
+
+- **Modo de fotos nuevo (`godot/scripts/selftest.gd`):** `--criba_cejas` (frente, 3/4 y perfil cercanos).
+- **Cejas CC0 (`tools/creador/pelo.py`, `tools/creador/piezas.json`, `cejas_pobladas.glb`, `cejas_arqueadas.glb`):**
+  - `clean_brows_source()` conserva solo las 2 islas superiores del modelo de Quaternius, eliminando las pestañas humanas fantasma que flotaban debajo sobre los ojos del juego.
+  - `decimate` + grosor vertical (`brow_scale_z`): `4 · Espesas` baja de 984 → 212 tris con volumen perfilado real; `5 · Arqueás` baja de 1.480 → 56 tris con arco limpio (−89 % en total).
+- **Primitivas curvadas y 3 cejas expresivas nuevas (`godot/scripts/chara.gd`, `creator.gd`, `loc.gd`):**
+  - `_brows()` y `_add_brow_tube()` sustituyen las cajas/vigas rectas flotantes de `0 · Finas`, `1 · Poblás` y `2 · Cejijunto` por arcos pegados a la esfera y pivotados en `(0, 1.38, 0)` (giran en X con el tamaño de ojos sin meterse en la frente).
+  - Añadidos al final (compatibles con guardados): **`6 · Enfadás`** (`Angry`), **`7 · Preocupás`** (`Worried`) y **`8 · De abuelo`** (`Grandpa`).
+- **Visto bueno de Luis (22/11):** «Me encantan, visto bueno».
+- **Archivos tocados:** `tools/creador/pelo.py`, `tools/creador/piezas.json`, `godot/assets/creador/pelo/{cejas_pobladas,cejas_arqueadas}.glb`, `godot/scripts/chara.gd`, `godot/scripts/creator.gd`, `godot/scripts/loc.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:** `criba_cejas` OK ([log](logs/selftest_criba_cejas_20261122_174922.log)); `palabros` 3 ok ([log](logs/selftest_palabros_20261122_175204.log)); `creador` 19 ok ([log](logs/selftest_creador_20261122_175328.log)).
+- **Pendiente:** sin commit. Sin pasar la prueba completa todavía.
+
+### Ropa reajustada, traje con corbata y 3 prendas nuevas para 0.0.22 (22/11, Antigravity · Creador)
+
+22 de noviembre de 2026. Encargo de Luis tras aprobar las cejas: «Podemos pasar a la ropa. Mismo proceso que hasta ahora».
+
+- **Pipeline de ropa CC0 (`tools/creador/pelo.py`, `tools/creador/piezas.json` y los 10 `ropa_*.glb` existentes):**
+  - Nueva pasada `refine_cuerpo()` solo para `kind == "cuerpo"` (`refine_body: true`): recoge bordes de hombros/sisas (`shoulder_off`), acota vuelo excesivo (`max_off`), despeja la zona de manos, sube detalles secundarios (`detail_lift` / `layer_lifts`), permite silueta uniforme 360° con relieve local (`uniform_base`, `ripple_gain`, `skirt_flare`), estira prendas cortas hasta el cuello (`stretch_top`), cierra sisas de chaquetas con manga (`close_armholes`), abrocha americanas por debajo (`button_below_z`) y evita penetraciones en cuerpo y cabeza (`turtleneck` radial para cuellos altos).
+  - Los 10 `ropa_*.glb` originales bajan de **23.312 → 8.970 tris (−61,5 %)** con **0,0 %** penetración en cuerpo y cabeza (`11 · Jersey de cuello alto`: 10,9 % → 0 %; `12 · Plumas sin mangas`: `cut_x: 0` + acolchado uniforme 360°, 4.704 → 1.884 tris; `17 · Marinera` estirada hasta el cuello `Y = 0.98`). Se conservan todas las superficies de color (incluidas las 3 de `ropa_futbol`).
+- **Primitivas y capas interiores (`godot/scripts/chara.gd`):**
+  - `_band()` pasa a construir conos cacheados de 12 caras alineados con el cuerpo (elimina rebordes en «maceta» en `5 · Peto`, `6 · Camisa con tirantes`, `8 · Camiseta imperio` y escalones en `2`, `3`, `4`). Contraste automático de tirantes en `6`.
+  - `_dot()` y `_r_at()` aplanan botones y flores sobre la superficie exacta del cono de 12 caras (`1 · Camisa`, `7 · Bata de flores`, `5 · Peto`).
+  - `13 · Chaleco de vestir` y `14 · Rebeca` muestran camiseta interior contrastada (blanca o carbón) en el tronco base.
+- **Nuevas prendas aprobadas por Luis («Ahora sí. Visto bueno»):**
+  - **`2 · Traje con corbata` (`Suit and tie`, `ropa_traje.glb`):** sustituye en su mismo hueco a `Camiseta de rayas` (sin desplazar índices; `Blazer` + `Neck Tie` CC0 OverScore Proxy, 1.140 tris, americana abrochada con 2 botones, sisas cerradas, camisa blanca interior, Color 1 chaqueta + Color 2 corbata).
+  - **`20 · Vestido` (`Dress`, valor `22`, `ropa_vestido.glb`):** `Cocktail Dress` CC0 (1.096 tris) con hombros y espalda en V descubiertos, falda acampanada y fajín en cintura configurable con Color 2.
+  - **`21 · Camisa hawaiana` (`Hawaiian shirt`, valor `23`):** cuello abierto veraniego, botones de madera y flores de hibisco planas con hojas de palmera (`_hibiscus()`) por los 360° con contraste automático.
+  - **`22 · Bata` (`Lab coat`, valor `24`, `ropa_bata.glb`):** bata abrochada con solapas (852 tris), 3 botones, dos bolsillos inferiores, bolsillo de pecho con bolígrafo y camiseta interior configurable con Color 2.
+- **Archivos tocados:** `tools/creador/pelo.py`, `tools/creador/piezas.json`, 13 `godot/assets/creador/pelo/ropa_*.glb` (10 regenerados + `ropa_traje`, `ropa_vestido`, `ropa_bata`), `godot/scripts/chara.gd`, `godot/scripts/creator.gd`, `godot/scripts/loc.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:** `criba_ropa` OK ([log](logs/selftest_criba_ropa_solo_2_20_21_22_20261122_200338.log)); `palabros` 3 ok ([log](logs/selftest_palabros_20261122_200602.log)); `creador` 19 ok ([log](logs/selftest_creador_20261122_200705.log)); `ropa` 2 ok ([log](logs/selftest_ropa_20261122_200829.log)).
+- **Pendiente:** sin commit. Sin pasar la prueba completa todavía.
+
+### Sombreros rehechos desde cero y sombrero de cocinero para 0.0.22 (22/11, Antigravity · Creador)
+
+22 de noviembre de 2026. Encargo de Luis tras cerrar ropa: auditar sombreros, añadir `Sombrero de cocinero` y rehacer desde cero los 9 sombreros importados de OverScore Proxy para igualar la limpieza estilizada de las primitivas («En general creo que los importados están bastante peor que los hechos desde cero. Se podrían rehacer sabiendo el concepto que tenemos de la estética y el objeto que son?»).
+
+- **Nuevo generador `tools/creador/sombreros.py` (9 `gorro_*.glb` esculpidos desde cero):**
+  - Construye los 9 sombreros directamente sobre nuestra cabeza esférica (`C = (0,0,1.38), R = 0.50`) con holgura explícita frente a la bola del pelo corto (`HAIR_C = (0,0.06,1.50)`), sombreado de vértices `Col` suave y 1–2 superficies (superficie 0 toma `hat_color`, superficie 1 conserva cinta/visera de contraste):
+    - `4 · Parpusa` (`724 tris`), `5 · Sombrero de ala` (`1.056 tris`, pliegue fedora + cinta y lazo), `6 · Bombín` (`1.056 tris`, cúpula esférica + cinta oscura + ala estrecha rizada), `7 · Pamela` (`1.184 tris`, ala ancha ondulada + cinta crema con lazo), `8 · Pañoleta` (`2.356 tris`, pañuelo tradicional manchego con marco amplio, nudo bajo la barbilla con dos puntas y caída triangular trasera), `9 · Cinta` (`384 tris`), `10 · Gorra de béisbol` y `11 · Gorra pa' trás` (`1.032 tris` c/u, visera curva gris carbón + tira trasera), `12 · Sombrero vaquero` (`1.056 tris`, copa *cattleman* + cinta de cuero + alas laterales bien curvadas).
+- **Primitivas y nuevo sombrero (`godot/scripts/chara.gd`, `creator.gd`, `loc.gd`):**
+  - `1 · Boina` asentada más baja (`Y = 1.79`), ligeramente más ancha y ladeada (`rot_z = -0.10`).
+  - **`13 · Sombrero de cocinero` (`Chef hat`, valor `"chef"`):** añadido al final en `creator.gd` y `loc.gd` (siempre blanco, oculta selector de color como la boina, `hat_cut == 2`), con ribete oscuro en la base (`Y = 1.70`) y copa abullonada de 6 pliegues (actualiza también a Henry en La Cocina de Henry).
+- **Variedad en NPCs (`godot/scripts/game.gd`):**
+  - En `_neighbour_look("old_f")`, 28 % de probabilidad de llevar `"panoleta"` en tonos oscuros de luto manchego (`0x1b1b1f` / `0x2a2d36` / `0x3b2d26` / `0x4b3b4e`), reservándola exclusivamente para ancianas en NPCs. En `"kid"`, sustituido el viejo `top = 2` (ahora traje) por `19` (`Marinera`).
+- **Archivos tocados:** `tools/creador/sombreros.py`, `tools/creador/piezas.json`, los 9 `godot/assets/creador/pelo/gorro_*.glb`, `godot/scripts/chara.gd`, `godot/scripts/creator.gd`, `godot/scripts/loc.gd`, `godot/scripts/game.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:** `criba_sombrero` OK ([log completo](logs/selftest_criba_sombrero_solo_4_5_6_8_9_10_11_12_20261122_214124.log), [log pañoleta](logs/selftest_criba_sombrero_solo_8_20261122_220729.log)); `palabros` 3 ok ([log](logs/selftest_palabros_20261122_204314.log)); `creador` 19 ok ([log](logs/selftest_creador_20261122_214714.log)); `ropa` 2 ok ([log](logs/selftest_ropa_20261122_214858.log)).
+- **Pendiente:** sin commit. Sin pasar la prueba completa todavía.
+
+### Calzado rehecho desde cero, zapatos de misa y zuecos para 0.0.22 (22/11, Antigravity · Creador)
+
+22 de noviembre de 2026. Encargo de Luis tras cerrar sombreros: «Vamos con calzado» → «Rehaz los 12 y añade mocasines (zapatos de misa) y zuecos (zapatos feos)» → «A las chanclas se les debería ver el hilo del pulgar por delante, y a los zapatos feos los llamaremos zuecos de nuevo. Por lo demás de 10» → «Visto bueno».
+
+- **Modo de fotos nuevo (`godot/scripts/selftest.gd`):** `--criba_calzado` (planos cercanos bajos de frente, 3/4 y perfil para ver suelas, puentes y tiras).
+- **Nuevo generador `tools/creador/calzado.py` (14 `calzado_*.glb` esculpidos a medida):**
+  - `0..3` (`calzado_lona`, `calzado_botas`, `calzado_alpargatas`, `calzado_chanclas`): sustituyen las antiguas primitivas con suelas de ladrillo rectangular por calzado redondeado con contraste de suela/lona/esparto/tira en Y con hilo del pulgar visible por delante.
+  - `5..12` (`calzado_zapatillas`, `calzado_botas_faena`, `calzado_botas_agua`, `calzado_sandalias`, `calzado_bailarinas`, `calzado_camperas`, `calzado_zapatillas_casa`, `calzado_tacones`): sustituyen los modelos monocromos/toscamente escalados de OverScore Proxy por mallas limpias de 2–4 superficies (`6.768 tris` vs `8.640` originales), con empeine real en `9 · Bailarinas` y pie elevado/inclinado en `12 · Tacones` sin atravesar el arco. `4 · Descalzo` intacto.
+  - Dos calzados nuevos añadidos al final en `creator.gd`, `loc.gd` y `chara.gd` (`CALZADO`): **`13 · Zapatos de misa`** (`Dress loafers`, `calzado_misa.glb`, 832 tris) y **`14 · Zuecos`** (`Clogs`, `calzado_zuecos.glb`, 1.422 tris, tipo Crocs con agujeros y tira trasera).
+- **Archivos tocados:** `tools/creador/calzado.py`, 14 `godot/assets/creador/pelo/calzado_*.glb`, `godot/scripts/chara.gd`, `godot/scripts/creator.gd`, `godot/scripts/loc.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:** `criba_calzado` OK ([log completo](logs/selftest_criba_calzado_solo_0_1_2_3_5_6_7_8_9_10_11_12_13_14_20261122_232418.log), [log chanclas](logs/selftest_criba_calzado_solo_3_20261122_234148.log)); `palabros` 3 ok ([log](logs/selftest_palabros_20261122_234432.log)); `creador` 19 ok ([log](logs/selftest_creador_20261122_233308.log)); `ropa` 2 ok ([log](logs/selftest_ropa_20261122_233458.log)).
+- **Pendiente:** sin commit. Sin pasar la prueba completa todavía.
+
+### Complementos (gafas, pendientes y cuello), 11 nuevos y ajuste sobre ropa gruesa para 0.0.22 (23/11, Antigravity · Creador)
+
+23 de noviembre de 2026. Cierre del último bloque de la auditoría del Creador de personajes para `0.0.22` (gafas, pendientes y cuello). Aprobado por Luis tras verificar también el ajuste sobre prendas acolchadas («Quedan muy bien. Habría que ver si quedan igual de bien con ropa más gorda» → «Ahora si, mucho mejor»).
+
+- **Modos de fotos nuevos (`godot/scripts/selftest.gd`):** `--criba_gafas`, `--criba_pendientes`, `--criba_cuello` (planos cercanos de frente, 3/4 y perfil) y flag `--top=N` para comprobar el encaje de los complementos sobre cualquier prenda (ej. `top=12` para `Plumas sin mangas`).
+- **Nuevo generador `tools/creador/complementos.py` (12 `.glb` esculpidos a medida con 0 % de penetración y sombreado de vértices `Col`):**
+  - **Gafas (5 `.glb`):** `gafas_sol` (`5 · De sol`, Wayfarer con remaches plateados, 1.184 tris), `gafas_aviador` (`6 · De aviador`, lágrima con doble puente dorado, 1.080 tris), `gafas_gato` (`8 · De ojo de gato`, rojo vintage con tachuelas doradas, 1.088 tris), `gafas_corazon` (`9 · De corazón`, 1.200 tris) y `gafas_parche` (`11 · Parche de pirata`, parche curvo + cinta diagonal ceñida, 792 tris).
+  - **Cuello (7 `.glb`):** sustituyen las 4 importaciones deformes de OverScore Proxy (`cuello_corbata` 1.600 → 696 tris burdeos a rayas, `cuello_pajarita` 1.536 → 788 tris negra con volumen, `cuello_delantal` 1.892 tris crema con tirantes azul marino, bolsillo y lazo trasero, `cuello_bufanda` 1.648 tris roja con flecos y 20,4 % → 0,0 % en cabeza) y añaden 3 nuevos (`cuello_camara` 684 tris retro plateada/negra, `cuello_flores` 3.360 tris guirnalda 360°, `cuello_gargantilla` 1.052 tris negra con arandela y tachuelas).
+- **Primitivas, compatibilidad sobre ropa gruesa y catálogo (`chara.gd`, `creator.gd`, `loc.gd`, `game.gd`):**
+  - **Gafas:** `1 · Finas`, `2 · De pasta`, `4 · Opacas` (lentes ampliadas sin asomo del ojo en 3/4) y `3 · De tubo` (cilindros compactos + aro metálico frontal); expuestas **`7 · Rectangulares`** (`Rectangular`, encuadrando bien todo el ojo) y añadido **`10 · Monóculo`** (`Monocle`) con cadenita curva de cuentas doradas.
+  - **Pendientes:** corregido el bug de orientación de `2 · Aros`, `3 · Uno solo` y `6 · Aros de plata` (pasan del plano frontal tipo asa al plano lateral de la mejilla con leve ángulo hacia delante), refinado `4 · Largos` y añadidos **`7 · Flores`**, **`8 · Botones negros`** y **`9 · Cruz colgante`**.
+  - **Cuello y ajuste sobre prendas gruesas:** `1..3` ceñidos e inclinados a la pendiente del torso (`-0.185 rad`), `4 · Collar de perlas` completado a 360°, `5 · Pañuelo de la peña` con nudo frontal e inclinación limpia. Nuevo `_top_pad(top_id)` en `chara.gd` con el grosor radial medido de cada prenda 3D (`+0,018 m` a `+0,056 m`) aplicado tanto a `_pendant()` (`1..12`) como a `_panuelo()` (pañuelo del armario), verificado sin clipping sobre `12 · Plumas sin mangas`.
+  - **Estereotipos en NPCs (`game.gd`):** actualizados los pools de ropa, sombreros, calzado y complementos en `_neighbour_look()` respetando estereotipos de edad y género (`kid`, `adult_f`, `old_f`, `old_m`, `adult_m`), manteniendo libertad total en el creador.
+- **Archivos tocados:** `tools/creador/complementos.py`, 12 `godot/assets/creador/pelo/{gafas,cuello}_*.glb`, `godot/scripts/chara.gd`, `godot/scripts/creator.gd`, `godot/scripts/loc.gd`, `godot/scripts/game.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:** `criba_gafas` OK ([log](logs/selftest_criba_gafas_20261123_003108.log)); `criba_pendientes` OK ([log](logs/selftest_criba_pendientes_20261123_002503.log)); `criba_cuello` OK camiseta ([log](logs/selftest_criba_cuello_20261123_002653.log)) y plumas ([log](logs/selftest_criba_cuello_top_12_20261123_004538.log)); `palabros` 3 ok ([log](logs/selftest_palabros_creador_ropa_20261123_003320.log)); `creador` 19 ok ([log](logs/selftest_creador_20261123_004820.log)); `ropa` 2 ok ([log](logs/selftest_ropa_20261123_003616.log)).
+- **Pendiente:** sin commit. Sin pasar la prueba completa todavía.
+
+### Ojos, pestañas y parpadeo orgánico para 0.0.22 (23/11, Antigravity · Creador)
+
+23 de noviembre de 2026. Encargo de Luis tras cerrar complementos: «Vamos con ojos ahora» → mantener el efecto frontal saltón característico, aplicar mejoras de iris/brillos/párpados/pestañas, añadir todos los estilos propuestos y sumar parpadeo realista no periódico («Muy bien. Me gustaría añadir parpadeo a los personajes, que quede realista no que parpadeen exactamente cada x tiempo»).
+
+- **Modos de fotos nuevos (`godot/scripts/selftest.gd`):** `--criba_ojos`, `--criba_pestanas` y `--blink=F` (para posar los ojos cerrados en pleno parpadeo).
+- **Ojos (`godot/scripts/chara.gd`, `creator.gd`, `loc.gd`):**
+  - `_eyes()` conserva el relieve frontal saltón (`z = 0.446..0.502`) y amplía ligeramente el iris con doble reflejo en `0 · Normales` y `1 · Ojazos`.
+  - Nueva malla procedural cacheada `_sliced_ellipsoid()` en forma de D (sin ninguna caja de piel que genere bordes indeseados en el shader de contorno) para los ojos con párpado: `2 · De siesta` (recto medio cerrado), **`6 · Cansaos`** (caído hacia fuera con leve ojera fija en mejilla) y **`8 · De listo`** (párpado superior recto con mirada pícara de reojo).
+  - Otros nuevos estilos añadidos al final (compatibles con guardados): **`3 · Rasgaos`** (*Almond*), **`4 · De botón`** (*Button*, brillantes estilo muñeco con halo de `eye_color`), **`5 · Alegres`** (*Happy*, arcos cerrados `^ ^` con `_add_face_tube()`) y **`7 · Brillantes`** (*Sparkly*, media luna luminosa inferior + triple brillo).
+  - Dos nuevos colores de ojos en `eye_color`: **`Grises`** (`0x7d8a96`) y **`Violetas`** (`0x7b52ab`).
+- **Pestañas (`_add_lashes()` en `chara.gd`):**
+  - `1 · Finas` y `2 · De muñeca` recolocadas en abanico lateral sobre el arco superior-exterior del ojo (ya no atraviesan las cejas en ningún estilo).
+  - Nuevo **`3 · Con rabillo`** (*Winged*, delineado lateral estilizado).
+- **Parpadeo orgánico realista (`_blink_tick()`, `set_blink()` en `chara.gd`):**
+  - Todos los ojos abiertos se agrupan bajo `_eyes_open` (pivote `y = 1.416`) y alternan con `_eyes_closed` (párpados curvos relajados `_blink_mesh`) mediante una curva asimétrica (cierre `30 %` → cerrado `34 %` → apertura `36 %`, duración `0,12–0,21 s`).
+  - Ritmo no periódico (`_next_blink_gap()`): 70 % entre `1,7–4,6 s`, 22 % pausas largas `4,6–8,2 s`, 8 % rápidos `0,65–1,55 s`, más ~18 % de doble parpadeo natural (`0,14–0,28 s`) y fase inicial aleatoria (`0,35–5,2 s`) por personaje. Se ejecuta en `anim()` (activo en juego, cinemáticas y creador; congelado en pausa; omitido en `5 · Alegres` y en capturas estáticas).
+- **Reparto en NPCs (`godot/scripts/game.gd`):** pools de ojos, colores y pestañas diferenciados por edad y género en `_neighbour_look()`.
+- **Archivos tocados:** `godot/scripts/chara.gd`, `godot/scripts/creator.gd`, `godot/scripts/loc.gd`, `godot/scripts/game.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:** `criba_ojos` OK ([ojos](logs/selftest_criba_ojos_solo_2_3_6_8_20261123_011808.log), [parpadeo](logs/selftest_criba_ojos_solo_0_blink_1.0_20261123_013522.log)); `criba_pestanas` OK ([log](logs/selftest_criba_pestanas_20261123_010933.log)); `palabros` 3 ok ([log](logs/selftest_palabros_20261123_012024.log)); `creador` 20 ok ([log](logs/selftest_creador_20261123_013651.log), incluye verificación de parpadeo no periódico: 34 parpadeos en 120 s, intervalos `0,33..8,17 s`).
+- **Pendiente:** sin commit. Sin pasar la suite completa (`--headless`) todavía.
+
+### Complexiones y botón Aleatorio en Lustre y Pintas para 0.0.22 (23/11, Antigravity · Creador)
+
+23 de noviembre de 2026. Cierre final de la auditoría del Creador de personajes antes de preparar el release `0.0.22` («Visto bueno. Solo faltaría añadir un botón de Aleatorio tanto en Lustre como en Pintas y podemos comenzar a preparar el release de la 0.0.22»).
+
+- **Complexiones (`godot/scripts/chara.gd`, `selftest.gd`):**
+  - Nuevo modo `--criba_complexion` que prueba las 3 complexiones (`0 · Normal`, `1 · Canijo/a`, `2 · Hermoso/a`) sobre 4 conjuntos de estrés (`Camiseta`, `Traje con corbata`, `Plumas + Delantal` y `Bata + Cámara`).
+  - `_slope()` calcula la pendiente real del cono (`atan(0.18667 * _girth)`) para `_strip()`, `_dot()`, `_hibiscus()` y `_pendant()`.
+  - Botones, bolsillos y bolígrafo de `2 · Traje con corbata` y `22 · Bata` escalados con `_girth` (ya no se hunden en `Hermoso` ni flotan en `Canijo`).
+  - Manos adaptativas (`_hx = _r(0.68) + 0.096 + _top_pad(top_id) * _girth * 0.62`), separación proporcional de pies (`±0.17 * lerpf(1.0, _girth, 0.55)`), cuellos de camisa proporcionales y correa de cámara ceñida en `Hermoso`.
+- **Botón Aleatorio en Lustre y Pintas (`hud.gd`, `creator.gd`, `controls.gd`, `game.gd`, `loc.gd`):**
+  - Nuevo botón `creator_rand` (`c_random`: «Aleatorio» / «Random») en la esquina inferior izquierda del panel del creador en ambas pestañas (**Lustre** y **Pintas**; oculto en el armario), con icono `[R]` en teclado (`controls.gd`), `(Y)`/`(△)` en mando (`JOY_BUTTON_Y` conectado además de `R` en `game.gd`) y botón táctil.
+  - Nuevo `Creator.random_tab(sel, tab)` para que **Aleatorio** solo aleatorice la pestaña activa sin sobreescribir las elecciones de la otra pestaña.
+- **Archivos tocados:** `godot/scripts/chara.gd`, `godot/scripts/creator.gd`, `godot/scripts/controls.gd`, `godot/scripts/hud.gd`, `godot/scripts/game.gd`, `godot/scripts/loc.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+- **Pruebas:** `criba_complexion` OK ([log](logs/selftest_criba_complexion_20261123_015749.log)); `creador` 21 ok ([log](logs/selftest_creador_20261123_020848.log), verificadas capturas `creador_1_lustre.png`, `creador_3_pintas.png` y `creador_4_mando.png`); `palabros` 3 ok ([log](logs/selftest_palabros_20261123_021018.log)).
+
+### Publicación de la 0.0.22 en GitHub (23/11, Antigravity · Creador)
+
+23 de noviembre de 2026. Confirmado por Luis: «Eres la única sesión activa. Prosigue».
+- **Prueba completa:** 983 ok, 0 fallos ([log](logs/selftest_full_20261123_022750.log)), tras actualizar 3 aserciones antiguas de `0.0.21` en `selftest.gd` (calzado `.glb`, nuevos tamaños de listas de pestañas/pendientes y conteo de pestañas bajo `_eyes_open`).
+- **Commit y etiqueta:** `Matritellus 0.0.22`, etiqueta `v0.0.22`.
+- **Paquetes:** `tools/make_apk.py 0.0.22` (versión 0.0.22, código 22, 318 MB, firmado y verificado), `tools/make_installer.py` (383 MB) y `tools/make_linux.py` (327 MB).
+  - Copiados a `dist/v0.0.22/`, con [sus SHA-256](dist/v0.0.22/SHA256SUMS.txt) comprobados.
+  - Release: https://github.com/LomoXSoft/Matritellus/releases/tag/v0.0.22
+- **Sin probar:** no se ha probado en móvil físico ni en Steam Machine.

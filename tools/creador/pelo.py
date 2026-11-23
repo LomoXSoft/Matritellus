@@ -121,12 +121,21 @@ def put_on_ball(v, tree, p, kind, k_t):
     # piece made bigger, from the middle of the head.
     k_far = smoothstep(p.get('far0', 0.15), p.get('far1', 0.6), far)
     if k_far > 0.0 and kind in ('pelo', 'sombrero'):
-        k_u = R / p['half_w'] * p.get('far_k', 0.95)
         zc = p['eye'] + (p['crown'] - p['eye']) * p.get('far_zc', 0.35)
         dz = v.z - zc
         if v.z < p['chin']:                          # (down the back: a human's hair is long for a head as big as ours)
             dz = (p['chin'] - zc) + (v.z - p['chin']) * p.get('far_drop', 0.4)
-        same = C + Vector((v.x * k_u, (v.y - p['cy']) * k_u, dz * k_u))
+        if kind == 'pelo' and p.get('far_excess'):   # scale ONLY protrusion beyond the skull R, never squashing buns/afros flat into the head
+            k_base = R / p['half_w']
+            raw = Vector((v.x * k_base, (v.y - p['cy']) * k_base, dz * k_base))
+            rl = raw.length
+            if rl > R:
+                same = C + raw.normalized() * (R + (rl - R) * p.get('far_k', 0.95))
+            else:
+                same = C + raw
+        else:
+            k_u = R / p['half_w'] * p.get('far_k', 0.95)
+            same = C + Vector((v.x * k_u, (v.y - p['cy']) * k_u, dz * k_u))
         out = same - C
         if out.length < R + p.get('eps', EPS):
             same = C + out.normalized() * (R + p.get('eps', EPS))
@@ -139,10 +148,447 @@ def put_on_ball(v, tree, p, kind, k_t):
         if flat.length < need:
             flat = flat.normalized() * need if flat.length > 1e-6 else Vector((0.0, need, 0.0))
             pos.x, pos.y = flat.x, flat.y
-    low = p.get('lowest', 0.55)                      # (nothing down past the hips: the hands hang at 0.68)
-    if pos.z < low + 0.15:
-        pos.z = low + 0.15 * math.exp((pos.z - low - 0.15) / 0.15)
+    if not p.get('clean_drop'):
+        low = p.get('lowest', 0.55)                  # (nothing down past the hips: the hands hang at 0.68)
+        if pos.z < low + 0.15:
+            pos.z = low + 0.15 * math.exp((pos.z - low - 0.15) / 0.15)
     return pos
+
+
+def refine_pelo(bm, p):
+    """Post-fit silhouette and base refinement for hair pieces (Matritellus 0.0.22):
+    - Keeps the skull fit tight while scaling down excessive outer volume and width.
+    - Prevents horizontal ducktail shelves on long hair by draping proportionally down the back.
+    - Clears the hands zone (|x|~0.46, z~0.68) and compresses jutting front visors.
+    - Applies controlled Laplacian smoothing on interior verts and enforces skull/body clearance.
+    """
+    eps = p.get('eps', EPS)
+    vol_scale = p.get('vol_scale', 1.0)
+    scale_x = p.get('scale_x', 1.0)
+    front_max = p.get('front_max', None)
+    back_max = p.get('back_max', None)
+    z_min = p.get('z_min', None)
+    drape_back = p.get('drape_back', None)
+    side_back = p.get('side_back', 0.0)
+    round_k = p.get('round_k', 0.0)
+    round_r = p.get('round_r', 0.63)
+    front_strand_z = p.get('front_strand_z', None)
+    smooth_passes = p.get('smooth_passes', 0)
+
+    # 1. Volume, width, visor and roundness shaping (acts only on excess outside R + eps)
+    min_z_cur = min((v.co.z for v in bm.verts), default=1.0)
+    hinge_z = p.get('hinge_z', 1.16)
+    for v in bm.verts:
+        co = v.co
+        d = co - C
+        r = d.length
+        if r > R + eps:
+            # Radial thickness scale above the base skull
+            if vol_scale != 1.0:
+                extra = (r - (R + eps)) * vol_scale
+                d = d.normalized() * (R + eps + extra)
+            # Roundness blend for afro/fluffy silhouettes
+            if round_k > 0.0:
+                rc = Vector((0.0, 0.04, 1.44))
+                rd = (C + d) - rc
+                if rd.length > R + eps:
+                    target = rc + rd.normalized() * min(rd.length, round_r)
+                    d = (C + d).lerp(target, round_k) - C
+            # Width clamp outside the skull radius (smooth onset from 0.36..0.50)
+            if scale_x != 1.0 and abs(d.x) > 0.36:
+                sgn = 1.0 if d.x >= 0.0 else -1.0
+                ax = abs(d.x)
+                w = smoothstep(0.36, R, ax)
+                target_x = R + (ax - R) * scale_x if ax > R else ax
+                d.x = sgn * (ax + (target_x - ax) * w)
+            # Prevent forward visor overhang (face is -y in Blender)
+            if front_max is not None and -d.y > front_max:
+                d.y = -(front_max + (-d.y - front_max) * 0.18)
+            # Prevent backward protrusion above the nape (buns, poufs)
+            if back_max is not None and d.y > back_max and (C.z + d.z) >= 1.12:
+                d.y = back_max + (d.y - back_max) * 0.25
+            co = C + d
+
+        # 2. Front loose strands (e.g. feathered/curtain bangs): keep near chin height, not floating to hips
+        if front_strand_z is not None and co.y < 0.05 and co.z < 1.25:
+            if co.z < front_strand_z:
+                co.z = front_strand_z - (front_strand_z - co.z) * 0.18
+            # Pull floating front strands gently closer to cheek/neck silhouette
+            flat_xy = Vector((co.x, co.y))
+            want_r = R + 0.06 if co.z >= 1.05 else body_r(max(co.z, 0.35)) + 0.10
+            if flat_xy.length > want_r:
+                flat_xy = flat_xy.normalized() * (want_r + (flat_xy.length - want_r) * 0.35)
+                co.x, co.y = flat_xy.x, flat_xy.y
+
+        # 3. Proportional shortening of hanging hair below hinge_z (no horizontal ducktail shelf!)
+        if z_min is not None and min_z_cur < z_min and co.z < hinge_z:
+            span = max(hinge_z - min_z_cur, 1e-4)
+            new_span = max(hinge_z - z_min, 0.05)
+            co.z = hinge_z - (hinge_z - co.z) * (new_span / span)
+
+        # 4. Vertical back draping below the skull: keep tails/braids/waves flowing down the back
+        if drape_back is not None and co.z < hinge_z:
+            k_down = smoothstep(hinge_z, hinge_z - 0.26, co.z)
+            max_back_y = body_r(max(co.z, 0.35)) + drape_back
+            if co.y > max_back_y:
+                co.y = co.y + (max_back_y + (co.y - max_back_y) * 0.20 - co.y) * k_down
+            if back_max is not None and co.y > back_max:
+                co.y = back_max + (co.y - back_max) * 0.22
+
+        # 5. Clear the hands zone (|x| ~ 0.46, z ~ 0.68) by sweeping low side locks slightly backward
+        if side_back > 0.0 and co.z < 1.08 and abs(co.x) > 0.24 and co.y < 0.25:
+            k_h = smoothstep(1.08, 0.78, co.z) * smoothstep(0.24, 0.42, abs(co.x))
+            co.y += side_back * k_h
+
+        v.co = co
+
+    # 6. Controlled Laplacian smoothing on interior vertices (eliminates crown pinches and dirty outlines)
+    if smooth_passes > 0:
+        inner = [v for v in bm.verts if not v.is_boundary]
+        for _ in range(smooth_passes):
+            bmesh.ops.smooth_vert(bm, verts=inner, factor=0.30,
+                                  use_axis_x=True, use_axis_y=True, use_axis_z=True)
+
+    # 6b. Prevent flat low-poly chords from dipping into the R=0.50 sphere: split only overly long edges near the head
+    max_edge = p.get('max_edge', 0.16)
+    if max_edge > 0.0:
+        long_edges = [e for e in bm.edges if e.calc_length() > max_edge and (e.verts[0].co.z >= 0.95 or e.verts[1].co.z >= 0.95)]
+        if long_edges:
+            bmesh.ops.subdivide_edges(bm, edges=long_edges, cuts=1, use_grid_fill=True, smooth=0.35)
+
+    # 7. Final skull, eyes, and torso clearance pass (zero clipping, including chord clearance)
+    min_head_r = R + max(eps, p.get('head_eps', 0.022))
+    for v in bm.verts:
+        co = v.co
+        d = co - C
+        if co.z >= 1.02 and d.length < min_head_r:
+            co = C + d.normalized() * min_head_r
+        elif co.z < 1.02:
+            xy = Vector((co.x, co.y))
+            need = body_r(max(co.z, 0.25)) + eps
+            if xy.length < need and xy.length > 1e-5:
+                xy = xy.normalized() * need
+                co.x, co.y = xy.x, xy.y
+        v.co = co
+
+
+def refine_barba(bm, p):
+    """Post-fit silhouette and cheek/sideburn refinement for beard pieces (Matritellus 0.0.22):
+    - Pulls floating sideburn wings snugly against the R=0.50 sphere (no wide horns sticking out the sides).
+    - Compresses excessive forward protrusion on mustaches/goatees and rounds overly sharp chin spikes.
+    - Applies controlled interior smoothing and guarantees zero clipping into the head or shirt.
+    """
+    eps = p.get('eps', EPS)
+    cheek_off = p.get('cheek_off', None)
+    sideburn_top = p.get('sideburn_top', None)
+    front_max = p.get('front_max', None)
+    z_min = p.get('z_min', None)
+    hinge_z = p.get('hinge_z', 1.12)
+    smooth_passes = p.get('smooth_passes', 0)
+
+    min_z_cur = min((v.co.z for v in bm.verts), default=1.0)
+    for v in bm.verts:
+        co = v.co
+        d = co - C
+        r = d.length
+        bearing = abs(math.atan2(d.x, -d.y))          # 0 front, pi/2 sides
+        # 1. Hug cheeks and sideburns to the sphere so beards never sprout sideways wings
+        if cheek_off is not None and bearing > 0.55 and r > R + eps:
+            k_side = smoothstep(0.55, 1.05, bearing)
+            target_off = cheek_off
+            if sideburn_top is not None and co.z > sideburn_top:
+                k_top = smoothstep(sideburn_top, sideburn_top + 0.14, co.z)
+                target_off = cheek_off + (eps - cheek_off) * k_top
+                # keep sideburn tips from climbing past the temples
+                co.z = sideburn_top + (co.z - sideburn_top) * 0.55
+                d = co - C
+                r = d.length
+            want_r = R + target_off
+            if r > want_r:
+                new_r = r + (want_r + (r - want_r) * 0.18 - r) * k_side
+                d = d.normalized() * new_r
+                co = C + d
+        # 2. Prevent overly jutting front blocks on mustaches/beards (face is -y in Blender)
+        if front_max is not None and -co.y > front_max:
+            co.y = -(front_max + (-co.y - front_max) * 0.20)
+        # 3. Softly shorten overly long/spiky chin tips without flattening horizontally
+        if z_min is not None and min_z_cur < z_min and co.z < hinge_z:
+            span = max(hinge_z - min_z_cur, 1e-4)
+            new_span = max(hinge_z - z_min, 0.05)
+            co.z = hinge_z - (hinge_z - co.z) * (new_span / span)
+        v.co = co
+
+    if smooth_passes > 0:
+        inner = [v for v in bm.verts if not v.is_boundary]
+        for _ in range(smooth_passes):
+            bmesh.ops.smooth_vert(bm, verts=inner, factor=0.28,
+                                  use_axis_x=True, use_axis_y=True, use_axis_z=True)
+
+    # Final skull & torso clearance
+    min_head_r = R + eps
+    for v in bm.verts:
+        co = v.co
+        d = co - C
+        if co.z >= 1.00 and d.length < min_head_r:
+            co = C + d.normalized() * min_head_r
+        elif co.z < 1.00:
+            xy = Vector((co.x, co.y))
+            need = body_r(max(co.z, 0.25)) + eps
+            if xy.length < need and xy.length > 1e-5:
+                xy = xy.normalized() * need
+                co.x, co.y = xy.x, xy.y
+        v.co = co
+
+
+def refine_cuerpo(bm, p):
+    """Post-fit silhouette, shoulder, hand-clearance and head-clearance refinement for clothes (Matritellus 0.0.22):
+    - Pulls open shoulder/armhole rims snugly onto the torso cone so cut sleeves never flare into wings/funnels.
+    - Clamps excessive lower bell/puffer ballooning and clears the hands zone (|x|~0.46, z~0.68).
+    - Prevents collars/turtlenecks from penetrating the head sphere (C=(0,0,1.38), R=0.50).
+    - Optionally lifts secondary detail surfaces (e.g. hoodie drawstrings) slightly above the primary cloth.
+    """
+    eps = p.get('eps', EPS)
+    max_off = p.get('max_off', 0.045)
+    shoulder_off = p.get('shoulder_off', 0.020)
+    z_max = p.get('z_max', 0.99)
+    z_min = p.get('z_min', 0.255)
+    keep_hood_back = p.get('keep_hood_back', False)
+    turtleneck = p.get('turtleneck', False)
+    clear_head = p.get('clear_head', True)
+    detail_lift = float(p.get('detail_lift', 0.0))
+    smooth_passes = p.get('smooth_passes', 0)
+    smooth_armhole = p.get('smooth_armhole', False)
+    stretch_top = p.get('stretch_top', None)
+    uniform_base = p.get('uniform_base', None)
+    ripple_gain = float(p.get('ripple_gain', 0.0))
+    uniform_max = float(p.get('uniform_max', max_off))
+    skirt_flare = float(p.get('skirt_flare', 0.0))
+    button_below_z = p.get('button_below_z', None)
+
+    # 0a. Optionally button open-front jackets closed below button_below_z (keeps upper lapel V open)
+    if button_below_z is not None and bm.verts:
+        bz = float(button_below_z)
+        front_vs = [v for v in bm.verts if v.co.y < -0.05 and v.link_faces and any(f.material_index == 0 for f in v.link_faces)]
+        if front_vs:
+            orig_ang = {v: math.atan2(v.co.x, -v.co.y) for v in front_vs}
+            orig_z = {v: v.co.z for v in front_vs}
+            def gap_ang_at(zq):
+                sub = [abs(orig_ang[v]) for v in front_vs if abs(orig_z[v] - zq) < 0.08]
+                return min(sub) if sub else 0.0
+            for v in front_vs:
+                vz = orig_z[v]
+                if vz < bz + 0.06:
+                    k_close = smoothstep(bz + 0.06, bz - 0.05, vz)
+                    ang = orig_ang[v]
+                    a = abs(ang)
+                    if a < 1.35:
+                        gap = gap_ang_at(vz)
+                        if gap > 0.005:
+                            t = max(0.0, min(1.0, (a - gap) / max(0.25, 1.35 - gap)))
+                            target_a = t * 1.35
+                            new_a = a + (target_a - a) * k_close
+                            sgn = 1.0 if ang >= 0.0 else -1.0
+                            r_xy = math.hypot(v.co.x, v.co.y)
+                            v.co.x = math.sin(sgn * new_a) * r_xy
+                            v.co.y = -math.cos(sgn * new_a) * r_xy
+
+    # 0. Optionally stretch garments whose source top sits mid-chest up to the neck
+    if stretch_top is not None and bm.verts:
+        z_lo = min(v.co.z for v in bm.verts)
+        z_hi = max(v.co.z for v in bm.verts)
+        if z_hi > z_lo + 0.05 and z_hi < stretch_top:
+            for v in bm.verts:
+                old_z = v.co.z
+                br_old = body_r(min(max(old_z, 0.245), 0.995))
+                xy = Vector((v.co.x, v.co.y))
+                off = xy.length - br_old
+                new_z = z_lo + (old_z - z_lo) / (z_hi - z_lo) * (stretch_top - z_lo)
+                br_new = body_r(min(max(new_z, 0.245), 0.995))
+                if xy.length > 1e-5:
+                    xy = xy.normalized() * max(br_new + eps, br_new + off)
+                    v.co.x, v.co.y = xy.x, xy.y
+                v.co.z = new_z
+
+    # 0b. Optional 360-degree uniform silhouette with preserved local relief (e.g. quilted puffer ribs, fitted striped tee)
+    if uniform_base is not None and bm.verts:
+        raw_off = {}
+        for v in bm.verts:
+            br = body_r(min(max(v.co.z, 0.245), 0.995))
+            raw_off[v] = Vector((v.co.x, v.co.y)).length - br
+        sm_off = dict(raw_off)
+        if ripple_gain > 0.0:
+            for _ in range(3):
+                nxt = {}
+                for v in bm.verts:
+                    nbs = [e.other_vert(v) for e in v.link_edges]
+                    nxt[v] = 0.5 * sm_off[v] + 0.5 * (sum(sm_off[u] for u in nbs) / len(nbs)) if nbs else sm_off[v]
+                sm_off = nxt
+        for v in bm.verts:
+            co = v.co
+            if co.z > z_max:
+                co.z = z_max + (co.z - z_max) * 0.15
+            if co.z < z_min:
+                co.z = z_min - (z_min - co.z) * 0.15
+            br = body_r(min(max(co.z, 0.245), 0.995))
+            xy = Vector((co.x, co.y))
+            if xy.length > 1e-5:
+                detail = (raw_off[v] - sm_off[v]) * ripple_gain if ripple_gain > 0.0 else 0.0
+                flare = skirt_flare * smoothstep(0.60, 0.24, co.z) if skirt_flare > 0.0 else 0.0
+                want = max(eps, min(uniform_max + flare, float(uniform_base) + flare + detail))
+                xy = xy.normalized() * (br + want)
+                co.x, co.y = xy.x, xy.y
+            v.co = co
+    else:
+        for v in bm.verts:
+            co = v.co
+            # 1. Clamp vertical bounds softly (no collars climbing into chin, no hems dipping under feet)
+            if co.z > z_max:
+                co.z = z_max + (co.z - z_max) * 0.15
+            if co.z < z_min:
+                co.z = z_min - (z_min - co.z) * 0.15
+            br = body_r(min(max(co.z, 0.245), 0.995))
+            xy = Vector((co.x, co.y))
+            r_xy = xy.length
+            if r_xy > 1e-5:
+                # 2. Clamp excessive outer ballooning (Michelin/bell skirts), while preserving folded hoodie back
+                is_hood = keep_hood_back and co.z > 0.74 and co.y > 0.04
+                cap_off = 0.11 if is_hood else max_off
+                if r_xy > br + cap_off:
+                    new_r = br + cap_off + (r_xy - (br + cap_off)) * 0.22
+                    xy = xy.normalized() * new_r
+                    r_xy = new_r
+                # 3. Tuck open shoulder/armhole rims above z=0.80 onto the cone (eliminates side funnels/wings)
+                if co.z > 0.80 and not is_hood and not turtleneck:
+                    k_sh = smoothstep(0.80, 0.95, co.z)
+                    want_r = br + shoulder_off
+                    if r_xy > want_r:
+                        new_r = r_xy + (want_r + (r_xy - want_r) * 0.15 - r_xy) * k_sh
+                        xy = xy.normalized() * new_r
+                        r_xy = new_r
+                # 4. Clear hands zone (|x| ~ 0.46, y ~ 0, z ~ 0.68, hand radius 0.12)
+                if 0.52 <= co.z <= 0.84 and abs(co.y) < 0.18 and abs(co.x) > br * 0.75:
+                    k_h = smoothstep(0.18, 0.06, abs(co.y)) * (1.0 - abs(co.z - 0.68) / 0.16)
+                    k_h = max(0.0, min(1.0, k_h))
+                    want_h = br + eps + 0.006
+                    if r_xy > want_h:
+                        new_r = r_xy + (want_h - r_xy) * (0.85 * k_h)
+                        xy = xy.normalized() * new_r
+                co.x, co.y = xy.x, xy.y
+            v.co = co
+
+    # 5. Controlled smoothing on interior vertices (preserves hems, necklines and material borders)
+    if smooth_passes > 0:
+        inner = [v for v in bm.verts if not v.is_boundary and len({f.material_index for f in v.link_faces}) == 1]
+        for _ in range(smooth_passes):
+            bmesh.ops.smooth_vert(bm, verts=inner, factor=0.25,
+                                  use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    if smooth_armhole:
+        arm = [v for v in bm.verts if v.is_boundary and abs(v.co.x) > 0.25 and 0.52 < v.co.z < 0.94]
+        for _ in range(2):
+            bmesh.ops.smooth_vert(bm, verts=arm, factor=0.35,
+                                  use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    if p.get('close_armholes'):
+        # cap cut-sleeve armholes on sleeved jackets so no white undershirt hole shows on the side
+        b_edges = {e for e in bm.edges if e.is_boundary and len(e.link_faces) == 1 and e.link_faces[0].material_index == 0}
+        visited = set()
+        for e0 in list(b_edges):
+            if e0 in visited:
+                continue
+            loop_e = []
+            cur = e0
+            while cur and cur not in visited:
+                visited.add(cur)
+                loop_e.append(cur)
+                nxt = None
+                for v in cur.verts:
+                    for ne in v.link_edges:
+                        if ne in b_edges and ne not in visited:
+                            nxt = ne
+                            break
+                    if nxt:
+                        break
+                cur = nxt
+            lvs = list({v for e in loop_e for v in e.verts})
+            if len(lvs) >= 4:
+                cx = sum(v.co.x for v in lvs) / len(lvs)
+                cz = sum(v.co.z for v in lvs) / len(lvs)
+                if abs(cx) > 0.28 and 0.55 < cz < 0.94:
+                    cy = sum(v.co.y for v in lvs) / len(lvs)
+                    br = body_r(min(max(cz, 0.245), 0.995))
+                    xy = Vector((cx, cy))
+                    if xy.length > 1e-5:
+                        xy = xy.normalized() * (br + eps + 0.014)
+                    cv = bm.verts.new(Vector((xy.x, xy.y, cz)))
+                    for e in loop_e:
+                        f0 = e.link_faces[0]
+                        v1, v2 = e.verts[0], e.verts[1]
+                        # match winding with adjacent face so normal points outward
+                        el = [l for l in f0.loops if l.edge == e][0]
+                        va, vb = el.vert, el.link_loop_next.vert
+                        try:
+                            nf = bm.faces.new((vb, va, cv))
+                            nf.material_index = f0.material_index
+                            nf.smooth = True
+                        except ValueError:
+                            pass
+
+    # 6. Split overly long edges so coarse subd:0 quads never sag into the curved torso cone
+    max_edge = p.get('max_edge', 0.16)
+    if max_edge > 0.0:
+        long_edges = [e for e in bm.edges if e.calc_length() > max_edge]
+        if long_edges:
+            bmesh.ops.subdivide_edges(bm, edges=long_edges, cuts=1, use_grid_fill=True, smooth=0.25)
+
+    # 7. Lift detail-only vertices (e.g. hoodie strings, hi-vis stripes, front tie) slightly off the majority cloth material
+    layer_lifts = p.get('layer_lifts')
+    if layer_lifts:
+        front_only = p.get('lift_front_only', False)
+        for v in bm.verts:
+            if v.link_faces:
+                if front_only and v.co.y > -0.04:
+                    continue
+                lift = max(float(layer_lifts[f.material_index]) for f in v.link_faces if f.material_index < len(layer_lifts))
+                if lift > 0.0:
+                    xy = Vector((v.co.x, v.co.y))
+                    if xy.length > 1e-5:
+                        xy = xy + xy.normalized() * lift
+                        v.co.x, v.co.y = xy.x, xy.y
+    elif detail_lift > 0.0:
+        mcounts = {}
+        for f in bm.faces:
+            mcounts[f.material_index] = mcounts.get(f.material_index, 0) + 1
+        main_mat = max(mcounts, key=mcounts.get) if mcounts else 0
+        for v in bm.verts:
+            if v.link_faces and all(f.material_index != main_mat for f in v.link_faces):
+                xy = Vector((v.co.x, v.co.y))
+                if xy.length > 1e-5:
+                    xy = xy + xy.normalized() * detail_lift
+                    v.co.x, v.co.y = xy.x, xy.y
+
+    # 8. Final torso & head clearance pass (zero clipping into body cone or head sphere)
+    for v in bm.verts:
+        co = v.co
+        br = body_r(min(max(co.z, 0.245), 0.995))
+        xy = Vector((co.x, co.y))
+        need = br + eps
+        if xy.length < need and xy.length > 1e-5:
+            xy = xy.normalized() * need
+            co.x, co.y = xy.x, xy.y
+        if clear_head and co.z > 0.90:
+            d = co - C
+            if d.length < R + 0.008:
+                if turtleneck:
+                    # flare high collar neatly around the chin/neck seam instead of crushing it flat
+                    dz = max(0.05, C.z - co.z)
+                    need_r = math.sqrt(max(0.0, (R + 0.012) ** 2 - dz * dz))
+                    if xy.length < need_r and xy.length > 1e-5:
+                        xy = xy.normalized() * need_r
+                        co.x, co.y = xy.x, xy.y
+                else:
+                    # drop cleanly to below the chin/neck seam rather than inflating into the cheeks
+                    max_z = C.z - math.sqrt(max(0.0, (R + 0.008) ** 2 - co.x * co.x - co.y * co.y))
+                    co.z = min(co.z, max_z)
+        v.co = co
 
 
 def base_colour(m):
@@ -219,24 +665,30 @@ def fill_scalp(bm, p):
     for i, d in enumerate(roots):
         kd.insert(d, i)
     kd.balance()
-    reach = 2.0 * math.sin(math.radians(p.get('fill_deg', 4.0)) / 2.0)
+    reach = 2.0 * math.sin(math.radians(p.get('fill_deg', 14.0)) / 2.0)
     cap = bmesh.new()
-    bmesh.ops.create_uvsphere(cap, u_segments=96, v_segments=48, radius=R + FILL_OFF)
+    bmesh.ops.create_uvsphere(cap, u_segments=32, v_segments=18, radius=R + 0.012)
     # Where the hair grows close on the head, and the crown all round: but never down the forehead, where under a fringe
     # it showed as a band with a straight edge, "un gorro de piscina debajo del pelo" (the user, 16 Nov 2026). In front
-    # it stops up at the hairline; down the sides and the back it goes as far as the hair does. (The bald specks seen
-    # from a few metres were Godot's simplified meshes, not gaps: assets/creador/pelo/*.import, generate_lods=false.)
+    # it stops up at the hairline; down the sides and the back it goes as far as the hair does (never peeking under the nape).
+    # Low-poly 32x18 stays safely outside R=0.50 without chord sag while saving ~2300 hidden tris per hairpiece vs 96x48.
     def lowest(v):                                  # how far down it may come here (elevation, degrees), by the bearing round the head
         d = v.co.normalized()
         front = max(0.0, -d.y / max(1e-6, math.hypot(d.x, d.y)))          # 1 straight ahead, 0 at the sides and behind
-        return p.get('fill_back', 8.0) + (p.get('fill_front', 38.0) - p.get('fill_back', 8.0)) * front ** 1.5
+        return p.get('fill_back', 12.0) + (p.get('fill_front', 36.0) - p.get('fill_back', 12.0)) * front ** 1.5
     def elev(v):
         return math.degrees(math.asin(max(-1.0, min(1.0, v.co.normalized().z))))
     def ok(v):
         e = elev(v)
         if e < lowest(v) or v.co.z < -0.3:
             return False
-        return len(kd.find_range(v.co.normalized(), reach)) >= 3 or e >= lowest(v) + p.get('fill_top', 22.0)
+        if e >= lowest(v) + p.get('fill_top', 16.0):
+            return True
+        hits = kd.find_range(v.co.normalized(), reach)
+        if len(hits) >= 1:
+            min_hair_e = min(math.degrees(math.asin(max(-1.0, min(1.0, h[0].z)))) for h in hits)
+            return e >= min_hair_e + 1.5
+        return False
     covered = {v: ok(v) for v in cap.verts}
     gone = [f for f in cap.faces if not all(covered[v] for v in f.verts)]      # (only inside where the hair is: its edge stays the hair's own)
     bmesh.ops.delete(cap, geom=gone, context='FACES')
@@ -324,15 +776,58 @@ def put_shoe(bm, p):
 def put_brows(v, tree, p, k_t):
     """eyebrows: across the front of the ball over our eyes"""
     x = v.x * (0.25 / p['brow_half_w'])
-    z = 1.535 + (v.z - p['brow_z0']) * p.get('brow_k', 2.0)
+    z0 = p.get('brow_anchor_z', 1.555)
+    z = z0 + (v.z - p['brow_z0']) * p.get('brow_k', 2.0)
     hit = tree.find_nearest(v)
     t = 0.0
     if hit[0] is not None:
         d = v - hit[0]
         t = max(0.0, d.length if d.dot(hit[1]) >= 0.0 else -d.length) * k_t
     q = Vector((x, 0.0, z)) - C
-    inside = max(0.0, (R + EPS + t) ** 2 - q.x * q.x - q.z * q.z)
+    inside = max(0.0, (R + p.get('eps', EPS) + t) ** 2 - q.x * q.x - q.z * q.z)
     return C + Vector((q.x, -math.sqrt(inside), q.z))
+
+
+def clean_brows_source(bm, p):
+    """Removes stray eyelash islands bundled inside Quaternius eyebrow meshes (keeps only the top 2 islands = brows)
+    and optionally thickens the brows vertically around each island's centreline before projection."""
+    visited = set()
+    islands = []
+    for f in bm.faces:
+        if f in visited:
+            continue
+        comp = []
+        stack = [f]
+        visited.add(f)
+        while stack:
+            cur = stack.pop()
+            comp.append(cur)
+            for v in cur.verts:
+                for nf in v.link_faces:
+                    if nf not in visited:
+                        visited.add(nf)
+                        stack.append(nf)
+        verts = list({v for cf in comp for v in cf.verts})
+        mean_z = sum(v.co.z for v in verts) / max(1, len(verts))
+        islands.append((mean_z, comp, verts))
+    keep_n = int(p.get('keep_top_islands', 2))
+    if len(islands) > keep_n:
+        islands.sort(key=lambda item: -item[0])
+        drop_faces = [f for _, comp, _ in islands[keep_n:] for f in comp]
+        bmesh.ops.delete(bm, geom=drop_faces, context='FACES')
+        loose = [v for v in bm.verts if not v.link_faces]
+        if loose:
+            bmesh.ops.delete(bm, geom=loose, context='VERTS')
+        islands = islands[:keep_n]
+    scale_z = float(p.get('brow_scale_z', 1.0))
+    if scale_z != 1.0:
+        for _, _, verts in islands:
+            live = [v for v in verts if v.is_valid]
+            if not live:
+                continue
+            mz = sum(v.co.z for v in live) / len(live)
+            for v in live:
+                v.co.z = mz + (v.co.z - mz) * scale_z
 
 
 def fit(piece, packs):
@@ -346,12 +841,18 @@ def fit(piece, packs):
     cols = []                                         # the source's materials: [name, colour]
     for n in names:
         o = bpy.data.objects[n]
+        base_m = len(cols)
         for slot in o.material_slots:
             cols.append([slot.material.name if slot.material else 'm', base_colour(slot.material)])
         src = world_mesh(o)
         me = bpy.data.meshes.new('tmp')
         src.to_mesh(me)
+        prev = len(bm.faces)
         bm.from_mesh(me)
+        bm.faces.ensure_lookup_table()
+        if base_m:
+            for f in bm.faces[prev:]:
+                f.material_index += base_m
     for f in bm.faces:
         f.smooth = True
     if p.get('shift'):                               # (a piece made for another of the pack's heads: moved onto the one measured)
@@ -375,6 +876,21 @@ def fit(piece, packs):
         bmesh.ops.delete(bm, geom=gone, context='FACES')
         loose = [v for v in bm.verts if not v.link_faces]
         bmesh.ops.delete(bm, geom=loose, context='VERTS')
+    if kind == 'cuerpo' and p.get('trim_tie_back'):    # keep only front knot + blade of tie, shortened to waist
+        gone = [f for f in bm.faces if f.material_index == 1 and sum(v.co.y for v in f.verts) / len(f.verts) > -0.22]
+        if gone:
+            bmesh.ops.delete(bm, geom=gone, context='FACES')
+            loose = [v for v in bm.verts if not v.link_faces]
+            if loose:
+                bmesh.ops.delete(bm, geom=loose, context='VERTS')
+        tie_vs = [v for v in bm.verts if v.link_faces and all(f.material_index == 1 for f in v.link_faces)]
+        if tie_vs:
+            tz_hi = max(v.co.z for v in tie_vs)
+            tz_lo = min(v.co.z for v in tie_vs)
+            tie_scale = float(p.get('tie_scale', 0.72))
+            if tz_hi > tz_lo + 0.1:
+                for v in tie_vs:
+                    v.co.z = tz_hi - (tz_hi - v.co.z) * tie_scale
     if kind == 'cuerpo' and p.get('cut_x'):          # (our people have no arms: the sleeves go)
         gone = [f for f in bm.faces if any(abs(v.co.x) > p['cut_x'] for v in f.verts)]
         bmesh.ops.delete(bm, geom=gone, context='FACES')
@@ -383,6 +899,8 @@ def fit(piece, packs):
         bmesh.ops.delete(bm, geom=gone, context='FACES')
         loose = [v for v in bm.verts if not v.link_faces]
         bmesh.ops.delete(bm, geom=loose, context='VERTS')
+    if kind == 'cejas' and p.get('keep_top_islands'):
+        clean_brows_source(bm, p)
     subd = piece.get('subd', p.get('subd', 0))
     if subd:
         bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=1, use_grid_fill=True, smooth=1.0)
@@ -403,12 +921,24 @@ def fit(piece, packs):
                 v.co = put_on_body(v.co.copy(), tree, p, k_t)
             else:
                 v.co = put_on_ball(v.co.copy(), tree, p, kind, k_t)
+    if kind == 'pelo':
+        refine_pelo(bm, p)
+    elif kind == 'barba':
+        refine_barba(bm, p)
+    elif kind == 'cuerpo' and p.get('refine_body'):
+        refine_cuerpo(bm, p)
     bm.normal_update()
     # the material with most of the piece first: that one takes the colour chosen in the game (hair, shirt, hat, shoes)
     count = {}
     for f in bm.faces:
         count[f.material_index] = count.get(f.material_index, 0) + 1
-    order = sorted(count, key=lambda i: -count[i])
+    override_cols = p.get('override_cols')
+    if override_cols:
+        for idx_s, rgb in override_cols.items():
+            ii = int(idx_s)
+            if ii < len(cols):
+                cols[ii][1] = (float(rgb[0]), float(rgb[1]), float(rgb[2]), 1.0)
+    order = sorted(count.keys()) if p.get('keep_mat_order') else sorted(count, key=lambda i: -count[i])
     remap = {old: new for new, old in enumerate(order)}
     for f in bm.faces:
         f.material_index = remap[f.material_index]
@@ -423,6 +953,16 @@ def fit(piece, packs):
     bm.to_mesh(mesh2)
     ob = bpy.data.objects.new('pieza', mesh2)
     bpy.context.scene.collection.objects.link(ob)
+    if p.get('decimate'):                             # keep overly dense source brows low-poly to match the 324-tri head
+        mod = ob.modifiers.new('Dec', 'DECIMATE')
+        mod.ratio = float(p['decimate'])
+        bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get()
+        ev = ob.evaluated_get(dg)
+        me_dec = bpy.data.meshes.new_from_object(ev)
+        ob.modifiers.clear()
+        ob.data = me_dec
+        mesh2 = me_dec
     print('COLORES', piece['name'], [(a.name, a.domain, a.data_type) for a in mesh2.color_attributes])
     if 'Col' in mesh2.color_attributes:
         for a in [a for a in mesh2.color_attributes if a.name != 'Col']:

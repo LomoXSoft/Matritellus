@@ -56,6 +56,12 @@ const HOP := 0.6
 var bat_t := 0.0           # > 0 while swinging the bat (seconds left): out it comes, round it goes, and away again
 const BAT_SWING := 0.7
 var _bat: Node3D
+var _eyes_open: Node3D
+var _eyes_closed: Node3D
+var _blink_wait := -1.0        # seconds until next blink (< 0 -> uninitialized random phase)
+var _blink_t := -1.0           # >= 0 while a blink is in progress
+var _blink_dur := 0.17         # total duration of the current blink (varies slightly each time)
+var _blink_double := false     # true when a natural quick double-blink is queued
 
 ## Henry's bat, kept after the ham (the user, 14 November 2026): drawn over the right shoulder, swung across from
 ## right to left, and put away again
@@ -212,21 +218,69 @@ func _acc(kind: String, hex: int, pos: Vector3, scl: Vector3) -> MeshInstance3D:
 func _r(at_y: float) -> float:
 	return (0.44 - (at_y - 0.245) * 0.18667) * _girth
 
-## a hoop round the body
+## exact surface radius of the 12-gon body cone at height y and angle ang (0 = front)
+func _r_at(at_y: float, ang: float) -> float:
+	var sector := fposmod(ang, TAU / 12.0) - TAU / 24.0
+	return _r(at_y) * (cos(TAU / 24.0) / cos(sector))
+
+static var _band_meshes := {}
+## a conical hoop hugging the body's slope (same 12-gon alignment as the body)
 func _band(hex: int, at_y: float, tall: float, extra := 0.007) -> void:
-	var r := _r(at_y - tall / 2.0) + extra
-	_acc("cyl", hex, Vector3(0, at_y, 0), Vector3(r, tall, r))
+	var y0 := at_y - tall / 2.0
+	var y1 := at_y + tall / 2.0
+	var key := "%d_%d_%d" % [int(round(y0 * 1000.0)), int(round(y1 * 1000.0)), int(round(extra * 1000.0))]
+	if not _band_meshes.has(key):
+		var c := CylinderMesh.new()
+		c.top_radius = (0.44 - (y1 - 0.245) * 0.18667) + extra
+		c.bottom_radius = (0.44 - (y0 - 0.245) * 0.18667) + extra
+		c.height = tall
+		c.radial_segments = 12
+		c.rings = 1
+		_band_meshes[key] = c
+	var mi := MeshInstance3D.new()
+	mi.mesh = _band_meshes[key]
+	mi.material_override = Parts.mat(hex)
+	mi.position = Vector3(0, at_y, 0)
+	mi.scale = Vector3(_girth, 1.0, _girth)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	inner.add_child(mi)
+
+## surface slope angle of the body cone for the current build width (radians)
+func _slope() -> float:
+	return atan(0.18667 * _girth)
 
 ## a strip lying on the body's surface, running up it at angle `ang` round the body (0 = front)
-func _strip(hex: int, ang: float, y0: float, y1: float, wide: float, lift := 0.012) -> void:
+func _strip(hex: int, ang: float, y0: float, y1: float, wide: float, lift := 0.012, depth := 0.02) -> void:
 	var ym := (y0 + y1) / 2.0
 	var r := _r(ym) + lift
-	var m := _acc("box", hex, Vector3(sin(ang) * r, ym, cos(ang) * r), Vector3(wide, (y1 - y0) * 1.02, 0.02))
-	m.rotation = Vector3(-0.185, ang, 0)
+	var m := _acc("box", hex, Vector3(sin(ang) * r, ym, cos(ang) * r), Vector3(wide, (y1 - y0) * 1.02, depth))
+	m.rotation = Vector3(-_slope(), ang, 0)
 
-func _dot(hex: int, ang: float, at_y: float, r: float) -> void:
-	var rr := _r(at_y) + 0.004
-	_acc("ball", hex, Vector3(sin(ang) * rr, at_y, cos(ang) * rr), Vector3.ONE * r)
+func _dot(hex: int, ang: float, at_y: float, r: float, flat := 0.45, extra := 0.002) -> void:
+	var rr := _r_at(at_y, ang) + extra
+	var m := _acc("ball", hex, Vector3(sin(ang) * rr, at_y, cos(ang) * rr), Vector3(r, r, maxf(r * flat, 0.008)))
+	m.rotation = Vector3(-_slope(), ang, 0)
+
+## flat multi-petal tropical hibiscus + palm leaves hugging the 12-gon body cone (for the Hawaiian shirt)
+func _hibiscus(ang: float, at_y: float, petal: int, leaf: int) -> void:
+	var sl := -_slope()
+	var rr := _r_at(at_y, ang)
+	var d_ang := 0.095
+	var d_y := 0.030
+	for p: Vector2 in [Vector2(-1.0, 0.7), Vector2(1.0, 0.7), Vector2(-1.0, -0.7), Vector2(1.0, -0.7)]:
+		var pa: float = ang + p.x * d_ang
+		var py: float = at_y + p.y * d_y
+		var pr := _r_at(py, pa) + 0.003
+		var pm := _acc("ball", petal, Vector3(sin(pa) * pr, py, cos(pa) * pr), Vector3(0.030, 0.028, 0.008))
+		pm.rotation = Vector3(sl, pa, 0)
+	for side: float in [-1.0, 1.0]:
+		var la: float = ang + side * 0.165
+		var ly: float = at_y - 0.015 * side
+		var lr := _r_at(ly, la) + 0.001
+		var lm := _acc("ball", leaf, Vector3(sin(la) * lr, ly, cos(la) * lr), Vector3(0.034, 0.018, 0.007))
+		lm.rotation = Vector3(sl, la, side * 0.45)
+	var cm := _acc("ball", 0xf2c230, Vector3(sin(ang) * (rr + 0.006), at_y, cos(ang) * (rr + 0.006)), Vector3(0.017, 0.017, 0.008))
+	cm.rotation = Vector3(sl, ang, 0)
 
 ## (re)builds the visible character; safe to call again when the look changes (character creation)
 func set_look(o: Dictionary) -> void:
@@ -244,50 +298,44 @@ func set_look(o: Dictionary) -> void:
 	var hair = o.get("hair", 0x4a3424)
 	var hair_c: int = hair if hair != null else 0x4a3424
 	_girth = float(o.get("build", 1.0))
-	_hx = 0.46 * _girth
-	_add("body", o["shirt"], Vector3(0, 0.62, 0), Vector3(_girth, 1.0, _girth))
+	var top_id: int = int(o.get("top", 0))
+	_hx = _r(0.68) + 0.096 + _top_pad(top_id) * _girth * 0.62
+	var body_hex: int = o["shirt"]
+	if top_id == 2:                                                  # suit and tie: crisp white shirt (soft ice-blue under a white jacket)
+		var sc0 := Parts.col(body_hex)
+		body_hex = 0xdbe6f2 if sc0.r * 0.3 + sc0.g * 0.59 + sc0.b * 0.11 > 0.85 else 0xf4f1e8
+	elif top_id == 22:                                               # dress: bare shoulders / neckline above the bodice
+		body_hex = skin
+	elif top_id == 24:                                               # lab/work coat: Colour 2 undershirt, or scrub-blue / white contrast
+		var s2_b: int = int(o.get("shirt2", -1))
+		if s2_b >= 0:
+			body_hex = s2_b
+		else:
+			var sc_b := Parts.col(body_hex)
+			body_hex = 0x3b78a8 if sc_b.r * 0.3 + sc_b.g * 0.59 + sc_b.b * 0.11 > 0.72 else 0xf4f1e8
+	elif top_id == FIRST_ROPA + 4 or top_id == FIRST_ROPA + 5:       # open-front waistcoat and cardigan show a contrasting undershirt
+		var sc := Parts.col(body_hex)
+		body_hex = 0x2a2d36 if sc.r * 0.3 + sc.g * 0.59 + sc.b * 0.11 > 0.72 else 0xf4f1e8
+	_add("body", body_hex, Vector3(0, 0.62, 0), Vector3(_girth, 1.0, _girth))
 	_add("head", skin, Vector3(0, 1.38, 0), Vector3.ONE)
-	_clothes(int(o.get("top", 0)), o["shirt"], skin)
+	_clothes(top_id, o["shirt"], skin)
 	# eyes, cheeks, brows
 	var eye_c: int = o.get("eye_color", 0x5a3a22)
 	var eyes: int = o.get("eyes", 0)
-	var ew := 0.078        # half-width and half-height of the white of the eye
-	var eh := 0.098
-	if eyes == 1:
-		ew = 0.1; eh = 0.125
-	elif eyes == 2:
-		ew = 0.085; eh = 0.052
-	var iris := minf(ew * 0.64, eh * 0.86)
-	var brows: int = o.get("brows", 3)
+	var lashes: int = o.get("lashes", 0)
+	var eh := _eyes(eyes, eye_c, lashes, skin)
 	for sx in [-1.0, 1.0]:
-		var ex: float = sx * 0.17
-		_acc("ball", 0x17110d, Vector3(ex, 1.42, 0.446), Vector3(ew + 0.017, eh + 0.017, 0.04))     # dark outline
-		_acc("ball", 0xffffff, Vector3(ex, 1.42, 0.456), Vector3(ew, eh, 0.045))                 # white
-		_acc("ball", eye_c, Vector3(ex, 1.415, 0.478), Vector3(iris, iris, 0.03))                  # iris: the only part that takes the eye colour
-		_acc("ball", 0x0c0908, Vector3(ex, 1.415, 0.492), Vector3(iris * 0.5, iris * 0.5, 0.02))  # pupil
-		_acc("ball", 0xffffff, Vector3(ex + 0.02, 1.415 + iris * 0.45, 0.5), Vector3.ONE * 0.012) # glint
 		_acc("ball", 0xf59a8c, Vector3(sx * 0.3, 1.27, 0.37), Vector3(0.09, 0.06, 0.04))
-		var lashes: int = o.get("lashes", 0)
-		if lashes > 0:                       # eyelashes: little dark strokes fanning out from the top of the eye, outwards
-			for k in range(3 if lashes == 1 else 4):
-				var t := (k + 0.5) / (3.0 if lashes == 1 else 4.0)                  # 0 by the nose .. 1 at the outer corner
-				var lx: float = ex + sx * ew * (t * 1.9 - 0.75)
-				var lash := _acc("box", 0x17110d, Vector3(lx, 1.42 + eh * (1.0 - 0.45 * t * t) + (0.02 if lashes == 1 else 0.035), 0.462), Vector3(0.012 if lashes == 1 else 0.016, 0.04 if lashes == 1 else 0.075, 0.012))
-				lash.rotation.z = -sx * (0.15 + t * 0.75)
-		if brows == 0 or brows == 1:
-			var b := _acc("box", hair_c, Vector3(sx * 0.17, 1.42 + eh + 0.05, 0.45), Vector3(0.15, 0.03 if brows == 0 else 0.065, 0.04))
-			b.rotation.z = sx * -0.15
-	if brows == 2:
-		_acc("box", hair_c, Vector3(0, 1.42 + eh + 0.05, 0.46), Vector3(0.46, 0.06, 0.04))
-	elif brows >= FIRST_CEJAS and brows - FIRST_CEJAS < CEJAS.size():      # (fitted over eyes of the ordinary size: up or down with bigger or smaller ones)
-		_pieza_on(CEJAS[brows - FIRST_CEJAS], hair_c, 0, eh - 0.098)
+	var brows: int = o.get("brows", 3)
+	_brows(brows, hair_c, eh)
 	_beard(int(o.get("face", 0)), hair_c, skin)
 	if int(o.get("barba3", 0)) == 1 and int(o.get("face", 0)) != 5:      # (three days' beard: an option of its own, with any beard or none)
 		_barba3(hair_c)
 	var ankle: int = o.get("socks", skin)            # (socks under sandals or slides: the foot shows in their colour)
 	var shod: int = int(o.get("shoe_type", FIRST_CALZADO))     # (neighbours who say nothing of it: the new trainers, as the user asked on 16 Nov 2026)
-	_fl = _foot(-0.17, shoes, shod, ankle)
-	_fr = _foot(0.17, shoes, shod, ankle)
+	var fx: float = 0.17 * lerpf(1.0, _girth, 0.55)
+	_fl = _foot(-fx, shoes, shod, ankle)
+	_fr = _foot(fx, shoes, shod, ankle)
 	_hl = Parts.part("ball", skin, Vector3(-_hx, 0.68, 0), HAND_SIZE)
 	_hr = Parts.part("ball", skin, Vector3(_hx, 0.68, 0), HAND_SIZE)
 	for n in [_fl, _fr, _hl, _hr]:
@@ -301,8 +349,9 @@ func set_look(o: Dictionary) -> void:
 	var hatc: int = o.get("hat_color", 0xd9643a)
 	match hat:
 		"beret":
-			_add("ball", 0x26262b, Vector3(0.04, 1.84, 0), Vector3(0.46, 0.13, 0.46))
-			_add("ball", 0x26262b, Vector3(0, 1.98, 0), Vector3.ONE * 0.05)
+			var brt := _add("ball", 0x26262b, Vector3(0.04, 1.79, -0.01), Vector3(0.50, 0.145, 0.50))
+			brt.rotation.z = -0.10
+			_add("ball", 0x26262b, Vector3(0.055, 1.935, -0.01), Vector3.ONE * 0.048)
 		"bun":
 			_add("ball", hair_c, Vector3(0, 1.93, -0.12), Vector3.ONE * 0.2)
 		"tricorn":
@@ -327,9 +376,13 @@ func set_look(o: Dictionary) -> void:
 				mk.position = Vector3(0, 1.8, 0.482)
 				mk.rotation.x = -0.5
 				neck.add_child(mk)
-		"chef":
-			_add("cyl", 0xffffff, Vector3(0, 1.9, 0), Vector3(0.37, 0.24, 0.37))
-			_add("ball", 0xffffff, Vector3(0, 2.1, 0), Vector3(0.46, 0.2, 0.46))
+		"chef":                                      # classic pleated Animal Crossing chef toque (crisp dark outline rim + band + puffy cloud crown)
+			_add("cyl", 0x38363a, Vector3(0, 1.70, 0), Vector3(0.432, 0.026, 0.432))
+			_add("cyl", 0xf8f8f6, Vector3(0, 1.825, 0), Vector3(0.415, 0.23, 0.415))
+			_add("ball", 0xf8f8f6, Vector3(0, 2.03, 0), Vector3(0.43, 0.21, 0.43))
+			for k in range(6):
+				var a := k * TAU / 6.0
+				_add("ball", 0xf8f8f6, Vector3(sin(a) * 0.20, 2.01, cos(a) * 0.20), Vector3(0.27, 0.18, 0.27))
 		"straw":                                     # (down onto the head where it is as wide as the crown: it used to sit up on top, 16 Nov 2026)
 			_add("cyl", 0xe6c56a, Vector3(0, 1.69, 0), Vector3(0.78, 0.04, 0.78))
 			_add("cyl", 0xe6c56a, Vector3(0, 1.79, 0), Vector3(0.4, 0.22, 0.4))
@@ -411,46 +464,39 @@ func _cigarette() -> void:
 	puff.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	cig.add_child(puff)
 
-## One foot, shod: 0 trainers · 1 boots · 2 alpargatas (canvas on a rope sole, ribbons round the ankle) · 3 flip-flops
+## One foot, shod: 0 canvas trainers · 1 boots · 2 alpargatas · 3 flip-flops · 4 barefoot · 5..14 custom shoes (CALZADO)
 func _foot(x: float, hex: int, kind: int, skin: int) -> Node3D:
 	var f := Node3D.new()
 	f.position = Vector3(x, 0.13, 0.05)
-	var put := func(shape: String, colour: int, pos: Vector3, scl: Vector3) -> void:
+	var put := func(shape: String, colour: int, pos: Vector3, scl: Vector3) -> MeshInstance3D:
 		var m := Parts.part(shape, colour, pos, scl)
 		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		f.add_child(m)
+		return m
 	if kind == BAREFOOT:                         # nothing on: the plain foot, a ball (the user: "pies estándar sin calzado (dos bolas)")
 		put.call("ball", skin, Vector3(0, -0.02, 0.02), Vector3(0.14, 0.11, 0.18))
 		return f
-	if kind >= FIRST_CALZADO:                    # a shoe from free models, in the colour chosen; the left one the right one mirrored
-		var m := pieza(CALZADO[kind - FIRST_CALZADO]) if kind - FIRST_CALZADO < CALZADO.size() else null
-		if m != null:
-			var shoe := _dressed(m, hex)
-			shoe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			if x > 0.0:
-				shoe.scale.x = -1.0
-			f.add_child(shoe)
-			if CALZADO[kind - FIRST_CALZADO] in OPEN_SHOES:     # (sandals and heels: the foot shows, bare or in its socks)
-				put.call("ball", skin, Vector3(0, -0.035, 0.01), Vector3(0.115, 0.075, 0.165))
-			return f
-	match kind:
-		1:      # boots: up over the ankle, a thick dark sole
-			put.call("ball", hex, Vector3.ZERO, Vector3(0.155, 0.135, 0.205))
-			put.call("cyl", hex, Vector3(0, 0.13, -0.06), Vector3(0.125, 0.24, 0.125))
-			put.call("box", 0x26262b, Vector3(0, -0.105, 0.01), Vector3(0.3, 0.05, 0.42))
-		2:      # alpargatas
-			put.call("box", 0xd9b36a, Vector3(0, -0.1, 0.01), Vector3(0.28, 0.055, 0.4))
-			put.call("ball", hex, Vector3(0, -0.02, 0.02), Vector3(0.14, 0.09, 0.19))
-			put.call("box", hex, Vector3(0, 0.07, -0.07), Vector3(0.2, 0.025, 0.025))
-			put.call("box", hex, Vector3(0, 0.12, -0.08), Vector3(0.18, 0.025, 0.025))
-		3:      # flip-flops: the foot shows
-			put.call("box", hex, Vector3(0, -0.105, 0.01), Vector3(0.26, 0.04, 0.4))
-			put.call("ball", skin, Vector3(0, -0.03, 0.0), Vector3(0.12, 0.085, 0.17))
-			put.call("box", hex, Vector3(0, 0.035, 0.06), Vector3(0.25, 0.03, 0.045))
-		_:      # trainers: a white sole and toe
-			put.call("ball", hex, Vector3.ZERO, Vector3(0.15, 0.13, 0.2))
-			put.call("box", 0xf4f1e8, Vector3(0, -0.1, 0.01), Vector3(0.29, 0.045, 0.4))
-			put.call("ball", 0xf4f1e8, Vector3(0, -0.03, 0.15), Vector3(0.11, 0.07, 0.07))
+	var shoe_name := ""
+	if kind >= FIRST_CALZADO and kind - FIRST_CALZADO < CALZADO.size():
+		shoe_name = CALZADO[kind - FIRST_CALZADO]
+	elif kind >= 0 and kind < CALZADO_BASE.size():
+		shoe_name = CALZADO_BASE[kind]
+	var m := pieza(shoe_name) if shoe_name != "" else null
+	if m != null:
+		var shoe := _dressed(m, hex)
+		shoe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if x > 0.0:
+			shoe.scale.x = -1.0
+		f.add_child(shoe)
+		if shoe_name == "calzado_tacones":       # lifted & pitched inside the arched heel so the foot never pokes underneath
+			var ft: MeshInstance3D = put.call("ball", skin, Vector3(0, 0.015, 0.005), Vector3(0.088, 0.062, 0.142))
+			ft.rotation.x = 0.24
+		elif shoe_name == "calzado_bailarinas":  # clean instep showing through the low-cut ballet flat opening
+			put.call("ball", skin, Vector3(0, -0.025, 0.005), Vector3(0.095, 0.065, 0.138))
+		elif shoe_name in OPEN_SHOES:            # flip-flops & sandals: bare/sock foot sitting on the contoured footbed
+			put.call("ball", skin, Vector3(0, -0.028, 0.015), Vector3(0.105, 0.068, 0.160))
+		return f
+	put.call("ball", hex, Vector3.ZERO, Vector3(0.15, 0.13, 0.2))
 	return f
 
 # ---------------- clothes ----------------
@@ -458,24 +504,63 @@ func _clothes(top: int, shirt: int, skin: int) -> void:
 	if top == PENA_TEE:                          # the peña's T-shirt: plain, in the peña's colour (creator.gd look), its logo printed on the chest
 		_pena_print(int(look.get("pena", 0)))
 		return
+	var sc := Parts.col(shirt)
+	var detail: int = 0x2a2a30 if sc.r * 0.3 + sc.g * 0.59 + sc.b * 0.11 > 0.55 else 0xf4f1e8
+	if top == 22:                                # dress (CC0 Cocktail Dress + waist sash in Colour 2)
+		_wear("ropa_vestido", shirt, false)
+		var s2_v: int = int(look.get("shirt2", -1))
+		var sash: int = s2_v if s2_v >= 0 else (0x2a2d36 if sc.r * 0.3 + sc.g * 0.59 + sc.b * 0.11 > 0.72 else 0xf4f1e8)
+		_band(sash, 0.58, 0.055, 0.040)
+		return
+	if top == 23:                                # Hawaiian shirt: open camp collar, coconut buttons, flat tropical hibiscus + palm leaves
+		var col_c := _mix(shirt, 0xffffff, 0.25)
+		for sx in [-1.0, 1.0]:
+			var c := _acc("box", col_c, Vector3(sx * 0.12, 0.962, _r(0.96) - 0.005), Vector3(0.16, 0.068, 0.045))
+			c.rotation.z = sx * 0.62
+		_dot(skin, 0.0, 0.965, 0.058, 0.25, 0.005)
+		for by in [0.82, 0.67, 0.52, 0.37]:
+			_dot(0xd9b37c, 0.0, by, 0.018, 0.45, 0.004)
+		var warm := sc.r > 0.6 and sc.g < 0.48
+		var petals: Array = [0xfaf6ee, 0x3bc2c2, 0xf7c948] if warm else [0xf2647d, 0xfaf6ee, 0xff9f43]
+		var leaf_c: int = 0x1e6b3a if sc.g > 0.55 and sc.r < 0.55 else 0x2e8b57
+		var spots := [
+			Vector2(0.55, 0.76), Vector2(-0.62, 0.56), Vector2(0.45, 0.40),
+			Vector2(-1.35, 0.72), Vector2(1.42, 0.50), Vector2(-1.50, 0.36),
+			Vector2(2.35, 0.74), Vector2(-2.40, 0.54), Vector2(2.75, 0.38), Vector2(3.14, 0.72),
+		]
+		for i in range(spots.size()):
+			var sp: Vector2 = spots[i]
+			_hibiscus(sp.x, sp.y, int(petals[i % petals.size()]), leaf_c)
+		return
+	if top == 24:                                # lab/work coat (CC0 buttoned Blazer + buttons + pockets + pen)
+		_wear("ropa_bata", shirt, false)
+		var pock_c := _mix(shirt, detail, 0.22)
+		for by in [0.68, 0.53, 0.38]:
+			_dot(detail, 0.0, by, 0.019, 0.40, 0.043 * _girth)
+		for sx in [-1.0, 1.0]:
+			_strip(pock_c, sx * 0.46, 0.31, 0.46, 0.135 * _girth, 0.044 * _girth, 0.014)
+		_strip(pock_c, -0.44, 0.68, 0.78, 0.092 * _girth, 0.043 * _girth, 0.014)
+		_strip(0x2f6bb5, -0.42, 0.76, 0.83, 0.018, 0.047 * _girth, 0.014)      # pocket pen
+		return
 	if top >= FIRST_ROPA:
 		if top - FIRST_ROPA < ROPA.size():
 			_wear(ROPA[top - FIRST_ROPA], shirt, false, [int(look.get("shirt2", -1)), int(look.get("shirt3", -1))])      # (its other parts: colour 2 and 3)
 		return
-	var sc := Parts.col(shirt)
-	var detail: int = 0x2a2a30 if sc.r * 0.3 + sc.g * 0.59 + sc.b * 0.11 > 0.55 else 0xf4f1e8
+	var cw: float = lerpf(1.0, _girth, 0.65)
 	var collar := func(hex: int) -> void:
 		for sx in [-1.0, 1.0]:
-			var c := _acc("box", hex, Vector3(sx * 0.1, 0.965, _r(0.96) - 0.005), Vector3(0.17, 0.07, 0.05))
+			var c := _acc("box", hex, Vector3(sx * 0.1 * cw, 0.965, _r(0.96) - 0.005), Vector3(0.17 * cw, 0.07, 0.05))
 			c.rotation.z = sx * 0.55
 	match top:
 		1:      # shirt: a collar and a row of buttons
 			collar.call(_mix(shirt, 0xffffff, 0.45))
 			for by in [0.84, 0.69, 0.54, 0.39]:
 				_dot(detail, 0.0, by, 0.022)
-		2:      # striped T-shirt
-			for by in [0.84, 0.64, 0.44]:
-				_band(detail, by, 0.085)
+		2:      # suit and tie (CC0 OverScore Proxy: buttoned Blazer + Neck Tie)
+			_wear("ropa_traje", shirt, false, [int(look.get("shirt2", -1)), int(look.get("shirt3", -1))])
+			var btn := _mix(shirt, 0x18181c, 0.55)
+			for by in [0.60, 0.45]:
+				_dot(btn, 0.0, by, 0.018, 0.40, 0.043 * _girth)
 		3:      # checked shirt
 			collar.call(_mix(shirt, 0xffffff, 0.45))
 			for by in [0.86, 0.7, 0.54, 0.38]:
@@ -498,13 +583,14 @@ func _clothes(top: int, shirt: int, skin: int) -> void:
 		6:      # shirt and braces
 			collar.call(_mix(shirt, 0xffffff, 0.45))
 			_band(0x3a3a40, 0.36, 0.22, 0.012)
+			var brace := 0x2a3b5c if sc.r > 0.6 and sc.g < 0.48 else 0xb23a3a
 			for sx in [-1.0, 1.0]:
-				_strip(0xb23a3a, sx * 0.4, 0.46, 0.985, 0.055)
-				_strip(0xb23a3a, PI + sx * 0.4, 0.46, 0.985, 0.055)
+				_strip(brace, sx * 0.4, 0.46, 0.985, 0.055)
+				_strip(brace, PI + sx * 0.4, 0.46, 0.985, 0.055)
 		7:      # a housecoat with flowers on it
 			collar.call(_mix(shirt, 0xffffff, 0.6))
 			for i in range(16):
-				_dot([0xf4f1e8, 0xef8fa9, 0xf2c230, 0xf4f1e8][i % 4], i * 2.4, 0.3 + fmod(i * 0.37, 0.62), 0.036)
+				_dot([0xf4f1e8, 0xef8fa9, 0xf2c230, 0xf4f1e8][i % 4], i * 2.4, 0.3 + fmod(i * 0.37, 0.62), 0.036, 0.25)
 			for by in [0.82, 0.62, 0.42]:
 				_dot(detail, 0.0, by, 0.024)
 		9:      # a black leather jacket, open over the top, and a skirt with red all over it
@@ -532,10 +618,10 @@ func _clothes(top: int, shirt: int, skin: int) -> void:
 				_dot(0x2a1c14, i * 2.4, 0.26 + fmod(i * 0.37, 0.2), 0.03)
 				_dot(0x7a5230, i * 2.4 + 0.07, 0.27 + fmod(i * 0.37, 0.2), 0.017)
 		8:      # a vest: bare shoulders
-			_band(skin, 0.955, 0.09, 0.004)
+			_band(skin, 0.948, 0.098, 0.005)
 			for sx in [-1.0, 1.0]:
-				_strip(shirt, sx * 0.36, 0.9, 0.995, 0.09, 0.016)
-				_strip(shirt, PI + sx * 0.36, 0.9, 0.995, 0.09, 0.016)
+				_strip(shirt, sx * 0.46, 0.896, 0.996, 0.068, 0.004, 0.012)
+				_strip(shirt, PI + sx * 0.46, 0.896, 0.996, 0.068, 0.004, 0.012)
 
 # ---------------- hair, beards and eyebrows from free models ----------------
 ## The user, 16 November 2026: "Tenemos que importar assets de peinados, barbas y cejas, los que tenemos son muy básicos
@@ -607,14 +693,17 @@ const SOMBREROS := {"parpusa": "gorro_parpusa", "fedora": "gorro_fedora", "bombi
 	"vaquero": "gorro_vaquero"}
 const ROPA := ["ropa_camisa_cuello", "ropa_sudadera_capucha", "ropa_jersey_cuello_alto", "ropa_plumas", "ropa_chaleco", "ropa_rebeca",
 	"ropa_reflectante", "ropa_futbol", "ropa_marinera", "ropa_anorak"]       # top 11 on
-const CUELLO := ["cuello_corbata", "cuello_pajarita", "cuello_delantal", "cuello_bufanda"]       # pendant 6 on
+const CUELLO := ["cuello_corbata", "cuello_pajarita", "cuello_delantal", "cuello_bufanda",
+	"cuello_camara", "cuello_flores", "cuello_gargantilla"]       # pendant 6 on
+const GAFAS := {5: "gafas_sol", 6: "gafas_aviador", 8: "gafas_gato", 9: "gafas_corazon", 11: "gafas_parche"}
+const CALZADO_BASE := ["calzado_lona", "calzado_botas", "calzado_alpargatas", "calzado_chanclas"]  # shoe_type 0..3
 const CALZADO := ["calzado_zapatillas", "calzado_botas_faena", "calzado_botas_agua", "calzado_sandalias", "calzado_bailarinas",
-	"calzado_camperas", "calzado_zapatillas_casa", "calzado_tacones"]        # shoe_type 5 on (4: bare feet)
+	"calzado_camperas", "calzado_zapatillas_casa", "calzado_tacones", "calzado_misa", "calzado_zuecos"]  # shoe_type 5..14 (4: bare feet)
 const FIRST_ROPA := 11
 const FIRST_CUELLO := 6
 const BAREFOOT := 4
 const FIRST_CALZADO := 5
-const OPEN_SHOES := ["calzado_sandalias", "calzado_tacones"]
+const OPEN_SHOES := ["calzado_chanclas", "calzado_sandalias", "calzado_bailarinas", "calzado_tacones"]
 static var _own_mats := {}
 
 ## a piece in its colours: the first part in `hex`, the others in `extra` (the creator's colour 2 and 3 of the clothes;
@@ -695,7 +784,12 @@ func _rulos(hair: int, cut: int) -> void:
 ## the nape, up to the hairline in front -- in a see-through grey, its edge fading out. Built once (_rasurado_mesh).
 const CALVO := 32                               # hair_style
 const RASURADO := 33
+const CORTITO := 17                             # buzz cut (1-2 mm) in the hair's own colour (replaces Pelusilla, which was a clone of Tazón; 22 Nov 2026)
+const CUATRO_PELOS := 34                        # four stylized cartoon strands springing from a bare crown (22 Nov 2026)
 static var _rasurado_mesh: ArrayMesh
+static var _cortito_mesh: ArrayMesh
+static var _cortito_mats := {}
+static var _cuatro_mesh: ArrayMesh
 static var _barba3_mesh: ArrayMesh
 static var _shave_mat: StandardMaterial3D
 
@@ -738,12 +832,12 @@ static func _shave_zone(alpha: Callable, e0: float, e1: float) -> ArrayMesh:
 static var _barba3_mats := {}
 func _barba3(hex: int) -> void:
 	if _barba3_mesh == null:
-		const FADE := 6.0
+		const FADE := 8.5
 		_barba3_mesh = _shave_zone(func(b: float, e: float) -> float:
 			var side: float = absf(b)                                   # 0 in front, PI/2 at the ears
-			var top: float = lerpf(-11.0, -21.0, smoothstep(0.0, 0.75, side)) + 26.0 * smoothstep(0.8, 1.45, side)      # up to under the nose in front, below the blush, up the sideburns to the ears
+			var top: float = lerpf(-11.0, -22.0, smoothstep(0.0, 0.72, side)) + 16.0 * smoothstep(0.82, 1.38, side)      # up to under the nose, below the blush, softening into sideburns
 			var a_top: float = 1.0 - smoothstep(top - FADE, top, e)
-			var a_side: float = 1.0 - smoothstep(1.55, 1.8, side)          # (not round the back of the neck)
+			var a_side: float = 1.0 - smoothstep(1.36, 1.72, side)         # softer profile taper (not a hard vertical block)
 			return a_top * a_side, -75.0, 12.0)
 	var mi := MeshInstance3D.new()
 	mi.mesh = _barba3_mesh
@@ -764,6 +858,101 @@ func _rasurado(hair: int) -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = _rasurado_mesh
 	mi.material_override = _shave_mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	neck.add_child(mi)
+
+## Buzz cut (1-2 mm) flush against the skull, in the hair's own colour (22 Nov 2026: "Cortito"): richer and more covered
+## than Rasurao (which is a faint grey shave shadow), with a real hairline and subtle sideburns, and zero helmet bulk.
+func _cortito(hex: int) -> void:
+	if _cortito_mesh == null:
+		const FADE := 5.0
+		_cortito_mesh = _shave_zone(func(b: float, e: float) -> float:
+			var side := absf(b)                                          # 0 front, PI/2 sides, PI back
+			var base: float = lerpf(-18.0, 30.0, pow((1.0 + cos(b)) / 2.0, 1.5))
+			# subtle sideburn dip around the temples (~65..95 deg)
+			var burn := 14.0 * exp(-pow((side - 1.38) / 0.24, 2.0))
+			var lowest := base - burn
+			return smoothstep(lowest, lowest + FADE, e), -30.0, 90.0)
+	if not _cortito_mats.has(hex):
+		var m := _shave_mat.duplicate() as StandardMaterial3D
+		m.albedo_color = Color(Parts.col(hex), 0.86)
+		_cortito_mats[hex] = m
+	var mi := MeshInstance3D.new()
+	mi.mesh = _cortito_mesh
+	mi.material_override = _cortito_mats[hex]
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	neck.add_child(mi)
+
+## Four stylized low-poly hair strands arching out of an otherwise bare crown (22 Nov 2026: "Cuatro pelos").
+## Built once as tapered curved tubes so the silhouette and screen-space outlines stay crisp from every angle.
+static func _add_strand(st: SurfaceTool, pts: Array, r0: float, r1: float, sides := 6) -> void:
+	var n := pts.size()
+	var rings: Array = []
+	for i in range(n):
+		var p: Vector3 = pts[i]
+		var tang: Vector3
+		if i == 0:
+			tang = (pts[1] - pts[0]).normalized()
+		elif i == n - 1:
+			tang = (pts[n - 1] - pts[n - 2]).normalized()
+		else:
+			tang = (pts[i + 1] - pts[i - 1]).normalized()
+		var ref := Vector3.RIGHT if absf(tang.dot(Vector3.RIGHT)) < 0.85 else Vector3.FORWARD
+		var u := tang.cross(ref).normalized()
+		var v := tang.cross(u).normalized()
+		var t := float(i) / float(n - 1)
+		var rad := lerpf(r0, r1, t * t)
+		var ring: Array = []
+		for k in range(sides):
+			var a := TAU * float(k) / float(sides)
+			var dir := u * cos(a) + v * sin(a)
+			ring.append([p + dir * rad, dir])
+		rings.append(ring)
+	for i in range(n - 1):
+		var a: Array = rings[i]
+		var b: Array = rings[i + 1]
+		for k in range(sides):
+			var kn := (k + 1) % sides
+			for q in [a[k], b[k], b[kn], a[k], b[kn], a[kn]]:
+				st.set_normal(q[1])
+				st.add_vertex(q[0])
+	# close tip
+	var tip: Vector3 = pts[n - 1]
+	var tn: Vector3 = ((pts[n - 1] as Vector3) - (pts[n - 2] as Vector3)).normalized()
+	var last: Array = rings[n - 1]
+	for k in range(sides):
+		var kn := (k + 1) % sides
+		st.set_normal(last[k][1]); st.add_vertex(last[k][0])
+		st.set_normal(tn); st.add_vertex(tip + tn * r1 * 0.6)
+		st.set_normal(last[kn][1]); st.add_vertex(last[kn][0])
+
+func _cuatro_pelos(hex: int, cut: int) -> void:
+	if cut > 0:                                      # hidden cleanly under any hat
+		return
+	if _cuatro_mesh == null:
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		# 4 playful curved arcs springing from the top of the R=0.50 skull (centered at (0, 1.38, 0), face +z)
+		_add_strand(st, [
+			Vector3(-0.04, 1.855, 0.06), Vector3(-0.08, 1.955, 0.13),
+			Vector3(-0.16, 1.985, 0.21), Vector3(-0.22, 1.935, 0.26), Vector3(-0.24, 1.875, 0.275)
+		], 0.023, 0.008)
+		_add_strand(st, [
+			Vector3(0.01, 1.86, 0.01), Vector3(0.04, 1.99, 0.06),
+			Vector3(0.11, 2.045, 0.13), Vector3(0.165, 2.01, 0.18), Vector3(0.185, 1.95, 0.195)
+		], 0.025, 0.008)
+		_add_strand(st, [
+			Vector3(0.07, 1.855, -0.03), Vector3(0.145, 1.94, -0.01),
+			Vector3(0.23, 1.96, 0.01), Vector3(0.285, 1.905, 0.02), Vector3(0.30, 1.845, 0.025)
+		], 0.022, 0.007)
+		_add_strand(st, [
+			Vector3(-0.02, 1.85, -0.08), Vector3(-0.055, 1.955, -0.155),
+			Vector3(-0.105, 1.985, -0.225), Vector3(-0.145, 1.93, -0.27), Vector3(-0.16, 1.87, -0.285)
+		], 0.022, 0.007)
+		_cuatro_mesh = st.commit()
+	var mi := MeshInstance3D.new()
+	mi.mesh = _cuatro_mesh
+	mi.material_override = Parts.mat(hex)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	neck.add_child(mi)
 
@@ -795,6 +984,12 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 	if style == RASURADO:
 		_rasurado(hair)
 		return
+	if style == CORTITO:
+		_cortito(hair)
+		return
+	if style == CUATRO_PELOS:
+		_cuatro_pelos(hair, cut)
+		return
 	if style == RULOS:
 		_rulos(hair, cut)
 		return
@@ -821,14 +1016,14 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 			_add("ball", hair, Vector3(0, 1.76, -0.46), Vector3(0.27, 0.25, 0.27))
 		2:      # long, down to the shoulders
 			_add("ball", hair, Vector3(0, 1.22, -0.2), Vector3(0.5, 0.52, 0.36))
-		4:      # afro
+		4:      # afro (0.0.22: scaled closer to the head and centered so it no longer dwarfs the body)
 			if hatted:
 				for sx in [-1.0, 1.0]:
 					_add("ball", hair, Vector3(sx * 0.42, 1.36, -0.14), Vector3(0.24, 0.26, 0.3))
 				_add("ball", hair, Vector3(0, 1.34, -0.4), Vector3(0.44, 0.28, 0.26))
 			else:
-				_add("ball", hair, Vector3(0, 1.62, -0.2), Vector3(0.68, 0.6, 0.6))
-				_add("ball", hair, Vector3(0, 1.8, 0.2), Vector3(0.42, 0.2, 0.3))
+				_add("ball", hair, Vector3(0, 1.56, -0.08), Vector3(0.6, 0.54, 0.56))
+				_add("ball", hair, Vector3(0, 1.77, 0.12), Vector3(0.38, 0.18, 0.26))
 		5:      # ponytail
 			_add("ball", hair, Vector3(0, 1.62, -0.5), Vector3.ONE * 0.1)
 			_add("ball", hair, Vector3(0, 1.32, -0.6), Vector3(0.12, 0.32, 0.12))
@@ -838,144 +1033,746 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 					var a := -0.75 + k * 0.42
 					var spike := _add("cone", hair, Vector3(0, 1.4 + cos(a) * 0.62, -sin(a) * 0.62), Vector3(0.06, 0.34, 0.14))
 					spike.rotation.x = -a
-		7:      # pigtails
+		7:      # pigtails (0.0.22: seated closer against the temples with ties sitting cleanly on the join)
 			for sx in [-1.0, 1.0]:
-				_add("ball", hair, Vector3(sx * 0.52, 1.36, -0.1), Vector3(0.14, 0.27, 0.14))
-				_acc("ball", 0xd23b3b, Vector3(sx * 0.5, 1.56, -0.1), Vector3.ONE * 0.06)
+				var pig := _add("ball", hair, Vector3(sx * 0.47, 1.35, -0.1), Vector3(0.14, 0.24, 0.15))
+				pig.rotation.z = sx * 0.18
+				_acc("ball", 0xd23b3b, Vector3(sx * 0.45, 1.54, -0.1), Vector3.ONE * 0.055)
 		9:      # bob
 			_add("ball", hair, Vector3(0, 1.33, -0.12), Vector3(0.54, 0.4, 0.44))
-		11:     # curls
-			for i in range(11):
-				var phi := i * 2.4
-				var el := 0.25 + (i % 4) * 0.33
-				var at := Vector3(cos(el) * sin(phi), sin(el), cos(el) * cos(phi)) * 0.5
-				if (at.z > 0.24 and at.y < 0.36) or (hatted and at.y > 0.16):
+		11:     # curls (0.0.22: tighter, overlapping puffs seated closer to the skull for a cohesive silhouette)
+			for i in range(13):
+				var phi := i * 2.39996 + 0.45
+				var el := 0.22 + (i % 4) * 0.28
+				var at := Vector3(cos(el) * sin(phi), sin(el), cos(el) * cos(phi)) * 0.44
+				if (at.z > 0.2 and at.y < 0.32) or (hatted and at.y > 0.14):
 					continue                         # not over the face, not through the hat
-				_add("ball", hair, Vector3(0, 1.42, -0.04) + at, Vector3.ONE * 0.14)
-		12:     # a plait down the back
+				_add("ball", hair, Vector3(0, 1.42, -0.04) + at, Vector3.ONE * 0.165)
+		12:     # a plait down the back (0.0.22: slightly tighter bead overlap for a continuous braid silhouette)
 			for k in range(4):
-				_add("ball", hair, Vector3(0, 1.3 - k * 0.2, -0.5 + k * k * 0.004), Vector3.ONE * (0.13 - k * 0.012))
-			_acc("ball", 0xd23b3b, Vector3(0, 0.6, -0.47), Vector3.ONE * 0.05)
+				_add("ball", hair, Vector3(0, 1.34 - k * 0.165, -0.49 + k * k * 0.004), Vector3.ONE * (0.135 - k * 0.01))
+			_acc("ball", 0xd23b3b, Vector3(0, 0.74, -0.46), Vector3.ONE * 0.05)
+
+static var _happy_eye_mesh: ArrayMesh
+static var _blink_mesh: ArrayMesh
+static var _sliced_eye_cache := {}
+const _EYE_PIVOT_Y := 1.416
+
+## Cached D-shaped ellipsoid sliced cleanly along `ny <= cut_y + slope * nx`, eliminating any skin-box masking
+## artifact under screen-space ink outlines while keeping the signature forward-facing 3D relief.
+static func _sliced_ellipsoid(rx: float, ry: float, rz: float, cut_y: float, slope: float) -> ArrayMesh:
+	var key := "%d_%d_%d_%d_%d" % [int(round(rx * 1000.0)), int(round(ry * 1000.0)), int(round(rz * 1000.0)), int(round(cut_y * 1000.0)), int(round(slope * 1000.0))]
+	if _sliced_eye_cache.has(key):
+		return _sliced_eye_cache[key]
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const RINGS := 10
+	const SEGS := 20
+	var grid: Array = []
+	for r in range(RINGS + 1):
+		var phi: float = -PI * 0.5 + PI * float(r) / float(RINGS)
+		var row: Array = []
+		for s in range(SEGS + 1):
+			var th: float = TAU * float(s) / float(SEGS)
+			var nx: float = cos(phi) * cos(th)
+			var ny: float = sin(phi)
+			var nz: float = cos(phi) * sin(th)
+			var lim: float = cut_y + slope * nx
+			var cy: float = minf(ny, lim)
+			var p := Vector3(nx * rx, cy * ry, nz * rz)
+			var nrm := Vector3(nx / maxf(rx, 0.001), (1.0 if ny > lim else ny) / maxf(ry, 0.001), nz / maxf(rz, 0.001)).normalized()
+			row.append([p, nrm])
+		grid.append(row)
+	for r in range(RINGS):
+		for s in range(SEGS):
+			var a: Array = grid[r][s]
+			var b: Array = grid[r][s + 1]
+			var c: Array = grid[r + 1][s + 1]
+			var d: Array = grid[r + 1][s]
+			for v in [a, b, c, a, c, d]:
+				st.set_normal(v[1]); st.add_vertex(v[0])
+	var mesh := st.commit()
+	_sliced_eye_cache[key] = mesh
+	return mesh
+
+func _eacc(kind: String, hex: int, pos: Vector3, scl: Vector3) -> MeshInstance3D:
+	var m := Parts.part(kind, hex, pos - Vector3(0.0, _EYE_PIVOT_Y, 0.0), scl)
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_eyes_open.add_child(m)
+	return m
+
+func _eye_part(mesh: ArrayMesh, hex: int, pos: Vector3) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = Parts.mat(hex)
+	mi.position = pos - Vector3(0.0, _EYE_PIVOT_Y, 0.0)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_eyes_open.add_child(mi)
+	return mi
+
+## Eyes (0 normal · 1 big · 2 siesta · 3 almond · 4 button · 5 happy · 6 droopy · 7 sparkly · 8 sly)
+## and eyelashes (0 none · 1 fine · 2 doll's · 3 winged liner). Keeps the signature forward-facing toy relief,
+## wires organic blinking (_eyes_open / _eyes_closed), and returns the effective eye half-height for eyebrows.
+func _eyes(kind: int, eye_c: int, lashes: int, skin: int) -> float:
+	_eyes_open = null
+	_eyes_closed = null
+	_blink_t = -1.0
+	if kind == 5:                                # joyful closed smiling arches (^ ^): already closed, never blinks
+		if _happy_eye_mesh == null:
+			var st := SurfaceTool.new()
+			st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			for sx in [-1.0, 1.0]:
+				var pts: Array = []
+				var rx: Array = []
+				var ry: Array = []
+				for i in range(9):
+					var t: float = -1.0 + 2.0 * float(i) / 8.0
+					var b: float = sx * (0.34 + t * 0.165)
+					var e_deg: float = 2.5 + 7.5 * (1.0 - t * t)
+					pts.append(_head_pt(b, e_deg, 0.510))
+					var tap: float = 1.0 - 0.25 * t * t
+					rx.append(0.021 * tap)
+					ry.append(0.020 * tap)
+				_add_face_tube(st, pts, rx, ry, false, 8)
+			_happy_eye_mesh = st.commit()
+		_beard_mesh_on(_happy_eye_mesh, 0x17110d)
+		if lashes > 0:
+			for sx in [-1.0, 1.0]:
+				_add_lashes(sx, sx * 0.17, 1.405, 0.082, 0.032, lashes, 0.0, false)
+		return 0.084
+
+	_eyes_open = Node3D.new()
+	_eyes_open.position = Vector3(0.0, _EYE_PIVOT_Y, 0.0)
+	neck.add_child(_eyes_open)
+
+	_eyes_closed = Node3D.new()
+	_eyes_closed.visible = false
+	neck.add_child(_eyes_closed)
+	if _blink_mesh == null:                      # relaxed curved closed eyelids for natural mid-blink frames
+		var bst := SurfaceTool.new()
+		bst.begin(Mesh.PRIMITIVE_TRIANGLES)
+		for sx in [-1.0, 1.0]:
+			var bpts: Array = []
+			var brx: Array = []
+			var bry: Array = []
+			for i in range(9):
+				var t: float = -1.0 + 2.0 * float(i) / 8.0
+				var b: float = sx * (0.34 + t * 0.17)
+				var e_deg: float = 4.6 - 2.6 * (1.0 - t * t)
+				bpts.append(_head_pt(b, e_deg, 0.512))
+				var tap: float = 1.0 - 0.22 * t * t
+				brx.append(0.019 * tap)
+				bry.append(0.018 * tap)
+			_add_face_tube(bst, bpts, brx, bry, false, 8)
+		_blink_mesh = bst.commit()
+	var bmi := MeshInstance3D.new()
+	bmi.mesh = _blink_mesh
+	bmi.material_override = Parts.mat(0x17110d)
+	bmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_eyes_closed.add_child(bmi)
+
+	var ew := 0.080
+	var eh := 0.098
+	var brow_eh := 0.098
+	var ey := 1.420
+	var eye_tilt := 0.0
+	var gaze_x := 0.0
+	match kind:
+		1:                                       # Ojazos (big adorable eyes)
+			ew = 0.100; eh = 0.125; brow_eh = 0.125
+		2:                                       # De siesta (clean D-shaped half-closed relaxed eye, zero skin box)
+			ew = 0.086; eh = 0.086; brow_eh = 0.072; ey = 1.414
+		3:                                       # Rasgaos (sleek tilted almond eye)
+			ew = 0.094; eh = 0.062; brow_eh = 0.082; ey = 1.422; eye_tilt = 0.25
+		4:                                       # De botón (classic plush/AC glossy dark button eyes)
+			ew = 0.068; eh = 0.074; brow_eh = 0.086; ey = 1.418
+		6:                                       # Cansaos (clean droopy outer-sloping D-shaped eye + subtle shadow)
+			ew = 0.084; eh = 0.088; brow_eh = 0.076; ey = 1.414
+		7:                                       # Brillantes (sparkly expressive anime eyes)
+			ew = 0.098; eh = 0.120; brow_eh = 0.120; ey = 1.420
+		8:                                       # De listo (clean flat-top D-shaped eye + sly side-eye)
+			ew = 0.088; eh = 0.086; brow_eh = 0.078; ey = 1.416; gaze_x = 0.024
+
+	for sx in [-1.0, 1.0]:
+		var ex: float = sx * 0.17
+		var tilt: float = sx * eye_tilt
+		if kind == 4:                            # glossy dark button eye with subtle colour rim & dual highlights
+			_eacc("ball", 0x17110d, Vector3(ex, ey, 0.464), Vector3(ew, eh, 0.044))
+			_eacc("ball", eye_c, Vector3(ex, ey - 0.002, 0.482), Vector3(ew * 0.74, eh * 0.74, 0.030))
+			_eacc("ball", 0x0c0908, Vector3(ex, ey - 0.002, 0.494), Vector3(ew * 0.50, eh * 0.50, 0.022))
+			_eacc("ball", 0xffffff, Vector3(ex + 0.020, ey + 0.022, 0.504), Vector3.ONE * 0.020)
+			_eacc("ball", 0xffffff, Vector3(ex - 0.017, ey - 0.019, 0.503), Vector3.ONE * 0.009)
+		elif kind in [2, 6, 8]:                  # D-shaped sliced eyelids (no protruding skin box!)
+			var cut_y: float = 0.12 if kind == 2 else (0.16 if kind == 6 else 0.24)
+			var slope: float = -float(sx) * 0.34 if kind == 6 else 0.0
+			_eye_part(_sliced_ellipsoid(ew + 0.017, eh + 0.017, 0.040, cut_y + 0.10, slope), 0x17110d, Vector3(ex, ey, 0.446))
+			_eye_part(_sliced_ellipsoid(ew, eh, 0.045, cut_y, slope), 0xffffff, Vector3(ex, ey, 0.456))
+			var ir_x: float = ew * 0.64
+			var ir_y: float = eh * 0.64
+			var iy: float = ey - 0.014
+			var ix: float = ex + gaze_x
+			var ir_cut: float = (ey + cut_y * eh - iy) / ir_y
+			_eye_part(_sliced_ellipsoid(ir_x, ir_y, 0.030, ir_cut, slope), eye_c, Vector3(ix, iy, 0.478))
+			_eye_part(_sliced_ellipsoid(ir_x * 0.52, ir_y * 0.52, 0.020, ir_cut / 0.52, slope), 0x0c0908, Vector3(ix, iy, 0.492))
+			var gy: float = minf(iy + ir_y * 0.32, ey + cut_y * eh - 0.016)
+			_eacc("ball", 0xffffff, Vector3(ix + 0.018, gy, 0.502), Vector3.ONE * 0.013)
+			# Crisp dark upper lid crease right along the sliced top edge
+			var bar := _eacc("box", 0x17110d, Vector3(ex, ey + (cut_y + 0.04) * eh, 0.492), Vector3(ew * 2.15, 0.020, 0.022))
+			bar.rotation.z = atan(slope * eh / ew)
+			if kind == 6:                        # subtle soft under-eye shadow stays fixed on cheek during blinks
+				var bag := _acc("ball", _mix(skin, 0x8a5c4a, 0.24), Vector3(ex, ey - eh - 0.016, 0.456), Vector3(ew * 0.78, 0.014, 0.012))
+				bag.rotation.z = -sx * 0.10
+		else:
+			var out_m := _eacc("ball", 0x17110d, Vector3(ex, ey, 0.446), Vector3(ew + 0.017, eh + 0.017, 0.040))
+			var wh_m := _eacc("ball", 0xffffff, Vector3(ex, ey, 0.456), Vector3(ew, eh, 0.045))
+			if tilt != 0.0:
+				out_m.rotation.z = tilt
+				wh_m.rotation.z = tilt
+			var ir_x: float = ew * (0.72 if kind == 7 else 0.68)
+			var ir_y: float = minf(eh * (0.72 if kind == 7 else 0.68), ir_x * 1.12)
+			var iy: float = ey - 0.005
+			var ix: float = ex + gaze_x
+			_eacc("ball", eye_c, Vector3(ix, iy, 0.478), Vector3(ir_x, ir_y, 0.030))
+			if kind == 7:                        # bright anime lower-iris sheen crescent
+				_eacc("ball", _mix(eye_c, 0xffffff, 0.48), Vector3(ix, iy - ir_y * 0.34, 0.488), Vector3(ir_x * 0.68, ir_y * 0.36, 0.020))
+			_eacc("ball", 0x0c0908, Vector3(ix, iy, 0.492), Vector3(ir_x * 0.52, ir_y * 0.52, 0.020))
+			if kind == 7:                        # triple sparkly highlights
+				_eacc("ball", 0xffffff, Vector3(ix + 0.024, iy + ir_y * 0.42, 0.503), Vector3(0.023, 0.026, 0.014))
+				_eacc("ball", 0xffffff, Vector3(ix - 0.022, iy - ir_y * 0.36, 0.502), Vector3.ONE * 0.013)
+				_eacc("ball", 0xffffff, Vector3(ix - 0.016, iy + ir_y * 0.48, 0.502), Vector3.ONE * 0.009)
+			else:                                # lively double catchlight
+				var g_sz: float = 0.018 if kind == 1 else 0.014
+				_eacc("ball", 0xffffff, Vector3(ix + 0.020, iy + ir_y * 0.38, 0.502), Vector3.ONE * g_sz)
+				_eacc("ball", 0xffffff, Vector3(ix - 0.016, iy - ir_y * 0.34, 0.501), Vector3.ONE * (g_sz * 0.48))
+		if lashes > 0:
+			var lash_y := ey + (0.014 if kind == 2 else (0.016 if kind == 6 else (0.024 if kind == 8 else 0.0)))
+			var lash_eh := 0.012 if kind in [2, 6, 8] else eh
+			_add_lashes(sx, ex, lash_y, ew, lash_eh, lashes, tilt, true)
+	return brow_eh
+
+## Eyelashes fanning gracefully along the outer upper corner of the eye (never poking up into the eyebrows).
+## 1 fine · 2 doll's (lush fan) · 3 winged cat-eye eyeliner
+func _add_lashes(sx: float, ex: float, ey: float, ew: float, eh: float, lashes: int, tilt: float, on_open := true) -> void:
+	var put := func(pos: Vector3, scl: Vector3) -> MeshInstance3D:
+		return _eacc("box", 0x17110d, pos, scl) if on_open else _acc("box", 0x17110d, pos, scl)
+	if lashes == 3:                              # sleek winged cat-eye eyeliner flick at the outer corner
+		var wx: float = ex + sx * (ew + 0.024)
+		var wy: float = ey + eh * 0.28 + (0.012 if tilt != 0.0 else 0.0)
+		var w1: MeshInstance3D = put.call(Vector3(wx, wy, 0.472), Vector3(0.058, 0.022, 0.016))
+		w1.rotation.z = sx * 0.34
+		var w2: MeshInstance3D = put.call(Vector3(wx + sx * 0.020, wy + 0.012, 0.470), Vector3(0.036, 0.013, 0.014))
+		w2.rotation.z = sx * 0.52
+		return
+	var degs: Array = [42.0, 20.0, -2.0] if lashes == 1 else [54.0, 34.0, 14.0, -6.0]
+	var l_len: float = 0.034 if lashes == 1 else 0.048
+	var l_w: float = 0.010 if lashes == 1 else 0.014
+	for d in degs:
+		var ang: float = deg_to_rad(float(d)) + tilt * 0.5
+		var bx: float = ex + sx * (cos(ang) * (ew + 0.010))
+		var by: float = ey + sin(ang) * (eh + 0.010)
+		var dx: float = sx * cos(ang) * (l_len * 0.48)
+		var dy: float = sin(ang) * (l_len * 0.48)
+		var stroke: MeshInstance3D = put.call(Vector3(bx + dx, by + dy, 0.468), Vector3(l_len, l_w, 0.012))
+		stroke.rotation.z = sx * ang
+
+## Organic, non-periodic human blink interval: skewed distribution (mostly 1.7–4.6 s, occasional long gazes up to
+## 8.2 s or quick blinks down to 0.65 s). Double-blinks are handled separately inside _blink_tick().
+static func _next_blink_gap() -> float:
+	var r := randf()
+	if r < 0.08:
+		return randf_range(0.65, 1.55)
+	if r < 0.78:
+		return randf_range(1.70, 4.60)
+	return randf_range(4.60, 8.20)
+
+## Sets blink closure directly (0.0 open .. 1.0 fully closed). Used by _blink_tick() and visual tests.
+func set_blink(amount: float) -> void:
+	if _eyes_open == null or _eyes_closed == null:
+		return
+	if amount <= 0.0:
+		if not _eyes_open.visible:
+			_eyes_open.visible = true
+		if _eyes_open.scale.y != 1.0:
+			_eyes_open.scale.y = 1.0
+		if _eyes_closed.visible:
+			_eyes_closed.visible = false
+	elif amount >= 0.72:
+		if _eyes_open.visible:
+			_eyes_open.visible = false
+		if not _eyes_closed.visible:
+			_eyes_closed.visible = true
+	else:
+		if not _eyes_open.visible:
+			_eyes_open.visible = true
+		_eyes_open.scale.y = lerpf(1.0, 0.14, amount / 0.72)
+		if _eyes_closed.visible:
+			_eyes_closed.visible = false
+
+## Advances natural asynchronous blinking: asymmetric close/hold/open curve, variable speed, and ~18 % double-blinks.
+func _blink_tick(dt: float) -> void:
+	if _eyes_open == null or _eyes_closed == null or dt <= 0.0:
+		return
+	if _blink_wait < 0.0:                        # desynchronise every character on spawn
+		_blink_wait = randf_range(0.35, 5.20)
+	if _blink_t < 0.0:
+		_blink_wait -= dt
+		if _blink_wait <= 0.0:
+			_blink_t = 0.0
+			_blink_dur = randf_range(0.12, 0.16) if _blink_double else randf_range(0.14, 0.21)
+		return
+	_blink_t += dt
+	var u := _blink_t / _blink_dur
+	if u >= 1.0:
+		_blink_t = -1.0
+		set_blink(0.0)
+		if not _blink_double and randf() < 0.18: # natural occasional double-blink (~18 %)
+			_blink_double = true
+			_blink_wait = randf_range(0.14, 0.28)
+		else:
+			_blink_double = false
+			_blink_wait = _next_blink_gap()
+		return
+	var k := (u / 0.30) if u < 0.30 else (1.0 if u < 0.64 else (1.0 - u) / 0.36)
+	set_blink(clampf(k, 0.0, 1.0))
+
+# ---------------- eyebrows ----------------
+## Curved sphere-hugging eyebrows (0.0.22): built once in head-centred space (origin at (0, 1.38, 0)) so pitching
+## around X by `-(eh - 0.098) * 2.0` moves them cleanly along the forehead for all three eye sizes without clipping.
+static var _brow_meshes := {}
+
+static func _brow_pt(b: float, e_deg: float, rad := 0.503) -> Vector3:
+	var e := deg_to_rad(e_deg)
+	return Vector3(sin(b) * cos(e), sin(e), cos(b) * cos(e)) * rad
+
+static func _add_brow_tube(st: SurfaceTool, pts: Array, rx: Array, ry: Array, sides := 8) -> void:
+	var n := pts.size()
+	var rings: Array = []
+	for i in range(n):
+		var p: Vector3 = pts[i]
+		var prev_p: Vector3 = pts[maxi(i - 1, 0)]
+		var next_p: Vector3 = pts[mini(i + 1, n - 1)]
+		var tang: Vector3 = (next_p - prev_p).normalized()
+		var out_n: Vector3 = p.normalized()
+		var side_v: Vector3 = tang.cross(out_n).normalized()
+		var rad_v: Vector3 = side_v.cross(tang).normalized()
+		var u: Vector3 = rad_v
+		var v: Vector3 = side_v
+		if u.cross(v).dot(tang) < 0.0:
+			v = -v
+		var ring: Array = []
+		for k in range(sides):
+			var a := TAU * float(k) / float(sides)
+			var du := cos(a)
+			var dv := sin(a)
+			var off: Vector3 = u * (du * float(ry[i])) + v * (dv * float(rx[i]))
+			var nrm: Vector3 = (u * (du / maxf(float(ry[i]), 0.001)) + v * (dv / maxf(float(rx[i]), 0.001))).normalized()
+			ring.append([p + off, nrm])
+		rings.append(ring)
+	for i in range(n - 1):
+		var a: Array = rings[i]
+		var b: Array = rings[i + 1]
+		for k in range(sides):
+			var kn := (k + 1) % sides
+			for q in [a[k], b[k], b[kn], a[k], b[kn], a[kn]]:
+				st.set_normal(q[1])
+				st.add_vertex(q[0])
+	var p0: Vector3 = pts[0]
+	var t0: Vector3 = ((pts[0] as Vector3) - (pts[1] as Vector3)).normalized()
+	var r0: Array = rings[0]
+	for k in range(sides):
+		var kn := (k + 1) % sides
+		st.set_normal(r0[kn][1]); st.add_vertex(r0[kn][0])
+		st.set_normal(t0); st.add_vertex(p0 + t0 * float(rx[0]) * 0.45)
+		st.set_normal(r0[k][1]); st.add_vertex(r0[k][0])
+	var pe: Vector3 = pts[n - 1]
+	var te: Vector3 = ((pts[n - 1] as Vector3) - (pts[n - 2] as Vector3)).normalized()
+	var re: Array = rings[n - 1]
+	for k in range(sides):
+		var kn := (k + 1) % sides
+		st.set_normal(re[k][1]); st.add_vertex(re[k][0])
+		st.set_normal(te); st.add_vertex(pe + te * float(rx[n - 1]) * 0.45)
+		st.set_normal(re[kn][1]); st.add_vertex(re[kn][0])
+
+static func _make_brow_mesh(kind: int) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	if kind == 2:       # unibrow: single curved sweep across the forehead
+		var pts: Array = []
+		var rx: Array = []
+		var ry: Array = []
+		for i in range(13):
+			var t := -1.0 + 2.0 * float(i) / 12.0
+			var b := t * 0.50
+			var e := 22.5 + 1.2 * sin(absf(t) * PI) - 1.5 * exp(-t * t * 14.0)
+			pts.append(_brow_pt(b, e, 0.503))
+			rx.append(0.028 * (1.0 - 0.16 * t * t))
+			ry.append(0.015)
+		_add_brow_tube(st, pts, rx, ry, 8)
+		return st.commit()
+	# paired left/right brows: specs = [[b_abs, elev_deg, half_height, half_depth], ...]
+	var specs: Array = []
+	match kind:
+		0:      # thin, friendly curved brows
+			specs = [[0.18, 22.8, 0.015, 0.011], [0.27, 23.3, 0.016, 0.011], [0.36, 22.6, 0.015, 0.011], [0.45, 21.2, 0.013, 0.010], [0.52, 19.6, 0.011, 0.009]]
+		1:      # thick classic Animal Crossing brows
+			specs = [[0.17, 23.4, 0.031, 0.015], [0.26, 23.6, 0.032, 0.015], [0.35, 23.0, 0.031, 0.015], [0.44, 22.0, 0.029, 0.014], [0.51, 20.8, 0.025, 0.013]]
+		6:      # angry: bold diagonal slant down toward the bridge
+			specs = [[0.14, 17.5, 0.028, 0.015], [0.24, 20.2, 0.027, 0.015], [0.34, 23.0, 0.025, 0.014], [0.44, 25.4, 0.022, 0.013], [0.52, 27.2, 0.018, 0.012]]
+		7:      # worried / puppy-dog: raised in the middle, drooping toward the temples
+			specs = [[0.17, 26.8, 0.020, 0.013], [0.26, 25.4, 0.021, 0.013], [0.35, 23.2, 0.019, 0.012], [0.44, 20.4, 0.017, 0.011], [0.52, 17.8, 0.014, 0.010]]
+		8:      # grandpa: extra-bushy, slightly shaggy overhanging caterpillar brows
+			specs = [[0.13, 22.6, 0.042, 0.022], [0.23, 24.0, 0.046, 0.024], [0.34, 23.8, 0.045, 0.024], [0.45, 22.6, 0.042, 0.023], [0.55, 20.6, 0.035, 0.020]]
+	for sx in [-1.0, 1.0]:
+		var pts: Array = []
+		var rx: Array = []
+		var ry: Array = []
+		for s in specs:
+			pts.append(_brow_pt(sx * float(s[0]), float(s[1]), 0.504))
+			rx.append(float(s[2]))
+			ry.append(float(s[3]))
+		_add_brow_tube(st, pts, rx, ry, 8)
+	return st.commit()
+
+func _brows(kind: int, hair_c: int, eh: float) -> void:
+	if kind == 3:                                    # none
+		return
+	if kind >= FIRST_CEJAS and kind - FIRST_CEJAS < CEJAS.size():      # (Quaternius fitted models: 4 Espesas, 5 Arqueás)
+		_pieza_on(CEJAS[kind - FIRST_CEJAS], hair_c, 0, eh - 0.098)
+		return
+	if not _brow_meshes.has(kind):
+		_brow_meshes[kind] = _make_brow_mesh(kind)
+	var mi := MeshInstance3D.new()
+	mi.mesh = _brow_meshes[kind]
+	mi.material_override = Parts.mat(hair_c)
+	mi.position = Vector3(0.0, 1.38, 0.0)
+	mi.rotation.x = -(eh - 0.098) * 2.0              # glides cleanly up/down along the sphere for Ojazos / De siesta
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	neck.add_child(mi)
 
 # ---------------- beards ----------------
+static var _bigote_mesh: ArrayMesh
+static var _mostacho_mesh: ArrayMesh
+static var _patillas_mesh: ArrayMesh
+static var _candao_mesh: ArrayMesh
+
+## A point on the head sphere (centred at (0, 1.38, 0), face +z) at bearing `b` (rad, 0 front) and elevation `e_deg` (deg).
+static func _head_pt(b: float, e_deg: float, rad := 0.506) -> Vector3:
+	var e := deg_to_rad(e_deg)
+	return Vector3(0.0, 1.38, 0.0) + Vector3(sin(b) * cos(e), sin(e), cos(b) * cos(e)) * rad
+
+## Builds a closed curved tube (oval cross-section: `rx` across the head, `ry` radially off the sphere) along `pts`.
+static func _add_face_tube(st: SurfaceTool, pts: Array, rx: Array, ry: Array, closed := false, sides := 8) -> void:
+	var n := pts.size()
+	var rings: Array = []
+	for i in range(n):
+		var p: Vector3 = pts[i]
+		var prev_p: Vector3 = pts[(i - 1 + n) % n] if closed else pts[maxi(i - 1, 0)]
+		var next_p: Vector3 = pts[(i + 1) % n] if closed else pts[mini(i + 1, n - 1)]
+		var tang: Vector3 = (next_p - prev_p).normalized()
+		var out_n: Vector3 = (p - Vector3(0.0, 1.38, 0.0)).normalized()
+		var side_v: Vector3 = tang.cross(out_n).normalized()
+		var rad_v: Vector3 = side_v.cross(tang).normalized()       # radial outward, orthogonal to tang and side_v
+		# ensure right-handed frame (u x v == tang) for outward CW winding
+		var u: Vector3 = rad_v
+		var v: Vector3 = side_v
+		if u.cross(v).dot(tang) < 0.0:
+			v = -v
+		var ring: Array = []
+		for k in range(sides):
+			var a := TAU * float(k) / float(sides)
+			var dir_u := cos(a)
+			var dir_v := sin(a)
+			var off: Vector3 = u * (dir_u * float(ry[i])) + v * (dir_v * float(rx[i]))
+			var nrm: Vector3 = (u * (dir_u / maxf(float(ry[i]), 0.001)) + v * (dir_v / maxf(float(rx[i]), 0.001))).normalized()
+			ring.append([p + off, nrm])
+		rings.append(ring)
+	var segs := n if closed else n - 1
+	for i in range(segs):
+		var a: Array = rings[i]
+		var b: Array = rings[(i + 1) % n]
+		for k in range(sides):
+			var kn := (k + 1) % sides
+			for q in [a[k], b[k], b[kn], a[k], b[kn], a[kn]]:
+				st.set_normal(q[1])
+				st.add_vertex(q[0])
+	if not closed:
+		# cap start
+		var p0: Vector3 = pts[0]
+		var t0: Vector3 = ((pts[0] as Vector3) - (pts[1] as Vector3)).normalized()
+		var r0: Array = rings[0]
+		for k in range(sides):
+			var kn := (k + 1) % sides
+			st.set_normal(r0[kn][1]); st.add_vertex(r0[kn][0])
+			st.set_normal(t0); st.add_vertex(p0 + t0 * float(rx[0]) * 0.45)
+			st.set_normal(r0[k][1]); st.add_vertex(r0[k][0])
+		# cap end
+		var pe: Vector3 = pts[n - 1]
+		var te: Vector3 = ((pts[n - 1] as Vector3) - (pts[n - 2] as Vector3)).normalized()
+		var re: Array = rings[n - 1]
+		for k in range(sides):
+			var kn := (k + 1) % sides
+			st.set_normal(re[k][1]); st.add_vertex(re[k][0])
+			st.set_normal(te); st.add_vertex(pe + te * float(rx[n - 1]) * 0.45)
+			st.set_normal(re[kn][1]); st.add_vertex(re[kn][0])
+
+func _beard_mesh_on(mesh: ArrayMesh, hair_c: int) -> void:
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = Parts.mat(hair_c)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	neck.add_child(mi)
+
 func _beard(kind: int, hair_c: int, skin: int) -> void:
 	if kind >= FIRST_BARBA:
 		if kind - FIRST_BARBA < BARBAS.size():
 			_pieza_on(BARBAS[kind - FIRST_BARBA], hair_c)
 		return
 	match kind:
-		1:      # moustache
-			_acc("box", hair_c, Vector3(0, 1.26, 0.48), Vector3(0.26, 0.055, 0.05))
-		2:      # beard
-			_add("ball", hair_c, Vector3(0, 1.17, 0.3), Vector3(0.36, 0.26, 0.26))
-		3:      # goatee
-			_acc("ball", hair_c, Vector3(0, 1.1, 0.4), Vector3(0.11, 0.13, 0.09))
-		4:      # the big moustache, ends drooping
-			_acc("box", hair_c, Vector3(0, 1.265, 0.48), Vector3(0.38, 0.08, 0.06))
+		1:      # moustache (0.0.22: curved to hug the sphere instead of a flat floating box)
+			if _bigote_mesh == null:
+				var st := SurfaceTool.new()
+				st.begin(Mesh.PRIMITIVE_TRIANGLES)
+				var pts: Array = []
+				var rx: Array = []
+				var ry: Array = []
+				for i in range(9):
+					var t := -1.0 + 2.0 * float(i) / 8.0
+					pts.append(_head_pt(t * 0.27, -14.0 - 1.5 * t * t, 0.506))
+					var taper := 1.0 - 0.18 * t * t
+					rx.append(0.029 * taper)
+					ry.append(0.022 * taper)
+				_add_face_tube(st, pts, rx, ry, false, 8)
+				_bigote_mesh = st.commit()
+			_beard_mesh_on(_bigote_mesh, hair_c)
+		2:      # beard (0.0.22: tucked closer to the jaw with soft cheek wrap so it no longer sticks out like a muzzle)
+			_add("ball", hair_c, Vector3(0, 1.15, 0.245), Vector3(0.365, 0.25, 0.27))
 			for sx in [-1.0, 1.0]:
-				_acc("ball", hair_c, Vector3(sx * 0.2, 1.2, 0.45), Vector3(0.05, 0.09, 0.04))
+				_add("ball", hair_c, Vector3(sx * 0.285, 1.21, 0.21), Vector3(0.145, 0.145, 0.165))
+		3:      # goatee (0.0.22: seated flush along the chin tangent)
+			var g := _acc("ball", hair_c, Vector3(0, 1.09, 0.378), Vector3(0.11, 0.125, 0.08))
+			g.rotation.x = 0.35
+		4:      # the big moustache, ends drooping (0.0.22: curved handlebar hugging the cheeks cleanly in 3/4 and profile)
+			if _mostacho_mesh == null:
+				var st := SurfaceTool.new()
+				st.begin(Mesh.PRIMITIVE_TRIANGLES)
+				var specs := [[-0.39, -31.0, 0.032], [-0.36, -22.0, 0.038], [-0.28, -14.5, 0.041], [-0.14, -13.0, 0.042],
+					[0.0, -12.5, 0.042], [0.14, -13.0, 0.042], [0.28, -14.5, 0.041], [0.36, -22.0, 0.038], [0.39, -31.0, 0.032]]
+				var pts: Array = []
+				var rx: Array = []
+				var ry: Array = []
+				for s in specs:
+					pts.append(_head_pt(float(s[0]), float(s[1]), 0.506))
+					rx.append(float(s[2]))
+					ry.append(float(s[2]) * 0.65)
+				_add_face_tube(st, pts, rx, ry, false, 8)
+				_mostacho_mesh = st.commit()
+			_beard_mesh_on(_mostacho_mesh, hair_c)
 		5:      # three days without shaving: the shaved head's see-through grey, over where a beard grows (the user, 16 Nov 2026:
 			# "Cambia la barba de tres días ... por el mismo efecto que rasurado, pero en la zona de la barba"; it was dots)
 			_barba3(hair_c)
-		6:      # the long beard
-			_add("ball", hair_c, Vector3(0, 1.17, 0.3), Vector3(0.36, 0.26, 0.26))
-			_add("ball", hair_c, Vector3(0, 0.98, 0.37), Vector3(0.25, 0.3, 0.15))
-		7:      # sideburns
+		6:      # the long beard (0.0.22: tucked base + blended lower mass without snowman pinch)
+			_add("ball", hair_c, Vector3(0, 1.155, 0.25), Vector3(0.37, 0.25, 0.27))
 			for sx in [-1.0, 1.0]:
-				_acc("box", hair_c, Vector3(sx * 0.475, 1.3, 0.13), Vector3(0.06, 0.32, 0.15))
-		8:      # moustache and goatee, joined up
-			_acc("box", hair_c, Vector3(0, 1.26, 0.48), Vector3(0.26, 0.055, 0.05))
-			_acc("ball", hair_c, Vector3(0, 1.1, 0.4), Vector3(0.12, 0.12, 0.09))
-			for sx in [-1.0, 1.0]:
-				_acc("box", hair_c, Vector3(sx * 0.125, 1.18, 0.45), Vector3(0.04, 0.15, 0.05))
+				_add("ball", hair_c, Vector3(sx * 0.285, 1.21, 0.21), Vector3(0.145, 0.145, 0.165))
+			var low := _add("ball", hair_c, Vector3(0, 0.99, 0.315), Vector3(0.285, 0.295, 0.185))
+			low.rotation.x = 0.12
+		7:      # sideburns (0.0.22: curved low-poly strips hugging the temples/cheeks, replacing floating flat boxes)
+			if _patillas_mesh == null:
+				var st := SurfaceTool.new()
+				st.begin(Mesh.PRIMITIVE_TRIANGLES)
+				for sx in [-1.0, 1.0]:
+					var pts: Array = []
+					var rx: Array = []
+					var ry: Array = []
+					var rows := [[10.0, 1.30, 0.055], [2.0, 1.28, 0.062], [-7.0, 1.25, 0.068], [-16.0, 1.21, 0.072], [-24.0, 1.16, 0.064]]
+					for r in rows:
+						pts.append(_head_pt(sx * float(r[1]), float(r[0]), 0.502))
+						rx.append(float(r[2]))
+						ry.append(0.017)
+					_add_face_tube(st, pts, rx, ry, false, 8)
+				_patillas_mesh = st.commit()
+			_beard_mesh_on(_patillas_mesh, hair_c)
+		8:      # moustache and goatee, joined up (0.0.22: curved horseshoe hugging the face + full sculpted chin goatee)
+			if _candao_mesh == null:
+				var st := SurfaceTool.new()
+				st.begin(Mesh.PRIMITIVE_TRIANGLES)
+				var arch_pts := [
+					[-0.21, -33.0, 0.028], [-0.23, -24.0, 0.025], [-0.23, -15.0, 0.028], [-0.12, -13.5, 0.030],
+					[0.0, -13.2, 0.030], [0.12, -13.5, 0.030], [0.23, -15.0, 0.028], [0.23, -24.0, 0.025], [0.21, -33.0, 0.028]
+				]
+				var pts: Array = []
+				var rx: Array = []
+				var ry: Array = []
+				for s in arch_pts:
+					pts.append(_head_pt(float(s[0]), float(s[1]), 0.506))
+					rx.append(float(s[2]))
+					ry.append(float(s[2]) * 0.72)
+				_add_face_tube(st, pts, rx, ry, false, 8)
+				_candao_mesh = st.commit()
+			_beard_mesh_on(_candao_mesh, hair_c)
+			var chin := _acc("ball", hair_c, Vector3(0, 1.09, 0.376), Vector3(0.14, 0.135, 0.088))
+			chin.rotation.x = 0.35
 
 # ---------------- glasses ----------------
 func _glasses(kind: int) -> void:
 	if kind <= 0:
 		return
-	var frame: int = [0, 0xb9a36a, 0x1b1b1f, 0x4a4a52, 0x8d99ae, 0x1b1b1f, 0xc9a23a, 0x1b1b1f][mini(kind, 7)]
-	var thick := 0.035 if kind == 2 else 0.016
+	if GAFAS.has(kind):                              # custom sculpted glasses/eyepatch meshes in their own colours
+		var gname: String = GAFAS[kind]
+		var gm := pieza(gname)
+		if gm != null:
+			var gsrc := gm.surface_get_material(0)
+			var gc: Color = (gsrc as BaseMaterial3D).albedo_color if gsrc is BaseMaterial3D else Color(0.15, 0.15, 0.15)
+			_wear(gname, (int(gc.r * 255.0) << 16) | (int(gc.g * 255.0) << 8) | int(gc.b * 255.0), true)
+		return
+	var frame: int = [0, 0xb9a36a, 0x1b1b1f, 0x4a4a52, 0x8d99ae, 0x1b1b1f, 0xc9a23a, 0x1b1b1f, 0xb22234, 0xe83b5c, 0xd4aa3b][mini(kind, 10)]
+	var thick := 0.032 if kind == 2 else (0.022 if kind == 7 else 0.014)
 	var ey := 1.42
+	if kind == 10:                                   # monocle on left eye (+X) with delicate draped gold chain
+		var ex := 0.17
+		_acc("ring_thin", frame, Vector3(ex, ey, 0.532), Vector3.ONE * 0.125).rotation.x = PI / 2.0
+		_acc("ball", 0xdceef6, Vector3(ex + 0.045, ey + 0.045, 0.534), Vector3(0.022, 0.012, 0.008)).rotation.z = -0.5
+		for k in range(13):
+			var t: float = float(k) / 12.0
+			var a: float = lerpf(0.55, 1.48, t)
+			var py: float = lerpf(1.415, 1.215, t) - 0.035 * sin(t * PI)
+			var rr: float = sqrt(maxf(0.04, 0.514 * 0.514 - (py - 1.38) * (py - 1.38)))
+			_acc("ball", frame, Vector3(sin(a) * rr, py, cos(a) * rr), Vector3.ONE * 0.011)
+		return
 	for sx in [-1.0, 1.0]:
 		var ex: float = sx * 0.17
 		match kind:
 			1:
 				_acc("ring_thin", frame, Vector3(ex, ey, 0.53), Vector3.ONE * 0.12).rotation.x = PI / 2.0
 			2:
-				_acc("ring", frame, Vector3(ex, ey, 0.535), Vector3.ONE * 0.135).rotation.x = PI / 2.0
-			3:      # tube goggles: two stubby pipes with dull lenses, on a leather strap
-				_acc("cyl", frame, Vector3(ex, ey, 0.55), Vector3(0.105, 0.17, 0.105)).rotation.x = PI / 2.0
-				_acc("cyl", 0x9fb7a0, Vector3(ex, ey, 0.637), Vector3(0.085, 0.02, 0.085)).rotation.x = PI / 2.0
-			4:      # opaque: you never see the eyes behind them
-				_acc("ball", 0xe8f0f4, Vector3(ex, ey, 0.525), Vector3(0.115, 0.115, 0.025))
-				_acc("ring_thin", frame, Vector3(ex, ey, 0.53), Vector3.ONE * 0.125).rotation.x = PI / 2.0
-			5:      # sunglasses
-				_acc("ball", 0x111114, Vector3(ex, ey, 0.525), Vector3(0.127, 0.1, 0.028))
-			7:      # rectangular, of black acetate
-				for e in [[0.0, 0.05, 0.25, 0.022], [0.0, -0.05, 0.25, 0.022], [-0.115, 0.0, 0.022, 0.1], [0.115, 0.0, 0.022, 0.1]]:
-					_acc("box", frame, Vector3(ex + e[0], ey + e[1], 0.53), Vector3(e[2], e[3], 0.02))
-			6:      # aviators
-				_acc("ball", 0x3f5a46, Vector3(ex, ey - 0.01, 0.525), Vector3(0.12, 0.118, 0.026))
-				_acc("ring_thin", frame, Vector3(ex, ey - 0.01, 0.53), Vector3.ONE * 0.128).rotation.x = PI / 2.0
-		if kind != 3:       # hinge and arm, back to where the ear would be
-			_acc("box", frame, Vector3(sx * 0.325, ey + 0.02, 0.5), Vector3(0.1, thick, 0.02))
-			var arm := _acc("box", frame, Vector3(sx * 0.445, ey + 0.02, 0.245), Vector3(thick, thick, 0.48))
-			arm.rotation.y = -sx * 0.361
-	_acc("box", frame, Vector3(0, ey + 0.02, 0.53), Vector3(0.11, thick * 1.2, 0.02))       # bridge
+				_acc("ring", frame, Vector3(ex, ey, 0.535), Vector3.ONE * 0.132).rotation.x = PI / 2.0
+			3:      # tube goggles: compact mechanic goggles with metallic rims on a leather strap
+				_acc("cyl", frame, Vector3(ex, ey, 0.538), Vector3(0.106, 0.115, 0.106)).rotation.x = PI / 2.0
+				_acc("ring_thin", 0x9aa2aa, Vector3(ex, ey, 0.594), Vector3.ONE * 0.105).rotation.x = PI / 2.0
+				_acc("cyl", 0x9fb7a0, Vector3(ex, ey, 0.590), Vector3(0.088, 0.018, 0.088)).rotation.x = PI / 2.0
+			4:      # opaque: wide enough to hide the eyes cleanly in 3/4 view too
+				_acc("ball", 0xe8f0f4, Vector3(ex, ey, 0.528), Vector3(0.126, 0.126, 0.032))
+				_acc("ring_thin", frame, Vector3(ex, ey, 0.534), Vector3.ONE * 0.128).rotation.x = PI / 2.0
+			7:      # rectangular, of black acetate (frames the whole eye cleanly)
+				for e in [[0.0, 0.072, 0.245, 0.024], [0.0, -0.072, 0.245, 0.024], [-0.112, 0.0, 0.024, 0.144], [0.112, 0.0, 0.024, 0.144]]:
+					_acc("box", frame, Vector3(ex + float(e[0]), ey + float(e[1]), 0.53), Vector3(float(e[2]), float(e[3]), 0.022))
+		if kind != 3:       # flush hinge and sleek temple arm clearing the side of the head cleanly
+			var hy := ey + (0.042 if kind == 7 else 0.018)
+			_acc("box", frame, Vector3(sx * 0.308, hy, 0.512), Vector3(0.068, thick, 0.020))
+			var arm := _acc("box", frame, Vector3(sx * 0.436, hy, 0.258), Vector3(thick, thick, 0.50))
+			arm.rotation.y = -sx * 0.360
+	var by := ey + (0.030 if kind == 7 else 0.018)
+	_acc("box", frame, Vector3(0, by, 0.532), Vector3(0.105, thick * 1.15, 0.020))       # bridge
 	if kind == 3:
-		_acc("ring_thin", 0x5a4636, Vector3(0, ey + 0.02, 0.0), Vector3.ONE * 0.515)
+		_acc("ring_thin", 0x5a4636, Vector3(0, ey + 0.015, 0.0), Vector3.ONE * 0.524)
 
 # ---------------- earrings ----------------
 func _earrings(kind: int) -> void:
 	if kind <= 0:
 		return
-	var gold := 0xe6b422 if kind != 6 else 0xd4d9de           # (6: the same hoops, in silver)
+	var gold := 0xe6b422 if kind != 6 else 0xd8dde2           # (6: the same hoops, in silver)
 	for sx in [-1.0, 1.0]:
-		if kind == 3 and sx > 0.0:
-			continue                       # just the one
+		if kind == 3 and sx < 0.0:
+			continue                       # single hoop on the left ear (+X)
 		match kind:
 			1:
-				_acc("ball", gold, Vector3(sx * 0.505, 1.28, 0.03), Vector3.ONE * 0.037)
-			2, 3, 6:
-				_acc("ring", gold, Vector3(sx * 0.535, 1.2, 0.03), Vector3.ONE * 0.075).rotation.x = PI / 2.0
-			4:
-				_acc("ball", gold, Vector3(sx * 0.5, 1.27, 0.03), Vector3.ONE * 0.03)
-				_acc("box", gold, Vector3(sx * 0.5, 1.19, 0.03), Vector3(0.015, 0.14, 0.015))
-				_acc("ball", 0xd23b3b, Vector3(sx * 0.5, 1.1, 0.03), Vector3(0.04, 0.055, 0.04))
+				_acc("ball", gold, Vector3(sx * 0.502, 1.275, 0.025), Vector3.ONE * 0.041)
+			2, 3, 6:                       # hoops oriented parallel to the cheek (slightly angled forward to read from front & side)
+				var hoop := _acc("ring", gold, Vector3(sx * 0.502, 1.215, 0.022), Vector3.ONE * 0.072)
+				hoop.rotation = Vector3(0.0, sx * 0.36, PI / 2.0)
+			4:                             # drop earrings: gold stud, slender cylindrical wire, ruby teardrop
+				_acc("ball", gold, Vector3(sx * 0.502, 1.275, 0.025), Vector3.ONE * 0.032)
+				_acc("cyl", gold, Vector3(sx * 0.504, 1.200, 0.025), Vector3(0.010, 0.118, 0.010))
+				_acc("ball", gold, Vector3(sx * 0.504, 1.142, 0.025), Vector3.ONE * 0.022)
+				_acc("ball", 0xd23b3b, Vector3(sx * 0.504, 1.102, 0.025), Vector3(0.040, 0.056, 0.040))
 			5:
-				_acc("ball", 0xf8f4ea, Vector3(sx * 0.51, 1.25, 0.03), Vector3.ONE * 0.052)
+				_acc("ball", 0xf8f4ea, Vector3(sx * 0.505, 1.260, 0.025), Vector3.ONE * 0.052)
+			7:                             # festive 5-petal fiesta flowers hugging the side of the head
+				var froot := Node3D.new()
+				froot.position = Vector3(sx * 0.504, 1.255, 0.028)
+				froot.rotation.y = sx * (PI / 2.0 - 0.30)
+				neck.add_child(froot)
+				var fcenter := Parts.part("ball", 0xf4c430, Vector3(0.0, 0.0, 0.014), Vector3(0.024, 0.024, 0.016))
+				fcenter.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				froot.add_child(fcenter)
+				for k in range(5):
+					var pa: float = k * TAU / 5.0
+					var pet := Parts.part("ball", 0xef5b84, Vector3(cos(pa) * 0.032, sin(pa) * 0.032, 0.008), Vector3(0.026, 0.026, 0.014))
+					pet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					froot.add_child(pet)
+			8:                             # matte black plug/button studs
+				var rim := _acc("cyl", 0x383842, Vector3(sx * 0.500, 1.265, 0.025), Vector3(0.045, 0.018, 0.045))
+				rim.rotation.z = PI / 2.0
+				var btn := _acc("cyl", 0x1b1b20, Vector3(sx * 0.508, 1.265, 0.025), Vector3(0.039, 0.018, 0.039))
+				btn.rotation.z = PI / 2.0
+			9:                             # hanging silver cross earring
+				var croot := Node3D.new()
+				croot.position = Vector3(sx * 0.504, 1.265, 0.025)
+				croot.rotation.y = sx * (PI / 2.0 - 0.35)
+				neck.add_child(croot)
+				for part_spec in [
+					["ball", Vector3(0.0, 0.008, 0.004), Vector3(0.024, 0.024, 0.024)],
+					["cyl",  Vector3(0.0, -0.025, 0.006), Vector3(0.008, 0.045, 0.008)],
+					["box",  Vector3(0.0, -0.095, 0.008), Vector3(0.020, 0.115, 0.014)],
+					["box",  Vector3(0.0, -0.072, 0.008), Vector3(0.076, 0.020, 0.014)],
+				]:
+					var pm := Parts.part(String(part_spec[0]), 0xd8dde2, part_spec[1], part_spec[2])
+					pm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					croot.add_child(pm)
+
+## extra radial clearance (m) for bulky 3D tops so chains, ties, aprons, scarves and neckerchiefs never sink into them
+static func _top_pad(top_id: int) -> float:
+	match top_id:
+		14:            return 0.056       # puffer vest (thickest quilted torso)
+		12, 13, 20, 2: return 0.050       # hoodie, turtleneck, anorak, suit jacket
+		15, 16, 24:    return 0.042       # waistcoat, cardigan, lab coat
+		11, 17, 18:    return 0.036       # collared shirt, hi-vis vest, football shirt
+		22:            return 0.024       # dress
+		9, 10, 19:     return 0.018       # NPC jackets & Breton top
+	return 0.0
 
 # ---------------- round the neck ----------------
 func _pendant(kind: int, kerchief: int) -> void:
 	if kind <= 0:
 		return
-	if kind >= FIRST_CUELLO:                     # (from free models, in their own colours)
+	var pad := _top_pad(int(look.get("top", 0)))
+	if kind >= FIRST_CUELLO:                     # custom sculpted neckwear meshes, in their own colours
 		if kind - FIRST_CUELLO < CUELLO.size():
-			var m := pieza(CUELLO[kind - FIRST_CUELLO])
+			var cname: String = CUELLO[kind - FIRST_CUELLO]
+			var m := pieza(cname)
 			if m != null:
 				var src := m.surface_get_material(0)
 				var c: Color = (src as BaseMaterial3D).albedo_color if src is BaseMaterial3D else Color(0.5, 0.5, 0.5)
-				_wear(CUELLO[kind - FIRST_CUELLO], (int(c.r * 255.0) << 16) | (int(c.g * 255.0) << 8) | int(c.b * 255.0), false)
+				var mi := _wear(cname, (int(c.r * 255.0) << 16) | (int(c.g * 255.0) << 8) | int(c.b * 255.0), false)
+				if mi != null and pad > 0.0:
+					var k_pad: float = 1.0 + pad / (0.42 if cname == "cuello_bufanda" else (0.38 if cname == "cuello_camara" else 0.34))
+					mi.scale = Vector3(_girth * k_pad, 1.0, _girth * k_pad)
 		return
 	var metal := 0xcfd4d8 if kind == 3 else 0xe6b422
+	var gp := pad * _girth
+	var sl := _slope()
 	if kind <= 3:
-		_acc("ring_thin", metal, Vector3(0, 0.9, 0.04), Vector3.ONE * 0.37 * _girth).rotation.x = 0.32
-	var front := _r(0.74) + 0.035
+		_acc("ring_thin", metal, Vector3(0, 0.912, 0.010), Vector3((0.348 + pad) * _girth, 0.348, (0.348 + pad) * _girth)).rotation.x = 0.25
 	match kind:
-		2:      # a medal
-			_acc("cyl", metal, Vector3(0, 0.755, front), Vector3(0.07, 0.016, 0.07)).rotation.x = PI / 2.0
-		3:      # a cross
-			_acc("box", metal, Vector3(0, 0.72, front), Vector3(0.032, 0.15, 0.02))
-			_acc("box", metal, Vector3(0, 0.75, front), Vector3(0.1, 0.032, 0.02))
-		4:      # pearls
-			var rr := _r(0.86) + 0.02
-			for k in range(11):
-				var a := -1.25 + k * 0.25
-				_acc("ball", 0xf8f4ea, Vector3(sin(a) * rr, 0.955 - 0.11 * cos(a), cos(a) * rr), Vector3.ONE * 0.036)
-		5:      # the neckerchief of the fiestas, in the colour of your peña
-			_acc("ring", kerchief, Vector3(0, 0.95, 0.0), Vector3.ONE * 0.345 * _girth).rotation.x = 0.16
-			var tip := _acc("cone", kerchief, Vector3(0, 0.83, _r(0.83) + 0.022), Vector3(0.14, 0.22, 0.03))
-			tip.rotation.z = PI
+		2:      # a medal, pitched flush with the torso slope
+			var med := _acc("cyl", metal, Vector3(0, 0.785, _r(0.785) + 0.022 + gp), Vector3(0.068, 0.016, 0.068))
+			med.rotation.x = PI / 2.0 - sl
+		3:      # a cross, pitched flush with the torso slope
+			var c_v := _acc("box", metal, Vector3(0, 0.745, _r(0.745) + 0.020 + gp), Vector3(0.030, 0.145, 0.018))
+			c_v.rotation.x = -sl
+			var c_h := _acc("box", metal, Vector3(0, 0.775, _r(0.775) + 0.020 + gp), Vector3(0.095, 0.030, 0.018))
+			c_h.rotation.x = -sl
+		4:      # full 360-degree string of pearls round the neck
+			for k in range(20):
+				var a: float = k * TAU / 20.0
+				var py: float = 0.942 - 0.062 * cos(a)
+				var rr: float = _r(py) + 0.022 + gp
+				_acc("ball", 0xf8f4ea, Vector3(sin(a) * rr, py, cos(a) * rr), Vector3.ONE * 0.034)
+		5:      # the neckerchief of the fiestas, knotted in front & hugging the chest slope
+			_acc("ring", kerchief, Vector3(0, 0.945, 0.0), Vector3((0.335 + pad) * _girth, 0.335, (0.335 + pad) * _girth)).rotation.x = 0.15
+			_acc("ball", kerchief, Vector3(0, 0.905, _r(0.905) + 0.030 + gp), Vector3(0.068, 0.052, 0.044))
+			var tip := _acc("cone", kerchief, Vector3(0, 0.805, _r(0.805) + 0.026 + gp), Vector3(0.148, 0.215, 0.028))
+			tip.rotation = Vector3(-sl, 0.0, PI)
 
 ## Your peña's neckerchief, from the wardrobe at home (the user, 16 November 2026, with a photo of a fiesta neckerchief
 ## worn point down the back: "Un pañuelo del color de la peña con el graffiti estampado detrás"): rolled round the neck
@@ -984,9 +1781,11 @@ func _pendant(kind: int, kerchief: int) -> void:
 const PANUELO_IDS := ["nietos", "croquetilla", "bordillo", "centradito", "costrola", "al_prao"]      # (creator.gd PENA_IDS)
 static var _panuelo_mats := {}
 func _panuelo(pena: int, hex: int) -> void:
-	var roll := _acc("ring", hex, Vector3(0, 0.945, 0.0), Vector3(0.335 * _girth, 0.42, 0.335 * _girth))       # the roll round the neck
+	var pad := _top_pad(int(look.get("top", 0)))
+	var gp := pad * _girth
+	var roll := _acc("ring", hex, Vector3(0, 0.945, 0.0), Vector3((0.335 + pad) * _girth, 0.42, (0.335 + pad) * _girth))       # the roll round the neck
 	roll.rotation.x = 0.12
-	var front := _r(0.9) + 0.03
+	var front := _r(0.9) + 0.03 + gp
 	_acc("ball", hex, Vector3(0, 0.9, front), Vector3(0.075, 0.06, 0.05))                                      # the knot...
 	for sx in [-1.0, 1.0]:                                                                                        # ...and its two ends
 		var end := _acc("cone", hex, Vector3(sx * 0.05, 0.82, front - 0.005), Vector3(0.05, 0.13, 0.02))
@@ -1014,7 +1813,7 @@ func _panuelo(pena: int, hex: int) -> void:
 	var at := func(u: float, v: float) -> Array:
 		var ang: float = PI + (u - 0.5) * 2.0 * SPAN * (1.0 - v)
 		var yy: float = lerpf(TOP, TIP, v)
-		var rr: float = _r(yy) + 0.018 + 0.012 * (1.0 - v)
+		var rr: float = _r(yy) + 0.018 + 0.012 * (1.0 - v) + gp
 		return [Vector3(sin(ang) * rr, yy, cos(ang) * rr), Vector2(0.5 + (u - 0.5) * (1.0 - v), v), Vector3(sin(ang), 0.19, cos(ang)).normalized()]
 	for r in range(ROWS):
 		for c in range(COLS):
@@ -1182,6 +1981,7 @@ func anim(moving: bool, dt: float, speed: float, bob := true) -> void:
 		_hr.position = hr
 	if absf(inner.position.y - iy) > 0.00001:   # (the standing bob moves less than a millimetre a frame: still written)
 		inner.position.y = iy
+	_blink_tick(dt)
 
 ## Ring colours keep the fists visible against these big heads and the crowd.
 func box_gloves(colour := -1) -> void:

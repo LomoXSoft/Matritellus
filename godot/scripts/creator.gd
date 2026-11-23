@@ -6,26 +6,26 @@ extends RefCounted
 const CharaS = preload("res://scripts/chara.gd")
 
 const OPTIONS := [
-	{"key": "hat", "values": ["cap", "beret", "straw", "", "parpusa", "fedora", "bombin", "pamela", "panoleta", "diadema", "beisbol", "beisbol_atras", "vaquero"]},      # (4 on: from free models, chara.gd SOMBREROS)
+	{"key": "hat", "values": ["cap", "beret", "straw", "", "parpusa", "fedora", "bombin", "pamela", "panoleta", "diadema", "beisbol", "beisbol_atras", "vaquero", "chef"]},      # (4 on: from free models, chara.gd SOMBREROS; 13: chef hat)
 	{"key": "hat_color", "values": [0x1f9a55, 0xc0392b, 0x2f6bb5, 0xe6b422, 0x26262b, -1]},      # a cap's colour, or the band round a straw hat (-1: red and gold)
 	{"key": "shirt", "values": [0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f, 0x8a6a48, 0x8d99ae]},
 	{"key": "skin", "values": [0xfbd7b5, 0xf6c9a0, 0xe9b58c, 0xc98e5f, 0x8d5a3b]},
 	{"key": "hair", "values": [0x5a3a22, 0x2a1c14, 0xd9a441, 0xb5451b, 0xd9d9de, null, 0x3b6fd9, 0xe86aa6]},
-	{"key": "eyes", "values": [0, 1, 2]},
-	{"key": "eye_color", "values": [0x2a1c14, 0x111111, 0x2f6bb5, 0x3f7d4a, 0xb9812e]},
-	{"key": "brows", "values": [0, 1, 2, 3, 4, 5]},                  # (4 on: from free models, chara.gd CEJAS)
+	{"key": "eyes", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8]},
+	{"key": "eye_color", "values": [0x2a1c14, 0x111111, 0x2f6bb5, 0x3f7d4a, 0xb9812e, 0x7d8a96, 0x7b52ab]},
+	{"key": "brows", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8]},                  # (4-5: from free models, chara.gd CEJAS; 6-8: expressive curved brows)
 	{"key": "face", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},       # beards (see chara.gd; 9 on: from free models, BARBAS)
 	{"key": "gender", "values": [0, 1]},          # 0 man, 1 woman: only changes how people talk to you
-	{"key": "hair_style", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]},     # (13 on: from free models, chara.gd PELOS; 31 an old lady's curlers, chara.gd RULOS; 32 bald, 33 shaved)
+	{"key": "hair_style", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34]},     # (13 on: from free models, chara.gd PELOS; 17 buzz cut in hair colour; 31 curlers; 32 bald; 33 shaved grey; 34 four hairs)
 	{"key": "pena", "values": [0, 1, 2, 3, 4, 5]},      # your peña (crew): see PENAS
-	{"key": "glasses", "values": [0, 1, 2, 3, 4, 5, 6]},
-	{"key": "earrings", "values": [0, 1, 2, 3, 4, 5, 6]},
-	{"key": "pendant", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]},          # (6 on: from free models, chara.gd CUELLO)
-	{"key": "top", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]},     # (21: the peña's T-shirt, the wardrobe's)     # (11 on: from free models, chara.gd ROPA; 9 and 10 are neighbours' own)
+	{"key": "glasses", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]},
+	{"key": "earrings", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]},
+	{"key": "pendant", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},          # (6 on: custom neckwear, chara.gd CUELLO)
+	{"key": "top", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]},     # (21: the peña's T-shirt, the wardrobe's; 22 dress, 23 Hawaiian shirt, 24 lab/work coat)     # (11 on: from free models, chara.gd ROPA; 9 and 10 are neighbours' own)
 	{"key": "build", "values": [1.0, 0.86, 1.2]},
-	{"key": "shoe_type", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},       # trainers, boots, alpargatas (rope soles), flip-flops; 4 bare feet; 5 on: from free models (chara.gd CALZADO)
+	{"key": "shoe_type", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]},       # canvas, boots, alpargatas, flip-flops; 4 bare feet; 5..14 custom shoes (chara.gd CALZADO)
 	{"key": "shoes", "values": [0x4a3424, 0x1b1b1f, 0xf8f8f8, 0xb23a3a, 0x3b5fa8, 0x3f7d4a, 0xe6c229, 0xef8fa9]},
-	{"key": "lashes", "values": [0, 1, 2]},             # eyelashes: none, fine, a doll's
+	{"key": "lashes", "values": [0, 1, 2, 3]},             # eyelashes: none, fine, a doll's, winged liner
 	{"key": "panuelo", "values": [0, 1]},               # your peña's neckerchief, its point down your back with the peña's graffiti on it (the wardrobe's)
 	{"key": "shirt2", "values": [-1, 0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f, 0x8a6a48, 0x8d99ae]},      # clothes with more parts: the second one's colour (-1 as it comes)
 	{"key": "shirt3", "values": [-1, 0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f, 0x8a6a48, 0x8d99ae]},      # ...and the third's
@@ -118,7 +118,7 @@ static func not_used(sel: Array, option: int) -> bool:
 	var top := int(OPTIONS[15]["values"][sel[15]])
 	match option:
 		1:
-			return sel[0] == 1 or sel[0] == 3
+			return sel[0] == 1 or sel[0] == 3 or sel[0] == 13
 		10:
 			return OPTIONS[4]["values"][sel[4]] == null
 		18:
@@ -135,6 +135,11 @@ static func not_used(sel: Array, option: int) -> bool:
 ## añadir al creador de personaje color 1, color 2, color 3..."): those from free models, as many as their materials;
 ## the old ones, one.
 static func top_parts(top: int) -> int:
+	if top == 2:
+		var mt: Mesh = CharaS.pieza("ropa_traje")
+		return mt.get_surface_count() if mt != null else 1
+	if top == 22 or top == 24:
+		return 2
 	if top < CharaS.FIRST_ROPA or top - CharaS.FIRST_ROPA >= CharaS.ROPA.size():
 		return 1
 	var m: Mesh = CharaS.pieza(CharaS.ROPA[top - CharaS.FIRST_ROPA])
@@ -151,6 +156,21 @@ static func random() -> Array:
 	for i in range(OPTIONS.size()):
 		var pick: int = 0 if i in WARDROBE_ONLY else randi() % OPTIONS[i]["values"].size()      # (the creator's own choices only)
 		out.append(0 if skipped(i, pick) else pick)
+	return out
+
+## Randomises only the options on page `tab` (0 Lustre, 1 Pintas), keeping the other page intact.
+static func random_tab(sel: Array, tab: int) -> Array:
+	var out: Array = clean(sel)
+	for opt: int in TABS[clampi(tab, 0, TABS.size() - 1)]:
+		if opt in WARDROBE_ONLY:
+			continue
+		var count: int = OPTIONS[opt]["values"].size()
+		var pick: int = randi() % count
+		var tries := 0
+		while skipped(opt, pick) and tries < count:
+			pick = (pick + 1) % count
+			tries += 1
+		out[opt] = pick
 	return out
 
 ## fixes up a loaded/short selection so it is always valid

@@ -143,6 +143,8 @@ func icon(action: String) -> String:
 			return ICONS + "mouse_drag.png"
 		"tab_prev", "tab_next":
 			key = "Tab"
+		"random":
+			key = "R"
 		"turn_left":
 			key = "Q"
 		"turn_right":

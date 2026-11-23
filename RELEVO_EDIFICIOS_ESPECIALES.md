@@ -1,6 +1,6 @@
 # Relevo de «Edificios Especiales»
 
-Hoja para la IA que continúe el trabajo de la sesión de Claude «Edificios Especiales» (Pretil) mientras está en pausa. Escrita el 22 de noviembre de 2026. Recoge las normas de Luis que solo estaban en la memoria de esa sesión y lo que hay que respetar para no romper su trabajo ni el de las otras sesiones.
+Hoja para la IA que continúe el trabajo de la sesión de Claude «Edificios Especiales» (Pretil) mientras está en pausa. Escrita el 22 de noviembre de 2026 y puesta al día tras publicarse la 0.0.21. Recoge las normas de Luis que solo estaban en la memoria de esa sesión y lo que hay que respetar para no romper su trabajo ni el de las otras sesiones.
 
 ## Qué es este papel
 
@@ -22,10 +22,11 @@ Leer, en este orden:
 
 ## Lo que puede estropear el trabajo
 
-**Git.** `HEAD` es `d4066ba` (0.0.20) y hay unas 150 rutas sin commit. Casi todo el cruce de los semáforos son archivos sin seguimiento: `cruce.gd`, `esquina.gd`, `sopiss.gd`, `clinica.gd`, `stana2.gd`, `mirador.gd`, `beige.gd`, sus carpetas de `assets/`, `tools/cruce/` y `referencias/cruce/`.
+**Git.** Todo lo hecho hasta el 22/11 está en la versión 0.0.21 (`61f3781`, etiqueta `v0.0.21`, publicada en GitHub). Lo que se haga después, tuyo y de las otras sesiones, queda sin commit hasta la versión siguiente. Al dejarlo solo había dos archivos cambiados tras la versión, esta hoja y `TRASPASO_CLAUDE.md`: son cambios queridos, no se deshacen.
 
-- No ejecutar `git clean`, `git reset --hard`, `git checkout -- .`, `git restore .`, `git stash` ni cambiar de rama: se perderían.
+- No ejecutar `git clean`, `git reset --hard`, `git checkout -- .`, `git restore .`, `git stash` ni cambiar de rama: se perdería el trabajo sin commit, el tuyo y el de las demás.
 - No hacer commit, push ni etiquetas. Los hace Sistemas, o Luis.
+- Leer sí se puede: `git status`, `git diff`, `git log` y `git show v0.0.21:<ruta>` para ver cómo estaba un archivo.
 - No tocar `X:\Matritellus`: es la copia de seguridad.
 
 **Godot.** Nunca dos a la vez: antes de cada prueba, comprobar que no hay otro (`tasklist | findstr /i godot`). No lanzar pruebas mientras otra sesión hornea el mapa.
@@ -36,11 +37,11 @@ Leer, en este orden:
 
 **Archivos de otros.** No editar `semaforos.gd`, `props.gd`, `traffic.gd` (Sistemas) ni `casas.gd`, `casas_calles.gd`, `texturas.gd`, `tools/casas/` (Texturas). Si hace falta un cambio ahí, pedírselo a Luis.
 
-**Formato.** Cambios pequeños y localizados. Conservar los finales de línea de cada archivo y los tabuladores de GDScript. Los comentarios del código van en inglés; los textos del juego, en castellano manchego ([guion/palabros.md](guion/palabros.md)); las notas, en castellano.
+**Formato.** Cambios pequeños y localizados. Conservar los finales de línea de cada archivo y los tabuladores de GDScript. No son iguales en todos: casi todos los `.gd` van en LF, pero nueve van en CRLF (`aceras_altas.gd`, `ajedrez_humano.gd`, `cristobal.gd`, `cristoprado.gd`, `cultura.gd`, `loc.gd`, `matojos.gd`, `residencia.gd`, `sebastian.gd`), y también `TRASPASO_CLAUDE.md` y algunos LEEME. `git ls-files --eol <archivo>` dice cómo va cada uno. En Windows, un script que reescribe un archivo puede cambiarlos sin avisar (pasó el 22/11 con siete `.gd`): comprobarlo antes y después. Los comentarios del código van en inglés; los textos del juego, en castellano manchego ([guion/palabros.md](guion/palabros.md)); las notas, en castellano.
 
 **Lugares aprobados.** Lo que Luis ha dado por bueno no se retoca si él no lo pide. No renombrar nada que ya tenga nombre.
 
-**Nombres que usan otros archivos.** No cambiar funciones ni variables públicas de un lugar sin buscar antes quién las usa. Del cruce, `semaforos.gd` y `props.gd` usan: `world.cruce.heads` (los nombres `"avenida"` y `"arcos"` tienen que ser exactos), `walk`, `auto`, `broken`, `down`, `set_light()`, `set_walk()`, `repair()`, `fallen()`. La prueba usa además `part()`, `lights()` y `put_back()`.
+**Nombres que usan otros archivos.** No cambiar funciones ni variables públicas de un lugar sin buscar antes quién las usa. Del cruce, `semaforos.gd` y `props.gd` usan: `world.cruce.heads` (los nombres `"avenida"` y `"arcos"` tienen que ser exactos), `walk`, `auto`, `broken`, `down`, `set_light()`, `set_walk()` y `repair()`. La prueba usa además `part()`, `fallen()`, `lights()` y `put_back()`.
 
 ## Normas de Luis para estos lugares
 
@@ -64,6 +65,7 @@ Leer, en este orden:
 - **Alturas.** Siempre `MapData.height(p)`. En calles en cuesta hay trampas de terrazas: están en los LEEME de `escuela_calasanz`, `ermita_caridad` y `travesia_clavel`.
 - **Medidas.** La receta está en [referencias/petril/LEEME.md](referencias/petril/LEEME.md) y [referencias/plaza_ayuntamiento/LEEME.md](referencias/plaza_ayuntamiento/LEEME.md); la del cruce, con sus herramientas (`tools/cruce/`), en su LEEME.
 - **Prueba.** Un modo propio en `selftest.gd` (`--<lugar>`): comprobaciones y, si procede, modo de fotos. Se lanza con `python tools/run_tests.py <lugar> --timeout 400`. Del registro se mira solo el resumen y las líneas `ok`/`FAIL`: no volcarlo entero.
+- **Prueba completa.** Solo en los hitos y avisando antes a Luis. Dos de sus comprobaciones tienen poco margen y cada lugar hecho a mano las baja: «walls reach the ground» pide más de 24.000 muros y hay 24.770; «houses meet their street» pide más de 3.500 fachadas y hay 3.863. Si saltan, no es un fallo del lugar: se baja el umbral en `selftest.gd` y se le dice a Luis.
 - **Notas.** Un `referencias/<lugar>/LEEME.md` con fuentes, medidas, lo aproximado y las trampas.
 
 ## Estado al dejarlo
@@ -80,7 +82,7 @@ Leer, en este orden:
 | Semáforos, espejo y señales | `cruce.gd` | Luis dijo «Increíble» y pidió que se rompieran de un golpe; hecho. Falta su visto bueno final |
 
 - Los semáforos se rompen de un golpe y el cruce pasa a ámbar intermitente. Se arreglan al día siguiente con el resto del mobiliario (`props.gd`, `mend()`, de Sistemas).
-- Pruebas del 22/11: `cruce` 5 ok y `arreglos` 2 ok. No se ha pasado la prueba completa.
+- Publicado en la 0.0.21. Pruebas del 22/11: `cruce` 5 ok, `arreglos` 2 ok y la prueba completa, 983 ok.
 - Sin colocar, por si Luis los pide: los faroles de brazo de las fachadas, las señales de dirección y el semáforo siguiente de la avenida, al norte.
 - Propuesto a Sistemas y sin respuesta: que `mend()` mire todos los sitios de `world.cruce.fallen()` antes de levantar lo caído, y no solo la parada de la avenida.
 
