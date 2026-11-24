@@ -7,6 +7,13 @@
 ## They are MultiMeshes, one per 64 m square and kind, not drawn from far (Parts._range, so the draw-distance option
 ## applies), with no shadow and nothing to bump into. The same ones every time (fixed seeds). They go in once the
 ## physics of the world is up, a slice at a time while the town is being built (a step of world.gd's).
+##
+## And trees (the user, 24 Nov 2026: "Las partes sin construir o de tierra son muy vacías, sin árboles ni matojos. No
+## podríamos añadir unos pocos donde no haya solares ni construcciones"): now and then, on the open earth of the town's
+## edges and verges, well clear of streets, walls and the map's own trees, an olive, an almond or a stand of umbrella
+## pines (as at the north entrance), and among the dry tufts the odd grey-green shrub (retama, romero, coscoja). Never
+## in a block (the solares are the Catastro's, inside the blocks), a field, a park or a place built by hand. The trees
+## are the town's like the rest (world.gd add_trees: solid, felled by a car, back the next day).
 extends Node3D
 
 const Parts = preload("res://scripts/parts.gd")
@@ -14,11 +21,13 @@ const Parts = preload("res://scripts/parts.gd")
 const CELL := 64.0          # the squares they are drawn in
 const STEP := 6.4           # one candidate spot on a jittered grid this far apart (5 by 5 in each square of GRID)
 const REACH := 2            # how many squares of GRID past the last block of houses they still grow (64 m)
+const TREE_REACH := 4       # and the trees (128 m: the open land round the town is where it looked emptiest)
 const FAR := 120.0          # not drawn past this (times the draw-distance option)
 const ROAD_Y := -0.18       # (world.gd's: the drawn ground lies this far under the physics one)
 
 var world
 var count := 0              # plants placed (for the self-test and --timing)
+var trees: Array = []       # the trees grown here: [x, z, kind, size, turn] (world.gd add_trees)
 var ready_done := false
 
 static func start(w) -> Node3D:
@@ -130,6 +139,10 @@ var _rng: RandomNumberGenerator
 var _q: PhysicsRayQueryParameters3D
 var _kept: Array = []
 var _tried := 0
+var _close := {}                # Vector2i -> true where the plants grow too (within REACH), false where only trees
+var _tnoise: FastNoiseLite      # where trees grow at all, and which: olives and almonds, or pines
+var _taken := {}                # Vector2i(cell of 8 m) -> [Vector2...]: the trees standing (the map's and these)
+const TREE_GAP := 7.0
 var _t0 := 0
 
 func step() -> bool:
@@ -139,19 +152,24 @@ func step() -> bool:
 		_index_places()
 		var cached := _load()
 		if not cached.is_empty():
-			_show(cached)
+			_show(cached["bufs"])
+			trees = cached["trees"]
+			world.add_trees(trees)
 			_phase = 2
 			ready_done = true
 			if OS.get_cmdline_user_args().has("--timing"):
-				print("dry plants: %d from the cache in %d ms" % [count, Time.get_ticks_msec() - _t0])
+				print("dry plants: %d and %d trees from the cache in %d ms" % [count, trees.size(), Time.get_ticks_msec() - _t0])
 			return false
 		_index()
 		var near := {}
 		for k in _blocks:
-			for dx in range(-REACH, REACH + 1):
-				for dz in range(-REACH, REACH + 1):
-					near[k + Vector2i(dx, dz)] = true
+			for dx in range(-TREE_REACH, TREE_REACH + 1):
+				for dz in range(-TREE_REACH, TREE_REACH + 1):
+					var nk: Vector2i = k + Vector2i(dx, dz)
+					var close: bool = absi(dx) <= REACH and absi(dz) <= REACH
+					near[nk] = near.get(nk, false) or close
 		_cells = near.keys()
+		_close = near
 		_cells.sort()
 		_noise = FastNoiseLite.new()
 		_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
@@ -161,6 +179,12 @@ func step() -> bool:
 		_rng.seed = 2111
 		_q = PhysicsRayQueryParameters3D.new()
 		_q.collide_with_areas = false
+		_tnoise = FastNoiseLite.new()
+		_tnoise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+		_tnoise.seed = 2411
+		_tnoise.frequency = 1.0 / 140.0
+		for t in world.tree_info:
+			_take(t["p"])
 		_phase = 1
 		return true
 	if _phase == 1:
@@ -168,7 +192,7 @@ func step() -> bool:
 		while _ci < _cells.size():
 			var cell: Vector2i = _cells[_ci]
 			_ci += 1
-			for n in range(25):
+			for n in range(25 if _close[cell] else 0):
 				var p := Vector2((cell.x * GRID) + (n % 5 + _rng.randf()) * STEP, (cell.y * GRID) + (n / 5 + _rng.randf()) * STEP)
 				var roll := _rng.randf()
 				var base := clampf((_noise.get_noise_2d(p.x, p.y) + 0.15) * 1.1, 0.02, 0.7)      # (in loose patches)
@@ -194,21 +218,73 @@ func step() -> bool:
 				var hit := space.intersect_ray(_q)
 				if not hit.is_empty() and absf(float(hit["position"].y) - h) < 0.05 and float(hit["normal"].y) > 0.85:
 					_kept.append(p)
+			_try_tree(cell, space)
 			if Time.get_ticks_usec() > stop:
 				return true
 		var bufs := _plant(_kept, _rng)
 		_show(bufs)
+		world.add_trees(trees)
 		_save(bufs)
 		_phase = 2
 		ready_done = true
 		if OS.get_cmdline_user_args().has("--timing"):
-			print("dry plants: %d at %d spots (%d candidates) in %d ms" % [count, _kept.size(), _tried, Time.get_ticks_msec() - _t0])
+			print("dry plants: %d at %d spots (%d candidates), %d trees, in %d ms" % [count, _kept.size(), _tried, trees.size(), Time.get_ticks_msec() - _t0])
 	return false
+
+## a tree in this square of GRID, maybe: one try at a spot, where the noise lets trees grow (in stands, with open
+## earth between), on open bare earth only (not a field), off the streets and walls, its crown clear of every street,
+## block and place, nothing standing where it would be (a fence, a lamp, a sign), and no tree already within TREE_GAP
+func _try_tree(cell: Vector2i, space: PhysicsDirectSpaceState3D) -> void:
+	var p := Vector2((cell.x + _rng.randf()) * GRID, (cell.y + _rng.randf()) * GRID)
+	var roll := _rng.randf()
+	var kind_roll := _rng.randf()
+	var size := _rng.randf_range(0.8, 1.2)
+	var turn := _rng.randf() * TAU
+	var tn := _tnoise.get_noise_2d(p.x, p.y)
+	var chance := clampf((tn + 0.3) * 0.75, 0.04, 0.5)
+	if roll >= chance:
+		return
+	var thick := _ground_ok(p)
+	if thick <= 0.0 or (thick < 1.0 and roll >= chance * 0.3) or MapData.room_at(p) < 4.5 or MapData.road_edge_dist(p) < 4.5:
+		return                                   # (on a field only now and then: one by its edge)
+	for a in range(6):
+		if _ground_ok(p + Vector2.from_angle(TAU * a / 6.0) * 2.6) <= 0.0:
+			return
+	var k := Vector2i(floori(p.x / 8.0), floori(p.y / 8.0))
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for q in _taken.get(k + Vector2i(dx, dz), []):
+				if (q as Vector2).distance_to(p) < TREE_GAP:
+					return
+	var h: float = MapData.height(p)
+	_q.from = Vector3(p.x, h + 40.0, p.y)
+	_q.to = Vector3(p.x, h - 1.0, p.y)
+	var hit := space.intersect_ray(_q)
+	if hit.is_empty() or absf(float(hit["position"].y) - h) > 0.05 or float(hit["normal"].y) < 0.9:
+		return
+	var sq := PhysicsShapeQueryParameters3D.new()
+	var ball := SphereShape3D.new()
+	for at in [[1.1, 0.9], [3.2, 2.0]]:          # the trunk, then the crown: nothing there
+		ball.radius = at[1]
+		sq.shape = ball
+		sq.transform = Transform3D(Basis.IDENTITY, Vector3(p.x, h + at[0], p.y))
+		if not space.intersect_shape(sq, 1).is_empty():
+			return
+	var kind := 3 if tn > 0.3 and kind_roll < 0.8 and thick >= 1.0 else (1 if kind_roll < 0.7 else 0)       # pines where the stands are thickest; olives most
+	trees.append([p.x, p.y, kind, size, turn])
+	_take(p)
+
+func _take(p: Vector2) -> void:
+	var k := Vector2i(floori(p.x / 8.0), floori(p.y / 8.0))
+	if not _taken.has(k):
+		_taken[k] = []
+	_taken[k].append(p)
 
 ## the plants of each spot: one there, and maybe a few more round it where the ground is free too (they grow in clumps)
 func _plant(kept: Array, rng: RandomNumberGenerator) -> Dictionary:
 	var bufs := {}              # Vector3i(square x, square z, kind) -> the MultiMesh buffer: 12 floats of transform, 4 of colour
 	var straw := [Color(1.0, 0.97, 0.9), Color(0.9, 0.84, 0.72), Color(0.82, 0.77, 0.7), Color(1.0, 0.9, 0.74)]
+	var greens := [Color(1.0, 1.0, 1.0), Color(0.86, 0.92, 0.84), Color(1.05, 1.0, 0.9), Color(0.78, 0.8, 0.76)]
 	for p in kept:
 		var n := 1 + int(pow(rng.randf(), 1.3) * 8.0)
 		for j in range(n):
@@ -217,12 +293,16 @@ func _plant(kept: Array, rng: RandomNumberGenerator) -> Dictionary:
 				at = p + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(0.5, 2.2)
 				if _ground_ok(at) <= 0.0:
 					continue
-			var bush := rng.randf() < 0.18
+			var r := rng.randf()
+			var bush := r < 0.18
+			var mata := j == 0 and r > 0.9 and MapData.room_at(at) > 2.0       # (one to a clump, in the open)
 			var sc := rng.randf_range(0.55, 1.05) if bush else rng.randf_range(0.3, 0.62)
+			if mata:
+				sc = rng.randf_range(0.6, 1.15)
 			var y: float = MapData.height(at) + ROAD_Y - 0.02
 			var b := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc * rng.randf_range(0.85, 1.2), sc, sc * rng.randf_range(0.85, 1.2)))
-			var c: Color = straw[rng.randi() % straw.size()] * rng.randf_range(0.88, 1.05)
-			var key := Vector3i(floori(at.x / CELL), floori(at.y / CELL), 1 if bush else 0)
+			var c: Color = (greens[rng.randi() % greens.size()] if mata else straw[rng.randi() % straw.size()]) * rng.randf_range(0.88, 1.05)
+			var key := Vector3i(floori(at.x / CELL), floori(at.y / CELL), 2 if mata else (1 if bush else 0))
 			if not bufs.has(key):
 				bufs[key] = []                    # (an Array while it grows: a packed one in a Dictionary is copied on every append)
 			var o := Vector3(at.x - (key.x + 0.5) * CELL, y, at.y - (key.y + 0.5) * CELL)
@@ -232,7 +312,7 @@ func _plant(kept: Array, rng: RandomNumberGenerator) -> Dictionary:
 	return bufs
 
 func _show(bufs: Dictionary) -> void:
-	var meshes := [_tuft_mesh(), _bush_mesh()]
+	var meshes := [_tuft_mesh(), _bush_mesh(), _mata_mesh()]
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -259,7 +339,7 @@ func _show(bufs: Dictionary) -> void:
 ## Worked out once and kept (as world.gd keeps the ground's sheets): again only when the map, the places built by
 ## hand or VERSION change; the self-test uses the same (where they grow is no test's business, and it saves seconds a run).
 const CACHE := "user://matojos.cache"
-const VERSION := 1
+const VERSION := 3          # (2, 3: the trees and the shrubs, 24 Nov 2026)
 
 func _key() -> String:
 	var sig := 0.0
@@ -275,14 +355,14 @@ func _load() -> Dictionary:
 	if f == null:
 		return {}
 	var kept = f.get_var()
-	if kept is Dictionary and kept.get("key", "") == _key() and kept.get("bufs") is Dictionary:
-		return kept["bufs"]
+	if kept is Dictionary and kept.get("key", "") == _key() and kept.get("bufs") is Dictionary and kept.get("trees") is Array:
+		return kept
 	return {}
 
 func _save(bufs: Dictionary) -> void:
 	var f := FileAccess.open_compressed(CACHE, FileAccess.WRITE, FileAccess.COMPRESSION_ZSTD)
 	if f != null:
-		f.store_var({"key": _key(), "bufs": bufs})
+		f.store_var({"key": _key(), "bufs": bufs, "trees": trees})
 
 # ---------------- what they look like ----------------
 ## a tuft of dead grass, a metre tall at scale 1: blades bent out from the foot, darker there, straw at the tips
@@ -325,6 +405,43 @@ static func _bush_mesh() -> ArrayMesh:
 			var from: Vector3 = top * rng.randf_range(0.4, 0.75)
 			var out := (d.rotated(Vector3.UP, rng.randf_range(-1.2, 1.2)) * rng.randf_range(0.15, 0.3) + Vector3(0.0, rng.randf_range(0.1, 0.3), 0.0))
 			_stem(st, from, from + out, 0.02, foot.lerp(tip, 0.5), tip)
+	return st.commit()
+
+## a shrub of the dry land (retama, romero, coscoja), a metre tall at scale 1: a lumpy low mound of grey-green, darker
+## underneath, made of a few overlapping blobs so it is never a clean ball
+static func _mata_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 13
+	var under := Color(0.2, 0.24, 0.15)
+	var top := Color(0.43, 0.5, 0.32)
+	for b in range(4):
+		var c := Vector3(rng.randf_range(-0.3, 0.3), rng.randf_range(0.3, 0.5), rng.randf_range(-0.3, 0.3)) if b > 0 else Vector3(0.0, 0.45, 0.0)
+		var rad := Vector3(0.45, 0.42, 0.45) * (1.0 if b == 0 else rng.randf_range(0.55, 0.8))
+		var rows := 4
+		var cols := 7
+		var pts := []
+		for i in range(rows + 1):
+			var ring := []
+			var la := PI * (0.5 - float(i) / rows)
+			for j in range(cols):
+				var lo := TAU * j / cols + (0.4 if i % 2 == 1 else 0.0)
+				var d := Vector3(cos(la) * cos(lo), sin(la), cos(la) * sin(lo))
+				var v := c + d * rad * rng.randf_range(0.85, 1.12)
+				v.y = maxf(v.y, 0.0)
+				ring.append([v, d])
+			pts.append(ring)
+		for i in range(rows):
+			for j in range(cols):
+				var q := [pts[i][j], pts[i][(j + 1) % cols], pts[i + 1][(j + 1) % cols], pts[i + 1][j]]
+				for tri in [[0, 1, 2], [0, 2, 3]]:
+					for e in tri:
+						var v: Vector3 = q[e][0]
+						var d: Vector3 = q[e][1]
+						st.set_color(under.lerp(top, clampf(v.y / 0.8, 0.0, 1.0)))
+						st.set_normal((d + Vector3.UP).normalized())
+						st.add_vertex(v)
 	return st.commit()
 
 ## a stem from a to b: two thin strips crossed, so it shows from every side

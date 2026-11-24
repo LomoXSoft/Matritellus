@@ -492,15 +492,10 @@ func _fell(i: int, c) -> void:
 	var s: float = t["s"]
 	var b := RigidBody3D.new()
 	b.mass = 120.0
-	var th := 2.4 if k == 0 else (1.3 if k == 1 else 1.0)
+	var th: float = world.trunk_h(k)
 	b.add_child(Parts.part("cyl", 0x7a5536, Vector3(0, th / 2.0 - 1.5, 0), Vector3(0.28, th, 0.28)))
-	var lcol := [0x6fb24c, 0x93a070, 0x3d7044]
-	if k == 0:
-		b.add_child(Parts.part("ball", lcol[0], Vector3(0, 0.7 + 1.9 * s, 0), Vector3(2.2, 2.1, 2.2) * s))
-	elif k == 1:
-		b.add_child(Parts.part("ball", lcol[1], Vector3(0, -0.3 + 1.2 * s, 0), Vector3(2.0, 1.35, 2.0) * s))
-	else:
-		b.add_child(Parts.part("cone", lcol[2], Vector3(0, -0.9 + 3.6 * s, 0), Vector3(1.1, 7.2 * s, 1.1)))
+	var cr: Array = world.crown(k, s)
+	b.add_child(Parts.part(cr[0], world.TREE_COL[k], Vector3(0, cr[1] - 1.5, 0), cr[2]))
 	var cs := CollisionShape3D.new()
 	var cyl := CylinderShape3D.new()
 	cyl.radius = 0.35

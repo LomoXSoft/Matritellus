@@ -1816,6 +1816,49 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Sin commit.
 - [LEEME](referencias/entrada/LEEME.md) · capturas en `guion/fotos/entrada/` (`entrada_03_azafran.jpg`, el azafrán).
 
+### 2026-11-24 · La rotonda de la entrada norte: la portada, el cartel MADRIDEJOS y la tinaja (Claude · Edificios Especiales)
+
+- **Luis**, con dos capturas de Street View y dos enlaces de Maps: «Un poco más adelante hay una rotonda bastante bonita. Me gustaría que fuese lo siguiente que hacemos». Es la rotonda donde la carretera vieja de Madrid a Cádiz se cruza con la avenida de la Constitución, unos 70 m al sur de los carteles de la entrada.
+- **Dónde**:
+  - Sin rehorneado y sin tocar el mapa. Es la isleta del anillo que ya tiene el mapa (la carretera 98). `rotonda_norte.gd` la busca cerca de (276.9, −1555.75), como hace `rotonda.gd` con la de los Tricornios.
+  - La isleta real (círculos ajustados a la ortofoto del PNOA, `tools/ign/rotonda_norte.*`) tiene su centro en (275.87, −1555.66) y mide 6,94 m de radio.
+  - El anillo del mapa está 1,1 m más al este y deja 6,34 m. La isleta del juego sigue al anillo para no invadir el carril; el césped casi mantiene su tamaño real (4,40 m frente a 4,56) y lo que falta lo pierde la corona de ladrillo.
+  - Lo de encima va a su tamaño real y en su sitio real, contado desde el centro real. Los sitios salen de los rumbos desde tres cámaras de Street View (norte, sur y este), y la ortofoto confirma la portada y la tinaja.
+- **Hecho**, en `godot/scripts/rotonda_norte.gd` (`world.rotonda_norte`, sobre `obra.gd`):
+  - **El suelo**, cortado por las facetas del relieve, con un anillo de asfalto que tapa la plaza clara que dibujaba el mundo:
+    - el bordillo pintado a franjas rojas y blancas;
+    - la corona de ladrillo rojo puesto a lo largo, que sube hacia el centro;
+    - un bordillo blanco;
+    - el césped, que se pisa como todo lo demás (`MapData.decks`).
+  - **La portada**:
+    - dos pilares de ladrillo claro, el dintel con una hilada saliente y un tejadillo de teja árabe vieja con sus tejas de alero;
+    - la reja sobre un poyete con su remate;
+    - el mismo ladrillo por las dos caras (ver abajo).
+  - **El cartel**: una chapa oxidada de 4,60 m con los bordes rotos y MADRIDEJOS pintado a mano en blanco, sobre tres patas. La punta del este está enrollada hasta el césped, y por detrás es óxido sin letras.
+  - **La tinaja**: tumbada, con la boca levantada al norte-noroeste, oscura por dentro y un poco hundida en la hierba. A su lado hay un foco alargado y otro pequeño a su pie, apagados.
+  - El cartel y la portada miran a 350°: desde el este se ven de canto y desde el sur, de frente, como en Street View.
+  - **Tres señales azules de rotonda.** Ante la calle del este no hay ninguna, porque en Street View no se ve.
+  - `tools/rotonda_norte/dibujos.py` → `godot/assets/rotonda_norte/` (importados): `chapa.png`, la cara del cartel en la letra Ink Free de Windows, y `oxido.png`.
+- **Luis**: «Por detrás no es blanca. Es del mismo material que delante» (con una foto de 2019). Yo había encalado la cara sur de la portada, porque al sol parecía blanca. Ahora es toda de ladrillo y ya no hay material de cal.
+- **Fuera**:
+  - lo de las esquinas, fuera de la isleta (el pino, los armarios, el banco, el poste rojo), se queda como lo tiene el mapa;
+  - los focos de la tinaja no se encienden de noche.
+- **Archivos compartidos**, solo inserciones:
+  - `world.gd`: `RotondaNorteS`, `var rotonda_norte`, el paso «the roundabout at the north entrance» y `_build_rotonda_norte()`;
+  - `selftest.gd`: `_rotonda_norte_checks()` (también en la prueba completa, tras los carteles de la entrada) y el modo `--rotonda_norte`, con vistas desde las cámaras de Street View, dos de noche y cinco de cerca.
+- **Pruebas.** `rotonda_norte`: 3 ok ([log](logs/selftest_rotonda_norte_20261124_040550.log)). No he pasado la prueba completa.
+- **Luis, 24/11: «Visto bueno. Dentro de la boca de la tinaja»**
+  - **El azafrán escondido**, dentro de la tinaja, justo detrás de la boca (`rotonda_norte._saffron`, `"id": "rotonda_norte"`).
+    - `pickups.gd` viste todas las flores con su halo de 1,45 m y su aro. Aquí la flor va al 35 % (`SAFFRON_K`), y el halo y el aro con ella, para que todo quepa en el hueco de la tinaja. No he tocado `pickups.gd`: la escala de la flor se lo lleva todo.
+    - Asomándose a la boca, desde el noroeste, se ve la flor brillando en lo oscuro; desde la carretera del norte apenas asoma un poco de brillo.
+    - Se coge de pie delante de la boca.
+  - `_rotonda_norte_checks()` lo comprueba: que la flor está apuntada, que su halo cabe en la tinaja y que hay sitio delante de la boca. El modo `--rotonda_norte` saca las vistas `azafran` y `azafran_bordillo`.
+  - `rotonda_norte`: 4 ok ([log](logs/selftest_rotonda_norte_20261124_041657.log)).
+- **Aprobada.** Luis, 24/11: «Visto bueno», y otra vez «Visto bueno» al ver el azafrán en la tinaja.
+- **Pendiente.**
+  - Sin commit.
+- [LEEME](referencias/rotonda_norte/LEEME.md) · capturas en `guion/fotos/rotonda_norte/` (`rotonda_norte_03_azafran.jpg`, el azafrán).
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
@@ -2854,3 +2897,37 @@ Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductori
 - Prueba completa 2: 1065/1065.
 - Memoria con el renderizador del móvil: 789 MB estática y 2141 MB de vídeo. En 0.1.0 eran 592 y 1805; en 0.0.23, 773 y 2075.
 - Contenido: Modo Chavisca, marcador del mapa, sierras con Consuegra y sus focos, Óptica Corsa y Fátima, carteles de la entrada norte, menú nuevo, retoques de personajes y las calles de Texturas.
+
+### Cristo del Humilladero: 21 entradas (24/11, Claude · Texturas)
+
+- **Qué.** La hilera de 1993 del lado oeste (UR EL CERRO 2 a 42 en el Catastro, 4098601..21), `hum_2..42`, escrita por el scratchpad `hum_write.py` (en `casas_calles.gd`, tras `paj_4`). Comprobado antes contra todas las zonas hechas a mano de `bake_godot.py`: nada a menos de 15 m.
+- **Cómo.** Solo Street View 2024: 14 vistas, cada trozo asignado a su casa proyectando las fachadas en la foto desde la posición real de la cámara (el visor de Maps a 800 px tiene unos 120° de ancho, no 90). Las fotos del Catastro de varias parcelas son de otra hilera.
+- **Alineación.** `alinea.py` daba el 16 y el 10 adelantados 1,2 y 0,8 m; van en la línea de sus vecinas con `clear` 1,4 y 1,0. (Primero se pusieron con `fill` por leer mal el signo: en `alinea.py`, + es adelantada.)
+- **Pruebas.** Horneado: 21 nuevas, nada quitado ni cambiado. Test `casas solo=hum_` OK. APROBADA por el usuario («Visto bueno y siguiente»).
+
+### Silos de la Magdalena: 10 entradas (24/11, Claude · Texturas)
+
+- **Qué.** `sil_25, 23, 21, 19, 17, 15, 13, 11, 5` y `sil_p8` (Plaza de la Magdalena 8), escritas por el scratchpad `sil_write.py` (en `casas_calles.gd`, tras `hum_2`). Comprobado contra las zonas de `bake_godot.py` y las coordenadas de los scripts hechos a mano: nada cerca.
+- **Alineación.** `sil_5` girado 0,65 m respecto al 11: frente en la línea del 11 y `fill` de 1,0 m. Horneado: 10 nuevas, nada quitado ni cambiado; el nudo del cruce sur (Ángeles / Camino de Toledo) pasa de 3,3 a 3,0 m de holgura.
+- **Color.** El ladrillo rojo oscuro (25, 15) sale bien con `brick_dark`; `brick` lo deja naranja.
+- **Pruebas.** Test `casas solo=sil_` OK. APROBADA por el usuario («Visto bueno y siguiente»).
+
+### Valdespino: 11 entradas (24/11, Claude · Texturas)
+
+- **Qué.** `vald_22, 20, 18, 16, 14, 12, 10, 4` (hilera de 1994-95, lado par) y `vald_11, 9, 7` (lado impar), escritas por el scratchpad `vald_write.py` (en `casas_calles.gd`, tras `sil_p8`). Comprobado contra las zonas y los scripts hechos a mano: lo más cerca es el Requejo (`requejo.gd`), a 28 m del 4.
+- **Patios.** Los patios de delante del lado par no se ponen, como en `vin_45..53`. El 16, con el patio cerrado en ladrillo, lleva esa planta baja en su fachada y la azotea con balaustrada (`ter`).
+- **Alineación.** Todas en línea (alinea.py 0,0). Horneado: 11 nuevas; `valdespino_6` solo cambia la medianera; holguras igual.
+- **Pruebas.** Test `casas solo=vald_` OK. APROBADA por el usuario («Visto bueno y paramos»).
+
+### Árboles sueltos y matas en la tierra vacía (24/11, Claude · Sistemas)
+
+- **Qué.** Luis vio vacías las zonas de tierra. `matojos.gd` (`_try_tree`) planta, en el mismo paso que los matojos, un árbol a veces por cuadro de 32 m hasta `TREE_REACH` 4 cuadros de las manzanas, a rodales según un ruido (`_tnoise`): olivo (1), almendro redondo (0) o pino piñonero (3, nuevo). Unos 1500. `world.gd`: `_trees` partido en `_tree_add`, `_tree_meshes` (rehace los MultiMesh) y `add_trees(list)`; `trunk_h(k)` y `crown(k, s)` los usa también el árbol que cae (`props.gd _fell`). Tercer tipo de matojo: `_mata_mesh`, verde grisáceo.
+- **Reglas.** `_ground_ok` igual a 1 (en campo, 0,3 de la probabilidad), `room_at` y `road_edge_dist` ≥ 4,5 m, la copa (6 puntos a 2,6 m) fuera de calles y manzanas, 7 m a cualquier otro árbol, el rayo da en el terreno y dos esferas (tronco y copa) no tocan nada.
+- **Coste.** Caché VERSION 3: primera vez 9,3 s (antes 4,7), luego 1,7 s.
+- **Pruebas.** `arreglos` 2 ok, `relief` 19 ok, `entrada` 9 ok, `paseo` 3 ok. Fotos `vista_arb_*` en `godot/shots/`. APROBADO por Luis («Visto bueno»).
+
+### Versión 0.1.2 (24/11, Claude · Sistemas)
+
+- **Qué.** Luis: «Preparamos release con todos los cambios», y luego «Publica». Lleva la rotonda de la entrada norte con su azafrán (Pretil), los árboles sueltos y las matas (Sistemas) y Humilladero, Silos de la Magdalena y Valdespino (Texturas).
+- **Pruebas.** La prueba completa salió limpia a la primera: 1069/1069. Renderizador móvil: 809 MB y 2159 MB de vídeo (0.1.1: 789/2141).
+- **Paquetes.** APK 321 MB (código 102), instalador de Windows 386 MB, Linux 330 MB, en `dist/v0.1.2` con `SHA256SUMS.txt`. Sin probar en el móvil ni en la Steam Machine.

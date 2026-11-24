@@ -58,6 +58,7 @@ const TetoqaS = preload("res://scripts/tetoqa.gd")
 const PisacastanaS = preload("res://scripts/pisacastana.gd")
 const OpticaS = preload("res://scripts/optica.gd")
 const EntradaS = preload("res://scripts/entrada.gd")
+const RotondaNorteS = preload("res://scripts/rotonda_norte.gd")
 const RequejoS = preload("res://scripts/requejo.gd")
 const CruceS = preload("res://scripts/cruce.gd")
 const Detalles = preload("res://scripts/detalles.gd")
@@ -79,7 +80,7 @@ var extra_terrazas: Array = []    # [centre, direction] of terrazas that hand-bu
 var _hands: Array = []           # [hour hand, minute hand] for each face of the plaza clock
 var tree_info: Array = []       # per tree: {p, kind, s, leaf_i, shape, down}
 var _trunk_mm: MultiMesh
-var _leaf_mm: Array = [null, null, null]
+var _leaf_mm: Array = [null, null, null, null]
 var body: StaticBody3D          # ground, buildings, landmarks, map edge (layer 1)
 var tree_body: StaticBody3D     # trees (layer 8): solid, but the camera looks past them
 
@@ -163,6 +164,7 @@ var cruce                       # the traffic lights, the mirror and the signs o
 var beige                       # the two-storey house north of the Salvador, on its corner with the avenue at the crossroads of the traffic lights, built by hand on its house of the map (beige.gd)
 var maxiprecio                  # the clothes shop "MaxiPrecio" of the Calle de los Arcos (the HiperTextil Miniprecio), built by hand on its house of the map (maxiprecio.gd), with its hours and its inside
 var tetoqa                      # the accessories shop "Tetoqa" at the corner of Santa Ana and the Cristo (the real Tutoq), built by hand on its house of the map (tetoqa.gd), with its hours and its inside
+var rotonda_norte               # the roundabout at the north entrance: its brick gate, its board MADRIDEJOS, its jar, its island, built by hand (rotonda_norte.gd)
 var entrada                     # the two signs at the north entrance by the old road: the whitewashed wall with Don Quixote and the twinning sign (entrada.gd; entrada.cartel the sign)
 var optica                      # the optician "Óptica Corsa" of the Calle del Salvador (the real Centro Óptico Corts), built by hand on its house of the map (optica.gd), with its hours and its inside
 var pisacastana                 # the shoe shop "Pisacastaña" at the corner of the Arcos and the Calle Argentina (the real Pisamorena), built by hand on its house of the map (pisacastana.gd), with its hours and its inside
@@ -186,7 +188,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the shop MaxiPrecio", _build_maxiprecio], ["the shop Tetoqa", _build_tetoqa], ["the shop Pisacastaña", _build_pisacastana], ["the optician Óptica Corsa", _build_optica], ["the signs at the north entrance", _build_entrada], ["the Plaza de Jesús Requejo", _build_requejo], ["the crossroads' traffic lights", _build_cruce], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the shop MaxiPrecio", _build_maxiprecio], ["the shop Tetoqa", _build_tetoqa], ["the shop Pisacastaña", _build_pisacastana], ["the optician Óptica Corsa", _build_optica], ["the signs at the north entrance", _build_entrada], ["the roundabout at the north entrance", _build_rotonda_norte], ["the Plaza de Jesús Requejo", _build_requejo], ["the crossroads' traffic lights", _build_cruce], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -365,6 +367,12 @@ func _build_pisacastana() -> void:
 			pisacastana = PisacastanaS.new()
 			pisacastana.build(self, hd)
 			return
+
+func _build_rotonda_norte() -> void:
+	rotonda_norte = RotondaNorteS.new()   # (the roundabout where the old road comes into the town from the north: rotonda_norte.gd, on the island of the ring road the map has there)
+	if not rotonda_norte.build(self):
+		rotonda_norte.free()
+		rotonda_norte = null
 
 func _build_entrada() -> void:
 	entrada = EntradaS.new()         # (the welcome wall with Don Quixote and the twinning sign, by the old road at the north entrance: entrada.gd, on bare ground)
@@ -1702,37 +1710,71 @@ func _multimesh(mesh: Mesh, material: Material, list: Array) -> MultiMesh:
 	return mm
 
 # ---------------- trees ----------------
+## kinds: 0 round, 1 olive, 2 cypress (the map's, from OpenStreetMap), 3 umbrella pine (only among those the bare ground
+## grows: matojos.gd, the user, 24 Nov 2026: "Las partes sin construir o de tierra son muy vacías, sin árboles ni matojos")
+const TREE_COL := [0x6fb24c, 0x93a070, 0x3d7044, 0x3f6a3a]
+var _tree_mis: Array = []
+
 func _trees() -> void:
-	var trunks := []
-	var leaves := [[], [], []]
-	var white := Color.WHITE
-	var trunk_shape := CylinderShape3D.new()
-	trunk_shape.radius = 0.4
-	trunk_shape.height = 4.0
 	for t in MapData.trees:
-		var x: float = t[0]; var z: float = t[1]
-		var gy: float = MapData.height(Vector2(x, z))
-		var k := int(t[2])
-		var s := randf_range(0.8, 1.25)
-		var th := 2.4 if k == 0 else (1.3 if k == 1 else 1.0)
-		var rot := Basis(Vector3.UP, randf() * TAU)
-		trunks.append([Transform3D(Basis.from_scale(Vector3(0.28, th + 0.4, 0.28)), Vector3(x, gy + th / 2.0 - 0.2, z)), white])
-		if k == 0:
-			leaves[0].append([Transform3D(rot * Basis.from_scale(Vector3(2.2, 2.1, 2.2) * s), Vector3(x, gy + 2.2 + 1.9 * s, z)), white])
-		elif k == 1:
-			leaves[1].append([Transform3D(rot * Basis.from_scale(Vector3(2.0, 1.35, 2.0) * s), Vector3(x, gy + 1.2 + 1.2 * s, z)), white])
-		else:
-			leaves[2].append([Transform3D(Basis.from_scale(Vector3(1.1, 7.2 * s, 1.1)), Vector3(x, gy + 0.6 + 3.6 * s, z)), white])
-		var cs := CollisionShape3D.new()
-		cs.shape = trunk_shape
-		cs.position = Vector3(x, gy + 2.0, z)
-		tree_body.add_child(cs)
-		tree_info.append({"p": Vector2(x, z), "kind": k, "s": s, "leaf_i": leaves[k].size() - 1, "shape": cs, "down": false,
-			"xf_t": trunks[trunks.size() - 1][0], "xf_l": leaves[k][leaves[k].size() - 1][0]})
+		_tree_add(t[0], t[1], int(t[2]), randf_range(0.8, 1.25), randf() * TAU)
+	_tree_meshes()
+
+## the trees the bare ground grows (matojos.gd, once it has placed them): [x, z, kind, size, turn] each
+func add_trees(list: Array) -> void:
+	for t in list:
+		_tree_add(t[0], t[1], int(t[2]), t[3], t[4])
+	_tree_meshes()
+
+## how tall the trunk of a tree of that kind stands (props.gd's falling one too)
+static func trunk_h(k: int) -> float:
+	return [2.4, 1.3, 1.0, 4.2][k]
+
+## the crown of a tree of that kind and size, from its foot: [mesh, middle up from the foot, scale]
+static func crown(k: int, s: float) -> Array:
+	match k:
+		0: return ["ball", 2.2 + 1.9 * s, Vector3(2.2, 2.1, 2.2) * s]
+		1: return ["ball", 1.2 + 1.2 * s, Vector3(2.0, 1.35, 2.0) * s]
+		2: return ["cone", 0.6 + 3.6 * s, Vector3(1.1, 7.2 * s, 1.1)]
+	return ["ball", 4.0 + 0.75 * s, Vector3(4.2, 1.7, 4.2) * s]          # the umbrella pine: a broad flat crown high on a bare trunk
+
+var _trunk_shape: CylinderShape3D
+func _tree_add(x: float, z: float, k: int, s: float, ang: float) -> void:
+	if _trunk_shape == null:
+		_trunk_shape = CylinderShape3D.new()
+		_trunk_shape.radius = 0.4
+		_trunk_shape.height = 4.0
+	var gy: float = MapData.height(Vector2(x, z))
+	var th := trunk_h(k)
+	var cr := crown(k, s)
+	var rot := Basis.IDENTITY if k == 2 else Basis(Vector3.UP, ang)
+	var cs := CollisionShape3D.new()
+	cs.shape = _trunk_shape
+	cs.position = Vector3(x, gy + 2.0, z)
+	tree_body.add_child(cs)
+	tree_info.append({"p": Vector2(x, z), "kind": k, "s": s, "leaf_i": -1, "shape": cs, "down": false,
+		"xf_t": Transform3D(Basis.from_scale(Vector3(0.28, th + 0.4, 0.28)), Vector3(x, gy + th / 2.0 - 0.2, z)),
+		"xf_l": Transform3D(rot * Basis.from_scale(cr[2]), Vector3(x, gy + cr[1], z))})
+
+## (again) the MultiMeshes all the trees are drawn with: one for the trunks, one for the crowns of each kind
+func _tree_meshes() -> void:
+	for mi in _tree_mis:
+		mi.queue_free()
+	_tree_mis.clear()
+	var trunks := []
+	var leaves := [[], [], [], []]
+	var gone := Transform3D(Basis.from_scale(Vector3.ONE * 0.0001), Vector3(0.0, -50.0, 0.0))
+	for t in tree_info:
+		var k: int = t["kind"]
+		t["leaf_i"] = leaves[k].size()
+		trunks.append([gone if t["down"] else t["xf_t"], Color.WHITE])
+		leaves[k].append([gone if t["down"] else t["xf_l"], Color.WHITE])
+	var n := get_child_count()
 	_trunk_mm = _multimesh(Parts.mesh("cyl"), Parts.mat(0x7a5536), trunks)
-	var lcol := [0x6fb24c, 0x93a070, 0x3d7044]
-	for k in range(3):
-		_leaf_mm[k] = _multimesh(Parts.mesh("cone") if k == 2 else Parts.mesh("ball"), _tmat(lcol[k], "leaf", 1.6), leaves[k])
+	for k in range(4):
+		_leaf_mm[k] = _multimesh(Parts.mesh("cone") if k == 2 else Parts.mesh("ball"), _tmat(TREE_COL[k], "leaf", 1.6), leaves[k])
+	for i in range(n, get_child_count()):
+		_tree_mis.append(get_child(i))
 
 ## removes a standing tree (visual + collider) and returns its record so the caller can spawn the falling one
 func fell_tree(i: int) -> Dictionary:

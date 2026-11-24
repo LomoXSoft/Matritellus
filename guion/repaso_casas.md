@@ -971,6 +971,36 @@ Una casa no puede quedar suelta, adelantada a sus vecinas y enseñando un trozo 
 - **`paj_3`:** el ladrillo caravista crema va pintado (enfoscado crema), porque la textura de ladrillo no aclara tanto.
 - **Hojas:** `fotos/tanda34/pradera_1`, `pradera_2` y `pajaritos_1`.
 
+## Calle del Cristo del Humilladero
+
+- **Solo Street View (noviembre de 2024):** las fotos del Catastro de varias casas (el 42, el 40, el 38, el 30 y del 14 al 6) enseñan casas de cabecera con cochera que no están en esta hilera; en la calle todas son iguales: dos plantas y el patio de delante cerrado en porche.
+- **El porche:** murete (azulejo, piedra, ladrillo o enfoscado) y encima rejas, cristal o persianas, con un tejadillo de tejas a lo largo. En el juego va en el plano de la fachada; en la realidad el porche sale unos 2 m por delante de la planta de arriba.
+- **Tejadillos de chapa:** el 40, el 34 y el 26 tienen chapa (roja, marrón y gris) en vez de tejas; van con tejas. El 10 solo tiene un bastidor de hierro sin cubrir, y el 2 un patio abierto: ninguno lleva tejadillo.
+- **`hum_16` y `hum_10`:** el Catastro los dibuja hasta 1,2 m por delante de la fila; en Street View están a ras: van en la línea con `clear`.
+- **`hum_6`:** el porche está cerrado con ladrillo y dos ventanas con reja; el ladrillo sale algo más pardo que en la foto.
+- **Sin hacer:** el lado este (Sueños 20, Santa Margarita 15 y 17) solo da costados a esta calle.
+- **Hojas:** `fotos/tanda34/humilladero_1..5`.
+
+## Calle Silos de la Magdalena
+
+- **Hecho:** el lado oeste del 25 al 5 (`sil_25..5`) y la casa de la esquina de la Plaza de la Magdalena cuyo costado largo da a la calle (`sil_p8`), todo desde Street View 2024.
+- **`sil_p8`:** en la foto del Catastro es amarilla; hoy está pintada de blanco con zócalo de losas de granito.
+- **`sil_19`:** la azotea con balaustrada blanca no sale (el tejado plano no lleva balaustrada); la galería del primer piso va como una ventana ancha con persiana beis bajo un toldo verde.
+- **`sil_5`:** la casa baja de la esquina; la puerta verde del norte es la de su patio-cochera. Las dos piezas de dos plantas de detrás se quedan a la altura de la casa.
+- **Sin hacer:** la otra casa de la plaza (Plaza 6), que da a la plaza; Monjas 117 B, un cuartito de 12 m².
+- **Hojas:** `fotos/tanda34/silos_1` y `silos_2`.
+
+## Calle Valdespino
+
+- **Hecho:** la hilera de 1994-95 del lado par, del 22 al 10 y el 4 (`vald_22..10`, `vald_4`), y enfrente el 11, el 9 y el 7, desde Street View 2024 (muchos árboles delante).
+- **La hilera del lado par:** los patios de delante, con sus tapias rojas, rejas y cancelas, no se ponen; sale la fachada de la casa (igual que en la hilera de las Viñas).
+- **`vald_16`:** ha cerrado el patio con ladrillo hasta la acera (cancela gris, puerta, ventana con reja, ventanal de arco y azotea con balaustrada encima). Aquí esa planta baja va pegada a la fachada de la casa, no adelantada.
+- **`vald_22`, `vald_12`:** casi tapadas por árboles y una palmera; el detalle de arriba es aproximado.
+- **`vald_7`:** la mitad izquierda del piso de arriba queda detrás del árbol; se pone una ventana.
+- **Los arcos de ladrillo** salen más pequeños y finos que en la realidad.
+- **Sin hacer:** el 8 y el 6, que ya estaban como casas genéricas.
+- **Hojas:** `fotos/tanda34/valdespino_1` y `valdespino_2`.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

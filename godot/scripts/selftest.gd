@@ -3965,6 +3965,57 @@ func _maxiprecio_checks() -> void:
 		fl["gone"] = was_gone
 	_check(hidden and reach < 1.2, "a saffron flower is hidden in a bin of socks of the island in the middle of its inside (%s), and you get to it (%.2f m from it)" % [hidden, reach])
 
+## The roundabout at the north entrance (rotonda_norte.gd): its island on the ring of the map and within its lane, near
+## where the real one is; its floor where you walk (the kerb, the brick band rising to the middle, the lawn); its gate,
+## its board and its jar solid; a blue sign looking at each street that comes into it.
+func _rotonda_norte_checks() -> void:
+	var rn = g.world.get("rotonda_norte")
+	_check(rn != null and rn.pieces > 150 and rn.decks >= 20, "the roundabout at the north entrance is built by hand (%d pieces, %d decks)" % [rn.pieces if rn != null else 0, rn.decks if rn != null else 0])
+	if rn == null:
+		return
+	var far := 0.0
+	for q in rn.things:
+		far = maxf(far, (q as Vector2).distance_to(rn.mid))
+	var lane: float = rn.ring_r - rn.ring_hw
+	var off_real: float = (rn.mid as Vector2).distance_to(rn.REAL)
+	_check(rn.R <= lane + 0.1 and far < rn.R - 0.2 and off_real < 1.5 and rn.signs == 3,
+		"its kerb (%.2f m) keeps out of the ring's lane (%.2f m), what stands on it is within it (the farthest %.1f m out), the map's ring is where the real island is (%.1f m off) and a blue sign looks at %d of its streets (none at the one from the east, as Street View has it)" % [rn.R, lane, far, off_real, rn.signs])
+	var lawn: Vector2 = rn.mid + Vector2(0.5, 2.5)
+	var band: Vector2 = rn.mid + Vector2(-(rn.LAWN_R + rn.WHITE_W + 0.6), 0.0)
+	var out: Vector2 = rn.mid + Vector2(rn.ring_r, 0.0)
+	var on_lawn: float = MapData.foot(lawn) - MapData.height(lawn)
+	var on_band: float = MapData.foot(band) - MapData.height(band)
+	var off: float = MapData.foot(out) - MapData.height(out)
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var ray := func(a: Vector2, b: Vector2, h: float) -> bool:
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, MapData.height(a) + h, a.y), Vector3(b.x, MapData.height(b) + h, b.y), 1)).is_empty()
+	var lk: Vector2 = rn._look
+	var stops: bool = ray.call(out, rn.mid, 0.07) and ray.call(rn.gate_mid + lk * 1.2, rn.gate_mid - lk * 1.2, rn.LAWN + 1.5)
+	stops = stops and ray.call(rn.board_mid + lk * 0.8, rn.board_mid - lk * 0.8, rn.LAWN + 0.7) and ray.call(rn.jar_mid + Vector2(1.2, 0.0), rn.jar_mid - Vector2(1.2, 0.0), rn.LAWN + 0.5)
+	_check(absf(on_lawn - rn.LAWN) < 0.015 and on_band > rn.KERB and on_band < rn.BAND_IN and absf(off) < 0.001 and stops,
+		("" if stops else "(NOT SOLID) ") + "on foot you stand on its lawn (%.2f m up), on its brick band (%.2f) and on the road out of it (%.2f); its kerb, its gate, its board and its jar stop you" % [on_lawn, on_band, off])
+	# its hidden saffron, inside the jar (the user, 24 Nov 2026: «Dentro de la boca de la tinaja»)
+	var hidden := false
+	for f in g.flowers:
+		if String(f.get("id", "")) == "rotonda_norte" and bool(f.get("hidden", false)) and (f["p"] as Vector2).distance_to(rn.saffron_spot) < 0.01:
+			hidden = true
+	var jx: Transform3D = rn.jar_xf
+	var gl: Vector3 = jx.affine_inverse() * (rn.saffron_glow as Vector3)          # (in the jar's frame: z up its axis)
+	var round_it: float = Vector2(gl.x, gl.y).length() + 0.725 * rn.SAFFRON_K      # (how far from the axis its glow reaches)
+	var inside: bool = round_it < 0.42 and gl.z > -0.3 and gl.z < 0.45
+	var up2 := Vector2(jx.basis.z.x, jx.basis.z.z).normalized()
+	var stand: Vector2 = rn.jar_mid + up2 * 1.2                                    # (on the lawn before its mouth)
+	var q := PhysicsShapeQueryParameters3D.new()
+	var ball := SphereShape3D.new()
+	ball.radius = 0.3
+	q.shape = ball
+	q.collision_mask = 1
+	q.transform = Transform3D(Basis.IDENTITY, Vector3(stand.x, MapData.foot(stand) + 0.6, stand.y))
+	var free: bool = space.intersect_shape(q, 1).is_empty()
+	var reach: float = stand.distance_to(rn.saffron_spot)
+	_check(hidden and inside and free and reach < 1.2,
+		"a saffron flower is hidden inside the jar, just in from its mouth (%s): its glow reaches %.2f m from the jar's axis, %.2f m up it from its belly, within its hollow (%s); you take it standing before the mouth (%.2f m from it, room to stand: %s)" % [hidden, round_it, gl.z, inside, reach, free])
+
 ## The two signs at the north entrance by the old road (entrada.gd): the whitewashed wall with Don Quixote and the
 ## twinning sign, where Street View puts them, off the road, solid, in the ground, the Quixote within the wall, seen
 ## from the road by who comes from the north, no dry plants through them.
@@ -15246,6 +15297,73 @@ func _run() -> void:
 		print("TETOQA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--rotonda_norte"):     # just the roundabout at the north entrance: from where the Street View pictures were taken (referencias/rotonda_norte), by day and at night; close, and from above
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var rn = g.world.get("rotonda_norte")
+		if rn == null:
+			print("ROTONDA_NORTE FAILED (not built)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = Vector2(330.0, -1600.0)
+		g.weekday = 1
+		g.set_rain(false, 1e9)
+		var sv := {"u": Vector2(280.93, -1572.73), "s": Vector2(275.16, -1533.53), "e": Vector2(294.37, -1561.59)}
+		var views: Array = [["u_195_90", "u", 195.0, 0.0, 90.0], ["u_193_30", "u", 193.0, -3.0, 30.0], ["u_200_22", "u", 200.0, 1.0, 22.0],
+			["s_20_90", "s", 20.0, 0.0, 90.0], ["s_357_24", "s", 357.0, 6.0, 24.0], ["e_252_40", "e", 252.0, 0.0, 40.0]]
+		var aspect := 1280.0 / 720.0
+		for moment in [["dia", 12.0], ["noche", 22.5]]:
+			g.set_time(moment[1])
+			await _frames(6)
+			for v in views:
+				if moment[0] == "noche" and not (v[0] in ["u_195_90", "e_252_40"]):
+					continue
+				var eye: Vector2 = sv[v[1]]
+				var h := deg_to_rad(v[2])
+				var e3 := Vector3(eye.x, MapData.height(eye) + 2.5, eye.y)
+				g.cam.position = e3
+				g.cam.look_at(e3 + Vector3(sin(h), tan(deg_to_rad(v[3])), -cos(h)))
+				g.cam.fov = rad_to_deg(2.0 * atan(tan(deg_to_rad(v[4]) / 2.0) / aspect))      # (Street View's angle is across; Godot's is up and down)
+				await _frames(6)
+				await _shot("rotonda_norte_%s_%s" % [v[0], moment[0]])
+		g.set_time(12.0)
+		await _frames(4)
+		var lk: Vector2 = rn._look
+		for v in [["cartel", rn.board_mid + lk * 4.5, rn.board_mid, 1.5, 0.9, 55.0], ["portada", rn.gate_mid - lk * 5.0, rn.gate_mid, 1.7, 1.9, 55.0],
+				["tinaja", rn.jar_mid + Vector2(-2.2, -2.6), rn.jar_mid, 1.5, 0.7, 50.0], ["oeste", rn.mid + Vector2(-16.0, 1.0), rn.mid, 1.7, 1.2, 60.0],
+				["arriba", rn.mid + Vector2(16.0, -13.0), rn.mid, 15.0, 0.0, 55.0]]:
+			var eye2: Vector2 = v[1]
+			var at2: Vector2 = v[2]
+			g.cam.position = Vector3(eye2.x, MapData.height(eye2) + v[3], eye2.y)
+			g.cam.look_at(Vector3(at2.x, MapData.height(at2) + v[4], at2.y))
+			g.cam.fov = v[5]
+			await _frames(6)
+			await _shot("rotonda_norte_%s" % v[0])
+		var o3 := Vector3(rn.mid.x, rn.level, rn.mid.y)                              # its hidden saffron: looking into the jar's mouth, and from the kerb
+		var jx: Transform3D = rn.jar_xf
+		var up2 := Vector2(jx.basis.z.x, jx.basis.z.z).normalized()
+		var kerb: Vector2 = rn.jar_mid + up2 * 3.2
+		for v in [["azafran", o3 + jx.origin + jx.basis.z * 3.0 + Vector3(0, 0.25, 0), 50.0], ["azafran_bordillo", Vector3(kerb.x, MapData.height(kerb) + 1.7, kerb.y), 50.0]]:
+			g.cam.position = v[1]
+			g.cam.look_at(o3 + (rn.saffron_glow as Vector3))
+			g.cam.fov = v[2]
+			await _frames(6)
+			await _shot("rotonda_norte_%s" % v[0])
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _rotonda_norte_checks()
+		print("ROTONDA_NORTE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--entrada"):     # just the two signs at the north entrance by the old road: from where the Street View pictures were taken (referencias/entrada), by day and at night; close, from behind and from above
 		shots = true
 		g.menu.close()
@@ -19579,6 +19697,7 @@ func _run() -> void:
 	await _pisacastana_checks()
 	await _optica_checks()
 	await _entrada_checks()
+	await _rotonda_norte_checks()
 	await _requejo_checks()
 	await _rize_checks()
 	await _travesia_checks()
