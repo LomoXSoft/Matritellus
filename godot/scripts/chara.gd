@@ -337,7 +337,9 @@ func set_look(o: Dictionary) -> void:
 	_fl = _foot(-fx, shoes, shod, ankle)
 	_fr = _foot(fx, shoes, shod, ankle)
 	_hl = Parts.part("ball", skin, Vector3(-_hx, 0.68, 0), HAND_SIZE)
+	_hl.name = "hand_l"
 	_hr = Parts.part("ball", skin, Vector3(_hx, 0.68, 0), HAND_SIZE)
+	_hr.name = "hand_r"
 	for n in [_fl, _fr, _hl, _hr]:
 		inner.add_child(n)
 	_phone = Parts.part("box", 0x1b1b1f, Vector3(0.54, 1.4, 0.1), Vector3(0.05, 0.24, 0.13))

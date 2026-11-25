@@ -1,6 +1,6 @@
 extends Control
 ## The dashboard, bottom right. Every kind of vehicle has its own instrument:
-##   classic   Zeat Panda, Z15, the tow truck: a cream dial in a chrome ring, as fitted to anything sold before 1995
+##   classic   Seta Panda, Z15, the tow truck: a cream dial in a chrome ring, as fitted to anything sold before 1995
 ##   tractor   Súper Hebro, Yondir: a big slow dial in the colour of the make; it tops out where the others start
 ##   sport     Omega Julietta, El Tunero: black face, white figures, a long scale and a red line... and under it the
 ##             nitro, a tube of fire: it burns down while you use it, burns OUT if you empty it, and fills again as

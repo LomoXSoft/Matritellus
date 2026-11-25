@@ -6235,16 +6235,16 @@ func _garage_checks() -> void:
 	var fast: Array = S.keys().filter(func(k): return not (k in ["pitufo", "tricornio", "grua"]))
 	fast.sort_custom(func(a, b): return S[a]["max"] > S[b]["max"])
 	_check(fast[0] == "julietta" and fast[1] == "edison" and S["edison"]["sound"] == "electric" and float(S["edison"]["smoke"]) == 0.0, "the %s is the fastest car and the %s the second, electric and smokeless" % [S[fast[0]]["name"], S[fast[1]]["name"]])
-	var loud := true                 # red and bright green belong to the Julietta alone among the cars (the Hebro, a tractor, also comes in red)
+	var loud := true                 # red and bright green belong to the Julietta alone among modern cars (the Hebro tractor and classic Renol 4L also come in red)
 	for k in S:
 		for col in S[k].get("colors", []):
 			var cc := Color(((col >> 16) & 255) / 255.0, ((col >> 8) & 255) / 255.0, (col & 255) / 255.0)
 			var is_red: bool = cc.r > 0.7 and cc.g < 0.3 and cc.b < 0.3
 			var is_lime: bool = cc.g > 0.8 and cc.r < 0.5 and cc.b < 0.5
-			if (is_red or is_lime) != (k == "julietta") and not (k == "tractor" and is_red):
+			if (is_red or is_lime) != (k == "julietta") and not (k in ["tractor", "cuatrolatas"] and is_red):
 				loud = false
 	_check(loud and S["panda"]["colors"].size() >= 8 and S["z15"]["colors"].size() == 3 and S["edison"]["colors"].size() == 2 and S["tractor"]["colors"].size() == 2 and S["yondir"]["colors"].size() == 1,
-		"each make keeps to its colours: %d for the Zeat, white, silver or black Z15s, blue or red Hebros, black or white Edisons, and among the cars only the Julietta in red or loud green" % S["panda"]["colors"].size())
+		"each make keeps to its colours: %d for the Seta, white, silver or black Z15s, blue or red Hebros, black or white Edisons, and among the modern cars only the Julietta in red or loud green" % S["panda"]["colors"].size())
 	_check(S["tractor"]["cab"] == 0.0 and S["yondir"]["max"] > S["tractor"]["max"] and S["yondir"]["hp"] > S["tractor"]["hp"] and S["yondir"]["mass"] > S["tractor"]["mass"] and float(S["yondir"]["offroad"]) == 1.0,
 		"the Hebro has lost its cab; the Yondir is bigger, faster and tougher")
 	g.traffic.clear()                          # nobody else on the road while we measure
@@ -8284,6 +8284,9 @@ func _motin_checks(pictures := false) -> void:
 	await _frames(30)
 	_check(M.stage == "" and M.crowd.is_empty() and not M.wanted(), "before you have ever been sent for a ham there is nobody outside Henry's, Thursday or not")
 	# Josefa's errand: the bat
+	if josefa.p.distance_to(M.centre()) < 22.0:  # keep Josefa clear of Henry's trigger radius so talking doesn't start the riot early
+		josefa.p = josefa.home
+		josefa.sync()
 	g.player.p = josefa.p + Vector2(1.2, 0.8)
 	await _frames(5)
 	g.weekday = 1
@@ -8534,6 +8537,10 @@ func _motin_checks(pictures := false) -> void:
 func _ruta_checks(pictures := false) -> void:
 	var R = g.ruta
 	_check(R != null and R.beat.size() > 10, "the ruta del colesterol: the old Madrid–Cádiz road (%d points)" % (R.beat.size() if R != null else 0))
+	var mj = g.world.get("matojos")
+	if mj != null and mj.ready_done:
+		var ave_n: int = int(mj.avenue_trees)
+		_check(ave_n >= 250, "the old Madrid–Cádiz pavements are lined with shade trees where there are no constructions (%d trees in alcorques)" % ave_n)
 	if R == null or R.points.is_empty():
 		return
 	var th: Dictionary = MapData.townhall
@@ -8560,8 +8567,8 @@ func _ruta_checks(pictures := false) -> void:
 			off_road.append(d)
 	var dogs: int = R.people.filter(func(p): return p["dog"] != null).size()
 	_check(R.people.size() >= 8 and R.people.all(func(p): return int(p["n"].look_data["top"]) == 4 and p["n"].lines_key == "ruta_colesterol" and p["n"].walker and not p["n"].beat.is_empty() and p["n"].voice != "kid")
-		and off_road.is_empty(),
-		"at eight in the morning, walkers come out along it: %d of them, in tracksuits, keeping to the road (%d with a dog)" % [R.people.size(), dogs])
+		and off_road.is_empty() and (dogs == 0 or (R._dog_k > 0.05 and R._dog_k < 1.0)),
+		"at eight in the morning, walkers come out along it: %d of them, in tracksuits, keeping to the road (%d with a dog, scale %.2f)" % [R.people.size(), dogs, R._dog_k])
 	await _frames(300)
 	var strayed := 0
 	for p in R.people:
@@ -8599,6 +8606,878 @@ func _ruta_checks(pictures := false) -> void:
 	g.player.sync()
 	for p in R.people.duplicate():
 		R._drop(p)
+
+## Five roaming dogs of three breeds (galgo, mastin, chucho; perros.gd): strolling pavements, pettable with Interact,
+## and launched harmlessly by fast cars with quick recovery like NPCs.
+func _perros_checks(pictures := false) -> void:
+	var P = g.perros
+	_check(P != null and P.list.size() == 5, "five roaming dogs are out on the town (%d)" % (P.list.size() if P != null else 0))
+	if P == null or P.list.is_empty():
+		return
+	var breeds := {}
+	var ok_scale := true
+	var grounded := true
+	for d in P.list:
+		breeds[String(d["breed"])] = true
+		var sc: float = (d["body"] as Node3D).scale.x
+		if sc <= 0.02 or sc >= 1.0:
+			ok_scale = false
+		var dy: float = absf((d["root"] as Node3D).position.y - MapData.foot(d["p"]))
+		if dy > 0.05:
+			grounded = false
+	_check(breeds.has("galgo") and breeds.has("mastin") and breeds.has("chucho") and ok_scale and grounded,
+		"all three breeds (galgo, mastin, chucho) spawn at true scale and stand flush on the pavement (%s)" % [", ".join(breeds.keys())])
+	var start_pos: Array = []
+	for d in P.list:
+		start_pos.append(d["p"])
+	await _frames(120)
+	var moved := 0
+	for i in range(P.list.size()):
+		if (P.list[i]["p"] as Vector2).distance_to(start_pos[i] as Vector2) > 0.3:
+			moved += 1
+	_check(moved >= 3, "the dogs stroll along the pavements on their own (%d of %d moved in 2 s)" % [moved, P.list.size()])
+	var d0: Dictionary = P.list[0]
+	var saved_p: Vector2 = g.player.p
+	var saved_clock: float = g.clock
+	g.set_time(12.0)
+	g.raining = false
+	g.player.p = (d0["p"] as Vector2) + Vector2(1.1, 0.0)
+	g.player.sync()
+	await _frames(3)
+	var found = P.near(g.player.p)
+	var pets_before: int = P.pet_count
+	if found != null:
+		P.pet(found)
+	await _frames(5)
+	_check(found == d0 and P.pet_count == pets_before + 1 and String(d0["state"]) == "pet" and d0["heart"] != null and (d0["heart"] as Sprite3D).visible and Loc.t("p_pet").contains("Acariciar"),
+		"approaching a dog lets you pet it (%s -> state %s, heart shown)" % [Loc.t("p_pet"), String(d0["state"])])
+	if pictures:
+		# Line up one galgo, one mastin and one chucho on a sunlit open stretch of the Plaza / street next to the player
+		var by_b := {}
+		for d in P.list:
+			if not by_b.has(d["breed"]):
+				by_b[d["breed"]] = d
+		var th: Dictionary = MapData.townhall
+		var base_p: Vector2 = g._pavement(Vector2(th["m"][0], th["m"][1]) + Vector2(22.0, 26.0))
+		var idx := 0
+		for bname in ["galgo", "mastin", "chucho"]:
+			if by_b.has(bname):
+				var dg: Dictionary = by_b[bname]
+				dg["p"] = base_p + Vector2((idx - 1) * 1.5, 0.0)
+				dg["h"] = 0.35
+				dg["state"] = "idle"
+				dg["t"] = 10.0
+				dg["y"] = 0.0
+				(dg["pivot"] as Node3D).rotation.x = 0.0
+				P._play(dg, "Idle", 0.0)
+				P._sync(dg)
+				idx += 1
+		g.player.p = base_p + Vector2(-2.7, -0.3)
+		g.player.h = 0.5
+		g.player.sync()
+		if by_b.has("galgo"):
+			P.pet(by_b["galgo"])
+		await _frames(2)
+		await _view_at(MapData.at(base_p + Vector2(0.4, 4.4), 1.45), MapData.at(base_p + Vector2(-0.3, 0.0), 0.55), "perros_razas", 46.0)
+	# Car hit + quick recovery
+	var hits_before: int = P.hit_count
+	P.hit(d0, Vector2(9.0, 0.0), 7.0, true, 3.0)
+	var flew: bool = String(d0["state"]) == "fly" and P.hit_count == hits_before + 1
+	var saw_down := false
+	var recovered := false
+	for _k in range(280):
+		await _frames(1)
+		if String(d0["state"]) == "down":
+			saw_down = true
+		if saw_down and (String(d0["state"]) == "flee" or String(d0["state"]) == "walk"):
+			recovered = absf((d0["pivot"] as Node3D).rotation.x) < 0.01
+			break
+	_check(flew and saw_down and recovered, "a fast car sends a dog flying (flew=%s, down=%s) and it hops right back up (recovered=%s)" % [flew, saw_down, recovered])
+	# Vet door biscuits (5 € -> 5 units) + hand feeding -> guides player to nearest saffron flower (zero hint text)
+	var saved_money: int = g.money
+	g.money = 20
+	var vspot: Vector2 = P.VET_SPOTS[0]
+	g.player.p = vspot + Vector2(-1.1, 0.2)
+	g.player.h = atan2(vspot.x - g.player.p.x, vspot.y - g.player.p.y)
+	g.player.sync()
+	await _frames(4)
+	var vet_ok: bool = P.can_buy() and P.buy_prompt().contains("5 €")
+	var bought: bool = P.buy()
+	var qty_after_buy: int = int(g.stats.get("inv", {}).get(P.BISCUIT_ID, 0))
+	_check(vet_ok and bought and g.money == 15 and qty_after_buy == 5,
+		"vet door sells 5 Dog Biscuits for 5 € (can_buy=%s, money=%d, qty=%d)" % [vet_ok, g.money, qty_after_buy])
+	if pictures:
+		await _view_at(MapData.at(vspot + Vector2(-3.6, 2.2), 1.55), MapData.at(vspot, 1.0), "perros_veterinario", 48.0)
+	# Feed d0 by hand near a saffron flower and verify eat -> heart -> guide -> wait/look-back -> reach flower
+	var fl = P._nearest_saffron(g.player.p)
+	var fl_p: Vector2 = fl["p"] if fl != null else (vspot + Vector2(0.0, 20.0))
+	g.player.p = g._pavement(fl_p + Vector2(-16.0, 0.0))
+	g.player.sync()
+	d0["p"] = g.player.p + Vector2(1.5, 0.0)
+	d0["state"] = "idle"
+	d0["t"] = 5.0
+	d0["y"] = 0.0
+	(d0["pivot"] as Node3D).rotation.x = 0.0
+	P._sync(d0)
+	await _frames(3)
+	var fed: bool = P.feed(d0)
+	var qty_after_feed: int = int(g.stats.get("inv", {}).get(P.BISCUIT_ID, 0))
+	var saw_eat := false
+	var saw_guide := false
+	var saw_lookback := false
+	var guide_d0: float = (d0["p"] as Vector2).distance_to(fl_p)
+	var shot_feed := false
+	for _k in range(360):
+		await _frames(1)
+		if String(d0["state"]) == "feed" and int(d0["feed_phase"]) == 1:
+			saw_eat = true
+			if pictures and not shot_feed:
+				shot_feed = true
+				var mid_f: Vector2 = (g.player.p + (d0["p"] as Vector2)) * 0.5
+				await _view_at(MapData.at(mid_f + Vector2(0.4, 3.2), 1.3), MapData.at(mid_f, 0.55), "perros_galleta", 46.0)
+		if String(d0["state"]) == "guide":
+			saw_guide = true
+			if bool(d0["guide_wait"]) or bool(d0["guide_arrived"]):
+				saw_lookback = true
+				break
+	var guide_d1: float = (d0["p"] as Vector2).distance_to(d0["guide_target"] as Vector2) if saw_guide else guide_d0
+	_check(fed and qty_after_feed == 4 and saw_eat and saw_guide and saw_lookback and guide_d1 < guide_d0,
+		"feeding a biscuit by hand makes the dog eat, rejoice, run toward the nearest saffron and turn back to check on you (qty=%d, eat=%s, guide=%s, lookback=%s, %.1f->%.1fm)" % [qty_after_feed, saw_eat, saw_guide, saw_lookback, guide_d0, guide_d1])
+	g.money = saved_money
+	if g.inventario != null:
+		g.inventario.remove_item(P.BISCUIT_ID, 10)
+	g.police.reset()
+	g.set_time(saved_clock)
+	g.player.p = saved_p
+	g.player.sync()
+
+## Z15 rearview mirror & silver rosary (car.gd set_rosary / _step_rosary): spawned only while the player rides in a Z15,
+## visible in first-person POV, swinging physically with acceleration & turning, and freed on exit.
+func _rosario_checks(pictures := false) -> void:
+	var z = g.paca_car
+	if z == null or (z.kind != "z15" and z.kind != "kokas"):
+		for c in g.cars:
+			if c.kind == "z15":
+				z = c
+				break
+	_check(z != null and z._rosary_root == null and z._dash_root == null, "parked Z15 has no rosary or dashboard until the player enters (zero idle cost)")
+	if z == null:
+		return
+	var was_cam: int = g.car_cam
+	var was_clock: float = g.clock
+	g.set_time(12.0)
+	g.raining = false
+	g.car_cam = 1
+	g._enter_car(z)
+	await _frames(10)
+	var mirror_ok: bool = DisplayServer.get_name() == "headless" or (z._mirror_vp != null and z._mirror_cam != null)
+	var on_enter: bool = z._rosary_root != null and z._rosary_piv != null and z._rosary_drop != null and z._dash_root != null and z._dash_needle != null and z._dash_wheel != null and z._dash_wheel.find_child("WheelHandL", false, false) != null and z._dash_wheel.find_child("WheelHandR", false, false) != null and mirror_ok
+	_check(on_enter, "entering a Z15 spawns the live rearview mirror, articulated rosary, and C15 dashboard with speedometer, single-spoke wheel, and gripping hands")
+	var needle_0: float = z._dash_needle.rotation.z if z._dash_needle != null else 0.0
+	if pictures:
+		await _shot("rosario_fp")
+		# Glance slightly down-right to inspect the full C15 dashboard, vents, radio, speedometer & single-spoke wheel
+		g._fp_pitch = deg_to_rad(-16.0)
+		g._fp_yaw = deg_to_rad(-14.0)
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("rosario_salpicadero")
+		# Glance upper-right to inspect the 4 accumulated Spanish ITV stickers on the Z15 windscreen
+		g._fp_pitch = deg_to_rad(10.0)
+		g._fp_yaw = deg_to_rad(-34.0)
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("rosario_itv")
+		g._fp_pitch = 0.0
+		g._fp_yaw = 0.0
+	# Drive & turn hard via real Input actions to verify the rosary swings, speedometer needle climbs, and single-spoke wheel turns
+	var peak_ang := 0.0
+	var peak_drop := 0.0
+	var peak_needle := 0.0
+	var peak_wheel := 0.0
+	Input.action_press("forward")
+	for k in range(55):
+		if k == 15:
+			Input.action_press("left")
+		await _frames(1)
+		peak_ang = maxf(peak_ang, z._ros_ang.length())
+		peak_drop = maxf(peak_drop, z._drop_ang.length() + absf(z._drop_yaw))
+		peak_needle = maxf(peak_needle, z._dash_needle.rotation.z - needle_0)
+		peak_wheel = maxf(peak_wheel, absf(z._dash_wheel.rotation.z))
+		if pictures and k == 35:
+			g._fp_pitch = deg_to_rad(-11.0)
+			g._look_idle = 0.0
+			await _frames(2)
+			await _shot("rosario_giro")
+			g._fp_pitch = 0.0
+	Input.action_release("forward")
+	Input.action_release("left")
+	z.set_speed(Vector2.ZERO)
+	_check(peak_ang > 0.08 and peak_drop > 0.03 and peak_needle > 0.12 and peak_wheel > 0.2,
+		"the rosary swings (%.2f/%.2f rad), speedometer needle rises (+%.2f rad), and single-spoke wheel turns (%.2f rad)" % [peak_ang, peak_drop, peak_needle, peak_wheel])
+	await _frames(4)
+	g._exit_car()
+	await _frames(4)
+	var freed_on_exit: bool = z._rosary_root == null and z._rosary_piv == null and z._dash_root == null
+	var other = null
+	for c in g.cars:
+		if c.kind == "tunero":
+			other = c
+			break
+	var non_z15_ok := true
+	if other != null:
+		g._enter_car(other)
+		await _frames(4)
+		non_z15_ok = other._rosary_root == null and other._dash_root == null
+		other.set_speed(Vector2.ZERO)
+		g._exit_car()
+		await _frames(3)
+	_check(freed_on_exit and non_z15_ok, "exiting frees the rosary and dashboard (%s) and uncustomized cars stay without them (%s)" % [freed_on_exit, non_z15_ok])
+	g.car_cam = was_cam
+	g.set_time(was_clock)
+
+## Súper Hebro 555 open-cockpit dashboard (car.gd set_rosary / _build_hebro_dash): weathered painted oval pod,
+## chromed speedometer & oil-pressure ("HEBRO") dials, blue pilot lamp, hand-throttle lever, large 3-spoke Bakelite
+## wheel with tractor spinner knob & gripping hands, plus hinged exhaust rain-cap — spawned only while driving.
+func _hebro_checks(pictures := false) -> void:
+	var tr = null
+	for c in g.cars:
+		if c.kind == "tractor":
+			tr = c
+			if c.paint == 0x3f8fd0:
+				break
+	_check(tr != null and tr._dash_root == null and tr._hebro_flap_root == null, "parked Súper Hebro 555 has no custom cockpit or exhaust rain-cap until the player climbs on")
+	if tr == null:
+		return
+	var was_cam: int = g.car_cam
+	var was_clock: float = g.clock
+	g.set_time(12.0)
+	g.raining = false
+	g.car_cam = 1
+	g._enter_car(tr)
+	await _frames(10)
+	var on_enter: bool = tr._dash_root != null and tr._dash_needle != null and tr._hebro_oil_needle != null and tr._hebro_throttle_piv != null and tr._hebro_flap_piv != null and tr._dash_wheel != null and tr._dash_wheel.find_child("WheelHandL", false, false) != null and tr._dash_wheel.find_child("WheelHandR", false, false) != null
+	_check(on_enter, "climbing onto a Súper Hebro 555 spawns the weathered pod, speedometer & HEBRO oil gauge, hand-throttle, 3-spoke wheel with hands, and exhaust rain-cap")
+	var speed_0: float = tr._dash_needle.rotation.z if tr._dash_needle != null else 0.0
+	var oil_0: float = tr._hebro_oil_needle.rotation.z if tr._hebro_oil_needle != null else 0.0
+	if pictures:
+		await _shot("hebro_fp")
+		# Glance slightly down to inspect both chromed dials, weathered blue pod, blue pilot lamp, spinner knob & hands
+		g._fp_pitch = deg_to_rad(-18.0)
+		g._fp_yaw = 0.0
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("hebro_salpicadero")
+		g._fp_pitch = 0.0
+	# Drive & turn via real Input actions to verify speedometer, oil pressure, hand-throttle, wheel+hands & exhaust flapper
+	var peak_speed := 0.0
+	var peak_oil := 0.0
+	var peak_thr := 0.0
+	var peak_flap := 0.0
+	var peak_wheel := 0.0
+	Input.action_press("forward")
+	for k in range(55):
+		if k == 15:
+			Input.action_press("left")
+		await _frames(1)
+		peak_speed = maxf(peak_speed, tr._dash_needle.rotation.z - speed_0)
+		peak_oil = maxf(peak_oil, tr._hebro_oil_needle.rotation.z - oil_0)
+		peak_thr = maxf(peak_thr, absf(tr._hebro_throttle_piv.rotation.y))
+		peak_flap = maxf(peak_flap, absf(tr._hebro_flap_piv.rotation.x))
+		peak_wheel = maxf(peak_wheel, absf(tr._dash_wheel.rotation.z))
+		if pictures and k == 35:
+			g._fp_pitch = deg_to_rad(-8.0)
+			g._look_idle = 0.0
+			await _frames(2)
+			await _shot("hebro_giro")
+			g._fp_pitch = 0.0
+	Input.action_release("forward")
+	Input.action_release("left")
+	tr.set_speed(Vector2.ZERO)
+	_check(peak_speed > 0.12 and peak_oil > 0.5 and peak_thr > 0.2 and peak_flap > 0.4 and peak_wheel > 0.2,
+		"speedo rises (+%.2f rad), oil pressure climbs (+%.2f rad), hand-throttle moves (%.2f rad), exhaust rain-cap lifts (%.2f rad), and wheel+hands turn (%.2f rad)" % [peak_speed, peak_oil, peak_thr, peak_flap, peak_wheel])
+	await _frames(4)
+	g._exit_car()
+	await _frames(4)
+	var freed_on_exit: bool = tr._dash_root == null and tr._hebro_flap_root == null and tr._hebro_oil_needle == null
+	_check(freed_on_exit, "dismounting frees the entire Súper Hebro 555 cockpit and restores the stock mesh (%s)" % freed_on_exit)
+	g.car_cam = was_cam
+	g.set_time(was_clock)
+
+## Omega Julietta Alfa 159 TI-inspired cockpit (car.gd set_rosary / _build_julietta_dash): binocular speedo + tachometer,
+## brushed-aluminum driver-oriented center console with 3 vents, 3 aux gauges (incl. live Turbo Boost), Madridejos GPS,
+## sporty 3-spoke aluminum/leather steering wheel with Omega emblem & gripping hands, plus live functional rearview mirror.
+func _julietta_checks(pictures := false) -> void:
+	var ju = null
+	for c in g.cars:
+		if c.kind == "julietta":
+			ju = c
+			break
+	_check(ju != null and ju._dash_root == null and ju._rosary_root == null, "parked Omega Julietta has no custom cockpit or mirror viewport until the player enters")
+	if ju == null:
+		return
+	var was_cam: int = g.car_cam
+	var was_clock: float = g.clock
+	g.set_time(12.0)
+	g.raining = false
+	g.car_cam = 1
+	g._enter_car(ju)
+	await _frames(10)
+	var mirror_ok: bool = DisplayServer.get_name() == "headless" or (ju._mirror_vp != null and ju._mirror_cam != null and ju._side_mirror_vp != null and ju._side_mirror_cam != null)
+	var on_enter: bool = ju._dash_root != null and ju._dash_needle != null and ju._jul_rpm_needle != null and ju._jul_boost_needle != null and ju._jul_gps_arrow != null and ju._dash_wheel != null and ju._dash_wheel.find_child("WheelHandL", false, false) != null and ju._dash_wheel.find_child("WheelHandR", false, false) != null and mirror_ok
+	_check(on_enter, "entering an Omega Julietta spawns the binocular cluster, brushed-aluminum console, turbo boost gauge, GPS, 3-spoke wheel with hands, and live rearview mirror")
+	var speed_0: float = ju._dash_needle.rotation.z if ju._dash_needle != null else 0.0
+	var rpm_0: float = ju._jul_rpm_needle.rotation.z if ju._jul_rpm_needle != null else 0.0
+	var boost_0: float = ju._jul_boost_needle.rotation.z if ju._jul_boost_needle != null else 0.0
+	if pictures:
+		await _shot("julietta_fp")
+		# Glance slightly down-right to showcase the binocular cluster, 3-spoke wheel + hands, brushed-aluminum console & GPS
+		g._fp_pitch = deg_to_rad(-16.0)
+		g._fp_yaw = deg_to_rad(-18.0)
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("julietta_salpicadero")
+		g._fp_pitch = 0.0
+		g._fp_yaw = 0.0
+	var peak_speed := 0.0
+	var peak_rpm := 0.0
+	var peak_boost := 0.0
+	var peak_wheel := 0.0
+	Input.action_press("forward")
+	Input.action_press("turbo")
+	for k in range(55):
+		if k == 15:
+			Input.action_press("left")
+		await _frames(1)
+		peak_speed = maxf(peak_speed, ju._dash_needle.rotation.z - speed_0)
+		peak_rpm = maxf(peak_rpm, ju._jul_rpm_needle.rotation.z - rpm_0)
+		peak_boost = maxf(peak_boost, ju._jul_boost_needle.rotation.z - boost_0)
+		peak_wheel = maxf(peak_wheel, absf(ju._dash_wheel.rotation.z))
+		if pictures and k == 35:
+			g._fp_pitch = deg_to_rad(-10.0)
+			g._fp_yaw = deg_to_rad(-10.0)
+			g._look_idle = 0.0
+			await _frames(2)
+			await _shot("julietta_giro")
+			g._fp_pitch = 0.0
+			g._fp_yaw = 0.0
+	Input.action_release("forward")
+	Input.action_release("turbo")
+	Input.action_release("left")
+	ju.set_speed(Vector2.ZERO)
+	_check(peak_speed > 0.12 and peak_rpm > 0.4 and peak_boost > 0.8 and peak_wheel > 0.2,
+		"speedo rises (+%.2f rad), tachometer climbs (+%.2f rad), turbo boost spikes (+%.2f rad), and wheel+hands turn (%.2f rad)" % [peak_speed, peak_rpm, peak_boost, peak_wheel])
+	await _frames(4)
+	g._exit_car()
+	await _frames(4)
+	var freed_on_exit: bool = ju._dash_root == null and ju._rosary_root == null and ju._mirror_vp == null and ju._side_mirror_vp == null and ju._jul_rpm_needle == null
+	_check(freed_on_exit, "exiting frees the entire Omega Julietta cockpit and mirror viewport and restores the stock mesh (%s)" % freed_on_exit)
+	g.car_cam = was_cam
+	g.set_time(was_clock)
+
+## Seta Panda & Seta Panda de los Pitufos cockpit (car.gd _build_panda_dash): renamed Zeat -> Seta, open hammock shelf,
+## boxy 0-160 cluster + 6 rocker switches, 2-spoke "S E T A" wheel + hands, 80s speakers & cassettes, 3 bobbleheads
+## (bulldog / pato / rana), 25% Spanish mirror ribbon, police VHF radio on Pitufo, and both live mirrors.
+func _seta_checks(pictures := false) -> void:
+	var pa = null
+	var pi = null
+	for c in g.cars:
+		if c.kind == "panda" and pa == null:
+			pa = c
+		elif c.kind == "pitufo" and pi == null:
+			pi = c
+	if pi == null and g.police != null:
+		for e in g.police.cops:
+			if e.has("car") and e["car"] != null and e["car"].kind == "pitufo":
+				pi = e["car"]
+				break
+	var S: Dictionary = preload("res://scripts/car.gd").SPECS
+	var names_ok: bool = String(S["panda"]["name"]) == "Seta Panda" and String(S["pitufo"]["name"]) == "Seta Panda de los Pitufos"
+	_check(names_ok and pa != null and pa._dash_root == null and pa._rosary_root == null, "renamed to Seta Panda / Seta Panda de los Pitufos and parked Seta has no custom cockpit until entered")
+	if pa == null:
+		return
+	var was_cam: int = g.car_cam
+	var was_clock: float = g.clock
+	g.set_time(12.0)
+	g.raining = false
+	g.car_cam = 1
+	# Seed 0 -> Bulldog bobblehead + Spanish ribbon (0 % 4 == 0)
+	pa._panda_seed = 0
+	g._enter_car(pa)
+	await _frames(10)
+	var mirror_ok: bool = DisplayServer.get_name() == "headless" or (pa._mirror_vp != null and pa._side_mirror_vp != null)
+	var on_enter: bool = pa._dash_root != null and pa._dash_needle != null and pa._dash_wheel != null and pa._bobble_piv != null and pa._rosary_piv != null and pa._panda_lazo and pa._panda_bobble == 0 and mirror_ok
+	_check(on_enter, "entering Seta Panda spawns the boxy cluster, SETA wheel + hands, bulldog bobblehead, Spanish ribbon (25%% roll), and both live mirrors")
+	var speed_0: float = pa._dash_needle.rotation.z if pa._dash_needle != null else 0.0
+	if pictures:
+		await _shot("seta_fp")
+		# Glance slightly down-right to inspect the SETA wheel, switches, hammock shelf, cassettes, speakers & bobblehead
+		g._fp_pitch = deg_to_rad(-16.0)
+		g._fp_yaw = deg_to_rad(-18.0)
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("seta_salpicadero")
+		# Glance upper-right to inspect the Spanish ITV sticker on the Seta Panda windscreen
+		g._fp_pitch = deg_to_rad(10.0)
+		g._fp_yaw = deg_to_rad(-36.0)
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("seta_itv")
+		g._fp_pitch = 0.0
+		g._fp_yaw = 0.0
+	var peak_speed := 0.0
+	var peak_bobble := 0.0
+	var peak_ribbon := 0.0
+	var peak_wheel := 0.0
+	Input.action_press("forward")
+	for k in range(50):
+		if k == 14:
+			Input.action_press("left")
+		await _frames(1)
+		peak_speed = maxf(peak_speed, pa._dash_needle.rotation.z - speed_0)
+		peak_bobble = maxf(peak_bobble, pa._bobble_ang.length())
+		peak_ribbon = maxf(peak_ribbon, pa._ros_ang.length())
+		peak_wheel = maxf(peak_wheel, absf(pa._dash_wheel.rotation.z))
+	Input.action_release("forward")
+	Input.action_release("left")
+	pa.set_speed(Vector2.ZERO)
+	_check(peak_speed > 0.12 and peak_bobble > 0.08 and peak_ribbon > 0.08 and peak_wheel > 0.2,
+		"speedo rises (+%.2f rad), bobblehead nods (%.2f rad), Spanish ribbon swings (%.2f rad), and SETA wheel+hands turn (%.2f rad)" % [peak_speed, peak_bobble, peak_ribbon, peak_wheel])
+	# Verify pato (seed 1 -> no ribbon) & rana (seed 2 -> no ribbon) variants + clean exit
+	g._exit_car()
+	await _frames(4)
+	var freed_ok: bool = pa._dash_root == null and pa._rosary_root == null and pa._bobble_piv == null and pa._mirror_vp == null and pa._side_mirror_vp == null
+	pa._panda_seed = 1
+	g._enter_car(pa)
+	await _frames(6)
+	var pato_ok: bool = pa._panda_bobble == 1 and not pa._panda_lazo and pa._bobble_piv != null and pa._rosary_piv == null
+	if pictures:
+		g._fp_pitch = deg_to_rad(-8.0)
+		g._fp_yaw = deg_to_rad(-14.0)
+		g._look_idle = 0.0
+		await _frames(3)
+		await _shot("seta_pato")
+	g._exit_car()
+	await _frames(4)
+	pa._panda_seed = 2
+	g._enter_car(pa)
+	await _frames(6)
+	var rana_ok: bool = pa._panda_bobble == 2 and not pa._panda_lazo and pa._bobble_piv != null
+	if pictures:
+		g._fp_pitch = deg_to_rad(-8.0)
+		g._fp_yaw = deg_to_rad(-14.0)
+		g._look_idle = 0.0
+		await _frames(3)
+		await _shot("seta_rana")
+	g._exit_car()
+	await _frames(4)
+	var pitufo_tmp := false
+	if pi == null:
+		pi = preload("res://scripts/car.gd").new()
+		g.add_child(pi)
+		pi.setup("pitufo", 0, pa.p + Vector2(3.5, 0.0), pa.h)
+		pitufo_tmp = true
+	var pitufo_ok := false
+	if pi != null:
+		g._enter_car(pi)
+		pi.lit = true
+		await _frames(8)
+		pitufo_ok = pi._dash_root != null and pi._pitufo_siren_mat != null and pi._bobble_piv == null and not pi._panda_lazo
+		if pictures:
+			g._fp_pitch = deg_to_rad(-16.0)
+			g._fp_yaw = deg_to_rad(-20.0)
+			g._look_idle = 0.0
+			await _frames(4)
+			await _shot("seta_pitufo")
+		pi.lit = false
+		g._exit_car()
+		await _frames(4)
+		if pitufo_tmp:
+			pi.queue_free()
+	_check(freed_ok and pato_ok and rana_ok and pitufo_ok, "exit frees all nodes (%s), pato (%s) & rana (%s) variants & 25%% ribbon work, and Seta Pitufo spawns police VHF radio (%s)" % [freed_ok, pato_ok, rana_ok, pitufo_ok])
+	g._fp_pitch = 0.0
+	g._fp_yaw = 0.0
+	g.car_cam = was_cam
+	g.set_time(was_clock)
+
+## Edison Model Y Highland-inspired minimalist cockpit (car.gd _build_edison_dash): 1st-person glass cutout (restored in
+## 3rd-person / exit), dark carbon dash with 3 random per-car ambient LED colors, embossed "EDISON" wheel + silver U-spoke
+## + hands, 15" floating touchscreen with LIVE digital km/h, P-R-N-D, Autopilot curve & Madridejos map, and both live mirrors.
+func _edison_checks(pictures := false) -> void:
+	var ed = null
+	for c in g.cars:
+		if c.kind == "edison":
+			ed = c
+			break
+	_check(ed != null and ed._dash_root == null and ed._rosary_root == null, "parked Edison Model Y has no custom cockpit or mirror viewports until entered")
+	if ed == null:
+		return
+	var was_cam: int = g.car_cam
+	var was_clock: float = g.clock
+	g.set_time(12.0)
+	g.raining = false
+	g.car_cam = 1
+	ed._edison_seed = 0       # 0 = neon green (matching Photo 2!)
+	g._enter_car(ed)
+	await _frames(10)
+	var mirror_ok: bool = DisplayServer.get_name() == "headless" or (ed._mirror_vp != null and ed._side_mirror_vp != null)
+	var on_enter: bool = ed._dash_root != null and ed._edison_speed_lbl != null and ed._edison_gear_lbl != null and ed._edison_lane_piv != null and ed._edison_led_mat != null and ed._dash_wheel != null and mirror_ok
+	_check(on_enter, "entering Edison spawns the carbon dash, ambient LED strip, embossed EDISON wheel + hands, 15-inch live touchscreen, and both mirrors")
+	if pictures:
+		await _shot("edison_fp")
+		# Glance slightly down-right to showcase the 15" EDISON OS screen, embossed wheel, carbon trim, ambient LED, phone & cupholders
+		g._fp_pitch = deg_to_rad(-14.0)
+		g._fp_yaw = deg_to_rad(-18.0)
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("edison_salpicadero")
+		g._fp_pitch = 0.0
+		g._fp_yaw = 0.0
+	var peak_kmh := 0
+	var saw_drive := false
+	var peak_lane := 0.0
+	var peak_wheel := 0.0
+	Input.action_press("forward")
+	for k in range(50):
+		if k == 14:
+			Input.action_press("left")
+		await _frames(1)
+		peak_kmh = maxi(peak_kmh, ed._edison_last_kmh)
+		if ed._edison_gear_lbl.text == "D":
+			saw_drive = true
+		peak_lane = maxf(peak_lane, absf(ed._edison_lane_piv.rotation.z))
+		peak_wheel = maxf(peak_wheel, absf(ed._dash_wheel.rotation.z))
+		if pictures and k == 34:
+			g._fp_pitch = deg_to_rad(-10.0)
+			g._fp_yaw = deg_to_rad(-14.0)
+			g._look_idle = 0.0
+			await _frames(2)
+			await _shot("edison_giro")
+			g._fp_pitch = 0.0
+			g._fp_yaw = 0.0
+	Input.action_release("forward")
+	Input.action_release("left")
+	ed.set_speed(Vector2.ZERO)
+	_check(peak_kmh >= 20 and saw_drive and peak_lane > 0.1 and peak_wheel > 0.2,
+		"touchscreen shows live speed (%d km/h), gear D (%s), Autopilot curve bends (%.2f rad), and EDISON wheel+hands turn (%.2f rad)" % [peak_kmh, saw_drive, peak_lane, peak_wheel])
+	# Verify switching to 3rd-person restores the opaque black exterior glass cleanly, and exiting frees everything
+	g.set_car_cam(0, false)
+	await _frames(4)
+	var restored_3p: bool = ed._dash_orig_mesh == null
+	g.set_car_cam(1, false)
+	await _frames(4)
+	# Also verify the other 2 random ambient LED colors (1 = ice blue, 2 = cyber purple)
+	g._exit_car()
+	await _frames(4)
+	var freed_ok: bool = ed._dash_root == null and ed._rosary_root == null and ed._mirror_vp == null and ed._side_mirror_vp == null and ed._dash_orig_mesh == null
+	ed._edison_seed = 1
+	g._enter_car(ed)
+	await _frames(4)
+	var led1_ok: bool = ed._edison_led == 1 and ed._edison_led_mat != null
+	if pictures:
+		g._fp_pitch = deg_to_rad(-10.0)
+		g._fp_yaw = deg_to_rad(-16.0)
+		g._look_idle = 0.0
+		await _frames(3)
+		await _shot("edison_azul")
+	g._exit_car()
+	await _frames(4)
+	ed._edison_seed = 2
+	g._enter_car(ed)
+	await _frames(4)
+	var led2_ok: bool = ed._edison_led == 2 and ed._edison_led_mat != null
+	g._exit_car()
+	await _frames(4)
+	_check(restored_3p and freed_ok and led1_ok and led2_ok, "3rd-person restores exterior glass (%s), exit frees all nodes (%s), and all 3 random ambient LED colors work (%s/%s)" % [restored_3p, freed_ok, led1_ok, led2_ok])
+	g._fp_pitch = 0.0
+	g._fp_yaw = 0.0
+	g.car_cam = was_cam
+	g.set_time(was_clock)
+
+## Yondir John Deere-inspired tractor cab cockpit (car.gd _build_yondir_dash): green bonnet cowl, arched black console,
+## huge central chromed tractometer (0-60 km/h), flanking Temp & Fuel gauges, bright-orange hand-throttle & gear knobs,
+## yellow PTO lever, glossy 3-spoke wheel with leaping-stag roundel & player hands, live exhaust rain-cap & cab mirror.
+func _yondir_checks(pictures := false) -> void:
+	var yo = null
+	for c in g.cars:
+		if c.kind == "yondir":
+			yo = c
+			break
+	var yo_tmp := false
+	if yo == null:
+		yo = preload("res://scripts/car.gd").new()
+		g.add_child(yo)
+		var ref = g.paca_car if g.paca_car != null else g.cars[0]
+		yo.setup("yondir", 0, ref.p + Vector2(4.0, 0.0), ref.h)
+		yo_tmp = true
+	_check(yo != null and yo._dash_root == null and yo._hebro_flap_root == null, "parked Yondir has no custom cockpit or exhaust rain-cap until climbed into")
+	if yo == null:
+		return
+	var was_cam: int = g.car_cam
+	var was_clock: float = g.clock
+	g.set_time(12.0)
+	g.raining = false
+	g.car_cam = 1
+	yo._yondir_seed = 0
+	g._enter_car(yo)
+	await _frames(10)
+	var mirror_ok: bool = DisplayServer.get_name() == "headless" or (yo._mirror_vp != null and yo._mirror_cam != null and yo._side_mirror_vp != null and yo._side_mirror_cam != null)
+	var charms_ok: bool = yo._dash_root != null and yo._dash_root.find_child("SanIsidroCard", true, false) != null and yo._rosary_root != null and yo._rosary_root.find_child("YondirMirrorL", false, false) != null and yo._rosary_root.find_child("YondirMirrorR", false, false) != null and yo._rosary_piv != null
+	var on_enter: bool = yo._dash_root != null and yo._dash_needle != null and yo._hebro_oil_needle != null and yo._hebro_throttle_piv != null and yo._hebro_flap_piv != null and yo._dash_wheel != null and yo._dash_wheel.find_child("WheelHandL", false, false) != null and yo._dash_wheel.find_child("WheelHandR", false, false) != null and mirror_ok and charms_ok
+	_check(on_enter, "entering a Yondir spawns the arched console, giant tractometer, bear wheel + hands, dual upper side mirrors, San Isidro card, Spanish roof ribbon & exhaust rain-cap")
+	var speed_0: float = yo._dash_needle.rotation.z if yo._dash_needle != null else 0.0
+	var temp_0: float = yo._hebro_oil_needle.rotation.z if yo._hebro_oil_needle != null else 0.0
+	if pictures:
+		await _shot("yondir_fp")
+		# Glance slightly down to inspect the giant tractometer, Temp/Fuel gauges, stag emblem, orange levers & knobs
+		g._fp_pitch = deg_to_rad(-18.0)
+		g._fp_yaw = 0.0
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("yondir_salpicadero")
+		g._fp_pitch = 0.0
+	var peak_speed := 0.0
+	var peak_temp := 0.0
+	var peak_thr := 0.0
+	var peak_flap := 0.0
+	var peak_wheel := 0.0
+	Input.action_press("forward")
+	for k in range(55):
+		if k == 15:
+			Input.action_press("left")
+		await _frames(1)
+		peak_speed = maxf(peak_speed, yo._dash_needle.rotation.z - speed_0)
+		peak_temp = maxf(peak_temp, yo._hebro_oil_needle.rotation.z - temp_0)
+		peak_thr = maxf(peak_thr, absf(yo._hebro_throttle_piv.rotation.y))
+		peak_flap = maxf(peak_flap, absf(yo._hebro_flap_piv.rotation.x))
+		peak_wheel = maxf(peak_wheel, absf(yo._dash_wheel.rotation.z))
+		if pictures and k == 35:
+			g._fp_pitch = deg_to_rad(-10.0)
+			g._look_idle = 0.0
+			await _frames(2)
+			await _shot("yondir_giro")
+			g._fp_pitch = 0.0
+	Input.action_release("forward")
+	Input.action_release("left")
+	yo.set_speed(Vector2.ZERO)
+	_check(peak_speed > 0.12 and peak_temp > 0.3 and peak_thr > 0.2 and peak_flap > 0.4 and peak_wheel > 0.2,
+		"tractometer rises (+%.2f rad), temp gauge climbs (+%.2f rad), orange throttle moves (%.2f rad), exhaust rain-cap lifts (%.2f rad), and wheel+hands turn (%.2f rad)" % [peak_speed, peak_temp, peak_thr, peak_flap, peak_wheel])
+	await _frames(4)
+	g._exit_car()
+	await _frames(4)
+	var freed_ok: bool = yo._dash_root == null and yo._rosary_root == null and yo._hebro_flap_root == null and yo._mirror_vp == null
+	if yo_tmp:
+		yo.queue_free()
+	_check(freed_ok, "exiting frees the entire Yondir cockpit, exhaust rain-cap and mirror and restores the stock mesh (%s)" % freed_ok)
+	g.car_cam = was_cam
+	g.set_time(was_clock)
+
+func _cuatrolatas_checks(pictures := false) -> void:
+	var CarS = preload("res://scripts/car.gd")
+	var sp: Dictionary = CarS.SPECS["cuatrolatas"]
+	var ps: Dictionary = CarS.SPECS["panda"]
+	var stats_ok: bool = float(sp["acc"]) == float(ps["acc"]) and float(sp["turn"]) == float(ps["turn"]) and float(sp["mass"]) == float(ps["mass"]) and float(sp["hp"]) == float(ps["hp"]) \
+		and float(sp["max"]) < float(ps["max"]) and (float(sp["max"]) * float(sp.get("offroad", 0.55))) > (float(ps["max"]) * float(ps.get("offroad", 0.55)))
+	_check(stats_ok, "Cuatro Latas matches Seta stats, slower on tarmac (%.1f < %.1f) and faster off-road (%.1f > %.1f)" % [
+		float(sp["max"]), float(ps["max"]), float(sp["max"]) * float(sp.get("offroad", 0.55)), float(ps["max"]) * float(ps.get("offroad", 0.55))])
+	var was_clock: float = g.clock
+	g.set_time(11.5)
+	g.raining = false
+	# Spawn on wide open sunlit dirt plain with zero buildings around!
+	var spot := Vector2(-460.0, -140.0)
+	if g.places.has("coop"):
+		spot = Vector2(g.places["coop"]["p"].x - 24.0, g.places["coop"]["p"].y - 6.0)
+	var c1 = CarS.new()
+	g.add_child(c1)
+	c1.setup("cuatrolatas", 0xf2f0e6, spot, 0.0)
+	c1.seat(g.driver_look())
+	await _frames(12)
+	var model_ok: bool = c1.model != null and c1.wheels.size() == 4 and c1.model.find_child("body", true, false) != null
+	_check(model_ok, "Cuatro Latas custom Blender exterior loads with body mesh and 4 sprung wheels")
+	if pictures:
+		var cam := Camera3D.new()
+		cam.fov = 38.0
+		g.add_child(cam)
+		cam.current = true
+		var o: Vector3 = c1.global_position
+		# 1) Front 3/4 view in classic off-white (Photo 1 style!)
+		cam.global_position = o + Vector3(3.1, 1.45, 3.6)
+		cam.look_at(o + Vector3(0.0, 0.72, 0.05), Vector3.UP)
+		await _frames(6)
+		await _shot("cuatrolatas_frente")
+		# 2) Rear 3/4 view in classic terracotta/copper (Photo 3 style!)
+		preload("res://scripts/modelos.gd").repaint("cuatrolatas", c1.model, 0xc4683c)
+		cam.global_position = o + Vector3(-3.0, 1.45, -3.5)
+		cam.look_at(o + Vector3(0.0, 0.72, -0.05), Vector3.UP)
+		await _frames(6)
+		await _shot("cuatrolatas_detras")
+		# 3) Side profile in classic cherry red (Photo 4 style!)
+		preload("res://scripts/modelos.gd").repaint("cuatrolatas", c1.model, 0xc82220)
+		cam.global_position = o + Vector3(5.0, 1.15, 0.0)
+		cam.look_at(o + Vector3(0.0, 0.72, 0.0), Vector3.UP)
+		await _frames(6)
+		await _shot("cuatrolatas_perfil")
+		# 4) Lineup of 4 classic colors next to a Seta Panda for scale & style check!
+		var extras: Array = []
+		var cols := [0xf2f0e6, 0xe8a818, 0xc82220, 0xc4683c]
+		for ci in range(4):
+			var cc = CarS.new()
+			g.add_child(cc)
+			cc.setup("cuatrolatas", cols[ci], spot + Vector2((ci - 1.5) * 2.55, 0.0), 0.35)
+			extras.append(cc)
+		var panda = CarS.new()
+		g.add_child(panda)
+		panda.setup("panda", 0x6fb7e6, spot + Vector2(2.5 * 2.55, 0.0), 0.35)
+		extras.append(panda)
+		c1.visible = false
+		c1.place(spot + Vector2(0.0, -40.0), 0.0)
+		await _frames(10)
+		cam.global_position = Vector3(spot.x + 1.5, o.y + 2.8, spot.y + 11.2)
+		cam.look_at(Vector3(spot.x + 1.3, o.y + 0.72, spot.y), Vector3.UP)
+		await _frames(6)
+		await _shot("cuatrolatas_colores")
+		for ex in extras:
+			ex.queue_free()
+		cam.queue_free()
+		g.cam.current = true
+	# Now test the iconic 1st-person Renol 4L interior cockpit (umbrella shifter, dash mirror, chrome arc speedo, T-wheel + hands)!
+	var was_cam: int = g.car_cam
+	c1.visible = true
+	c1.place(spot, 0.0)
+	_check(c1._dash_root == null and c1._rosary_root == null, "parked Renol 4L has no custom interior until driven")
+	g.car_cam = 1
+	c1._r4_seed = 48  # Nazareno morado (16% bucket 48..63) on single-figurine dashboard shots!
+	g._enter_car(c1)
+	await _frames(10)
+	var mir_ok: bool = DisplayServer.get_name() == "headless" or (c1._mirror_vp != null and c1._side_mirror_vp != null)
+	var cof_ok: bool = c1._dash_root != null and c1._dash_root.find_child("CofradeNazarenoMorado", false, false) != null
+	var cab_ok: bool = c1._dash_root != null and c1._dash_needle != null and c1._r4_shifter_piv != null and c1._dash_wheel != null and c1._dash_wheel.find_child("WheelHandL", false, false) != null and c1._dash_wheel.find_child("WheelHandR", false, false) != null and mir_ok and cof_ok
+	_check(cab_ok, "entering a Renol 4L spawns the bi-tone dash, chrome arc speedo, umbrella shifter, T-wheel + hands, Purple Nazareno figurine & mirrors")
+	var spd0: float = c1._dash_needle.rotation.z if c1._dash_needle != null else 0.0
+	if pictures:
+		await _shot("cuatrolatas_fp")
+		# Glance down-right to inspect the horizontal chrome speedo, umbrella shifter, T-wheel, Purple Nazareno & open shelves
+		g._fp_pitch = deg_to_rad(-18.0)
+		g._fp_yaw = deg_to_rad(-16.0)
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("cuatrolatas_salpicadero")
+		# Now trigger the real 4% rare easter egg (_r4_seed = 96) with ALL 6 Chibi Cofrades lined up on the dash!
+		c1._r4_seed = 96
+		c1.set_rosary(true)
+		await _frames(4)
+		var all6_ok: bool = c1._dash_root != null and c1._dash_root.find_child("CofradesTodos", false, false) != null and c1._dash_root.find_child("CofradesTodos", false, false).get_child_count() == 6
+		_check(all6_ok, "4% rare easter egg spawns all 6 Madridejos Chibi Cofrades in a row on the Renol 4L dash")
+		g._fp_pitch = deg_to_rad(-8.0)
+		g._fp_yaw = deg_to_rad(-14.0)
+		g._look_idle = 0.0
+		await _frames(4)
+		await _shot("cuatrolatas_cofrades")
+		g._fp_pitch = 0.0
+		g._fp_yaw = 0.0
+	var pk_spd := 0.0
+	var pk_sh := 0.0
+	var pk_whl := 0.0
+	Input.action_press("forward")
+	for k in range(55):
+		if k == 18:
+			Input.action_press("left")
+		await _frames(1)
+		pk_spd = maxf(pk_spd, c1._dash_needle.rotation.z - spd0)
+		pk_sh = maxf(pk_sh, absf(c1._r4_shifter_z) + absf(c1._r4_shifter_roll))
+		pk_whl = maxf(pk_whl, absf(c1._dash_wheel.rotation.z))
+		if pictures and k == 38:
+			g._fp_pitch = deg_to_rad(-10.0)
+			g._fp_yaw = deg_to_rad(-8.0)
+			g._look_idle = 0.0
+			await _frames(2)
+			await _shot("cuatrolatas_giro")
+			g._fp_pitch = 0.0
+			g._fp_yaw = 0.0
+	Input.action_release("forward")
+	Input.action_release("left")
+	c1.set_speed(Vector2.ZERO)
+	_check(pk_spd > 0.15 and pk_sh > 0.05 and pk_whl > 0.2, "Renol 4L arc speedo climbs (+%.2f rad), umbrella shifter moves (%.2f) and T-wheel+hands turn (%.2f rad)" % [pk_spd, pk_sh, pk_whl])
+	await _frames(4)
+	g._exit_car()
+	await _frames(4)
+	var freed_ok: bool = c1._dash_root == null and c1._rosary_root == null and c1._r4_shifter_piv == null and c1._mirror_vp == null and c1._side_mirror_vp == null
+	_check(freed_ok, "exiting frees the entire Renol 4L cockpit & mirrors cleanly")
+	g.car_cam = was_cam
+	c1.queue_free()
+	g.set_time(was_clock)
+
+func _car_idle_checks(pictures := false) -> void:
+	var CarS = preload("res://scripts/car.gd")
+	var was_clock: float = g.clock
+	var was_cam: int = g.car_cam
+	var was_touch: bool = Touch.on
+	var was_pad: bool = Controls.pad
+	var was_play_ui: bool = g.hud.play_ui.visible
+	g.hud.play_ui.visible = true
+	g.set_time(11.5)
+	Touch.on = false
+	Controls.pad = false
+	Controls.device_changed.emit()
+	var spot: Vector2 = g._start["p"]
+	var dir: Vector2 = g._start["u"]
+	var c = CarS.new()
+	g.add_child(c)
+	c.setup("cuatrolatas", 0xf2f0e6, spot, atan2(dir.x, dir.y))
+	g.car_cam = 1
+	g._enter_car(c)
+	c.set_speed(Vector2.ZERO)
+	await _frames(35)
+	var before_ok: bool = g._car_idle_t > 0.2 and not g._car_idle_on and g.hud.speed_slot.modulate.a > 0.9 and not g.hud.car_hints_slot.visible
+	_check(before_ok, "before 5 s stationary, idle timer ticks (%.2f s) while HUD stays visible and controls stay hidden" % g._car_idle_t)
+	# Cross the 5 s threshold naturally and let the fade settle
+	g._car_idle_t = g.CAR_IDLE_SECS - 0.12
+	await _frames(55)
+	var desk_ok: bool = g._car_idle_on and g.hud.speed_slot.modulate.a < 0.05 and g.hud.map_slot.modulate.a < 0.05 and g.hud.obj_slot.modulate.a < 0.05 \
+		and g.hud.car_hints_slot.visible and g.hud.car_hints_box.modulate.a > 0.9 \
+		and g.hud._car_hints_row1.get_child_count() == 4 and g.hud._car_hints_row2.get_child_count() == 4
+	_check(desk_ok, "after 5 s stationary on desktop, HUD fades out (a=%.2f) and vehicle controls card appears (4+4 controls)" % g.hud.speed_slot.modulate.a)
+	if pictures:
+		await _shot("car_idle_teclado")
+	# Switch to gamepad: card updates live
+	Controls.pad = true
+	Controls.device_changed.emit()
+	await _frames(10)
+	var pad_ok: bool = g.hud.car_hints_slot.visible and g.hud._car_hints_row1.get_child_count() == 4 and g.hud._car_hints_row2.get_child_count() == 4
+	_check(pad_ok, "switching to gamepad refreshes the vehicle controls card live")
+	if pictures:
+		await _shot("car_idle_mando")
+	# Switch to Android / touch: HUD remains hidden, controls card stays hidden
+	Touch.on = true
+	await _frames(10)
+	var touch_ok: bool = g._car_idle_on and g.hud.speed_slot.modulate.a < 0.05 and not g.hud.car_hints_slot.visible
+	_check(touch_ok, "on Android/touch after 5 s stationary, HUD stays hidden and vehicle controls card does NOT appear")
+	Touch.on = false
+	Controls.pad = false
+	Controls.device_changed.emit()
+	await _frames(6)
+	# Resume driving: HUD returns immediately and controls card hides
+	Input.action_press("forward")
+	await _frames(25)
+	Input.action_release("forward")
+	var move_ok: bool = not g._car_idle_on and g.hud.speed_slot.modulate.a > 0.95 and g.hud.map_slot.modulate.a > 0.95 and not g.hud.car_hints_slot.visible
+	_check(move_ok, "accelerating resets idle mode immediately and restores the HUD (a=%.2f)" % g.hud.speed_slot.modulate.a)
+	c.set_speed(Vector2.ZERO)
+	await _frames(10)
+	# Also verify exiting while idle restores HUD cleanly
+	g._car_idle_t = g.CAR_IDLE_SECS - 0.05
+	await _frames(45)
+	g._exit_car()
+	await _frames(25)
+	var exit_ok: bool = not g._car_idle_on and g.hud.map_slot.modulate.a > 0.95 and not g.hud.car_hints_slot.visible
+	_check(exit_ok, "exiting the vehicle while idle restores the HUD cleanly")
+	Touch.on = was_touch
+	Controls.pad = was_pad
+	Controls.device_changed.emit()
+	g.hud.play_ui.visible = was_play_ui
+	g.car_cam = was_cam
+	c.queue_free()
+	g.set_time(was_clock)
 
 func _mejoras_checks(pictures := false) -> void:
 	# 1) Diagonal speed: radial Input.get_vector gives equal magnitude on cardinals & 45-deg diagonals
@@ -9344,7 +10223,8 @@ func _palabros_checks() -> void:
 ## they wrote them (aj_q_no, guion/ajedrez.md). A key ending in "_" is a prefix.
 const HABLA_FINA := ["alcalde", "alcalde_", "carta_bien_alcalde", "carta_mal_alcalde", "aj_m_", "aj_c_", "aj_unlocked",
 	"obj_", "s_", "tk_you_", "day_name_", "title_sub", "credits", "pad_plaque", "rec_bet_title", "carta_para", "t_stopfirst",
-	"food_sold_henry", "aj_q_no", "chino_", "firma_si_chino", "firma_no_chino"]
+	"food_sold_henry", "aj_q_no", "chino_", "firma_si_chino", "firma_no_chino",
+	"inv_n_galletas_perro", "vet_tag_buy", "p_buy_galletas", "t_galletas_buy"]
 
 
 func _habla_fina(k: String) -> bool:
@@ -13868,6 +14748,87 @@ func _run() -> void:
 		await _frames(20)
 		await _ruta_checks(shots)
 		print("COLESTEROL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--perros"):        # just the roaming dogs: 3 breeds, petting and car-hit recovery
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _perros_checks(shots)
+		print("PERROS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--rosario"):       # Z15 rearview mirror rosary: spawns on enter, swings with motion, freed on exit
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _rosario_checks(shots)
+		print("ROSARIO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--hebro"):         # Súper Hebro 555 cockpit: weathered pod, dials, wheel+hands, hand-throttle, exhaust flapper
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _hebro_checks(shots)
+		print("HEBRO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--julietta"):      # Omega Julietta Alfa 159 TI-inspired cockpit + live rearview mirror
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _julietta_checks(shots)
+		print("JULIETTA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--seta"):          # Seta Panda & Seta Pitufo cockpit: bobbleheads, cassettes, 25% Spanish ribbon, live mirrors
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _seta_checks(shots)
+		print("SETA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--edison"):        # Edison Model Y Highland-inspired minimalist cockpit + 15" live touchscreen + glass cutout
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _edison_checks(shots)
+		print("EDISON %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--yondir"):        # Yondir John Deere-inspired tractor cab cockpit + exhaust rain-cap + live mirror
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _yondir_checks(shots)
+		print("YONDIR %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--cuatrolatas"):   # Renault 4-inspired Cuatro Latas exterior model & stats
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _cuatrolatas_checks(shots)
+		print("CUATROLATAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--car_idle"):      # stationary-in-car 5 s HUD hide + vehicle controls card
+		g.menu.close()
+		g.phase = "free"
+		shots = OS.get_cmdline_user_args().has("--window")
+		await _frames(20)
+		await _car_idle_checks(shots)
+		print("CAR_IDLE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
 	if OS.get_cmdline_user_args().has("--feliciano"):     # just Feliciano: where he is on each day, what he says, the riot (with --window for his picture)

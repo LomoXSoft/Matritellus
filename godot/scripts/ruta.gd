@@ -126,7 +126,7 @@ func _add_dog(p: Dictionary) -> void:
 		var box := AABB()
 		var first := true
 		for mi in body.find_children("*", "MeshInstance3D", true, false):
-			var b: AABB = (mi as MeshInstance3D).get_aabb()
+			var b: AABB = _rel(body, mi as Node3D) * (mi as MeshInstance3D).get_aabb()
 			box = b if first else box.merge(b)
 			first = false
 		_dog_k = DOG_LONG / maxf(0.01, maxf(box.size.x, box.size.z))
@@ -169,6 +169,15 @@ func _dog_follow(p: Dictionary, dt: float) -> void:
 		var name := "Walk" if moving and n.state != "idle" else "Idle"
 		if ap.has_animation(name) and ap.current_animation != name:
 			ap.play(name, 0.2)
+
+static func _rel(root: Node3D, n: Node3D) -> Transform3D:
+	var t := Transform3D.IDENTITY
+	var x: Node = n
+	while x != null and x != root:
+		if x is Node3D:
+			t = (x as Node3D).transform * t
+		x = x.get_parent()
+	return t
 
 func _drop(p: Dictionary) -> void:
 	var n = p["n"]

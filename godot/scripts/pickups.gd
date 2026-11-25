@@ -51,6 +51,7 @@ const COLORS := {
 	"azafran": Color(0.72, 0.34, 0.98),
 	"tabaco": Color(0.98, 0.78, 0.24),
 	"pollo": Color(1.0, 0.66, 0.22),
+	"galletas_perro": Color(1.0, 0.72, 0.24),
 }
 
 var G
@@ -349,6 +350,19 @@ func _build_mesh(kind: String) -> Node3D:
 			holder.add_child(Parts.part("box", 0x26262b, Vector3(0.0, -0.10, 0.068), Vector3(0.20, 0.06, 0.008)))
 			holder.add_child(Parts.part("cyl", 0xf4f2ec, Vector3(0.07, 0.27, 0.0), Vector3(0.022, 0.16, 0.022)))
 			holder.add_child(Parts.part("cyl", 0xd99b4a, Vector3(0.07, 0.36, 0.0), Vector3(0.023, 0.05, 0.023)))
+		"galletas_perro":
+			# Kraft dog-treat box with a big golden bone biscuit peeking out in front
+			holder.add_child(Parts.part("box", 0x2c7a5b, Vector3(0.0, -0.02, -0.04), Vector3(0.32, 0.38, 0.14)))
+			holder.add_child(Parts.part("box", 0xf4ecd8, Vector3(0.0, 0.02, 0.032), Vector3(0.26, 0.20, 0.012)))
+			# Classic golden bone-shaped biscuit floating cleanly on the front/top
+			var bone := Node3D.new()
+			bone.position = Vector3(0.0, 0.02, 0.09)
+			bone.rotation.z = deg_to_rad(-18.0)
+			bone.add_child(Parts.part("box", 0xd89b44, Vector3.ZERO, Vector3(0.30, 0.09, 0.06)))
+			for sx: float in [-0.15, 0.15]:
+				for sy: float in [-0.045, 0.045]:
+					bone.add_child(Parts.part("ball", 0xd89b44, Vector3(sx, sy, 0.0), Vector3(0.062, 0.062, 0.05)))
+			holder.add_child(bone)
 		_:
 			holder.add_child(Parts.part("ball", 0xf2c230, Vector3.ZERO, Vector3(0.32, 0.32, 0.32)))
 	return holder

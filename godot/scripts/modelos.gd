@@ -15,6 +15,7 @@ const OWN := -1                 # "this car's own paint"
 ## forward of the middle the front seats are (of the length), how high the cab roof is (of the height, if not the top)].
 const MODELS := {
 	"panda": {"glb": "hatchback-sports", "swap": [[7, 1, OWN]], "seat": [0.6, 0.0]},
+	"cuatrolatas": {"glb": "hatchback-sports", "swap": [[7, 1, OWN]], "seat": [0.6, -0.02]},
 	"pitufo": {"glb": "police", "swap": [[7, 2, OWN]], "seat": [0.56, -0.03]},
 	"z15": {"glb": "delivery", "swap": [[7, 1, OWN]], "tall": 0.78, "seat": [0.52, 0.2, 0.69]},
 	"tractor": {"glb": "tractor", "swap": [[9, 1, OWN]], "wheels": [[11, 2, 0xe8dfc0]], "tall": 1.12, "seat": [0.62, -0.14], "mid": true},
@@ -53,6 +54,7 @@ const CLOSER := {
 ## parts of the texture of about that colour; pale: the paint to go over is the white of the texture.
 const SK := {
 	"panda": {"glb": "sk/panda", "rack": [-0.06, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Window"], "hide_mats": ["Ground"], "seat": [0, -0.03], "rider": 0.56},
+	"cuatrolatas": {"glb": "sk/cuatrolatas", "rack": [-0.14, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Window"], "seat": [0, -0.02, 0.96], "rider": 0.55},
 	"pitufo": {"glb": "sk/panda", "rack": [-0.3, 1.0], "mats": {"Carpaint": OWN}, "glass": ["Window"], "hide_mats": ["Ground"], "seat": [0, -0.03, 0.95], "rider": 0.56},
 	"z15": {"glb": "sk/z15", "rack": [-0.2, 1.0], "mats": {"M_0136": OWN, "Charcoal": OWN}, "seat": [0, 0.05, 0.8], "rider": 0.62, "hull": true},      # (a cap's peak stayed in front of the windscreen)
 	"kokas": {"glb": "sk/z15", "rack": [-0.2, 1.0], "mats": {"M_0136": OWN, "Charcoal": OWN}, "seat": [0, 0.05, 0.8], "rider": 0.62, "hull": true},    # Koke el Kokas's taxi: the Z15 in yellow, flames, sign and wing (koke_marcas.gd)

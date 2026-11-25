@@ -112,6 +112,17 @@ var ov_sub: Label
 var ov_body: Label
 var ov_foot: RichTextLabel
 var play_ui: Control
+var car_hints_slot: Control              # vehicle controls card shown after 5 s stationary in a car (non-touch only)
+var car_hints_box: PanelContainer
+var _car_hints_title: Label
+var _car_hints_row1: HBoxContainer
+var _car_hints_row2: HBoxContainer
+var _car_idle_on := false
+var _car_idle_fade := 0.0                # 0 normal HUD .. 1 HUD faded out (and controls shown on desktop/pad)
+var _car_idle_turbo := false
+var _car_idle_auto := false
+var _car_idle_sig := ""
+var _hud_fade_nodes: Array = []
 var heat_bar: ProgressBar
 var heat_label: Label
 var heat_fill: StyleBoxFlat
@@ -452,6 +463,33 @@ func _ready() -> void:
 	_slot(play_ui, stamp_box, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_CENTER, 16, 150)
 	_tilts.append([stamp_box, -10.0])
 	stamp_box.modulate.a = 0.0
+	_hud_fade_nodes = [fx, obj_slot, timer_slot, suspicion_slot, tally_slot, street_slot, speed_slot, map_slot, prompt_slot]
+
+	# vehicle controls card: appears along the bottom after 5 s stationary inside a vehicle (desktop & gamepad only;
+	# touch screens already have situational buttons so they only fade the HUD)
+	car_hints_box = _skinned("paper")
+	var chv := VBoxContainer.new()
+	chv.add_theme_constant_override("separation", 7)
+	_car_hints_title = _label(14, TERRA)
+	_car_hints_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var ch_rule := ColorRect.new()
+	ch_rule.color = Color(0.29, 0.2, 0.14, 0.25)
+	ch_rule.custom_minimum_size = Vector2(220, 2)
+	ch_rule.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_car_hints_row1 = HBoxContainer.new()
+	_car_hints_row1.alignment = BoxContainer.ALIGNMENT_CENTER
+	_car_hints_row1.add_theme_constant_override("separation", 22)
+	_car_hints_row2 = HBoxContainer.new()
+	_car_hints_row2.alignment = BoxContainer.ALIGNMENT_CENTER
+	_car_hints_row2.add_theme_constant_override("separation", 22)
+	chv.add_child(_car_hints_title)
+	chv.add_child(ch_rule)
+	chv.add_child(_car_hints_row1)
+	chv.add_child(_car_hints_row2)
+	car_hints_box.add_child(chv)
+	car_hints_slot = _slot(root, car_hints_box, Control.SIZE_SHRINK_CENTER, Control.SIZE_SHRINK_END, 20)
+	car_hints_box.modulate.a = 0.0
+	car_hints_slot.visible = false
 
 	# dialogue box
 	var dp := _skinned("bubble")               # a bubble; its tail (below) points at whoever is talking
@@ -1100,6 +1138,90 @@ func _process(dt: float) -> void:
 		_toast_t -= dt
 		if _toast_t <= 0.0:
 			toast_slot.visible = false
+	# stationary-in-car idle mode: fade gameplay HUD out, and on non-touch show the full vehicle controls card
+	var want_idle := 1.0 if _car_idle_on else 0.0
+	var idle_rate := 2.2 if _car_idle_on else 6.0
+	var prev_fade := _car_idle_fade
+	_car_idle_fade = move_toward(_car_idle_fade, want_idle, dt * idle_rate)
+	var show_hints: bool = (not Touch.on) and _car_idle_fade > 0.01 and play_ui.visible and not bigmap.visible and not dlg_slot.visible and not overlay.visible and bar_top.offset_bottom <= 1.0
+	if _car_idle_fade != prev_fade:
+		var hud_a := 1.0 - _car_idle_fade
+		for n in _hud_fade_nodes:
+			(n as Control).modulate.a = hud_a
+	if show_hints and _car_idle_on:
+		refresh_car_hints()
+	car_hints_slot.visible = show_hints
+	car_hints_box.modulate.a = _car_idle_fade * 0.96 if show_hints else 0.0
+
+## stationary inside a vehicle > 5 s: hides the gameplay HUD, and on non-touch shows every vehicle control
+func set_car_idle(on: bool, has_turbo := false, has_autopilot := false) -> void:
+	_car_idle_on = on
+	_car_idle_turbo = has_turbo
+	_car_idle_auto = has_autopilot
+	if on and not Touch.on:
+		refresh_car_hints()
+
+## builds/updates the vehicle controls card for the active input device, language, keybinds and car capabilities
+func refresh_car_hints() -> void:
+	if car_hints_slot == null or Touch.on:
+		return
+	var sig := "%s|%s|%s|%s|%s|%s" % [Controls.pad, Controls.playstation(), Loc.lang, _car_idle_turbo, _car_idle_auto, str(Controls.keys)]
+	if sig == _car_idle_sig:
+		return
+	_car_idle_sig = sig
+	_car_hints_title.text = Loc.t("car_ctrl_title")
+	for row in [_car_hints_row1, _car_hints_row2]:
+		for ch in row.get_children():
+			row.remove_child(ch)
+			ch.queue_free()
+	var row1: Array = [
+		[["accel"] if Controls.pad else ["forward"], Loc.t("car_ctrl_accel")],
+		[["brake"] if Controls.pad else ["back"], Loc.t("car_ctrl_brake")],
+		[["left"] if Controls.pad else ["left", "right"], Loc.t("car_ctrl_steer")],
+		[["handbrake"], Loc.t("car_ctrl_handbrake")],
+	]
+	if _car_idle_turbo:
+		row1.append([["run"], Loc.t("car_ctrl_turbo")])
+	elif _car_idle_auto:
+		row1.append([["run"], Loc.t("car_ctrl_auto")])
+	var row2: Array = [
+		[["interact"], Loc.t("car_ctrl_exit")],
+		[["radio"], Loc.t("car_ctrl_radio")],
+		[["cam_mode"], Loc.t("car_ctrl_cam")],
+		[["horn"], Loc.t("car_ctrl_horn")],
+	]
+	for item in row1:
+		_car_hints_row1.add_child(_car_hint_chip(item[0], item[1]))
+	for item in row2:
+		_car_hints_row2.add_child(_car_hint_chip(item[0], item[1]))
+
+func _car_hint_chip(actions: Array, text: String) -> HBoxContainer:
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 5)
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for a in actions:
+		var act := String(a)
+		var path := Controls.icon(act)
+		if path != "":
+			var ic := _icon_rect(26)
+			_set_icon(ic, act)
+			hb.add_child(ic)
+		else:
+			var pill := _panel(CREAM, 6, 2, INK)
+			var sb := pill.get_theme_stylebox("panel") as StyleBoxFlat
+			sb.content_margin_left = 7; sb.content_margin_right = 7; sb.content_margin_top = 1; sb.content_margin_bottom = 2
+			sb.shadow_size = 0
+			pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			var gl := _label(14, INK)
+			gl.text = Controls.glyph(act)
+			pill.add_child(gl)
+			hb.add_child(pill)
+	var lb := _label(16, INK)
+	lb.text = text
+	lb.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hb.add_child(lb)
+	return hb
 
 ## the calendar leaf out for a while, errand or not (a pitillo: you watch the clock go round, fumar.gd)
 func show_day(seconds: float) -> void:
@@ -1161,9 +1283,12 @@ func radio_card(st: Dictionary) -> void:
 	else:
 		radio_box.tune(st.get("logo"), String(song[0]) if song[0] != "" else String(st.get("name", "")), String(song[1]), number, Ambience.stations.size())
 	radio_box.modulate.a = 1.0
-	_radio_tween.tween_method(_radio_at, float(from), float(RADIO_OUT), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var radio_out := float(RADIO_OUT)
+	if car_hints_slot != null and car_hints_slot.visible:
+		radio_out += maxf(car_hints_box.size.y, 100.0) + 18.0
+	_radio_tween.tween_method(_radio_at, float(from), radio_out, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_radio_tween.tween_interval(4.0)
-	_radio_tween.tween_method(_radio_at, float(RADIO_OUT), float(RADIO_IN), 0.4).set_ease(Tween.EASE_IN)
+	_radio_tween.tween_method(_radio_at, radio_out, float(RADIO_IN), 0.4).set_ease(Tween.EASE_IN)
 	_radio_tween.tween_property(radio_box, "modulate:a", 0.0, 0.05)
 
 ## how far out of the bottom of the screen the radio is (the street's name keeps above it)

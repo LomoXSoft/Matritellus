@@ -120,7 +120,7 @@ func normal_items() -> Array:
 			"name": Loc.t("inv_n_" + key_id) if Loc.TX.has("inv_n_" + key_id) else key_id,
 			"desc": Loc.t("inv_d_" + key_id) if Loc.TX.has("inv_d_" + key_id) else "",
 			"qty": qty,
-			"usable": key_id in ["kebab", "jamon_taper", "bocata"],
+			"usable": key_id in ["kebab", "jamon_taper", "bocata", "galletas_perro"],
 			"droppable": true,
 		})
 	return out
@@ -265,6 +265,16 @@ func use_selected() -> bool:
 	if it == null or not bool(it.get("usable", false)):
 		return false
 	var id: String = String(it["id"])
+	if id == "galletas_perro":
+		if G.perros != null:
+			var dog = G.perros.near(G.player.p, 4.5)
+			if dog != null:
+				close()
+				return G.perros.feed(dog)
+		Sfx.beep(196.0, 0.12, 1, -14.0)
+		if G.hud != null:
+			G.hud.toast(Loc.t("t_galletas_no_dog"), 2.4)
+		return false
 	remove_item(id, 1)
 	close()
 	G.comida.eat()
@@ -546,6 +556,17 @@ func _draw_icon(kind: String, c: Vector2, r: float) -> void:
 			draw_rect(Rect2(c + Vector2(-10, -3), Vector2(20, 3)), GOLD)
 			draw_rect(Rect2(c + Vector2(-10, -12), Vector2(20, 26)), INK, false, 1.8)
 			draw_line(c + Vector2(5, -12), c + Vector2(5, -18), Color("d99b4a"), 3.0)
+		"galletas_perro":
+			# Classic golden dog bone with ink outline
+			var bc := Color("d89b44")
+			for sx: float in [-11.0, 11.0]:
+				for sy: float in [-4.5, 4.5]:
+					draw_circle(c + Vector2(sx, sy), 5.6, INK)
+			draw_rect(Rect2(c + Vector2(-11.0, -5.0), Vector2(22.0, 10.0)), INK)
+			for sx: float in [-11.0, 11.0]:
+				for sy: float in [-4.5, 4.5]:
+					draw_circle(c + Vector2(sx, sy), 4.2, bc)
+			draw_rect(Rect2(c + Vector2(-11.0, -3.5), Vector2(22.0, 7.0)), bc)
 		_:
 			draw_circle(c, 12.0, GOLD)
 			draw_circle(c, 12.0, INK, false, 2.0)

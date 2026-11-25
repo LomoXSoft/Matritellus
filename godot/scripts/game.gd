@@ -32,6 +32,7 @@ const RayaS = preload("res://scripts/raya.gd")
 const MotinS = preload("res://scripts/motin.gd")
 const FelicianoS = preload("res://scripts/feliciano.gd")
 const RutaS = preload("res://scripts/ruta.gd")
+const PerrosS = preload("res://scripts/perros.gd")
 const RondasS = preload("res://scripts/rondas.gd")
 const DerrapeS = preload("res://scripts/derrape.gd")
 const TironesS = preload("res://scripts/tirones.gd")
@@ -209,6 +210,8 @@ var _arrow_beat := 0.0          # the phase of the guide arrow's bob, run on its
 var motin                       # the roast ham riot outside La Cocina de Henry, and the minigame it is (motin.gd)
 var feliciano                   # Feliciano, at every roast ham riot, by the Poor Clares' convent the rest of the week (feliciano.gd)
 var ruta                        # the walkers in tracksuits along the «ruta del colesterol», the old Madrid–Cádiz road (ruta.gd)
+var perros                      # five roaming dogs of three breeds (galgo, mastin, chucho) strolling the pavements (perros.gd)
+var near_dog = null
 var rondas                      # the rounds of the neighbours with a name of their own, when they have no mission for you (rondas.gd)
 var sabotaje                    # Don Luis's side mission: the delivery lorry and the other three kebabs (sabotaje.gd)
 var pintadas                    # La Chiki's: the walls of the peñas (pintadas.gd)
@@ -1599,7 +1602,9 @@ func _setup_places_and_actors() -> void:
 			continue
 		var roll := randf()
 		var make := "panda"
-		if roll >= 0.34 and roll < 0.63:
+		if roll >= 0.22 and roll < 0.36:
+			make = "cuatrolatas"
+		elif roll >= 0.36 and roll < 0.63:
 			make = "z15"
 		elif roll >= 0.63 and roll < 0.77:
 			make = "tractor"
@@ -1633,6 +1638,8 @@ func _setup_places_and_actors() -> void:
 	feliciano.setup(self)
 	ruta = RutaS.new()
 	ruta.setup(self)
+	perros = PerrosS.new()
+	perros.setup(self)
 	var genaro_look :={"face": 6, "top": 6, "brows": 1, "shirt": 0x8a6a48, "hair": 0xe0e0e0, "hat": "beret", "skin": 0xe2ab80}
 	if world != null and world.molino != null:      # (the mill built by hand: in its yard, where the curved path ends, facing the red door; Pretil)
 		var miller = _make_npc("genaro", genaro_look, "old_m", MILLER_AT)
@@ -1724,6 +1731,8 @@ func _setup_places_and_actors() -> void:
 	pickups = PickupsS.new()
 	add_child(pickups)
 	pickups.setup(self)
+	if perros != null:
+		perros.spawn_vet_pickups()
 	tomasa = TomasaS.new()
 	tomasa.setup(self)
 	fondo_casa = FondoCasaS.new()
@@ -2256,6 +2265,15 @@ var dev_trust := false                  # +100 trust with whoever you talk to
 var dev_hud_key := false                # developer option: Select (pad) / ºª (keyboard) toggles HUD
 var hud_hidden := false
 var _fps_was_on := false
+const CAR_IDLE_SECS := 5.0
+var _car_idle_t := 0.0
+var _car_idle_on := false
+
+func _reset_car_idle() -> void:
+	_car_idle_t = 0.0
+	if _car_idle_on:
+		_car_idle_on = false
+		hud.set_car_idle(false)
 func _dev_fps() -> void:
 	hud.fps_label.visible = not hud.fps_label.visible
 	_fps_was_on = hud.fps_label.visible
@@ -2280,6 +2298,7 @@ func set_hud_hidden(on: bool) -> void:
 		return
 	hud_hidden = on
 	if on:
+		_reset_car_idle()
 		_fps_was_on = hud.fps_label.visible
 		hud.play_ui.visible = false
 		hud.fps_label.visible = false
@@ -2331,6 +2350,7 @@ const DEV_OTHERS := [
 func _dev_side(id: String) -> void:
 	_close_pause()
 	if in_car != null:
+		_reset_car_idle()
 		in_car.set_speed(Vector2.ZERO)
 		_exit_car()
 	if indoors:
@@ -3658,6 +3678,7 @@ func _wake_up() -> void:
 	set_time(8.0)
 	police.reset()
 	if in_car != null:
+		_reset_car_idle()
 		in_car.set_speed(Vector2.ZERO)
 	phase = "play" if steps[si]["type"] != "tbc" else "free"
 	create_tween().tween_property(hud.fade, "modulate:a", 0.0, 1.6)
@@ -4137,6 +4158,7 @@ func _play_minigame(id: String, _level: int) -> void:
 			phase = "play"
 		return
 	if in_car != null:
+		_reset_car_idle()
 		in_car.set_speed(Vector2.ZERO)
 		_exit_car()
 	if id == "jamon":                            # the riot outside Henry's, there and then (no Puntos Cívicos this way)
@@ -4545,7 +4567,9 @@ func faint_spot() -> Vector2:
 ## the faint is over: you come to at the health centre, where they have brought you
 func faint_wake() -> void:
 	if in_car != null:
+		_reset_car_idle()
 		in_car.set_speed(Vector2.ZERO)
+		in_car.set_rosary(false)
 		in_car.seat({})
 		in_car.park()
 		in_car = null
@@ -4578,12 +4602,14 @@ func _refresh_counts() -> void:
 	hud.set_counts(money, -1 if chavisca else saffron, pc if pc_on() else -1, props.tags_owned(look_sel[11]) if pintadas.unlocked() else -1, props.tags.size())
 
 func _enter_car(c) -> void:
+	_reset_car_idle()
 	in_car = c
 	c.doze(false)
 	c.set_soap(true)                             # (it slides off walls it only grazes: car.gd _soap)
 	cuartel_coche.entered(c)                     # (the Tricornios' own, from their door: stealing it, as in _steal)
 	c.seat(Creator.look(look_sel))               # you, at the wheel
 	c.set_driver_head_visible(car_cam != 1)
+	c.set_rosary(true)                           # silver rosary hanging from the Z15 mirror while you ride
 	_fp_yaw = 0.0
 	_fp_pitch = 0.0
 	_cine_ready = false
@@ -4623,10 +4649,12 @@ func _exit_car() -> void:
 		hud.toast(Loc.t("t_stopfirst"), 1.6)
 		return
 	# Only a successful exit changes the driver, passengers and controls.
+	_reset_car_idle()
 	_stop_air_cine(true)
 	_nitro_latch = false
 	_autopilot_off("")
 	c.set_driver_head_visible(true)
+	c.set_rosary(false)
 	cam.near = 0.3
 	cam.fov = float(Settings.data["fov"])
 	c.seat({})
@@ -4694,6 +4722,7 @@ func busted() -> void:
 		var c = paca_car
 		c.repair()
 		if in_car != null and in_car != c:
+			in_car.set_rosary(false)
 			in_car.park()
 			in_car = null
 		c.place(checkpoint["p"], atan2(checkpoint["u"].x, checkpoint["u"].y))
@@ -4969,6 +4998,8 @@ func _drive_car(c, dt: float, thr: float, steer: float, hand: bool) -> void:
 				n.p = q + nv.normalized() * (c.r + 0.55)
 				if v > 1.0 and not n.is_barking():
 					n.bark(Loc.t("shove").pick_random(), 1.8)
+	if perros != null:
+		perros.check_car(c, true)
 
 ## Vehicles on a job (the tow truck called out, Los Pitufos and the Tricornios after you, one day the ambulance) stop
 ## for nobody: whoever is in the road goes flying, or is shoved aside if it is going slowly. Not your doing: no heat,
@@ -5009,6 +5040,8 @@ func _duty_hits() -> void:
 					n.bark(Loc.speaker(Loc.t("ouch_duty").pick_random(), n.voice.ends_with("_f")), 3.5)
 				else:
 					n.p = q + nv.normalized() * (c.r + 0.55)
+		if perros != null:
+			perros.check_car(c, false)
 
 # ================= input =================
 func _unhandled_input(e: InputEvent) -> void:
@@ -5230,6 +5263,8 @@ func interact() -> void:
 		sabotaje.act()
 	elif tomasa != null and tomasa.can_buy():
 		tomasa.buy()
+	elif perros != null and perros.can_buy():
+		perros.buy()
 	elif recress.shop_near(player.p) != null:
 		recress.stick(recress.shop_near(player.p))
 	elif recress.can_play(player.p):
@@ -5262,6 +5297,11 @@ func interact() -> void:
 		_unlock_bridge()
 	elif near_npc != null:
 		talk_to(near_npc)
+	elif near_dog != null and perros != null:
+		if perros.can_feed(near_dog):
+			perros.feed(near_dog)
+		else:
+			perros.pet(near_dog)
 	elif near_car != null:
 		if comida.faint != null:
 			hud.toast(Loc.t("t_faint_car"), 2.5)
@@ -5439,11 +5479,14 @@ func _bat_lands() -> void:
 const CAR_FIRST := 3.0                           # metres: a car this close is got into, whoever is standing by
 func _find_interaction() -> void:
 	near_npc = null
+	near_dog = null
 	near_car = null
 	near_tag = null
 	near_steal = null
 	if in_car != null:
 		return
+	if perros != null and not indoors:
+		near_dog = perros.near(player.p)
 	var bd := 3.2 * 3.2
 	for n in npcs:
 		if n.away or n.state == "fly" or n.state == "down":
@@ -5549,9 +5592,11 @@ func _physics_process(delta: float) -> void:
 	_input_lock = maxf(0.0, _input_lock - dt)
 	_dynres()
 	if map_open:
+		_reset_car_idle()
 		_map_nav(dt)
 		return
 	if paused:
+		_reset_car_idle()
 		return
 	time += dt
 	world.mill_blades.rotation.z += dt * 0.6
@@ -5717,7 +5762,17 @@ func _physics_process(delta: float) -> void:
 			c.flip_told = true
 			hud.toast(Loc.t("t_flipped"), 4.0)
 		_look_idle += dt
+		# stationary in vehicle > 5 s: hide gameplay HUD, and on non-touch show all vehicle controls
+		var car_parked: bool = not frozen and not hud_hidden and (phase == "play" or phase == "free") and mending == null and autopilot == null and phone_call == null and not hud.limit_slot.visible and absf(iy) < 0.05 and absf(ix) < 0.05 and not Input.is_action_pressed("handbrake") and not c.turbo and speed < 0.35
+		if car_parked:
+			_car_idle_t += dt
+			if not _car_idle_on and _car_idle_t >= CAR_IDLE_SECS:
+				_car_idle_on = true
+				hud.set_car_idle(true, c.spec.has("turbo"), _has_autopilot(c))
+		else:
+			_reset_car_idle()
 	else:
+		_reset_car_idle()
 		cam_yaw += cl * 2.2 * dt
 		var move_in := Vector2.ZERO if frozen else Input.get_vector("left", "right", "back", "forward", 0.25)
 		var f := Vector2(sin(cam_yaw), cos(cam_yaw))
@@ -5827,6 +5882,8 @@ func _physics_process(delta: float) -> void:
 		feliciano.tick(dt)
 	if ruta != null:
 		ruta.tick(dt)
+	if perros != null:
+		perros.tick(dt)
 	if rondas != null:
 		rondas.tick(dt)
 	derrape.tick(dt, pp)
@@ -5877,7 +5934,7 @@ func _physics_process(delta: float) -> void:
 		select_mission("none")
 		hud.toast(Loc.t("t_pin_there"), 3.0)
 		guide = null
-	arrow.visible = guide != null and (phase == "play" or side != null or track_pick.begins_with("giver:") or track_pick == "pin") and not indoors and dlg == null and not cine_lock and not hud_hidden      # (not while somebody is talking, nor in a scene, nor when deselected on map, nor when HUD hidden)
+	arrow.visible = guide != null and (phase == "play" or side != null or track_pick.begins_with("giver:") or track_pick == "pin") and not indoors and dlg == null and not cine_lock and not hud_hidden and not _car_idle_on      # (not while somebody is talking, nor in a scene, nor when deselected on map, nor when HUD hidden / parked idle)
 	if guide != null:
 		# Straight at the place itself, walls or no walls: the minimap already shows the streets (the user, 15 November
 		# 2026; it used to point down the next street of the route, nose up to the sky)
@@ -5947,6 +6004,8 @@ func _physics_process(delta: float) -> void:
 			pr = Loc.t("p_aj_play")
 		elif near_npc != null:
 			pr = Loc.t("p_talk")                 # (who it is you can see: the tag hangs over their head)
+		elif near_dog != null:
+			pr = Loc.t("p_feed") if (perros != null and perros.can_feed(near_dog)) else Loc.t("p_pet")
 		elif near_car != null:
 			if near_steal != null or (near_car == cuartel_coche.car and near_car != null):      # (theirs, at their door: that is stealing)
 				pr = Loc.t("p_steal")
@@ -5960,6 +6019,8 @@ func _physics_process(delta: float) -> void:
 	if not frozen and in_car == null and gacha.near(pp) == null and not ajedrez.on_board(pp) and entradas.enter_here() == null and entradas.exit_here() == null:     # (at a door or gumball machine or chessboard, prompt is about that)
 		if near_npc != null:
 			about = near_npc
+		elif near_dog != null:
+			about = near_dog["root"]
 		elif near_car != null:
 			about = near_car
 	if motin.busy():                             # (in the riot there is nothing to press but the bat)
@@ -5971,6 +6032,10 @@ func _physics_process(delta: float) -> void:
 	var buy_tab: bool = not frozen and in_car == null and tomasa != null and tomasa.can_buy()
 	if buy_tab:
 		pr = tomasa.buy_prompt()
+		about = null
+	var buy_vet: bool = not frozen and in_car == null and not buy_tab and perros != null and perros.can_buy()
+	if buy_vet:
+		pr = perros.buy_prompt()
 		about = null
 	if not frozen and _can_unlock():
 		pr = Loc.t("p_puente") % int(steps[si].get("cost", 10))
@@ -5988,10 +6053,15 @@ func _physics_process(delta: float) -> void:
 		if buy_tab:
 			spot = tomasa.buy_spot()
 			under = false
+		elif buy_vet:
+			spot = perros.buy_spot()
+			under = false
 		elif about == null:
 			spot = in_car.global_position if in_car != null else player.global_position
 		elif about == near_npc:
 			spot = about.global_position + Vector3(0, 2.3 * float(about.look_data.get("scale", 1.0)), 0)
+		elif near_dog != null and about == near_dog["root"]:
+			spot = about.global_position + Vector3(0, 1.35, 0)
 		else:
 			spot = about.global_position + Vector3(0, 2.1, 0)
 		if not cam.is_position_behind(spot):
@@ -6081,6 +6151,8 @@ func _ride_keep() -> void:
 func _on_device() -> void:
 	if phase == "boxing":
 		hud.box_help()
+	if _car_idle_on:
+		hud.refresh_car_hints()
 	if menu.visible:
 		menu.rebuild()
 	match phase:

@@ -13,12 +13,12 @@ var _rev := 0.7
 ## Real recordings of horns, skids and engines (CC0: tools/sonidos_origen/CREDITOS.txt; cut by tools/sonidos_vehiculos.py).
 ## Each make of car has its own engine and its own horns; the synthetic sounds above stay as the fallback.
 const VEH := "res://assets/audio/vehiculos/"
-const ENGINES := {"panda": "motor_mini", "pitufo": "motor_peugeot107", "z15": "motor_vw_t4", "kokas": "motor_escape_roto", "tractor": "motor_tractor", "yondir": "motor_maquinaria",
+const ENGINES := {"panda": "motor_mini", "cuatrolatas": "motor_mini", "pitufo": "motor_peugeot107", "z15": "motor_vw_t4", "kokas": "motor_escape_roto", "tractor": "motor_tractor", "yondir": "motor_maquinaria",
 	"tunero": "motor_escape_roto", "julietta": "motor_peugeot308", "grua": "motor_iveco", "tricornio": "motor_peugeot308"}
 ## (the Julietta had the Aston Martin's, but that recording is one car going past, revving up: looped, it sounded like
 ## an engine starting over and over, even flat out -- the user, 15 Nov 2026. A steady idle, pitched up, instead)
-const ENGINE_PITCH := {"julietta": 1.22}
-const HORNS := {"panda": ["claxon_coche_1", "claxon_coche_3", "claxon_coche_4"], "pitufo": ["claxon_coche_2"], "z15": ["claxon_furgoneta_1", "claxon_autobus"], "kokas": ["claxon_coche_5", "claxon_furgoneta_1"],
+const ENGINE_PITCH := {"julietta": 1.22, "cuatrolatas": 0.90}
+const HORNS := {"panda": ["claxon_coche_1", "claxon_coche_3", "claxon_coche_4"], "cuatrolatas": ["claxon_coche_1", "claxon_coche_3"], "pitufo": ["claxon_coche_2"], "z15": ["claxon_furgoneta_1", "claxon_autobus"], "kokas": ["claxon_coche_5", "claxon_furgoneta_1"],
 	"tractor": ["claxon_tractor", "claxon_tractor_protesta_1"], "yondir": ["claxon_aire"], "tunero": ["claxon_coche_5", "claxon_coche_2"],
 	"edison": ["claxon_coche_5"], "julietta": ["claxon_coche_4"], "grua": ["claxon_pickup_1", "claxon_pickup_2", "claxon_pickup_3"], "tricornio": ["claxon_coche_3"]}
 const SCREECHES := ["frenazo_1", "frenazo_2", "frenazo_3", "frenazo_4", "frenazo_5"]

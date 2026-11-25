@@ -8,6 +8,7 @@ var center := Vector2.ZERO
 var heading := 0.0
 var round := false           # on its plate: no frame of its own, and it turns so that the way you look is up
 var spin := 0.0              # ...which is this way (the camera's heading)
+var dark_gps := false        # sleek dark modern satnav palette for in-dash car GPS screens (Edison, Julietta)
 var radius := 150.0
 var target = null            # Vector2 or null
 var givers: Array = []       # [where, round photo (or null)]: who has a mission for you (marcas.gd)
@@ -134,19 +135,21 @@ func _draw() -> void:
 		c = center
 	var half := sz / 2.0
 	var mid := half                               # (the middle of the control, whatever the turning does to `half`)
-	draw_rect(Rect2(Vector2.ZERO, sz), Color("e9d9a6"))
+	draw_rect(Rect2(Vector2.ZERO, sz), Color("11161f") if dark_gps else Color("e9d9a6"))
 	if round and not full:                        # from here on everything is drawn from the middle, turned
 		draw_set_transform(half, spin - PI, Vector2.ONE)
 		half = Vector2.ZERO
 	var reach := (radius + 60.0) * (radius + 60.0)
-	var cols := [Color("fffdf6"), Color("cdb07a"), Color("f3ead2")]
+	var cols := [Color("66758c"), Color("2d3544"), Color("3e495c")] if dark_gps else [Color("fffdf6"), Color("cdb07a"), Color("f3ead2")]
+	var blk_line := Color("273142") if dark_gps else Color("b79c6e")
+	var blk_fill := Color("19202c")
 	if full:
 		for ring in MapData.outlines:          # city blocks
 			var pts := PackedVector2Array()
 			for q in ring:
 				pts.append((q - c) * k + half)
 			pts.append(pts[0])
-			draw_polyline(pts, Color("b79c6e"), 1.0)
+			draw_polyline(pts, blk_line, 1.0)
 		for pass_i in [1, 2, 0]:
 			for s in _passes[pass_i]:
 				draw_line((s.a - c) * k + half, (s.b - c) * k + half, cols[pass_i], maxf(2.0 if pass_i == 0 else 1.0, s.hw * 2.0 * k * 0.8))
@@ -161,8 +164,10 @@ func _draw() -> void:
 					var pts := PackedVector2Array()
 					for q in ring:
 						pts.append((q - c) * k + half)
+					if dark_gps and pts.size() >= 3:
+						draw_colored_polygon(pts, blk_fill)
 					pts.append(pts[0])
-					draw_polyline(pts, Color("b79c6e"), 1.0)
+					draw_polyline(pts, blk_line, 1.0)
 		for pass_i in [1, 2, 0]:
 			var cells: Dictionary = _seg_cells[pass_i]
 			for cx in range(here.x - span, here.x + span + 1):
@@ -170,14 +175,18 @@ func _draw() -> void:
 					for s in cells.get(Vector2i(cx, cy), []):
 						if s.a.distance_squared_to(c) > reach:
 							continue
-						draw_line((s.a - c) * k + half, (s.b - c) * k + half, cols[pass_i], maxf(2.0 if pass_i == 0 else 1.0, s.hw * 2.0 * k * 0.8))
+						draw_line((s.a - c) * k + half, (s.b - c) * k + half, cols[pass_i], maxf((2.6 if dark_gps else 2.0) if pass_i == 0 else 1.0, s.hw * 2.0 * k * 0.8))
 	var pts: PackedVector2Array = MapData.route_pts
 	if pts.size() > 1:
 		var line := PackedVector2Array()
 		line.append((center - c) * k + half)
 		for q in pts:
 			line.append((q - c) * k + half)
-		draw_polyline(line, Color("2fb84a"), 4.0)          # (the way to what you are after: green, as everything that is: 16 Nov 2026)
+		if dark_gps:
+			draw_polyline(line, Color(0.18, 0.58, 1.0, 0.35), 8.5, true)
+			draw_polyline(line, Color("389cff"), 4.0, true)
+		else:
+			draw_polyline(line, Color("2fb84a"), 4.0)          # (the way to what you are after: green, as everything that is: 16 Nov 2026)
 	for q in cars:
 		if not full and q.distance_squared_to(c) > reach:
 			continue
@@ -248,8 +257,8 @@ func _draw() -> void:
 	var arrow := PackedVector2Array()
 	for v in [Vector2(0, -10), Vector2(7, 8), Vector2(0, 4), Vector2(-7, 8)]:
 		arrow.append(pp + v.rotated(PI - heading))
-	draw_colored_polygon(arrow, Color("e8553d"))
-	draw_polyline(arrow + PackedVector2Array([arrow[0]]), Color.WHITE, 1.5)
+	draw_colored_polygon(arrow, Color("2ea4ff") if dark_gps else Color("e8553d"))
+	draw_polyline(arrow + PackedVector2Array([arrow[0]]), Color.WHITE, 1.8 if dark_gps else 1.5, true)
 	if not round:
 		draw_rect(Rect2(Vector2.ZERO, sz), Color("4a3424"), false, 4.0)
 	_row_rects.clear()

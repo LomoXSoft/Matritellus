@@ -27,7 +27,7 @@ extends "res://scripts/obra.gd"
 
 const READY := true                 # (tools/bake_godot.py: Catastro's block is not raised while this is true)
 const CarS = preload("res://scripts/car.gd")
-const MAKES := ["panda", "panda", "panda", "panda", "z15", "z15", "z15", "julietta", "tunero", "panda"]
+const MAKES := ["panda", "panda", "panda", "cuatrolatas", "cuatrolatas", "z15", "z15", "z15", "julietta", "tunero"]
 const UNSEEN := 40.0                # cars come and go where you are not looking
 const NAME := "Merkocarry"
 const DIR := "res://assets/merkocarry/"

@@ -69,14 +69,30 @@ func _place_furniture() -> void:
 		var along: Vector2 = s.a + u * length * rng.randf_range(0.3, 0.7)
 		var roll := rng.randf()
 		if roll < 0.10:
-			_prop("sign", along + n * (edge + 0.55) * side, atan2(u.x, u.y) + (0.0 if side < 0.0 else PI), rng.randi() % 3)
+			var sp: Vector2 = along + n * (edge + 0.55) * side
+			if not _near_tree(sp, 2.0):
+				_prop("sign", sp, atan2(u.x, u.y) + (0.0 if side < 0.0 else PI), rng.randi() % 3)
 		elif roll < 0.17 and room > edge + 1.7:
-			var facing := -n * side
-			_prop("bench", along + n * (edge + 1.1) * side, atan2(facing.x, facing.y), 0)
+			var bp: Vector2 = along + n * (edge + 1.1) * side
+			if not _near_tree(bp, 2.2):
+				var facing := -n * side
+				_prop("bench", bp, atan2(facing.x, facing.y), 0)
 		elif roll < 0.28:
-			_prop("bin", along + n * (edge + 0.6) * side, 0.0, 0)
+			var kp: Vector2 = along + n * (edge + 0.6) * side
+			if not _near_tree(kp, 2.0):
+				_prop("bin", kp, 0.0, 0)
 	for req in world.extra_props:                 # what the hand-built places have standing by them in their photos
 		_prop(String(req[0]), req[1], float(req[2]), int(req[3]))
+
+func _near_tree(p: Vector2, dist: float) -> bool:
+	var k := _key(p)
+	var d2 := dist * dist
+	for dx in [-1, 0, 1]:
+		for dz in [-1, 0, 1]:
+			for ti in _tree_grid.get(k + Vector2i(dx, dz), []):
+				if (world.tree_info[ti]["p"] as Vector2).distance_squared_to(p) < d2:
+					return true
+	return false
 
 ## how far a point is from a thing: from its middle, or for a long one (a fence) from the line of it
 func _reach(b: Node, q: Vector2) -> float:

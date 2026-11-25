@@ -51,7 +51,7 @@ func setup(game_) -> void:
 ## While the game loads: a car of each of the commoner makes, built and put away, so that the first ones to drive into
 ## view do not have to be built there and then (that was a hitch each time).
 func prewarm() -> void:
-	for kind in ["panda", "panda", "panda", "z15", "z15", "z15", "tractor", "yondir", "tunero", "edison", "julietta"]:
+	for kind in ["panda", "panda", "cuatrolatas", "cuatrolatas", "z15", "z15", "z15", "tractor", "yondir", "tunero", "edison", "julietta"]:
 		var c = CarS.new()
 		game.add_child(c)
 		c.setup(kind, 0, Vector2(0, -5000), 0.0)
@@ -312,7 +312,9 @@ func _spawn(pp: Vector2) -> void:
 		return
 	var roll := randf()
 	var kind := "panda"
-	if roll >= 0.36 and roll < 0.64:
+	if roll >= 0.24 and roll < 0.38:
+		kind = "cuatrolatas"
+	elif roll >= 0.38 and roll < 0.64:
 		kind = "z15"
 	elif roll >= 0.64 and roll < 0.76:
 		kind = "tractor"

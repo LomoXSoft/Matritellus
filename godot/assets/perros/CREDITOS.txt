@@ -1,0 +1,1 @@
+galgo.glb, mastin.glb, chucho.glb: variaciones de raza (galgo manchego, mastín y chucho) generadas en Blender por tools/make_perros.py a partir de godot/assets/ajedrez/perro.glb ("Shiba Inu" de Quaternius, CC0, https://poly.pizza/m/y4wdQpg767).
