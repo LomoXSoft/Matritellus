@@ -3453,16 +3453,16 @@ const TX := {
 	# ---- Xandro and Street Races (xandro.gd) ----
 	"n_xandro": {"es": "Xandro", "en": "Xandro"},
 	"xandro_call": {
-		"es": ["¿Oye, tú eres el puto loco que he visto conduciendo a toda leche por el pueblo atropellando a todo lo que se mueve?",
+		"es": ["¿Oye, tú eres el puto loco que he visto conduciendo a toa leche por el pueblo atropellando a tó lo que se mueve?",
 			"Soy Xandro, el del taller de la carretera de Villacañas, Talleres Xandro.",
 			"Tengo un trabajito que igual te interesa. Pásate por mi taller cuando puedas y hablamos."],
 		"en": ["Oi, are you the bloody lunatic I saw tearing through town at full pelt running over everything that moves?",
 			"This is Xandro, from the garage on the Villacañas road, Talleres Xandro.",
 			"I’ve got a little job that might interest you. Swing by my workshop when you can and we’ll talk."]},
-	"t_xandro_call": {"es": "Nuevo contacto: Xandro te espera en Talleres Xandro (Ctra. de Villacañas) para hablarte de carreras callejeras.",
+	"t_xandro_call": {"es": "Nuevo contacto: Xandro te espera en Talleres Xandro (Ctra. de Villacañas) pa hablarte de carreras callejeras.",
 		"en": "New contact: Xandro is waiting at Talleres Xandro (Villacañas road) to tell you about street racing."},
 	"xandro_intro": {
-		"es": ["Mira que hay que estar muy loco, muy drogao o ser de Camuñas pa conducir así por medio del pueblo… En cualquier caso, eso yo lo respeto.",
+		"es": ["Mira que hay que estar mu loco, mu drogao o ser de Camuñas pa conducir así por medio del pueblo… En cualquier caso, eso yo lo respeto.",
 			"Aquí en el pueblo ya sabes que hay cierta tradición de no respetar demasiao las normas de circulación: gente andando por mitad de la calle, límites de velocidá más bien «opinables» u «orientativos», coches aparcaos en la acera o en mitad de una rotonda, tractores sin ITV desde la época de Franco…",
 			"Total, que a algunos les gusta echar una carrerita de vez en cuando por las noches, y yo hago algo así como de «mánager» entre corredores. Igual te interesa, porque hay dinero por medio.",
 			"La primera carrera es aquí mismo, esta noche, de principiantes: ocho Setas Panda de distintos colores saliendo desde mi taller.",
@@ -3476,7 +3476,7 @@ const TX := {
 			"Entry’s 100 €. First pays 500 €, second 200 €, third 100 €. Finish top three to prove yourself—if you blow it tonight, you can keep retrying without paying the entry again until you make the podium."]},
 	"xandro_retry": {
 		"es": ["¿Qué pasa, {socio|socia}? ¿Ya venías con ganas de revancha en {ruta}?",
-			"Como todavía no has hecho podio conmigo, esta corre por mi cuenta: 0 € de entrada. {nota}"],
+			"Como entoavía no has hecho podio conmigo, esta corre por mi cuenta: 0 € de entrada. {nota}"],
 		"en": ["What’s the word, {mate|love}? Back for a rematch on {ruta}?",
 			"Since you haven’t hit the podium for me yet, entry’s still covered: 0 € to line up. {nota}"]},
 	"xandro_daily": {
@@ -3496,7 +3496,7 @@ const TX := {
 	"xandro_opt_no": {"es": "Ahora no", "en": "Not now"},
 	"xandro_decline": {"es": ["Tú mismo, aquí estoy cuando te piquen las manos al volante."],
 		"en": ["Suit yourself. I’ll be right here when your hands get itchy on the wheel."]},
-	"xandro_poor": {"es": ["Te faltan cuartos, {campeón|campeona}: necesitas %d € para entrar en parrilla."],
+	"xandro_poor": {"es": ["Te faltan cuartos, {campeón|campeona}: necesitas %d € pa entrar en parrilla."],
 		"en": ["You’re short on cash, champ: need %d € to buy your spot on the grid."]},
 	"xandro_busy": {"es": ["¡Deja de charlar y pisa a fondo, que los otros siete no esperan!"],
 		"en": ["Stop yapping and floor it—the other seven aren’t waiting!"]},
@@ -3522,7 +3522,7 @@ const TX := {
 		"en": "%d place! Won %s. You’re in the circuit now: come back each day for a new route."},
 	"t_xandro_won_comm": {"es": "¡%d.º puesto! Cobras %s (−%s de comisión de Xandro). ¡Carreras diarias desbloqueadas!",
 		"en": "%d place! Won %s (−%s Xandro’s cut). Daily races unlocked!"},
-	"t_xandro_won_daily": {"es": "¡%d.º puesto! Premio íntegro para ti: +%s.",
+	"t_xandro_won_daily": {"es": "¡%d.º puesto! Premio íntegro pa ti: +%s.",
 		"en": "%d place! Full prize is yours: +%s."},
 	"t_xandro_won_daily_comm": {"es": "¡%d.º puesto! Cobras %s (−%s de comisión por el coche prestao).",
 		"en": "%d place! Won %s (−%s cut for the loaner car)."},
