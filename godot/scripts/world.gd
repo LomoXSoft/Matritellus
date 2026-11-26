@@ -802,11 +802,11 @@ func _load_sheets() -> void:
 		_sheets = kept.get("sheets", [])
 
 func _save_sheets() -> void:
-	if not _sheets_new or audit:
-		return
-	var f := FileAccess.open_compressed(CACHE, FileAccess.WRITE, FileAccess.COMPRESSION_ZSTD)
-	if f != null:
-		f.store_var({"key": _cache_key(), "sheets": _sheets})
+	if _sheets_new and not audit:
+		var f := FileAccess.open_compressed(CACHE, FileAccess.WRITE, FileAccess.COMPRESSION_ZSTD)
+		if f != null:
+			f.store_var({"key": _cache_key(), "sheets": _sheets})
+	_sheets.clear()
 
 func _laid_sheet(verts: PackedVector3Array, idx: PackedInt32Array, lift: float) -> Array:
 	var k := _sheet_i

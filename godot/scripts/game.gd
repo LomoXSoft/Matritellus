@@ -494,7 +494,6 @@ func _ready() -> void:
 			print("boot: %-14s %5d ms   memory %5.0f MB   video %5.0f MB" % [st[0], Time.get_ticks_msec() - t0,
 				Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0])
 		await get_tree().process_frame
-	get_viewport().disable_3d = false
 	if timing:
 		print("boot: all of it     %5d ms" % (Time.get_ticks_msec() - t_all))
 		if OS.get_cmdline_user_args().has("--mundo-huella"):
@@ -504,18 +503,26 @@ func _ready() -> void:
 	var thinned := 0 if OS.get_cmdline_user_args().has("--todo") else Parts.thin(self)      # (--todo: everything drawn from any distance, as it was, to compare)
 	if timing:
 		print("boot: %d small pieces will not be drawn from far away" % thinned)
+	# Apply the player's graphics settings (on phones: Low — no MSAA/SSAO/Glow, 60 m shadows, occluders, scaled 3D,
+	# shorter draw distance) BEFORE turning 3D back on, whether CalentarS runs or not. Otherwise, from the 2nd launch
+	# onwards, CalentarS is skipped and _settle_pipelines() draws the whole town with desktop defaults (4x MSAA, SSAO,
+	# Glow, 140 m 4-split shadows, native resolution, no occluders), crashing Android GPUs at 100 % loading.
+	_warming = true
+	apply_graphics()
+	cam_pos = Vector3(_start["p"].x, 60, _start["p"].y + 80)
+	cam.global_position = cam_pos
+	cam.look_at(MapData.at(_start["p"], 1.0), Vector3.UP)
+	get_viewport().disable_3d = false
 	if CalentarS.needed():                       # the first time on this graphics card: its shaders made now, not while playing
 		var t_warm := Time.get_ticks_msec()
-		_warming = true
-		apply_graphics()                         # (as they will be drawn: the shaders depend on it)
 		var warm = CalentarS.new()
 		add_child(warm)
 		await warm.run(self, func(line: String): doing.text = line)
 		warm.queue_free()
-		_warming = false
 		bar.value = 100.0
 		if timing:
 			print("boot: shaders made  %5d ms" % (Time.get_ticks_msec() - t_warm))
+	_warming = false
 	if not Settings.testing and DisplayServer.get_name() != "headless":
 		await _settle_pipelines(func(line: String): doing.text = line)
 	_booted = true
