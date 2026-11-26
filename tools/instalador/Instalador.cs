@@ -18,6 +18,7 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -91,11 +92,14 @@ class Setup : Form
     TextBox where;
     CheckBox desktop;
     Button go, browse, close;
+    Label prompt_where, blurb, status;
     ProgressBar bar;
-    Label status;
     BackgroundWorker work;
     string dir = "";
     bool done = false;
+    bool auto_update = false;
+    bool auto_launch = false;
+    int wait_pid = 0;
 
     public Setup()
     {
@@ -128,17 +132,17 @@ class Setup : Form
         title.SetBounds(172, 26, 370, 48);
         Controls.Add(title);
 
-        Label blurb = new Label();
+        blurb = new Label();
         blurb.Text = "Versión de prueba (" + Version() + ").\nSe instala solo para ti, sin permisos de administrador. Ocupa unos " + Megas() + " MB.";
         blurb.ForeColor = INK;
         blurb.SetBounds(174, 80, 368, 74);
         Controls.Add(blurb);
 
-        Label l = new Label();
-        l.Text = "¿Dónde lo ponemos?";
-        l.ForeColor = INK;
-        l.SetBounds(24, 172, 300, 22);
-        Controls.Add(l);
+        prompt_where = new Label();
+        prompt_where.Text = "¿Dónde lo ponemos?";
+        prompt_where.ForeColor = INK;
+        prompt_where.SetBounds(24, 172, 300, 22);
+        Controls.Add(prompt_where);
 
         where = new TextBox();
         where.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Matritellus");
@@ -184,9 +188,69 @@ class Setup : Form
 
         work = new BackgroundWorker();
         work.WorkerReportsProgress = true;
-        work.DoWork += delegate(object o, DoWorkEventArgs e) { Install(dir, (bool)e.Argument, work.ReportProgress); };
+        work.DoWork += delegate(object o, DoWorkEventArgs e)
+        {
+            if (auto_update)
+                WaitForGameExit(wait_pid, work.ReportProgress);
+            Install(dir, (bool)e.Argument, work.ReportProgress);
+        };
         work.ProgressChanged += delegate(object o, ProgressChangedEventArgs e) { bar.Value = Math.Min(1000, e.ProgressPercentage); status.Text = (string)e.UserState; };
         work.RunWorkerCompleted += Finished;
+    }
+
+    void ConfigureAutoUpdate(string targetDir, int pid, bool launch)
+    {
+        auto_update = true;
+        wait_pid = pid;
+        auto_launch = launch;
+        dir = targetDir;
+        Text = "Actualizando Matritellus";
+        blurb.Text = "Instalando la versión " + Version() + "…\nTus partidas guardadas se conservan.";
+        prompt_where.Visible = false;
+        where.Visible = false;
+        browse.Visible = false;
+        desktop.Visible = false;
+        go.Visible = false;
+        close.Visible = false;
+        bar.Maximum = 1000;
+        bar.Visible = true;
+        status.Text = "Cerrando el juego…";
+        Shown += delegate
+        {
+            if (!work.IsBusy)
+                work.RunWorkerAsync(desktop.Checked);
+        };
+    }
+
+    static string ResolveDir(string raw, bool updating)
+    {
+        string d = Path.GetFullPath(raw.Trim());
+        if (updating && File.Exists(Path.Combine(d, "Matritellus.pck")))
+            return d;
+        if (!String.Equals(Path.GetFileName(d.TrimEnd('\\')), Where.NAME, StringComparison.OrdinalIgnoreCase))
+            d = Path.Combine(d, Where.NAME);
+        return d;
+    }
+
+    static void WaitForGameExit(int pid, Action<int, object> tell)
+    {
+        tell(0, "Cerrando el juego…");
+        if (pid > 0)
+        {
+            try
+            {
+                using (Process p = Process.GetProcessById(pid))
+                    p.WaitForExit(15000);
+            }
+            catch (Exception) { }
+        }
+        for (int i = 0; i < 20; i++)
+        {
+            if (Process.GetProcessesByName("Matritellus").Length == 0)
+                break;
+            tell(0, "Cerrando el juego…");
+            Thread.Sleep(250);
+        }
     }
 
     static string Version()
@@ -278,8 +342,22 @@ class Setup : Form
                 }
                 Directory.CreateDirectory(Path.GetDirectoryName(to));
                 tell((int)(sofar * 1000 / total), e.Name);
+                FileStream file = null;
+                for (int attempt = 0; attempt < 10; attempt++)
+                {
+                    try
+                    {
+                        file = new FileStream(to, FileMode.Create, FileAccess.Write);
+                        break;
+                    }
+                    catch (IOException)
+                    {
+                        if (attempt == 9) throw;
+                        Thread.Sleep(200);
+                    }
+                }
                 using (Stream from = e.Open())
-                using (FileStream file = new FileStream(to, FileMode.Create, FileAccess.Write))
+                using (file)
                 {
                     int n;
                     int ticks = 0;
@@ -331,6 +409,27 @@ class Setup : Form
 
     void Finished(object sender, RunWorkerCompletedEventArgs e)
     {
+        if (auto_update)
+        {
+            if (e.Error != null)
+            {
+                close.Visible = true;
+                close.Enabled = true;
+                status.Text = "No ha podido ser.";
+                MessageBox.Show(this, "No se ha podido actualizar:\n\n" + e.Error.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            bar.Value = 1000;
+            status.Text = "¡Apañao! Abriendo el juego…";
+            if (auto_launch)
+            {
+                ProcessStartInfo play = new ProcessStartInfo(Path.Combine(dir, "Matritellus.exe"));
+                play.WorkingDirectory = dir;
+                Process.Start(play);
+            }
+            Close();
+            return;
+        }
         close.Enabled = true;
         if (e.Error != null)
         {
@@ -350,7 +449,10 @@ class Setup : Form
 
     /// With nothing after its name, the window. Otherwise, for whoever installs it from a script:
     ///   /silent            installs without a window (exit code 0 if it went well)
-    ///   /dir=<folder>      where (as in the window, the game goes in a folder called Matritellus)
+    ///   /update            auto-update mode: waits for running game, installs without asking, preserves desktop shortcut
+    ///   /launch            launches Matritellus.exe once done (with /silent or /update)
+    ///   /pid=<id>          PID of the running game to wait on before replacing files
+    ///   /dir=<folder>      where (as in the window, the game goes in a folder called Matritellus unless updating in-place)
     ///   /nodesktop         no shortcut on the desktop
     ///   /shot=<file.png>   only saves a picture of the window, to see how it looks
     [STAThread]
@@ -358,15 +460,33 @@ class Setup : Form
     {
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        bool silent = false, on_desktop = true;
+        bool silent = false, update = false, launch = false, on_desktop = true, desktop_set = false;
+        int wait_pid = 0;
         string to = null, shot = null;
         foreach (string a in args)
         {
             if (a.Equals("/silent", StringComparison.OrdinalIgnoreCase)) silent = true;
-            else if (a.Equals("/nodesktop", StringComparison.OrdinalIgnoreCase)) on_desktop = false;
+            else if (a.Equals("/update", StringComparison.OrdinalIgnoreCase)) update = true;
+            else if (a.Equals("/launch", StringComparison.OrdinalIgnoreCase)) launch = true;
+            else if (a.Equals("/nodesktop", StringComparison.OrdinalIgnoreCase)) { on_desktop = false; desktop_set = true; }
+            else if (a.StartsWith("/pid=", StringComparison.OrdinalIgnoreCase)) int.TryParse(a.Substring(5), out wait_pid);
             else if (a.StartsWith("/dir=", StringComparison.OrdinalIgnoreCase)) to = a.Substring(5).Trim('"');
             else if (a.StartsWith("/shot=", StringComparison.OrdinalIgnoreCase)) shot = a.Substring(6).Trim('"');
         }
+        if (update && to == null)
+        {
+            using (RegistryKey k = Registry.CurrentUser.OpenSubKey(Where.KEY))
+            {
+                if (k != null)
+                {
+                    string saved = k.GetValue("InstallLocation") as string;
+                    if (!String.IsNullOrEmpty(saved))
+                        to = saved;
+                }
+            }
+        }
+        if (update && !desktop_set)
+            on_desktop = File.Exists(Where.Desktop());
         Setup form = new Setup();
         if (to != null)
             form.where.Text = to;
@@ -386,16 +506,28 @@ class Setup : Form
         {
             try
             {
-                string dir = Path.GetFullPath(form.where.Text.Trim());
-                if (!String.Equals(Path.GetFileName(dir.TrimEnd('\\')), Where.NAME, StringComparison.OrdinalIgnoreCase))
-                    dir = Path.Combine(dir, Where.NAME);
+                string dir = ResolveDir(form.where.Text, update);
+                if (update)
+                    WaitForGameExit(wait_pid, delegate(int n, object what) { });
                 Install(dir, on_desktop, delegate(int n, object what) { });
+                if (launch)
+                {
+                    ProcessStartInfo play = new ProcessStartInfo(Path.Combine(dir, "Matritellus.exe"));
+                    play.WorkingDirectory = dir;
+                    Process.Start(play);
+                }
                 return 0;
             }
             catch (Exception)
             {
                 return 1;
             }
+        }
+        if (update)
+        {
+            string target = ResolveDir(form.where.Text, true);
+            form.where.Text = target;
+            form.ConfigureAutoUpdate(target, wait_pid, launch);
         }
         Application.Run(form);
         return 0;

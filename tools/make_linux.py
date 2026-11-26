@@ -31,6 +31,8 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 DEST="$HOME/.local/share/Matritellus"
 DATA="$HOME/.local/share/godot/app_userdata/Matritellus"
 mkdir -p "$DEST" "$DATA" "$HOME/.local/share/applications"
+rm -f "$DEST/Matritellus.x86_64"
+rm -rf "$DEST/radio"
 cp -r "$HERE/Matritellus.x86_64" "$HERE/Matritellus.pck" "$HERE/icon.png" "$HERE/radio" "$HERE/desinstalar.sh" "$HERE/LEEME.txt" "$DEST/"
 chmod +x "$DEST/Matritellus.x86_64" "$DEST/desinstalar.sh"
 [ -f "$HERE/ground.cache" ] && cp "$HERE/ground.cache" "$DATA/ground.cache"     # el suelo ya cortado: el primer arranque no tarda

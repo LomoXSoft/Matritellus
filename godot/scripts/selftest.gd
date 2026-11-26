@@ -6920,8 +6920,8 @@ func _toros_dentro_checks() -> void:
 	g.set_time(saved_clock)
 	tr.set_restored(was)
 
-## Is there a newer version out? (actualiza.gd; the user, 25 Nov 2026: "al abrir el juego detecte si hay una versión
-## nueva disponible y de opción de Actualizar o Jugar versión actual"). `ask`: also ask GitHub for real.
+## Is there a newer version out? (actualiza.gd: pre-load check, in-app downloader + SHA-256 verify + Windows/Linux
+## auto-update, Android browser handoff). `ask`: also ask GitHub for real.
 func _actualiza_checks(ask := false) -> void:
 	var A = g.actualiza
 	_check(A != null and A.valid(A.mine) and A.state == "idle", "the game knows its own version (%s) and has not asked for a newer one in a test" % (A.mine if A != null else "?"))
@@ -6932,6 +6932,25 @@ func _actualiza_checks(ask := false) -> void:
 		and not S.newer("0.1.3", "0.1.3") and not S.newer("0.1.3", "0.1.4") and not S.newer("0.1", "0.0.1") and not S.newer("v9", "0.1.3") and not S.newer("9.9.x", "0.1.3")
 	var links: bool = S.safe("https://github.com/LomoXSoft/Matritellus/releases/tag/v0.1.4") != "" and S.safe("https://example.com/Matritellus.exe") == "" and S.safe("http://github.com/LomoXSoft/Matritellus/x") == ""
 	_check(order and links, "versions are told apart by their three numbers (0.1.10 after 0.1.9), and a link is followed only into the game's own repository")
+
+	# SHA256SUMS parsing and local file hashing
+	var sample_sums := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  Matritellus-9.9.9-Windows.exe\n" \
+		+ "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210 *dist/Matritellus-9.9.9-Linux.tar.gz\n"
+	var parsed_ok: bool = S.parse_sha256sums(sample_sums, "Matritellus-9.9.9-Windows.exe") == "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" \
+		and S.parse_sha256sums(sample_sums, "Matritellus-9.9.9-Linux.tar.gz") == "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210" \
+		and S.parse_sha256sums(sample_sums, "Matritellus-9.9.9-Android.apk") == ""
+	var hash_dir := ProjectSettings.globalize_path(S.DL_DIR)
+	DirAccess.make_dir_recursive_absolute(hash_dir)
+	var tmp_file := hash_dir.path_join("_selftest_hash.bin")
+	var fh := FileAccess.open(tmp_file, FileAccess.WRITE)
+	if fh != null:
+		fh.store_buffer("hola".to_utf8_buffer())
+		fh.close()
+	var hash_ok: bool = S.file_sha256(tmp_file) == "b221d9dbb083a7f33428d7c2a3c3198ae925614d70210e28716ccaa7cd4ddb79"
+	if FileAccess.file_exists(tmp_file):
+		DirAccess.remove_absolute(tmp_file)
+	_check(parsed_ok and hash_ok, "SHA256SUMS parsing and file SHA-256 computation match known digests")
+
 	var was_phase: String = g.phase
 	var was_open: bool = g.menu.visible
 	var was_page: String = g.menu.page
@@ -6940,13 +6959,16 @@ func _actualiza_checks(ask := false) -> void:
 	var release := func(v: String) -> Dictionary:
 		var files: Array = []
 		for suf in ["-Windows.exe", "-Android.apk", "-Linux.tar.gz"]:
-			files.append({"name": "Matritellus-%s%s" % [v, suf], "browser_download_url": "https://github.com/LomoXSoft/Matritellus/releases/download/v%s/Matritellus-%s%s" % [v, v, suf]})
-		files.append({"name": "Matritellus-%s%s" % [v, String(S.SUFFIX.get(OS.get_name(), "-x"))], "browser_download_url": "https://example.com/trampa"})
+			files.append({"name": "Matritellus-%s%s" % [v, suf], "size": 419430400, "browser_download_url": "https://github.com/LomoXSoft/Matritellus/releases/download/v%s/Matritellus-%s%s" % [v, v, suf]})
+		files.append({"name": "SHA256SUMS.txt", "size": 512, "browser_download_url": "https://github.com/LomoXSoft/Matritellus/releases/download/v%s/SHA256SUMS.txt" % v})
+		files.append({"name": "Matritellus-%s%s" % [v, String(S.SUFFIX.get(OS.get_name(), "-x"))], "size": 123, "browser_download_url": "https://example.com/trampa"})
 		return {"tag_name": "v" + v, "html_url": "https://github.com/LomoXSoft/Matritellus/releases/tag/v" + v, "assets": files}
 	A.dry = true
 	g.phase = "title"
 	g.menu.open("main")
+
 	# the same version, a draft, rubbish: nothing is said
+	A.platform_override = "Windows"
 	A.read(release.call(A.mine))
 	var same: bool = A.state == "same" and not A.available() and g.menu.page == "main" and not String(g._menu_page("main")["items"][0]["text"]).contains(A.mine)
 	var draft: Dictionary = release.call(next)
@@ -6955,14 +6977,19 @@ func _actualiza_checks(ask := false) -> void:
 	var no_draft: bool = A.state == "failed"
 	A.read({"tag_name": "lo que sea"})
 	var no_rubbish: bool = A.state == "failed" and g.menu.page == "main"
-	# a newer one: the page comes up by itself, once, with its two answers
+
+	# Windows PC flow: 2 options, in-app download progress, ready screen, /update /launch /pid command
 	A.offered = false
 	A.read(release.call(next))
 	await _frames(20)
 	var page: Dictionary = g._menu_page("update")
-	var came: bool = A.available() and A.latest == next and g.menu.page == "update" and A.offered and (page["items"] as Array).size() == 2 \
-		and String(page["items"][0]["text"]) == Loc.t("upd_yes") and String(page["items"][1]["text"]) == Loc.t("upd_no") and String(page["sub"]).contains(next) and String(page["sub"]).contains(A.mine)
-	var right_file: bool = A.link.begins_with("https://github.com/LomoXSoft/Matritellus/") and (S.SUFFIX.get(OS.get_name(), "") == "" or A.link.ends_with(String(S.SUFFIX.get(OS.get_name(), ""))))
+	var came: bool = A.available() and A.can_auto_update() and A.latest == next and g.menu.page == "update" and A.offered \
+		and (page["items"] as Array).size() == 2 \
+		and String(page["items"][0]["text"]) == Loc.t("upd_now") \
+		and String(page["items"][1]["text"]) == Loc.t("upd_no") \
+		and String(page["sub"]).contains(next) and String(page["sub"]).contains(A.mine)
+	var right_file: bool = A.link.begins_with("https://github.com/LomoXSoft/Matritellus/") and A.link.ends_with("-Windows.exe") \
+		and A.sums_link.ends_with("/SHA256SUMS.txt")
 	if shots:
 		await _shot("actualiza_aviso")
 	(page["items"][1]["do"] as Callable).call()       # "Jugar versión actual"
@@ -6975,16 +7002,63 @@ func _actualiza_checks(ask := false) -> void:
 		await _shot("actualiza_menu")
 	(g._menu_page("main")["items"][0]["do"] as Callable).call()
 	var again: bool = g.menu.page == "update"
-	(g._menu_page("update")["items"][0]["do"] as Callable).call()      # "Actualizar"
+	(g._menu_page("update")["items"][0]["do"] as Callable).call()      # "Actualizar ahora"
+	A.dl_bytes = 188743680
+	A.dl_total = 419430400
+	g.update_progress()
 	await _frames(15)
-	var went: bool = A.opened == A.link and g.menu.page == "update_go" and String(g._menu_page("update_go")["sub"]).contains(next)
+	var dl_page: Dictionary = g._menu_page("update_dl")
+	var dl_ui: bool = A.dl_state == "downloading" and g.menu.page == "update_dl" and (dl_page["items"] as Array).size() == 2 \
+		and dl_page["items"][0].has("progress") and String(dl_page["items"][1]["text"]) == Loc.t("upd_cancel") \
+		and absf(A.progress_ratio() - 0.45) < 0.01
 	if shots:
-		await _shot("actualiza_descarga")
-	_check(same and no_draft and no_rubbish and came and right_file and stays and once and again and went,
-		"told of %s over %s, the menu opens once on the two answers; «Jugar versión actual» goes on and leaves its line at the top, «Actualizar» opens this machine's installer and says so; the same version, a draft or rubbish say nothing (%s)" % [
-			next, A.mine, str([same, no_draft, no_rubbish, came, right_file, stays, once, again, went])])
+		await _shot("actualiza_progreso")
+	A.dl_state = "ready"
+	A.verify_ratio = 1.0
+	g.update_changed()
+	await _frames(15)
+	var ready_page: Dictionary = g._menu_page("update_dl")
+	var ready_ui: bool = g.menu.page == "update_dl" and (ready_page["items"] as Array).size() == 2 \
+		and String(ready_page["items"][0]["text"]) == Loc.t("upd_install") \
+		and String(g._menu_page("main")["items"][0]["text"]) == Loc.t("menu_update_ready") % next
+	if shots:
+		await _shot("actualiza_lista")
+	var win_cmd_ok: bool = A.apply_and_restart() and A.installed_cmd.size() == 2 \
+		and "/update" in A.installed_cmd[1] and "/launch" in A.installed_cmd[1]
+	_check(same and no_draft and no_rubbish and came and right_file and stays and once and again and dl_ui and ready_ui and win_cmd_ok,
+		"PC Windows updater: 2-option wall, in-app progress, ready entry, and /update /launch /pid command (%s)" % str([same, no_draft, no_rubbish, came, right_file, stays, once, again, dl_ui, ready_ui, win_cmd_ok]))
+
+	# Linux / SteamOS apply command
+	A.platform_override = "Linux"
+	A.dl_state = "idle"
+	A.offered = false
+	A.read(release.call(next))
+	A.start_download()
+	A.dl_state = "ready"
+	var linux_ok: bool = A.can_auto_update() and A.link.ends_with("-Linux.tar.gz") \
+		and A.apply_and_restart() and A.installed_cmd.size() == 2 and String(A.installed_cmd[0]) == "/bin/bash"
+	_check(linux_ok, "PC Linux/SteamOS updater targets -Linux.tar.gz and prepares bash apply script")
+
+	# Android browser fallback (2-option wall -> OS.shell_open)
+	A.platform_override = "Android"
+	A.dl_state = "idle"
+	A.offered = false
+	g.menu.open("main")
+	A.read(release.call(next))
+	await _frames(15)
+	var and_page: Dictionary = g._menu_page("update")
+	var and_two: bool = not A.can_auto_update() and A.link.ends_with("-Android.apk") \
+		and g.menu.page == "update" and (and_page["items"] as Array).size() == 2 \
+		and String(and_page["items"][0]["text"]) == Loc.t("upd_yes")
+	(and_page["items"][0]["do"] as Callable).call()
+	await _frames(10)
+	var and_go: bool = A.opened == A.link and g.menu.page == "update_go" and String(g._menu_page("update_go")["sub"]).contains(next)
+	_check(and_two and and_go, "Android falls back to 2-option browser handoff (-Android.apk -> update_go)")
+
 	if ask:                                           # GitHub, for real: whatever it says, the game must not wait on it
+		A.platform_override = ""
 		A.state = "idle"
+		A.dl_state = "idle"
 		A.offered = true
 		A.check()
 		var waited := 0
@@ -6992,9 +7066,23 @@ func _actualiza_checks(ask := false) -> void:
 			await _frames(1)
 			waited += 1
 		_check(A.state != "asking" and (A.state == "failed" or A.valid(A.latest)), "asked for real, GitHub answers «%s» in %.1f s: its latest is %s, and this machine's file is %s" % [A.state, waited / 60.0, A.latest, A.link])
+
+	A.platform_override = ""
 	A.state = "idle"
+	A.dl_state = "idle"
+	A.dl_error = ""
+	A.dl_path = ""
+	A.dl_bytes = 0
+	A.dl_total = 0
+	A.verify_ratio = 0.0
+	A.asset_name = ""
+	A.asset_size = 0
+	A.sums_link = ""
+	A.expected_sha = ""
 	A.latest = ""
 	A.link = ""
+	A.opened = ""
+	A.installed_cmd = []
 	A.offered = false
 	A.dry = false
 	g.phase = was_phase

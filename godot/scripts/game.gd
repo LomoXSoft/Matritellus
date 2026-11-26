@@ -304,6 +304,8 @@ var cam_pitch := 0.62           # camera elevation in radians: free, driven by t
 var cam_zoom := 1.0
 var _punch_cool := 0.0
 var _whisper_t := 12.0
+var _recent_whispers: Array = []
+var _recent_generic: Array = []
 var _look_idle := 9.0             # seconds since the mouse last moved the camera
 var _face_turn := 0.0           # how far the player has turned the character in the creator
 var cam_pos := Vector3.ZERO
@@ -392,6 +394,8 @@ var _booted := false            # everything is built and the game can run
 var _warming := false           # the shaders are being made behind the loading screen (calentar.gd)
 var _boot: CanvasLayer          # what is on the screen meanwhile: noughts and crosses with the mayor, on black (raya.gd)
 var raya                        # (that game, while it is up)
+var _boot_menu                  # MenuS shown on _boot when an update is found before loading the town
+var _boot_continue := false
 
 ## Building the town takes a good many seconds. It is done a piece at a time with a frame drawn between pieces, so
 ## that the window answers from the first moment and shows the studio's logo instead of freezing white.
@@ -457,6 +461,39 @@ func _ready() -> void:
 	add_child(_boot)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	var testing := OS.get_cmdline_user_args().has("--selftest")
+	var is_trailer := OS.get_cmdline_user_args().has("--trailer") or has_node("TrailerDirector")
+	actualiza = ActualizaS.new()
+	add_child(actualiza)
+	actualiza.setup(self)
+	if not testing and not is_trailer:
+		raya.visible = false
+		bar.visible = false
+		doing.visible = false
+		loading.text = Loc.t("upd_checking")
+		await get_tree().process_frame
+		actualiza.check()
+		var t_chk := Time.get_ticks_msec()
+		while actualiza.state == "asking" and Time.get_ticks_msec() - t_chk < int(ActualizaS.BOOT_WAIT * 1000.0):
+			await get_tree().process_frame
+		if actualiza.available():
+			loading.visible = false
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			_boot_menu = MenuS.new()
+			_boot_menu.builder = _menu_page
+			_boot.add_child(_boot_menu)
+			actualiza.offered = true
+			_boot_continue = false
+			_boot_menu.open("update")
+			while not _boot_continue:
+				await get_tree().process_frame
+			_boot_menu.queue_free()
+			_boot_menu = null
+		raya.visible = true
+		bar.visible = true
+		doing.visible = true
+		loading.visible = true
+		loading.text = Loc.t("loading")
 	var steps_todo: Array = [["sky", _setup_sky], ["world", func():
 		world = WorldS.new()
 		add_child(world)]]
@@ -737,11 +774,6 @@ func _boot_rest() -> void:
 func _boot_done() -> void:
 	apply_graphics()
 	var testing := OS.get_cmdline_user_args().has("--selftest")
-	actualiza = ActualizaS.new()
-	add_child(actualiza)
-	actualiza.setup(self)
-	if not testing and not OS.get_cmdline_user_args().has("--trailer") and not has_node("TrailerDirector"):
-		actualiza.check()                        # (answered, if it is, while the logo and the title go by)
 	cam_pos = Vector3(_start["p"].x, 60, _start["p"].y + 80)
 	if not testing and (OS.get_cmdline_user_args().has("--trailer") or has_node("TrailerDirector")):
 		save_prefix = "user://selftest_save_"
@@ -811,14 +843,50 @@ func _first_page() -> String:
 		return "update"
 	return "main"
 
+## the active menu: the pre-boot update gate on _boot if open, otherwise the normal main/pause menu
+func _active_menu():
+	return _boot_menu if (_boot_menu != null and is_instance_valid(_boot_menu)) else menu
+
 ## GitHub has answered that a newer version is out (actualiza.gd): said at once if you are at the main menu
 func update_found() -> void:
-	if phase == "title" and menu.visible and menu.page == "main":
+	if _booted and phase == "title" and menu.visible and menu.page == "main":
 		menu.open(_first_page())
+
+func update_changed() -> void:
+	var m = _active_menu()
+	if m != null and m.visible and m.page in ["update", "update_dl", "main"]:
+		if m.page == "update_dl" and actualiza != null and actualiza.dl_state in ["ready", "error"]:
+			m.open("update_dl")
+		else:
+			m.rebuild()
+
+func update_progress() -> void:
+	if actualiza == null:
+		return
+	var m = _active_menu()
+	if m != null and m.visible and m.page == "update_dl":
+		m.set_progress(actualiza.progress_ratio(), actualiza.progress_text())
 
 func _update_go() -> void:
 	actualiza.go()
-	menu.open("update_go")
+	_active_menu().open("update_go")
+
+func _update_now() -> void:
+	actualiza.start_download()
+	_active_menu().open("update_dl")
+
+func _update_dismiss() -> void:
+	if _boot_menu != null:
+		_boot_continue = true
+	else:
+		menu.open("main")
+
+func _update_cancel() -> void:
+	actualiza.cancel_download()
+	_active_menu().open("update")
+
+func _update_install() -> void:
+	actualiza.apply_and_restart()
 
 # ================= setup =================
 func _setup_sky() -> void:
@@ -1269,7 +1337,7 @@ func spawn_neighbour(p: Vector2, still := false, look: Dictionary = {}):
 	var kind: int = int(look["voice_i"]) if look.has("voice_i") else int(NEIGHBOUR_MIX.pick_random())
 	var n = _make_npc("", look if not look.is_empty() else _neighbour_look(NEIGHBOUR_VOICES[kind]), NEIGHBOUR_VOICES[kind], p)
 	n.lines_key = "generic"
-	n.line_i = randi() % 10
+	n.line_i = randi() % 1000
 	n.display_name = str(kind)       # index into Loc "generic_names"
 	n.still = still
 	return n
@@ -1315,10 +1383,22 @@ func _add_nino_negro() -> void:
 	n.h = atan2(to.x, to.y)
 	n.still = true
 
-## what somebody you have just walked past may mutter about you: the usual (the old have their own, more often than
-## not), and one line for each mission you have finished (chismes.gd)
+## what somebody you have just walked past may mutter about you: matched to sex and age (plus mission gossip)
 func whisper_pool(n) -> Array:
-	return padron.whispers(Loc.t("whisper_old" if n.voice.begins_with("old") and randf() < 0.6 else "whisper")) + chismes.whispers()
+	var v: String = String(n.voice)
+	var fem_s: bool = v.ends_with("_f")
+	var base: Array = []
+	if v == "kid":
+		base = Loc.t("whisper_kid")
+	elif v.begins_with("old"):
+		if randf() < 0.7:
+			base = Loc.t("whisper_old") + Loc.t("whisper_old_f" if fem_s else "whisper_old_m")
+		else:
+			base = Loc.t("whisper") + Loc.t("whisper_f" if fem_s else "whisper_m")
+	else:
+		base = Loc.t("whisper") + Loc.t("whisper_f" if fem_s else "whisper_m")
+	var resolved: Array = Loc.speaker(base, fem_s)
+	return padron.whispers(resolved) + chismes.whispers()
 
 ## Don Luis's own: his red apron with its bib and its strings (on him, and on his figure out of a gumball machine:
 ## gacha.gd; the grey at his temples now comes from his grey fade in look["fade_color"])
@@ -1924,7 +2004,7 @@ func _setup_places_and_actors() -> void:
 		var kind: int = NEIGHBOUR_MIX[i % NEIGHBOUR_MIX.size()]
 		var n = _add_npc("", _neighbour_look(NEIGHBOUR_VOICES[kind]), NEIGHBOUR_VOICES[kind], walk.pick_random().a, randf_range(-4.0, 4.0))
 		n.lines_key = "generic"
-		n.line_i = randi() % 10
+		n.line_i = randi() % 1000
 		n.display_name = str(kind)       # index into Loc "generic_names"
 		n.walker = i % 6 != 0            # most of them are out for a walk; a few just stand about
 		n.wside = 1.0 if randf() < 0.5 else -1.0
@@ -2002,7 +2082,7 @@ func _setup_markers() -> void:
 # ================= menus / flow =================
 # ---------- menus ----------
 func _goto(id: String) -> void:
-	menu.open(id)
+	_active_menu().open(id)
 
 func _open_settings(from: String) -> void:
 	_menu_root = from
@@ -2046,7 +2126,10 @@ func _menu_page(id: String) -> Dictionary:
 			# Continuar y Nueva partida estas dos opciones estarán dentro de Modo Historia. Debajo de modo historia estará
 			# Modo Chavisca")
 			if actualiza != null and actualiza.available():      # (a newer version is out: its line stays here, whatever you answered)
-				items.append({"text": Loc.t("menu_update") % actualiza.latest, "do": _goto.bind("update")})
+				if actualiza.dl_state == "ready":
+					items.append({"text": Loc.t("menu_update_ready") % actualiza.latest, "do": _goto.bind("update_dl")})
+				else:
+					items.append({"text": Loc.t("menu_update") % actualiza.latest, "do": _goto.bind("update")})
 			items.append({"text": Loc.t("menu_story"), "do": _open_mode.bind(false)})
 			items.append({"text": Loc.t("menu_chavisca"), "do": _open_mode.bind(true)})
 			items.append({"text": Loc.t("m_settings"), "do": _open_settings.bind("main")})
@@ -2054,14 +2137,38 @@ func _menu_page(id: String) -> Dictionary:
 			items.append({"text": Loc.t("m_credits"), "do": _goto.bind("credits")})
 			items.append({"text": Loc.t("m_quit"), "do": _quit_app})
 			return {"title": "", "sub": Loc.t("m_place"), "crest": true, "items": items, "foot": Loc.t("m_foot")}      # (no name on its plaque: it has just faded in and out over the town, the user, 14 Nov 2026)
-		"update":                                # a newer version is out (actualiza.gd; the user, 25 Nov 2026: "de opción de Actualizar o Jugar versión actual")
-			items.append({"text": Loc.t("upd_yes"), "do": _update_go})
-			items.append({"text": Loc.t("upd_no"), "do": _goto.bind("main")})
-			return {"title": Loc.t("upd_title"), "sub": Loc.t("upd_sub") % [actualiza.latest, actualiza.mine], "items": items, "back": "main", "foot": Loc.t("m_foot")}
+		"update":                                # a newer version is out (actualiza.gd)
+			var sub_txt: String = Loc.t("upd_sub") % [actualiza.latest, actualiza.mine]
+			if actualiza.asset_size > 0:
+				sub_txt += "  (%d MB)" % maxi(1, int(round(actualiza.asset_size / 1048576.0)))
+			if actualiza.can_auto_update():
+				if actualiza.dl_state == "ready":
+					items.append({"text": Loc.t("upd_install"), "do": _update_install})
+					items.append({"text": Loc.t("upd_no"), "do": _update_dismiss})
+				else:
+					items.append({"text": Loc.t("upd_now"), "do": _update_now})
+					items.append({"text": Loc.t("upd_no"), "do": _update_dismiss})
+			else:
+				items.append({"text": Loc.t("upd_yes"), "do": _update_go})
+				items.append({"text": Loc.t("upd_no"), "do": _update_dismiss})
+			return {"title": Loc.t("upd_title"), "sub": sub_txt, "items": items, "back": _update_dismiss, "foot": Loc.t("m_foot")}
+		"update_dl":                             # downloading, verifying, ready to install, or failed
+			if actualiza.dl_state == "ready":
+				items.append({"text": Loc.t("upd_install"), "do": _update_install})
+				items.append({"text": Loc.t("upd_later"), "do": _update_dismiss})
+				return {"title": Loc.t("upd_ready_title"), "sub": Loc.t("upd_ready_sub") % actualiza.latest, "items": items, "back": _update_dismiss, "foot": Loc.t("m_foot")}
+			if actualiza.dl_state == "error":
+				items.append({"text": Loc.t("upd_retry"), "do": _update_now})
+				items.append({"text": Loc.t("upd_browser"), "do": _update_go})
+				items.append({"text": Loc.t("m_back"), "do": _update_dismiss})
+				return {"title": Loc.t("upd_err_title"), "sub": actualiza.dl_error, "items": items, "back": _update_dismiss, "foot": Loc.t("m_foot")}
+			items.append({"progress": actualiza.progress_ratio(), "text": actualiza.progress_text()})
+			items.append({"text": Loc.t("upd_cancel"), "do": _update_cancel})
+			return {"title": Loc.t("upd_dl_title") % actualiza.latest, "sub": Loc.t("upd_dl_sub"), "items": items, "back": _update_cancel, "foot": Loc.t("m_foot")}
 		"update_go":                             # its download is open in the browser
 			items.append({"text": Loc.t("upd_quit"), "do": _quit_app})
-			items.append({"text": Loc.t("upd_stay"), "do": _goto.bind("main")})
-			return {"title": Loc.t("upd_go_title"), "sub": Loc.t("upd_go_sub") % actualiza.latest, "items": items, "back": "main", "foot": Loc.t("m_foot")}
+			items.append({"text": Loc.t("upd_stay"), "do": _update_dismiss})
+			return {"title": Loc.t("upd_go_title"), "sub": Loc.t("upd_go_sub") % actualiza.latest, "items": items, "back": _update_dismiss, "foot": Loc.t("m_foot")}
 		"story", "chavisca":                     # Continuar (with a save of that mode) and Nueva partida
 			if _any_save():
 				items.append({"text": Loc.t("menu_continue"), "do": _goto.bind("slots")})
@@ -4627,14 +4734,30 @@ func _chat(n, s: Dictionary) -> void:
 	var said = Loc.t(key)
 	if n.id == "pochi" and pochi != null and not pochi.extra.is_empty():
 		said = said + pochi.extra                      # (the user's own talks for him: pochi.OWN)
-	if key == "generic" and n.voice.begins_with("old"):
-		said = Loc.t("generic_old") + said             # (the old ones have their own sayings too: palabros.md, «Cómo hablan los mayores»)
+	if key == "generic":
+		var v: String = String(n.voice)
+		var sex_key := "generic_f" if v.ends_with("_f") else "generic_m"
+		if v.begins_with("old"):
+			var old_sex_key := "generic_old_f" if v.ends_with("_f") else "generic_old_m"
+			said = Loc.t("generic_old") + Loc.t(old_sex_key) + said + Loc.t(sex_key)
+		else:
+			said = Loc.t(sex_key) + said
 	if key == "generic" or key == "generic_kid":
 		said = chismes.talk(said, n)                   # (what they say about the missions you have finished: chismes.gd)
 	var data = Loc.speaker(said, n.voice.ends_with("_f"))      # men talk about their wives, women about their husbands
-	if data[0] is Array:      # several dialogues: cycle through them
-		data = data[n.line_i % data.size()]
+	if data[0] is Array:      # several dialogues: cycle through them, skipping lines heard recently
+		if (key == "generic" or key == "generic_kid") and data.size() > 1:
+			for _skip in range(data.size()):
+				if not _recent_generic.has(String(data[n.line_i % data.size()][0])):
+					break
+				n.line_i += 1
+		var chosen: Array = data[n.line_i % data.size()]
 		n.line_i += 1
+		if key == "generic" or key == "generic_kid":
+			_recent_generic.append(String(chosen[0]))
+			if _recent_generic.size() > 20:
+				_recent_generic.pop_front()
+		data = chosen
 	say(who, data, n.voice)
 
 # ---------------- Puntos Cívicos, and the businesses you get to know ----------------
@@ -6759,7 +6882,13 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 				continue
 			var to: Vector2 = n.p - pp
 			if to.length() < 7.0 and to.length() > 1.5 and to.normalized().dot(facing) < -0.35:
-				n.bark(whisper_pool(n).pick_random(), 3.0)
+				var pool: Array = whisper_pool(n)
+				var fresh: Array = pool.filter(func(w): return not _recent_whispers.has(w))
+				var line: String = String((fresh if not fresh.is_empty() else pool).pick_random())
+				_recent_whispers.append(line)
+				if _recent_whispers.size() > 15:
+					_recent_whispers.pop_front()
+				n.bark(line, 3.0)
 				_whisper_t = randf_range(9.0, 17.0)
 				break
 	# Neighbours a long way off are moved a quarter as often (in bigger steps), without the leg-work and without

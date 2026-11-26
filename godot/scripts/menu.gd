@@ -66,6 +66,8 @@ var _foot: RichTextLabel
 var _stones: Array = []
 var _skin := ""                 # "" the wall; "notebook" the Agenda
 var _tab := 0
+var _prog_bar: ProgressBar
+var _prog_lab: Label
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)      # anchors AND offsets, or the control stays 0 x 0 in the corner
@@ -166,15 +168,20 @@ func rebuild() -> void:
 	_dress_heads()
 	var big_rows := _skin == "" and _items.all(func(it): return it.get("plain", false) or int(it.get("size", 26)) >= 24)
 	_list.add_theme_constant_override("separation", -8 if big_rows else 3)
-	if sel < 0 or sel >= _items.size() or (_items[sel].get("plain", false) or _items[sel].has("meter")):
+	if sel < 0 or sel >= _items.size() or (_items[sel].get("plain", false) or _items[sel].has("meter") or _items[sel].has("progress")):
 		sel = 0
-		while sel < _items.size() - 1 and (_items[sel].get("plain", false) or _items[sel].has("meter")):
+		while sel < _items.size() - 1 and (_items[sel].get("plain", false) or _items[sel].has("meter") or _items[sel].has("progress")):
 			sel += 1
+	_prog_bar = null
+	_prog_lab = null
 	for c in _list.get_children():
 		c.free()
 	for i in range(_items.size()):
 		var it: Dictionary = _items[i]
 		var plain: bool = it.get("plain", false)
+		if it.has("progress"):                   # an in-place progress bar and its status line (updater)
+			_list.add_child(_progress_row(it))
+			continue
 		if it.has("meter"):                      # a name, a bar and a number (the neighbours' trust)
 			_list.add_child(_meter_row(it))
 			continue
@@ -534,11 +541,49 @@ func _meter_row(it: Dictionary) -> Control:
 		glow.tween_property(num, "modulate", Color.WHITE, 0.7).set_trans(Tween.TRANS_SINE)
 	return row
 
+func _progress_row(it: Dictionary) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = Vector2(420, 18)
+	bar.show_percentage = false
+	bar.min_value = 0.0
+	bar.max_value = 1.0
+	bar.value = clampf(float(it["progress"]), 0.0, 1.0)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color("e2d9c6")
+	bg.border_color = INK
+	bg.set_border_width_all(2)
+	bg.set_corner_radius_all(4)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = ANIL
+	fill.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_stylebox_override("fill", fill)
+	var lab := _text(17, Color("5a4a3a"))
+	lab.text = String(it.get("text", ""))
+	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(bar)
+	box.add_child(lab)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 10)
+	box.add_child(gap)
+	_prog_bar = bar
+	_prog_lab = lab
+	return box
+
+func set_progress(ratio: float, text: String) -> void:
+	if _prog_bar != null and is_instance_valid(_prog_bar):
+		_prog_bar.value = clampf(ratio, 0.0, 1.0)
+	if _prog_lab != null and is_instance_valid(_prog_lab):
+		_prog_lab.text = text
+
 func _move(by: int) -> void:
 	var n := _items.size()
 	for step in range(n):
 		sel = (sel + by + n) % n
-		if not (_items[sel].get("plain", false) or _items[sel].has("meter")):
+		if not (_items[sel].get("plain", false) or _items[sel].has("meter") or _items[sel].has("progress")):
 			break
 	Sfx.beep(520.0, 0.04, 1, -18.0)
 	rebuild()
