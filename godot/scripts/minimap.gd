@@ -19,6 +19,8 @@ var ramps: Array = []
 var spray: Array = []        # walls La Chiki told you of, not yours yet (pintadas.gd hinted)
 var saffron_shops: Array = [] # the saffron sellers, once Tía Paca has told you of them (azafran.gd): a saffron circle each
 var clothes_shops: Array = [] # the clothes, accessories and shoe shops, once Josefa's Vizum has opened them: [{p, kind}] (tiendas_ropa.gd)
+var race_route := PackedVector2Array() # street race circuit / sprint polyline (xandro.gd)
+var race_cars: Array = []     # street race rival dots: [[Vector2 pos, Color col], ...] (xandro.gd)
 var blink := false
 var missions: Array = []     # selectable missions on the big map: [{id, label, p}, ...]
 var tracked_id := "auto"
@@ -201,6 +203,12 @@ func _draw() -> void:
 			draw_polyline(line, Color("389cff"), 4.0, true)
 		else:
 			draw_polyline(line, Color("2fb84a"), 4.0)          # (the way to what you are after: green, as everything that is: 16 Nov 2026)
+	if race_route.size() > 1:
+		var rline := PackedVector2Array()
+		for q in race_route:
+			rline.append((q - c) * k + half)
+		draw_polyline(rline, Color(0.15, 0.1, 0.04, 0.65), 6.0, true)
+		draw_polyline(rline, Color("f5b922"), 3.4, true)
 	for q in cars:
 		if not full and q.distance_squared_to(c) > reach:
 			continue
@@ -232,6 +240,10 @@ func _draw() -> void:
 		_shop_icon(rel3 + half, 9.0, String(q["kind"]))
 	for q in cops:              # Los Pitufos
 		draw_circle((q - c) * k + half, 5.0, Color("2f6bff") if blink else Color("ffffff"))
+	for rc in race_cars:        # Street race rivals (xandro.gd)
+		var rcp: Vector2 = ((rc[0] as Vector2) - c) * k + half
+		draw_circle(rcp, 5.2, Color("141210"))
+		draw_circle(rcp, 3.8, rc[1] as Color)
 	if target != null:
 		var tp: Vector2 = (target - c) * k
 		var edge := sz.x / 2.0 - (24.0 if round else 8.0)

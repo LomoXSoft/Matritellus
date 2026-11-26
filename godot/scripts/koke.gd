@@ -576,6 +576,8 @@ func run_over() -> void:
 	G.police.muted = _was_muted
 	if car != null and is_instance_valid(car):
 		car.unbreakable = false
+	if G.get("xandro") != null:
+		G.xandro.on_koke_done()
 	if fares > 0:
 		G.hud.stamp(Loc.t("stamp_done"))
 		G.hud.toast(Loc.t("t_kokas_over") % [fares, G.trabajos._eur(cash)], 6.0)

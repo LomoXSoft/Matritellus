@@ -133,3 +133,59 @@ static func thin(root: Node, scale := Vector3.ONE) -> int:
 		done += thin(c, here)
 	return done
 
+## Holographic mission / checkpoint beacon: rotating helical ribs, ascending scanlines, ground ring and smooth sky fade.
+const HOLO_BEACON_SHADER := """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, fog_disabled;
+
+uniform vec4 base_color : source_color = vec4(0.32, 0.95, 0.16, 0.44);
+uniform float height = 68.0;
+uniform float rot_speed = 1.1;
+
+varying float v_h;
+varying float v_ang;
+
+void vertex() {
+	v_h = clamp((VERTEX.y + height * 0.5) / max(height, 0.001), 0.0, 1.0);
+	v_ang = atan(VERTEX.x, VERTEX.z);
+}
+
+void fragment() {
+	float sky_fade = pow(clamp(1.0 - v_h, 0.0, 1.0), 1.35) * smoothstep(1.0, 0.72, v_h);
+	float base_ring = exp(-v_h * 16.0) * 0.95;
+	float beams = 0.45 + 0.55 * sin(v_ang * 6.0 - TIME * rot_speed * 2.5 + v_h * 7.5);
+	float scan = 0.80 + 0.20 * sin(v_h * height * 2.2 - TIME * 4.5);
+	float pulse = pow(0.5 + 0.5 * sin(v_h * 14.0 - TIME * 2.2), 5.0) * 0.55;
+	float ndotv = abs(dot(normalize(NORMAL), normalize(VIEW)));
+	float fresnel = mix(0.45, 1.22, pow(1.0 - ndotv, 1.6));
+	ALBEDO = base_color.rgb * (1.08 + base_ring * 0.65 + pulse * 0.6);
+	ALPHA = clamp(base_color.a * (sky_fade * fresnel * beams * scan + base_ring * 0.8 + pulse * sky_fade * 0.6), 0.0, 0.94) * smoothstep(1.0, 0.82, v_h);
+}
+"""
+static var _holo_shader: Shader
+
+static func holo_beacon(col: Color, rad: float, tall: float, rot_speed := 1.1) -> MeshInstance3D:
+	if _holo_shader == null:
+		_holo_shader = Shader.new()
+		_holo_shader.code = HOLO_BEACON_SHADER
+	var cm := CylinderMesh.new()
+	cm.top_radius = rad
+	cm.bottom_radius = rad
+	cm.height = tall
+	cm.radial_segments = 32
+	cm.rings = 8
+	cm.cap_top = false
+	cm.cap_bottom = false
+	var mat := ShaderMaterial.new()
+	mat.shader = _holo_shader
+	mat.set_shader_parameter("base_color", col)
+	mat.set_shader_parameter("height", tall)
+	mat.set_shader_parameter("rot_speed", rot_speed)
+	var mi := MeshInstance3D.new()
+	mi.mesh = cm
+	mi.material_override = mat
+	mi.position.y = tall * 0.5
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
+
+

@@ -70,6 +70,17 @@ var _blink_wait := -1.0        # seconds until next blink (< 0 -> uninitialized 
 var _blink_t := -1.0           # >= 0 while a blink is in progress
 var _blink_dur := 0.17         # total duration of the current blink (varies slightly each time)
 var _blink_double := false     # true when a natural quick double-blink is queued
+var track_layers := false      # when true (audit_clip.gd), tags each child node with its semantic layer meta
+
+func _tag_since(tag: String, i0: int, n0: int) -> void:
+	if not track_layers:
+		return
+	for k in range(i0, inner.get_child_count()):
+		if not inner.get_child(k).has_meta("layer"):
+			inner.get_child(k).set_meta("layer", tag)
+	for k in range(n0, neck.get_child_count()):
+		if not neck.get_child(k).has_meta("layer"):
+			neck.get_child(k).set_meta("layer", tag)
 
 ## Henry's bat, kept after the ham (the user, 14 November 2026): drawn over the right shoulder, swung across from
 ## right to left, and put away again
@@ -328,9 +339,15 @@ func set_look(o: Dictionary) -> void:
 	elif top_id == FIRST_ROPA + 4 or top_id == FIRST_ROPA + 5:       # open-front waistcoat and cardigan show a contrasting undershirt
 		var sc := Parts.col(body_hex)
 		body_hex = 0x2a2d36 if sc.r * 0.3 + sc.g * 0.59 + sc.b * 0.11 > 0.72 else 0xf4f1e8
+	var _ti := inner.get_child_count(); var _tn := neck.get_child_count()
 	_add("body", body_hex, Vector3(0, 0.62, 0), Vector3(_girth, 1.0, _girth))
+	_tag_since("body", _ti, _tn)
+	_ti = inner.get_child_count(); _tn = neck.get_child_count()
 	_add("head", skin, Vector3(0, 1.38, 0), Vector3.ONE)
+	_tag_since("head", _ti, _tn)
+	_ti = inner.get_child_count(); _tn = neck.get_child_count()
 	_clothes(top_id, o["shirt"], skin)
+	_tag_since("top", _ti, _tn)
 	_layers(top_id)                              # (a toquilla and a mandil, over any top: 25 Nov 2026)
 	# eyes, cheeks, brows
 	var eye_c: int = o.get("eye_color", 0x5a3a22)
@@ -343,7 +360,10 @@ func set_look(o: Dictionary) -> void:
 	var brows: int = o.get("brows", 3)
 	var brow_c: int = int(o.get("brow_color", -1))
 	_brows(brows, brow_c if brow_c >= 0 else hair_c, eh)
+	_ti = inner.get_child_count(); _tn = neck.get_child_count()
 	_beard(int(o.get("face", 0)), hair_c, skin)
+	if int(o.get("face", 0)) != 5:
+		_tag_since("beard", _ti, _tn)
 	if int(o.get("barba3", 0)) == 1 and int(o.get("face", 0)) != 5:      # (three days' beard: an option of its own, with any beard or none)
 		_barba3(hair_c)
 	var ankle: int = o.get("socks", skin)            # (socks under sandals or slides: the foot shows in their colour)
@@ -366,11 +386,13 @@ func set_look(o: Dictionary) -> void:
 		var n0 := neck.get_child_count()
 		var i0 := inner.get_child_count()
 		_hair(style_id, hair, skin, hat_cut(hat))
+		_tag_since("hair", i0, n0)
 		var canas_lvl: int = int(o.get("canas", 0))
 		var has_fade: bool = style_id == 8 or (PELOS_CORTOS.has(style_id) and bool((PELOS_CORTOS[style_id] as Array)[1]))
 		if canas_lvl > 0 and not (canas_lvl == 4 and has_fade):
 			_canas(int(hair), canas_lvl, neck.get_children().slice(n0) + inner.get_children().slice(i0))
 	var hatc: int = o.get("hat_color", 0xd9643a)
+	_ti = inner.get_child_count(); _tn = neck.get_child_count()
 	match hat:
 		"beret":
 			var brt := _add("ball", 0x26262b, Vector3(0.04, 1.79, -0.01), Vector3(0.50, 0.145, 0.50))
@@ -425,11 +447,20 @@ func set_look(o: Dictionary) -> void:
 		_:
 			if SOMBREROS.has(hat):                   # (from free models: in the colour chosen; red for the red-and-gold)
 				_wear(SOMBREROS[hat], hatc if hatc >= 0 else 0xc0392b, true)
+	_tag_since("hat", _ti, _tn)
+	_ti = inner.get_child_count(); _tn = neck.get_child_count()
 	_glasses(int(o.get("glasses", 0)), int(o.get("glasses_color", -1)))
+	_tag_since("glasses", _ti, _tn)
+	_ti = inner.get_child_count(); _tn = neck.get_child_count()
 	_earrings(int(o.get("earrings", 0)))
+	_tag_since("earrings", _ti, _tn)
+	_ti = inner.get_child_count(); _tn = neck.get_child_count()
 	_pendant(int(o.get("pendant", 0)), int(o.get("kerchief", 0xd23b3b)))
+	_tag_since("pendant", _ti, _tn)
 	if int(o.get("panuelo", 0)) == 1:
+		_ti = inner.get_child_count(); _tn = neck.get_child_count()
 		_panuelo(int(o.get("pena", 0)), int(o.get("kerchief", 0xd23b3b)))
+		_tag_since("panuelo", _ti, _tn)
 	if bool(o.get("smoke", false)):
 		_cigarette()
 	_carro = null
@@ -676,6 +707,27 @@ func _clothes(top: int, shirt: int, skin: int) -> void:
 		_strip(pock_c, -0.44, 0.68, 0.78, 0.092 * _girth, 0.043 * _girth, 0.014)
 		_strip(0x2f6bb5, -0.42, 0.76, 0.83, 0.018, 0.047 * _girth, 0.014)      # pocket pen
 		return
+	if top == CHOLO_CAMISA:                      # Xandro's cholo plaid shirt buttoned at the neck over white long sleeves & baggy dark trousers
+		var cw0: float = lerpf(1.0, _girth, 0.65)
+		var plaid_w := 0xeef0f6
+		var plaid_m := _mix(shirt, 0xffffff, 0.35)
+		var pants_c := 0x25272d
+		_band(pants_c, 0.32, 0.17, 0.012)
+		for by in [0.89, 0.76, 0.63, 0.50]:
+			_band(plaid_w, by, 0.026, 0.009)
+			_band(plaid_m, by - 0.06, 0.018, 0.008)
+		for k in range(8):
+			_strip(plaid_w, k * TAU / 8.0 + 0.39, 0.42, 0.97, 0.028, 0.009)
+			_strip(plaid_m, k * TAU / 8.0, 0.42, 0.97, 0.020, 0.008)
+		for sx in [-1.0, 1.0]:
+			var cc := _acc("box", plaid_m, Vector3(sx * 0.1 * cw0, 0.965, _r(0.96) - 0.004), Vector3(0.17 * cw0, 0.072, 0.05))
+			cc.rotation.z = sx * 0.52
+		for by in [0.92, 0.79, 0.66, 0.53]:
+			_dot(plaid_w, 0.0, by, 0.019, 0.45, 0.012)
+		for sx in [-1.0, 1.0]:
+			var sl := _acc("cyl", 0xf2f2ee, Vector3(sx * (_r(0.68) + 0.06), 0.68, 0.02), Vector3(0.085, 0.24, 0.085))
+			sl.rotation.z = sx * 0.35
+		return
 	if top >= FIRST_ROPA:
 		if top - FIRST_ROPA < ROPA.size():
 			_wear(ROPA[top - FIRST_ROPA], shirt, false, [int(look.get("shirt2", -1)), int(look.get("shirt3", -1))])      # (its other parts: colour 2 and 3)
@@ -894,6 +946,7 @@ func _pieza_on(name: String, hex: int, cut := 0, lift := 0.0) -> MeshInstance3D:
 # Crea nuevos elementos de Lustre y Pintas si lo ves necesario") ----------------
 const MATA := 35                                 # hair_style: a big mop of tight curls, round and wide, the ears and the forehead clear
 const REBECA_VESTIDO := 25                       # top: a knitted cardigan open over a dress with a print, to the knee
+const CHOLO_CAMISA := 26                         # top: Xandro's cholo plaid shirt buttoned at the neck over white long sleeves & baggy dark trousers
 const VESTIDO_DE_SERIE := 0x2b3352               # the dress's colour when colour 2 is "as it comes": navy
 
 static func _dress_hex(o: Dictionary) -> int:
@@ -951,7 +1004,10 @@ func _cardi_fronts(girth: float, lift: float) -> ArrayMesh:
 ## between them. One mesh for everybody (cached), shaded at the bottom of each curl; under a hat, only what is under it.
 static var _mata_mesh := {}
 func _mata(hair: int, cut: int) -> void:
-	_add("ball", hair, Vector3(0, 1.5, -0.06), Vector3(0.5, 0.42, 0.5))
+	if cut > 0:
+		_add("ball", hair, Vector3(0, 1.44, -0.04), Vector3(0.495, 0.34, 0.495))
+	else:
+		_add("ball", hair, Vector3(0, 1.5, -0.06), Vector3(0.5, 0.42, 0.5))
 	var key: int = clampi(cut, 0, 2)
 	if not _mata_mesh.has(key):
 		_mata_mesh[key] = _build_mata(key)
@@ -969,7 +1025,7 @@ static func _build_mata(cut: int) -> ArrayMesh:
 	var cols := PackedColorArray()
 	var idx := PackedInt32Array()
 	var C := Vector3(0.0, 1.40, -0.03)
-	var top: float = 1.6 if cut == 1 else (1.7 if cut == 2 else 99.0)
+	var top: float = 1.55 if cut >= 1 else 99.0
 	var n := 250
 	for i in range(n):
 		var yy: float = 1.0 - 2.0 * (float(i) + 0.5) / float(n)
@@ -1218,14 +1274,38 @@ func _print_on(mi: MeshInstance3D, hex: int) -> void:
 ## over whatever top is worn, the shawl over the apron.
 const TOQUILLA_CELL := 0.085                     # one tile of the shawl's mesh (two holes, staggered), metres
 const GINGHAM_TILE := 0.07                       # two checks of the apron
+static func _surf_code(top_id: int) -> int:
+	if top_id in [12, 20]:
+		return 1
+	if top_id in [1, 3, 6, 7, 10, 23]:
+		return 2
+	if top_id == 5:
+		return 3
+	return 0
+
+## localized bump clearance (m) over back hoods, folded 3D box collars, and dungarees bibs
+func _extra_surface(top_id: int, ang: float, y: float) -> float:
+	var code := _surf_code(top_id)
+	if code == 1:
+		return 0.088 * _girth * smoothstep(0.18, -0.45, cos(ang)) * smoothstep(0.72, 0.86, y)
+	if code == 2:
+		return 0.040 * smoothstep(0.88, 0.94, y) * (1.0 - smoothstep(0.40, 0.90, absf(wrapf(ang, -PI, PI))))
+	if code == 3:
+		return 0.032 * _girth * (1.0 - smoothstep(0.48, 0.82, absf(wrapf(ang, -PI, PI)))) * smoothstep(0.48, 0.56, y)
+	return 0.0
+
 func _layers(top_id: int) -> void:
 	var pad: float = _top_pad(top_id) * _girth
 	var mandil: int = int(look.get("mandil", -1))
 	if mandil >= 0:
-		_mandil(mandil, pad)
+		var i0 := inner.get_child_count(); var n0 := neck.get_child_count()
+		_mandil(mandil, pad, top_id)
+		_tag_since("mandil", i0, n0)
 	var toq: int = int(look.get("toquilla", -1))
 	if toq >= 0:
-		_toquilla(toq, pad + (0.018 if mandil >= 0 else 0.0))
+		var i1 := inner.get_child_count(); var n1 := neck.get_child_count()
+		_toquilla(toq, pad + (0.024 if mandil >= 0 else 0.0), top_id)
+		_tag_since("toquilla", i1, n1)
 
 ## A piece of cloth on a shell round the body. `at` maps (u, v), both 0..1, to Vector3(angle round the body (0 the
 ## front), height, lift off the body). Its uv: metres round the body, and metres up (or v itself, with `v_uv`, for a
@@ -1313,7 +1393,7 @@ static func _cloth(tex: Texture2D, tint: Color, tile: Vector2, scissor := false)
 ## an open mesh of round holes, staggered (the shirt shows through), thick yarn round them
 static var _toq_tex: ImageTexture = null
 static var _toq_mats := {}
-func _toquilla(hex: int, pad: float) -> void:
+func _toquilla(hex: int, pad: float, top_id := 0) -> void:
 	if _toq_tex == null:
 		var N := 32
 		var img := Image.create(N, N, true, Image.FORMAT_RGBA8)
@@ -1332,16 +1412,18 @@ func _toquilla(hex: int, pad: float) -> void:
 	if not _toq_mats.has(hex):
 		_toq_mats[hex] = _cloth(_toq_tex, Parts.col(hex), Vector2(TOQUILLA_CELL, TOQUILLA_CELL), true)
 	var mat: Material = _toq_mats[hex]
+	var scode: int = _surf_code(top_id)
 	for side in [-1.0, 1.0]:
 		var extra: float = pad + (0.008 if side < 0.0 else 0.0)
-		var key := "toq_%d_%d_%d" % [int(round(_girth * 100.0)), int(round(extra * 1000.0)), int(side)]
+		var key := "toq_%d_%d_%d_%d" % [int(round(_girth * 100.0)), int(round(extra * 1000.0)), int(side), scode]
 		var at := func(u: float, v: float) -> Vector3:
 			var ybot: float = lerpf(0.50, 0.71, smoothstep(0.0, 0.42, u)) if u < 0.42 else lerpf(0.71, 0.655, (u - 0.42) / 0.58)
 			var y: float = lerpf(ybot, 1.0, v)
 			var a0: float = -0.11 + 0.56 * clampf((y - 0.56) / 0.40, 0.0, 1.0)      # (the V open at the neck, crossed below)
 			var ang: float = lerpf(a0, PI + 0.03, u)
 			var drape: float = lerpf(0.02, 0.058, sin(clampf(ang, 0.0, PI)))      # (furthest out over the arms)
-			return Vector3(side * ang, y, extra + 0.024 + (1.0 - v) * drape)
+			var s_ang: float = side * ang
+			return Vector3(s_ang, y, extra + 0.026 + (1.0 - v) * drape + _extra_surface(top_id, s_ang, y))
 		_put_shell(_shell(key, 20, 12, at), mat)
 	var knot_c: int = _mix(hex, 0x000000, 0.06)
 	for k in range(3):                           # the knot where the ends are crossed and twisted
@@ -1362,7 +1444,7 @@ func _toq_knot(hex: int) -> Material:
 ## a band of flowers on dark blue under the bust and two pockets low in front, flowers along their tops
 static var _ging := {}
 static var _flores_tex: ImageTexture = null
-func _mandil(hex: int, pad: float) -> void:
+func _mandil(hex: int, pad: float, top_id := 0) -> void:
 	if not _ging.has(hex):
 		var N := 32
 		var img := Image.create(N, N, true, Image.FORMAT_RGB8)
@@ -1404,7 +1486,8 @@ func _mandil(hex: int, pad: float) -> void:
 	var edge := Parts.col(hex)
 	var g100: int = int(round(_girth * 100.0))
 	var flare: float = 0.07 if int(look.get("top", 0)) in [22, REBECA_VESTIDO] else 0.0      # (a dress's skirt flares out: over it, not through it)
-	var p1000: int = int(round(pad * 1000.0)) + int(round(flare * 100.0)) * 10000
+	var scode: int = _surf_code(top_id)
+	var p1000: int = int(round(pad * 1000.0)) + int(round(flare * 100.0)) * 10000 + scode * 1000000
 	var out := func(y: float) -> float:
 		return pad + flare * pow(clampf((0.64 - y) / 0.34, 0.0, 1.0), 1.6)
 	var front := func(u: float, v: float) -> Vector3:
@@ -1413,29 +1496,33 @@ func _mandil(hex: int, pad: float) -> void:
 		var top: float = lerpf(0.80, 0.985, smoothstep(0.30, 0.44, a))      # (the bib, and up into the straps)
 		top = lerpf(top, 0.72, smoothstep(0.74, 0.92, a))                     # (the arms out through the side)
 		var y: float = lerpf(0.29, top, v)
-		return Vector3(ang, y, out.call(y) + 0.014)
+		return Vector3(ang, y, out.call(y) + 0.018 + _extra_surface(top_id, ang, y))
 	var back := func(u: float, v: float) -> Vector3:
 		var ang: float = lerpf(-0.95, 0.95, u)
 		var a: float = absf(ang)
 		var top: float = lerpf(0.87, 0.985, smoothstep(0.28, 0.40, a))
 		top = lerpf(top, 0.72, smoothstep(0.66, 0.85, a))
 		var y: float = lerpf(0.30, top, v)
-		return Vector3(PI + ang, y, out.call(y) + 0.014)
+		return Vector3(PI + ang, y, out.call(y) + 0.020 + _extra_surface(top_id, PI + ang, y))
 	_put_shell(_shell("mf_%d_%d" % [g100, p1000], 28, 10, front, edge, 0.018), ging)
 	_put_shell(_shell("mb_%d_%d" % [g100, p1000], 22, 10, back, edge, 0.02), ging)
 	var flores: Material = _cloth(_flores_tex, Color(1, 1, 1), Vector2(0.24, 1.0)) if not _ging.has("flores") else _ging["flores"]
 	_ging["flores"] = flores
 	var band := func(u: float, v: float) -> Vector3:
-		return Vector3(lerpf(-0.74, 0.74, u), lerpf(0.69, 0.745, v), pad + 0.02)
+		var ang_b: float = lerpf(-0.74, 0.74, u)
+		var yb: float = lerpf(0.69, 0.745, v)
+		return Vector3(ang_b, yb, pad + 0.024 + _extra_surface(top_id, ang_b, yb))
 	_put_shell(_shell("mband_%d_%d" % [g100, p1000], 20, 1, band, Color(1, 1, 1), 0.0, true), flores)
 	for sx in [-1.0, 1.0]:
 		var pocket := func(u: float, v: float) -> Vector3:
+			var ang_p: float = sx * 0.5 + lerpf(-0.2, 0.2, u)
 			var y: float = lerpf(0.37, 0.52, v)
-			return Vector3(sx * 0.5 + lerpf(-0.2, 0.2, u), y, out.call(y) + 0.021)
+			return Vector3(ang_p, y, out.call(y) + 0.025 + _extra_surface(top_id, ang_p, y))
 		_put_shell(_shell("mpk_%d_%d_%d" % [g100, p1000, int(sx)], 8, 6, pocket, edge, 0.05), ging)
 		var ptop := func(u: float, v: float) -> Vector3:
+			var ang_pt: float = sx * 0.5 + lerpf(-0.2, 0.2, u)
 			var y: float = lerpf(0.485, 0.52, v)
-			return Vector3(sx * 0.5 + lerpf(-0.2, 0.2, u), y, out.call(y) + 0.027)
+			return Vector3(ang_pt, y, out.call(y) + 0.031 + _extra_surface(top_id, ang_pt, y))
 		_put_shell(_shell("mpt_%d_%d_%d" % [g100, p1000, int(sx)], 6, 1, ptop, Color(1, 1, 1), 0.0, true), flores)
 
 ## The classic head of an old lady's on a Saturday (the user, 16 November 2026: "para viejos, me gustaría añadir una
@@ -1693,7 +1780,10 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 		_cuatro_pelos(hair, cut)
 		return
 	if style == RULOS:
-		_rulos(hair, cut)
+		var rcut: int = 1 if (cut == 2 and String(look.get("hat", "")) != "beret") else cut
+		if rcut == 1 and cut == 2:
+			_add("dome", hair, Vector3(0, 1.56, -0.02), Vector3(0.468, 0.24, 0.468))
+		_rulos(hair, rcut)
 		return
 	if style == MATA:
 		_mata(hair, cut)
@@ -1709,10 +1799,16 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 		return
 	if style >= FIRST_PELO:
 		if style - FIRST_PELO < PELOS.size():
-			_pieza_on(PELOS[style - FIRST_PELO], hair, cut)
+			var pname: String = PELOS[style - FIRST_PELO]
+			var pcut: int = 1 if (cut == 2 and String(look.get("hat", "")) != "beret") else cut
+			if pcut == 1 and cut == 2 and pname != "pelo_rapao_fino":
+				_add("dome", hair, Vector3(0, 1.56, -0.02), Vector3(0.468, 0.24, 0.468))
+			_pieza_on(pname, hair, pcut)
 		return
 	if style == 3:                          # shaved close, the scalp showing through. The creator no longer offers it (the user, 17 Nov 2026: it cuts
-		_add("ball", _mix(hair, skin, 0.35), Vector3(0, 1.53, -0.05), Vector3(0.506, 0.37, 0.506))      # through the head; Rasurao instead), but the neighbours who wear it keep it
+		var s3_pos := Vector3(0, 1.44, -0.04) if hatted else Vector3(0, 1.53, -0.05)
+		var s3_scl := Vector3(0.495, 0.34, 0.495) if hatted else Vector3(0.506, 0.37, 0.506)
+		_add("ball", _mix(hair, skin, 0.35), s3_pos, s3_scl)      # through the head; Rasurao instead), but the neighbours who wear it keep it
 	elif style == 6:
 		_rasurado(hair)                     # shaved close on the sides (the see-through grey, as the shaved head)
 	elif style == 10:
@@ -1722,20 +1818,22 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 		if not hatted:
 			_pieza_on("pelo_tupe", hair)
 	elif style != 4 or hatted:
-		_add("ball", hair, Vector3(0, 1.5, -0.06), Vector3(0.5, 0.42, 0.5))                # the ordinary head of hair
-		if not hatted:                       # ...and over the crown and the top of the forehead, which it left bare (the user, 16 Nov 2026: "Arreglaría esta calva también")
-			_add("dome", hair, Vector3(0, 1.665, 0.0), Vector3(0.43, 0.232, 0.43))
+		if hatted:
+			_add("ball", hair, Vector3(0, 1.44, -0.04), Vector3(0.495, 0.34, 0.495))
+		else:
+			_add("ball", hair, Vector3(0, 1.5, -0.06), Vector3(0.5, 0.42, 0.5))            # the ordinary head of hair
+			_add("dome", hair, Vector3(0, 1.665, 0.0), Vector3(0.43, 0.232, 0.43))      # ...and over the crown and the top of the forehead
 	match style:
 		1:      # bun (bigger: the user, 17 Nov 2026); none under a kerchief or a cap, it is tucked under the cloth (it came
 			if not hatted:                  # through Josefa's kerchief, even low on the nape: the user, 23 Nov 2026, "el moño le clippea el pañuelo")
 				_add("ball", hair, Vector3(0, 1.76, -0.46), Vector3(0.27, 0.25, 0.27))
 		2:      # long, down to the shoulders
-			_add("ball", hair, Vector3(0, 1.22, -0.2), Vector3(0.5, 0.52, 0.36))
+			_add("ball", hair, Vector3(0, 1.22, -0.235), Vector3(0.5, 0.52, 0.35))
 		4:      # afro (0.0.22: scaled closer to the head and centered so it no longer dwarfs the body)
 			if hatted:
 				for sx in [-1.0, 1.0]:
-					_add("ball", hair, Vector3(sx * 0.42, 1.36, -0.14), Vector3(0.24, 0.26, 0.3))
-				_add("ball", hair, Vector3(0, 1.34, -0.4), Vector3(0.44, 0.28, 0.26))
+					_add("ball", hair, Vector3(sx * 0.41, 1.34, -0.14), Vector3(0.23, 0.23, 0.28))
+				_add("ball", hair, Vector3(0, 1.33, -0.39), Vector3(0.42, 0.24, 0.25))
 			else:
 				_add("ball", hair, Vector3(0, 1.56, -0.08), Vector3(0.6, 0.54, 0.56))
 				_add("ball", hair, Vector3(0, 1.77, 0.12), Vector3(0.38, 0.18, 0.26))
@@ -1754,7 +1852,7 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 				pig.rotation.z = sx * 0.18
 				_acc("ball", 0xd23b3b, Vector3(sx * 0.45, 1.54, -0.1), Vector3.ONE * 0.055)
 		9:      # bob
-			_add("ball", hair, Vector3(0, 1.33, -0.12), Vector3(0.54, 0.4, 0.44))
+			_add("ball", hair, Vector3(0, 1.33, -0.155), Vector3(0.53, 0.39, 0.42))
 		11:     # curls (0.0.22: tighter, overlapping puffs seated closer to the skull for a cohesive silhouette)
 			for i in range(13):
 				var phi := i * 2.39996 + 0.45
@@ -2259,8 +2357,8 @@ func _beard(kind: int, hair_c: int, skin: int) -> void:
 				_add_face_tube(st, pts, rx, ry, false, 8)
 				_bigote_mesh = st.commit()
 			_beard_mesh_on(_bigote_mesh, hair_c)
-		2:      # beard (0.0.22: tucked closer to the jaw with soft cheek wrap so it no longer sticks out like a muzzle)
-			_add("ball", hair_c, Vector3(0, 1.15, 0.245), Vector3(0.365, 0.25, 0.27))
+		2:      # beard (0.0.22: tucked closer to the jaw with soft cheek wrap; clears high collars cleanly)
+			_add("ball", hair_c, Vector3(0, 1.18, 0.262), Vector3(0.36, 0.22, 0.27))
 			for sx in [-1.0, 1.0]:
 				_add("ball", hair_c, Vector3(sx * 0.285, 1.21, 0.21), Vector3(0.145, 0.145, 0.165))
 		3:      # goatee (0.0.22: seated flush along the chin tangent)
@@ -2285,12 +2383,14 @@ func _beard(kind: int, hair_c: int, skin: int) -> void:
 		5:      # three days without shaving: the shaved head's see-through grey, over where a beard grows (the user, 16 Nov 2026:
 			# "Cambia la barba de tres días ... por el mismo efecto que rasurado, pero en la zona de la barba"; it was dots)
 			_barba3(hair_c)
-		6:      # the long beard (0.0.22: tucked base + blended lower mass without snowman pinch)
-			_add("ball", hair_c, Vector3(0, 1.155, 0.25), Vector3(0.37, 0.25, 0.27))
+		6:      # the long beard (drapes forward over bulky chests/neckwear instead of sinking into them)
+			_add("ball", hair_c, Vector3(0, 1.175, 0.262), Vector3(0.365, 0.225, 0.27))
 			for sx in [-1.0, 1.0]:
 				_add("ball", hair_c, Vector3(sx * 0.285, 1.21, 0.21), Vector3(0.145, 0.145, 0.165))
-			var low := _add("ball", hair_c, Vector3(0, 0.99, 0.315), Vector3(0.285, 0.295, 0.185))
-			low.rotation.x = 0.12
+			var pend_extra: float = 0.055 if int(look.get("pendant", 0)) in [6, 7, 9, 10, 11] else (0.028 if int(look.get("pendant", 0)) > 0 else 0.0)
+			var chest_out: float = maxf(0.0, (_r(0.84) + (_neck_pad(int(look.get("top", 0))) + pend_extra) * _girth) - 0.335)
+			var low := _add("ball", hair_c, Vector3(0, 1.00, 0.336 + chest_out * 0.95), Vector3(0.285, 0.295, 0.185))
+			low.rotation.x = -0.18
 		7:      # sideburns (0.0.22: curved low-poly strips hugging the temples/cheeks, replacing floating flat boxes)
 			if _patillas_mesh == null:
 				var st := SurfaceTool.new()
@@ -2438,23 +2538,48 @@ func _earrings(kind: int) -> void:
 					pm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 					croot.add_child(pm)
 
-## extra radial clearance (m) for bulky 3D tops so chains, ties, aprons, scarves and neckerchiefs never sink into them
+## extra radial clearance (m) for tops so chains, ties, aprons, scarves, shawls and neckerchiefs never sink into them
 static func _top_pad(top_id: int) -> float:
 	match top_id:
-		14:            return 0.056       # puffer vest (thickest quilted torso)
-		12, 13, 20, 2: return 0.050       # hoodie, turtleneck, anorak, suit jacket
-		15, 16, 24:    return 0.042       # waistcoat, cardigan, lab coat
-		11, 17, 18:    return 0.036       # collared shirt, hi-vis vest, football shirt
-		22:            return 0.024       # dress
-		REBECA_VESTIDO: return 0.042      # cardigan over a dress
-		9, 10, 19:     return 0.018       # NPC jackets & Breton top
+		REBECA_VESTIDO:     return 0.088      # cardigan (x1.07) + buttoned fronts & pockets over dress
+		14:                 return 0.068      # puffer vest (thickest quilted torso)
+		12, 13, 20, 2, 24:  return 0.064      # hoodie, turtleneck, anorak, suit jacket, lab coat
+		15, 16, 18:         return 0.052      # waistcoat, cardigan, football shirt
+		11, 17:             return 0.044      # collared shirt, hi-vis vest
+		5, 6:               return 0.036      # dungarees bib, shirt & braces
+		22:                 return 0.030      # dress (+ waist sash)
+		1, 3, 7, 9, 10, 23: return 0.030      # collared/checked/Hawaiian shirts, housecoat, NPC jackets
+		4, 19, PENA_TEE:    return 0.022      # tracksuit, Breton, peña chest print
+		8:                  return 0.014      # vest straps
 	return 0.0
+
+## clearance at the collar/neck (y ~ 0.92..0.95): bare-neck tops stay snug; necklaces/ties sit under a shawl (over_shawl=false)
+func _collar_pad(top_id: int, over_shawl := false) -> float:
+	var p: float = 0.010 if top_id in [5, 8, 22, PENA_TEE] else (0.052 if top_id == REBECA_VESTIDO else _top_pad(top_id))
+	if int(look.get("mandil", -1)) >= 0:
+		p += 0.016 / maxf(_girth, 0.85)
+	if over_shawl and int(look.get("toquilla", -1)) >= 0:
+		p += 0.046 / maxf(_girth, 0.85)
+	return p
+
+## cumulative radial clearance (m) on the chest/back outside top + mandil (+ toquilla only for outer wraps)
+func _neck_pad(top_id: int, over_shawl := false) -> float:
+	var base_t: float = (0.042 if int(look.get("mandil", -1)) < 0 else 0.082) if top_id == REBECA_VESTIDO else _top_pad(top_id)
+	var p: float = base_t
+	if int(look.get("mandil", -1)) >= 0:
+		p += 0.036 / maxf(_girth, 0.85)
+	if over_shawl and int(look.get("toquilla", -1)) >= 0:
+		p += 0.088 / maxf(_girth, 0.85)
+	return p
 
 # ---------------- round the neck ----------------
 func _pendant(kind: int, kerchief: int) -> void:
 	if kind <= 0:
 		return
-	var pad := _top_pad(int(look.get("top", 0)))
+	var top_id: int = int(look.get("top", 0))
+	var over_shawl: bool = kind in [5, 9, 10, 11]
+	var pad := _neck_pad(top_id, over_shawl)
+	var cpad := _collar_pad(top_id, over_shawl)
 	if kind >= FIRST_CUELLO:                     # custom sculpted neckwear meshes, in their own colours
 		if kind - FIRST_CUELLO < CUELLO.size():
 			var cname: String = CUELLO[kind - FIRST_CUELLO]
@@ -2463,34 +2588,38 @@ func _pendant(kind: int, kerchief: int) -> void:
 				var src := m.surface_get_material(0)
 				var c: Color = (src as BaseMaterial3D).albedo_color if src is BaseMaterial3D else Color(0.5, 0.5, 0.5)
 				var mi := _wear(cname, (int(c.r * 255.0) << 16) | (int(c.g * 255.0) << 8) | int(c.b * 255.0), false)
-				if mi != null and pad > 0.0:
-					var k_pad: float = 1.0 + pad / (0.42 if cname == "cuello_bufanda" else (0.38 if cname == "cuello_camara" else 0.34))
+				var base_p: float = cpad if cname in ["cuello_pajarita", "cuello_gargantilla"] else pad
+				var eff_pad: float = base_p + (0.048 if (cname == "cuello_delantal" and (top_id in [22, REBECA_VESTIDO] or int(look.get("mandil", -1)) >= 0)) else 0.0)
+				if mi != null and eff_pad > 0.0:
+					var k_pad: float = 1.0 + eff_pad / (0.34 if cname == "cuello_bufanda" else (0.33 if cname == "cuello_camara" else 0.30))
 					mi.scale = Vector3(_girth * k_pad, 1.0, _girth * k_pad)
 		return
 	var metal := 0xcfd4d8 if kind == 3 else 0xe6b422
 	var gp := pad * _girth
 	var sl := _slope()
 	if kind <= 3:
-		_acc("ring_thin", metal, Vector3(0, 0.912, 0.010), Vector3((0.348 + pad) * _girth, 0.348, (0.348 + pad) * _girth)).rotation.x = 0.25
+		var rc: float = maxf(0.0, cpad - 0.014)
+		var rp: float = maxf(0.0, minf(pad, 0.072) - 0.014)
+		_acc("ring_thin", metal, Vector3(0, 0.916, 0.018 + (rp - rc) * 0.48 * _girth), Vector3((0.354 + rc) * _girth, 0.354, (0.354 + (rp + rc) * 0.5) * _girth)).rotation.x = 0.24
 	match kind:
 		2:      # a medal, pitched flush with the torso slope
-			var med := _acc("cyl", metal, Vector3(0, 0.785, _r(0.785) + 0.022 + gp), Vector3(0.068, 0.016, 0.068))
+			var med := _acc("cyl", metal, Vector3(0, 0.785, _r(0.785) + 0.028 + gp), Vector3(0.068, 0.016, 0.068))
 			med.rotation.x = PI / 2.0 - sl
 		3:      # a cross, pitched flush with the torso slope
-			var c_v := _acc("box", metal, Vector3(0, 0.745, _r(0.745) + 0.020 + gp), Vector3(0.030, 0.145, 0.018))
+			var c_v := _acc("box", metal, Vector3(0, 0.745, _r(0.745) + 0.028 + gp), Vector3(0.030, 0.145, 0.018))
 			c_v.rotation.x = -sl
-			var c_h := _acc("box", metal, Vector3(0, 0.775, _r(0.775) + 0.020 + gp), Vector3(0.095, 0.030, 0.018))
+			var c_h := _acc("box", metal, Vector3(0, 0.775, _r(0.775) + 0.028 + gp), Vector3(0.095, 0.030, 0.018))
 			c_h.rotation.x = -sl
 		4:      # full 360-degree string of pearls round the neck
 			for k in range(20):
 				var a: float = k * TAU / 20.0
 				var py: float = 0.942 - 0.062 * cos(a)
-				var rr: float = _r(py) + 0.022 + gp
+				var rr: float = _r(py) + 0.030 + lerpf(cpad, minf(pad, 0.076), maxf(0.0, cos(a))) * _girth
 				_acc("ball", 0xf8f4ea, Vector3(sin(a) * rr, py, cos(a) * rr), Vector3.ONE * 0.034)
 		5:      # the neckerchief of the fiestas, knotted in front & hugging the chest slope
-			_acc("ring", kerchief, Vector3(0, 0.945, 0.0), Vector3((0.335 + pad) * _girth, 0.335, (0.335 + pad) * _girth)).rotation.x = 0.15
-			_acc("ball", kerchief, Vector3(0, 0.905, _r(0.905) + 0.030 + gp), Vector3(0.068, 0.052, 0.044))
-			var tip := _acc("cone", kerchief, Vector3(0, 0.805, _r(0.805) + 0.026 + gp), Vector3(0.148, 0.215, 0.028))
+			_acc("ring", kerchief, Vector3(0, 0.945, 0.0), Vector3((0.352 + cpad) * _girth, 0.352, (0.352 + cpad) * _girth)).rotation.x = 0.15
+			_acc("ball", kerchief, Vector3(0, 0.905, _r(0.905) + 0.038 + gp), Vector3(0.068, 0.052, 0.044))
+			var tip := _acc("cone", kerchief, Vector3(0, 0.805, _r(0.805) + 0.034 + gp), Vector3(0.148, 0.215, 0.028))
 			tip.rotation = Vector3(-sl, 0.0, PI)
 
 ## Your peña's neckerchief, from the wardrobe at home (the user, 16 November 2026, with a photo of a fiesta neckerchief
@@ -2500,14 +2629,16 @@ func _pendant(kind: int, kerchief: int) -> void:
 const PANUELO_IDS := ["nietos", "croquetilla", "bordillo", "centradito", "costrola", "al_prao"]      # (creator.gd PENA_IDS)
 static var _panuelo_mats := {}
 func _panuelo(pena: int, hex: int) -> void:
-	var pad := _top_pad(int(look.get("top", 0)))
+	var top_id: int = int(look.get("top", 0))
+	var pad := _neck_pad(top_id, true)
+	var cpad := _collar_pad(top_id, true)
 	var gp := pad * _girth
-	var roll := _acc("ring", hex, Vector3(0, 0.945, 0.0), Vector3((0.335 + pad) * _girth, 0.42, (0.335 + pad) * _girth))       # the roll round the neck
+	var roll := _acc("ring", hex, Vector3(0, 0.945, 0.0), Vector3((0.352 + cpad) * _girth, 0.42, (0.352 + cpad) * _girth))       # the roll round the neck
 	roll.rotation.x = 0.12
-	var front := _r(0.9) + 0.03 + gp
+	var front := _r(0.9) + 0.038 + gp
 	_acc("ball", hex, Vector3(0, 0.9, front), Vector3(0.075, 0.06, 0.05))                                      # the knot...
 	for sx in [-1.0, 1.0]:                                                                                        # ...and its two ends
-		var end := _acc("cone", hex, Vector3(sx * 0.05, 0.82, front - 0.005), Vector3(0.05, 0.13, 0.02))
+		var end := _acc("cone", hex, Vector3(sx * 0.05, 0.82, front - 0.004), Vector3(0.05, 0.13, 0.02))
 		end.rotation = Vector3(0.0, 0.0, PI + sx * 0.35)
 	# the point down the back: a triangle of cloth laid over the body (a cone), narrowing to its tip
 	var id: String = PANUELO_IDS[clampi(pena, 0, PANUELO_IDS.size() - 1)]
@@ -2532,7 +2663,7 @@ func _panuelo(pena: int, hex: int) -> void:
 	var at := func(u: float, v: float) -> Array:
 		var ang: float = PI + (u - 0.5) * 2.0 * SPAN * (1.0 - v)
 		var yy: float = lerpf(TOP, TIP, v)
-		var rr: float = _r(yy) + 0.018 + 0.012 * (1.0 - v) + gp
+		var rr: float = _r(yy) + 0.026 + 0.014 * (1.0 - v) + gp + _extra_surface(top_id, ang, yy)
 		return [Vector3(sin(ang) * rr, yy, cos(ang) * rr), Vector2(0.5 + (u - 0.5) * (1.0 - v), v), Vector3(sin(ang), 0.19, cos(ang)).normalized()]
 	for r in range(ROWS):
 		for c in range(COLS):

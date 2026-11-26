@@ -14687,7 +14687,8 @@ func _koke_checks() -> void:
 	var K = g.koke
 	var T = g.trabajos
 	var saved := {"money": g.money, "curro": g.stats.get("curro"), "vizum": g.stats.get("vizum"), "vizum_h": g.stats.get("vizum_h"),
-		"koke": g.stats.get("koke"), "koke_dia": g.stats.get("koke_dia"), "p": g.player.p, "phase": g.phase, "muted": g.police.muted,
+		"koke": g.stats.get("koke"), "koke_dia": g.stats.get("koke_dia"), "koke_done_h": g.stats.get("koke_done_h"),
+		"p": g.player.p, "phase": g.phase, "muted": g.police.muted,
 		"trabajos": (g.stats.get("trabajos", {}) as Dictionary).duplicate(true)}
 	g.side = null
 	g.phase = "free"
@@ -14870,16 +14871,228 @@ func _koke_checks() -> void:
 	print("    (koke: %d EUR earned in the run)" % (g.money - cash0))
 	# restore
 	g.money = saved["money"]
-	for k in ["curro", "vizum", "vizum_h", "koke", "koke_dia"]:
+	for k in ["curro", "vizum", "vizum_h", "koke", "koke_dia", "koke_done_h"]:
 		if saved[k] == null:
 			g.stats.erase(k)
 		else:
 			g.stats[k] = saved[k]
+	if g.get("xandro") != null:
+		g.xandro.place_npc()
 	g.stats["trabajos"] = saved["trabajos"]
 	g.police.muted = saved["muted"]
 	g.player.p = saved["p"]
 	g.player.sync()
 	g.phase = saved["phase"]
+	g._refresh_counts()
+	await _frames(3)
+
+## Xandro and underground Street Races (xandro.gd): unlocked after Koke's first job, 4h phone call, cholo outfit at Talleres Xandro,
+## 8 Seta Pandas on the night grid, 100 EUR buy-in / 500-200-100 prizes with 10% loaner commission, free mission retry, daily 3-route rotation.
+func _xandro_checks() -> void:
+	var X = g.xandro
+	var Chara = load("res://scripts/chara.gd")
+	var saved := {
+		"money": g.money, "day_n": g.day_n, "clock": g.clock, "p": g.player.p, "phase": g.phase,
+		"muted": g.police.muted, "koke_dia": g.stats.get("koke_dia"), "koke_done_h": g.stats.get("koke_done_h"),
+		"xandro_intro": g.stats.get("xandro_intro"), "xandro_called": g.stats.get("xandro_called"),
+		"xandro_paid": g.stats.get("xandro_paid"), "xandro_won": g.stats.get("xandro_won"),
+		"xandro_dia": g.stats.get("xandro_dia"), "xandro_route": g.stats.get("xandro_route"),
+		"trabajos": (g.stats.get("trabajos", {}) as Dictionary).duplicate(true),
+		"folk": g.folk.data.get("xandro"),
+	}
+	g.side = null
+	g.phase = "free"
+	g.menu.close()
+	if g.in_car != null:
+		g.in_car.set_speed(Vector2.ZERO)
+		g._exit_car()
+	for k in ["koke_dia", "koke_done_h", "xandro_intro", "xandro_called", "xandro_paid", "xandro_won", "xandro_dia", "xandro_route"]:
+		g.stats.erase(k)
+	var td: Dictionary = g.stats.get("trabajos", {})
+	td.erase("kokas")
+	td.erase("xandro")
+	g.stats["trabajos"] = td
+	g.folk.data.erase("xandro")
+	X._rung = false
+	X.restore()
+	await _hush_phone("Xandro's checks")
+
+	# 1. Hidden before Koke's first job, unlocked + visible + cholo look + map giver right after on_koke_done()
+	var hidden_before: bool = X.n != null and X.n.away and not X.n.visible and not X.unlocked()
+	X.on_koke_done()
+	await _frames(3)
+	var look: Dictionary = X.n.look_data
+	var look_ok: bool = int(look.get("top", -1)) == Chara.CHOLO_CAMISA and float(look.get("build", 1.0)) >= 1.2 \
+		and int(look.get("face", 0)) == 8 and int(look.get("glasses", 0)) == 5 and String(look.get("hat", "")) == "beisbol"
+	var dist_gar: float = X.n.p.distance_to(X.gar_pos)
+	var in_givers: bool = X.n in g.marcas.givers()
+	var unlocked_after: bool = X.unlocked() and not X.n.away and in_givers and dist_gar < 15.0
+	_check(hidden_before and unlocked_after and look_ok,
+		"Xandro is hidden before Koke's first shift (hb=%s), appears beside Talleres Xandro right after it (dist=%.1f away=%s gv=%s) in cholo outfit (build %.2f, top %d)" % [str(hidden_before), dist_gar, str(X.n.away), str(in_givers), float(look.get("build", 1.0)), int(look.get("top", -1))])
+
+	if shots:
+		g.player.p = g._pavement(X.n.p + X.gar_out * 3.0)
+		g.player.sync()
+		await _frames(4)
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(14.0)
+		var fdir := Vector3(sin(X.n.h), 0.0, cos(X.n.h)).normalized()
+		var npos: Vector3 = X.n.global_position
+		_aim(npos + fdir * 3.1 + Vector3(0.0, 1.35, 0.0), npos + Vector3(0.0, 0.92, 0.0))
+		await _shot("xandro_npc")
+		var bspot: Vector2 = X._start_proj + X._start_u * 26.0
+		g.set_target(bspot, true)
+		g.beacon.visible = true
+		var cam_b: Vector2 = X._start_proj - X._start_u * 12.0
+		_aim(Vector3(cam_b.x, MapData.height(cam_b) + 4.5, cam_b.y), Vector3(bspot.x, MapData.height(bspot) + 24.0, bspot.y))
+		await _shot("xandro_beacon_mision")
+		g.set_target(null, false)
+		g.hud.play_ui.visible = true
+		g.phase = "free"
+
+	# 2. 4h in-game phone call
+	g.stats["koke_done_h"] = X.now_h() - 2.0
+	X._t = 0.0
+	await _frames(6)
+	var quiet_early: bool = g.phone_call == null and not g.llamadas.pending("xandro")
+	g.stats["koke_done_h"] = X.now_h() - 4.1
+	X._t = 0.0
+	var rang := false
+	for k in range(60):
+		await _frames(2)
+		if g.phone_call != null and String(g.phone_call.get("npc", "")) == "xandro":
+			rang = true
+			break
+	var call_txt := ""
+	if rang:
+		g._answer_call()
+		await _frames(3)
+		call_txt = " ".join(g.dlg["lines"]) if g.dlg != null else ""
+		await _skip_dialog(false)
+		await _frames(4)
+	_check(quiet_early and rang and call_txt.contains("puto loco") and call_txt.contains("atropellando") and X.called(),
+		"4 in-game hours after Koke's job without talking to Xandro he rings with his exact line (quiet at 2h)")
+
+	# 3. Real route graph checks across all 3 Madridejos routes
+	var routes_ok := true
+	var r_lens: Array = []
+	for r_i in range(X.ROUTES.size()):
+		var rd: Dictionary = X.get_route(r_i)
+		var pts: PackedVector2Array = rd.get("pts", PackedVector2Array())
+		var ll: float = float(rd.get("lap_len", 0.0))
+		var cps: Array = rd.get("base_cps", [])
+		r_lens.append("%.0fm(%dcps)" % [ll, cps.size()])
+		if pts.size() < 20 or ll < 1500.0 or cps.size() < 8:
+			routes_ok = false
+	_check(routes_ok, "all 3 street race routes build cleanly on Madridejos wide asphalt: %s" % ", ".join(r_lens))
+
+	# 4. Dialogue + Economy + Loaner 10% Commission + Daily Rotation
+	g.money = 500
+	g.set_time(13.0)
+	g.player.p = g._pavement(X.n.p + X.gar_out * 1.6)
+	g.player.sync()
+	await _frames(4)
+	X.talk(X.n)
+	await _frames(3)
+	var intro_txt: String = " ".join(g.dlg["lines"]) if g.dlg != null else ""
+	var has_camunas: bool = intro_txt.contains("Camuñas") and intro_txt.contains("opinables") and intro_txt.contains("Franco") and intro_txt.contains("Seta")
+	await _skip_dialog(false)
+	await _frames(4)
+	if g._ask != null:
+		g._ask_pick(0)
+	await _frames(15)
+	var colors: Array = []
+	if X._player_car != null:
+		colors.append(X._player_car.paint)
+	for r in X._rivals:
+		colors.append(r["car"].paint)
+	var uniq := {}
+	for col in colors:
+		uniq[col] = true
+	var grid_ok: bool = X.running() and absf(g.clock - X.NIGHT_HOUR) < 0.05 and g.money == 400 \
+		and X._rivals.size() == 7 and X._player_car != null and X._player_car.kind == "panda" \
+		and X._rivals.all(func(r): return r["car"].kind == "panda" and r["car"].unbreakable) \
+		and uniq.size() == 8 and X._player_car.unbreakable and g.police.muted and X._tractor != null
+	_check(has_camunas and grid_ok,
+		"Xandro intro mentions Camuñas/opinables/Franco/Seta; accepting from 13:00 jumps to %.1f, charges 100 EUR, and puts 8 distinct-colour unbreakable Seta Pandas on the night grid (tractor cameo %s)" % [g.clock, str(X._tractor != null)])
+
+	if shots:
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = true
+		var gp: Vector3 = X._player_car.global_position
+		var gf: Vector3 = X._player_car.global_transform.basis.z
+		_aim(gp - gf * 8.5 + Vector3(3.5, 4.2, 0.0), gp + gf * 11.0 + Vector3(0.0, 0.6, 0.0))
+		await _shot("xandro_parrilla")
+		g.phase = "free"
+
+	# Verify countdown holds player still, then ARREA lets all 8 Seta Pandas accelerate
+	var hold_ok: bool = X.countdown_hold(X._player_car, 1.0)
+	X._cd_t = 0.05
+	await _frames(35)
+	var moved_ok: bool = X._rivals.all(func(r): return r["car"].p.distance_to(X._start_proj) > 1.5 or r["car"].forward_speed() > 2.0)
+	_check(hold_ok and moved_ok and g.side["stage"] == "race",
+		"countdown holds throttle at the line, and after ARREA all Seta Pandas launch onto the route")
+
+	# Simulate losing initial mission (5th place) -> free retry & money stays 400
+	X._finish(5, false)
+	await _frames(4)
+	var retry_ok: bool = not X.running() and not X.mission_won() and X.entry_fee() == 0 and g.money == 400 and not g.police.muted and X.current_route_idx() == 0
+	# Win initial mission with loaner car (1st place) -> 500 - 10% = 450 EUR
+	g.stats["xandro_dia"] = int(g.day_n)
+	X._begin_race(0, null, true)
+	await _frames(3)
+	X._finish(1, false)
+	await _frames(4)
+	var won_mission_ok: bool = X.mission_won() and g.money == 850 and not X.available() and X.current_route_idx() == 1
+	# Next day with player's own Seta Panda -> pays 100 EUR, wins 2nd (200 EUR net, 0% commission), advances to route 2
+	g.day_n += 1
+	var own_panda = load("res://scripts/car.gd").new()
+	g.add_child(own_panda)
+	own_panda.setup("panda", 0xe6c229, X.n.p + Vector2(3.0, 0.0), 0.0)
+	g.cars.append(own_panda)
+	var found_own: bool = X.find_player_seta() == own_panda and X.entry_fee() == 100 and X.available()
+	g.money -= 100
+	g.stats["xandro_dia"] = int(g.day_n)
+	X._begin_race(1, own_panda, false)
+	await _frames(3)
+	X._finish(2, false)
+	await _frames(4)
+	var won_own_ok: bool = g.money == 950 and X.current_route_idx() == 2 and is_instance_valid(own_panda)
+	# Next day: daily loss (6th) loses the 100 EUR fee and rotates back to route 0
+	g.day_n += 1
+	g.money -= 100
+	g.stats["xandro_dia"] = int(g.day_n)
+	X._begin_race(2, null, true)
+	await _frames(3)
+	X._finish(6, false)
+	await _frames(4)
+	var lost_daily_ok: bool = g.money == 850 and X.current_route_idx() == 0
+	g.cars.erase(own_panda)
+	own_panda.queue_free()
+	_check(retry_ok and won_mission_ok and found_own and won_own_ok and lost_daily_ok,
+		"economy & rotation: mission loss keeps retry free (400), 1st with loaner pays 450 (-10%%, total 850), daily own-Seta 2nd pays 200 full (-100+200=950), daily loss keeps 100 EUR lost (850) and rotates routes 0->1->2->0")
+
+	# Restore clean game state
+	X.abort(true)
+	g.money = saved["money"]
+	g.day_n = saved["day_n"]
+	g.set_time(saved["clock"])
+	for k in ["koke_dia", "koke_done_h", "xandro_intro", "xandro_called", "xandro_paid", "xandro_won", "xandro_dia", "xandro_route"]:
+		if saved[k] == null:
+			g.stats.erase(k)
+		else:
+			g.stats[k] = saved[k]
+	g.stats["trabajos"] = saved["trabajos"]
+	if saved["folk"] == null:
+		g.folk.data.erase("xandro")
+	else:
+		g.folk.data["xandro"] = saved["folk"]
+	g.police.muted = saved["muted"]
+	g.player.p = saved["p"]
+	g.player.sync()
+	g.phase = saved["phase"]
+	X.restore()
 	g._refresh_counts()
 	await _frames(3)
 
@@ -17560,7 +17773,8 @@ func _run() -> void:
 		# green is what you are after: the guide arrow, the light over the place, the target on the map
 		var hot_v = g.arrow_mat.get_shader_parameter("hot")      # (left at the shader's own default: asked of the shader)
 		var hot: Color = hot_v if hot_v != null else RenderingServer.shader_get_parameter_default(g.arrow_mat.shader.get_rid(), "hot")
-		var col: Color = (g.beacon.get_child(0) as MeshInstance3D).material_override.albedo_color
+		var bmat = (g.beacon.get_child(0) as MeshInstance3D).material_override
+		var col: Color = bmat.get_shader_parameter("base_color") if bmat is ShaderMaterial else bmat.albedo_color
 		_check(hot.g > hot.r and col.g > col.r, "the guide arrow and the column of light over the place to get to are green (arrow %s, light %s)" % [hot, col])
 		var rd: Dictionary = MapData.nearest_road(g.player.p)           # (somewhere down the street: the light over it, in sight)
 		var fwd: Vector2 = rd["u"]
@@ -23229,6 +23443,15 @@ func _run() -> void:
 		print("KOKE %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--xandro"):   # Xandro and street races (26 Nov 2026)
+		g.menu.close()
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		await _frames(20)
+		await _xandro_checks()
+		print("XANDRO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--maxi"):     # the MaxiPrecio's fitting room and Maxi (23 Nov 2026)
 		g.menu.close()
 		g.phase = "free"
@@ -24529,6 +24752,7 @@ func _run() -> void:
 	await _manuela_checks()
 	await _fatima_checks()
 	await _koke_checks()
+	await _xandro_checks()
 	await _pili_checks()
 	await _descanso_checks()
 	g.phase = "play"

@@ -379,6 +379,8 @@ func tick(dt: float, pp: Vector2) -> void:
 					_fail("faena_fail_reparto")
 		"kokas":                         # Koke el Kokas's taxi (koke.gd)
 			G.koke.run_tick(dt, pp)
+		"xandro":                        # Xandro's street races (xandro.gd)
+			G.xandro.run_tick(dt, pp)
 		"jornal":
 			if G.side["stage"] == "ir":
 				if pp.distance_to(G.side["to"]) < 28.0:
@@ -457,6 +459,9 @@ func abort() -> void:
 	if kind() == "kokas":
 		G.koke.run_over()
 		return
+	if kind() == "xandro":
+		G.xandro.abort()
+		return
 	if kind() == "jornal":
 		for i in range(int(G.side.get("tot", FIELD_N))):
 			G.pickups.remove_tag("jornal_%d" % i)
@@ -480,6 +485,8 @@ func show() -> void:
 				G.set_target(G.side["to"], true)
 		"kokas":
 			G.koke.run_show()
+		"xandro":
+			G.xandro.run_show()
 		"jornal":
 			if st == "ir":
 				G.hud.set_objective(G._tag(), Loc.t("obj_jornal_ir"))

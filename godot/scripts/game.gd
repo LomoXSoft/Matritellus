@@ -76,6 +76,7 @@ const FatimaS = preload("res://scripts/fatima.gd")
 const RopaIcon = preload("res://scripts/ropa_icono.gd")
 const TiendasRopaS = preload("res://scripts/tiendas_ropa.gd")
 const KokeS = preload("res://scripts/koke.gd")
+const XandroS = preload("res://scripts/xandro.gd")
 const MarcianoS = preload("res://scripts/marciano.gd")
 const SopissGenteS = preload("res://scripts/sopiss_gente.gd")
 const AzafranS = preload("res://scripts/azafran.gd")
@@ -347,6 +348,7 @@ var azafran                     # the four saffron sellers at the real saffron s
 var semaforos                   # the traffic lights of the crossroads: their cycle, and the town's cars stopping (semaforos.gd)
 var tiendas_ropa                # the clothes and accessories shops: shut to you until Josefa's Vizum (tiendas_ropa.gd)
 var koke                        # Koke el Kokas: his call after the Vizum, his fleet on the fairground, the taxi run (koke.gd)
+var xandro                      # Xandro: street races from Talleres Xandro, unlocked after Koke (xandro.gd)
 var maxi                        # Maxi, the clerk of the MaxiPrecio: its clothes at 20 € into your wardrobe (maxi.gd)
 var manuela                     # Manuela Moreno, the clerk of the Pisacastaña: its shoes at 20 € (manuela.gd)
 var fatima                      # Fátima Corsa, the optician of the Óptica Corsa: its glasses at 20 € (fatima.gd)
@@ -1202,7 +1204,37 @@ func _neighbour_look(voice: String) -> Dictionary:
 			o["carro_dibujo"] = "liso"
 		elif cut < 0.25:
 			o["carro_dibujo"] = "flores"
+	_clean_npc_look(o)
 	return o
+
+## Prevents conflicting random layer combinations on anonymous town NPCs (keeping full freedom in the Creator).
+static func _clean_npc_look(o: Dictionary) -> void:
+	var top_id: int = int(o.get("top", 0))
+	var pend: int = int(o.get("pendant", 0))
+	var hair_st: int = int(o.get("hair_style", 0))
+	var face_id: int = int(o.get("face", 0))
+	if int(o.get("toquilla", -1)) >= 0:
+		if top_id in [12, 14, 20]:
+			o["top"] = 7
+			top_id = 7
+		if pend in [5, 8, 9]:
+			o["pendant"] = 0
+			pend = 0
+	if int(o.get("mandil", -1)) >= 0:
+		if top_id in [12, 14, 20]:
+			o["top"] = 1
+			top_id = 1
+		if pend == 8:
+			o["pendant"] = 0
+			pend = 0
+	if top_id in [12, 13, 14, 20]:
+		if hair_st in [2, 9, 15, 20, 22, 28, 29, 30]:
+			o["hair_style"] = 5
+		if face_id == 6:
+			o["face"] = 2
+			face_id = 2
+	if face_id in [2, 6, 8, 9, 10] and pend in [5, 6, 7, 9, 10, 11, 12]:
+		o["pendant"] = 0
 
 ## an anonymous neighbour standing at an exact spot (used by terrazas); still = they stay put
 ## a look for somebody driving a car: a neighbour's, with the voice they would have if they got out
@@ -1878,6 +1910,8 @@ func _setup_places_and_actors() -> void:
 		garages.append(gar)
 		if gar.id == "valdeacero":
 			taller = gar
+	xandro = XandroS.new()
+	xandro.setup(self)
 	for spot in vip.crowd_spots:                  # the neighbours who turn up whenever there is a fight
 		var fan = spawn_neighbour(spot, true)
 		fan.away = true
@@ -1902,19 +1936,7 @@ func _setup_places_and_actors() -> void:
 
 func _setup_markers() -> void:
 	beacon = Node3D.new()
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.32, 0.95, 0.16, 0.34)         # green: what you are after is always green (the user, 16 Nov 2026; against the sky a bluer one went teal)
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var col := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = 4.5; cm.bottom_radius = 4.5; cm.height = 70.0; cm.cap_top = false; cm.cap_bottom = false
-	col.mesh = cm
-	col.material_override = m
-	col.position.y = 35.0
-	col.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	beacon.add_child(col)
+	beacon.add_child(Parts.holo_beacon(Color(0.32, 0.95, 0.16, 0.44), 4.5, 68.0, 1.0))         # green: what you are after is always green (the user, 16 Nov 2026; against the sky a bluer one went teal)
 	beacon.visible = false
 	add_child(beacon)
 	# The guide: a great fat arrow over your head that cannot keep still, pointing the way down the street, and tipping
@@ -2327,7 +2349,7 @@ func _set_map(open: bool) -> void:
 		if not Touch.on:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		var mm = hud.bigmap
-		for key in ["center", "heading", "target", "cars", "cops", "repairs", "ramps", "givers", "blink", "spray"]:
+		for key in ["center", "heading", "target", "cars", "cops", "repairs", "ramps", "givers", "blink", "spray", "race_route", "race_cars"]:
 			mm.set(key, hud.minimap.get(key))
 		mm.target = _guide_target()
 		mm.missions = _map_missions()
@@ -3039,6 +3061,8 @@ func _end_cutscene() -> void:
 		azafran.show()
 	if trabajos != null:
 		trabajos.place_giver()
+	if xandro != null:
+		xandro.restore()
 	set_time(9.0)
 	start_game(0)
 
@@ -3231,6 +3255,8 @@ func start_game(from_step := 0) -> void:
 		azafran.show()
 	if trabajos != null:
 		trabajos.place_giver()
+	if xandro != null:
+		xandro.restore()
 	for f in flowers:                            # the saffron hidden in special places: gone if this game has had it
 		if f.get("hidden", false):
 			f["gone"] = String(f.get("id", "")) in stats.get("saffron_hidden", []) or chavisca      # (none at all in the Modo Chavisca)
@@ -4566,6 +4592,8 @@ func talk_to(n, chat_only := false) -> void:
 		return
 	if koke != null and (phase == "play" or phase == "free") and koke.talk(n):      # (koke.gd: Koke el Kokas, by his taxis)
 		return
+	if xandro != null and (phase == "play" or phase == "free") and xandro.talk(n):  # (xandro.gd: street races at Talleres Xandro)
+		return
 	if javi != null and (phase == "play" or phase == "free") and javi.talk(n):      # (javi.gd: Javi himself, and Josefa telling you about him)
 		return
 	if trabajos != null and (phase == "play" or phase == "free") and trabajos.talk(n):      # (trabajos.gd: El de las faenas, Henry's orders, handing one over)
@@ -5118,6 +5146,9 @@ func _turbo(c, dt: float) -> void:
 				break
 
 func _drive_car(c, dt: float, thr: float, steer: float, hand: bool) -> void:
+	if xandro != null and xandro.countdown_hold(c, thr):
+		c.drive(0.0, steer, true, true, dt)
+		return
 	if autopilot == null:                        # (on autopilot the car is driven from traffic.gd, like the neighbours')
 		c.drive(thr, steer, hand, MapData.road_edge_dist(c.p) < 1.6, dt)
 	# street furniture and trees give way (and the neighbours notice)
@@ -6080,6 +6111,8 @@ func _physics_process(delta: float) -> void:
 		fatima.tick(dt)
 	if koke != null:
 		koke.tick(dt)
+	if xandro != null:
+		xandro.tick(dt)
 	if sopiss_gente != null:
 		sopiss_gente.tick(dt, pp)
 	if azafran != null:
