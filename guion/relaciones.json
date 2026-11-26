@@ -624,6 +624,90 @@
    "role": "La óptica de la Óptica Corsa, con su bata blanca. Te habla de graduarte la vista, de que paece que tiés estrabismo y de sus modelos nuevos y vintage. La primera vez te mira la vista y te regala unas gafas («t'he visto cara de pobre además de cegato»); las demás, a 20 € de momento. Gafas y parches de pirata, derechos a tu armario de casa.",
    "where": "Tras el mostrador de la Óptica Corsa, en el número 5 de la calle del Salvador, con el horario de la tienda.",
    "notes": "Pedida por el usuario el 23/11/2026, que le puso el nombre. La tienda y su interior los hace Pretil; te pruebas las gafas en su espejo. 20 € el par «hasta que decida precios»."
+  },
+  {
+   "id": "pili",
+   "name": "La Pili",
+   "foto": true,
+   "pos": [
+    0,
+    3
+   ],
+   "role": "Vecina pesadísima, cotilla, parlanchina y sin filtro: te cuenta cosas demasiado personales y te pregunta otras peores. Lleva su carro de la compra de cuadros rojo. Te manda a por sus bacaladitos a la caja del Merkocarry, donde le tienen prohibida la entrada, y resulta que es una panga: te manda a tomar por culo, pero te da 50 € y 30 P.C.",
+   "where": "Aparece tras la charla de la herencia. Con el recado por hacer, anda por la Calle del Arroyuelo Medio y te persigue si te acercas («¡Oye, tú!»); con el recado en marcha, espera en su casa, por la Magdalena; después, da vueltas por tiendas, súpers y bares (nunca el Merkocarry).",
+   "notes": "«¿Esto es una puta panga? ¿Qué te crees, que por vivir en la Magdalena comemos carroña?» Pedida por el usuario el 25/11/2026, con foto de referencia."
+  },
+  {
+   "id": "pescadera",
+   "name": "La Pescadera",
+   "foto": true,
+   "pos": [
+    1,
+    6
+   ],
+   "role": "La pescadera del Merkocarry, puesta en la primera caja mientras la pescadería está cerrada. Sabe por qué la Pili no puede entrar: le dio el pésame a toda la sección de congelados y se llevó una panga de su pescadería para darle cristiana sepultura (y ella tuvo que ir al entierro).",
+   "where": "Dentro del Merkocarry, en la primera caja, junto al cartel tachado de la Pili.",
+   "notes": "Nombre del usuario, 25/11/2026 («La Pescadera»). Bata blanca."
+  },
+  {
+   "id": "ezequiel",
+   "name": "Ezequiel",
+   "foto": true,
+   "pos": [
+    9,
+    7
+   ],
+   "role": "El camarero de la Sala Cavernas KAE: veinte años detrás de la barra, seco y de humor negro. No fía («el último al que le fié se murió»), no bebe («uno de los dos tiene que acordarse mañana de lo que has hecho») y echa el cierre a las seis, salga quien salga.",
+   "where": "Detrás de la barra de la Sala Cavernas KAE, solo con la sala arreglada y de 23:00 a 6:00.",
+   "notes": "Nombre del usuario, 25/11/2026 («Al camarero le llamaremos Ezequiel»). Aspecto provisional (camisa negra, tupé, barba de dos días): lo pulirá el usuario. La sala y su interior son de Pretil."
+  },
+  {
+   "id": "frank",
+   "name": "Frank Málaga",
+   "foto": true,
+   "pos": [
+    10,
+    7
+   ],
+   "role": "El DJ de la Sala Cavernas KAE, grandilocuente: dice que ha pinchado en Ibiza, en Benidorm y en la boda de su prima. No pone peticiones, duerme en la cabina y grita a la pista entre tema y tema («¡Arriba esas manos, Madridejos!»).",
+   "where": "En los platos del altillo de la Sala Cavernas KAE, solo con la sala arreglada y de 23:00 a 6:00.",
+   "notes": "Nombre del usuario, 25/11/2026 («y al DJ Frank Málaga»). Aspecto provisional (camisa de flores, gorra hacia atrás, gafas de sol, cadena de oro, perilla teñida): lo pulirá el usuario. Su nombre de verdad no se dice («no cabía en el cartel»)."
+  },
+  {
+   "id": "foski",
+   "name": "Foski",
+   "foto": true,
+   "pos": [
+    7,
+    7
+   ],
+   "role": "Un metalero malhablado y buen tío: metal, anime, tatuajes y camisetas negras de grupos que no conoce nadie. Anda mal de salud y bromea con que no llega a los cuarenta; le gustan las góticas y las chicas trans. Una de sus bromas (tirarse del campanario) deja un silencio incómodo.",
+   "where": "Calle del Florido arriba y abajo, a cualquier hora (el médico le ha mandado andar).",
+   "notes": "Personaje del usuario, 25/11/2026, con foto de referencia: «Tatuajes, camisetas negras de grupos de metal, dejadez, hermoso». De momento sin misiones. Primo de El Pochi (usuario, 26/11/2026): los dos lo dicen. Las personas del juego no tienen brazos: los tatuajes van en las manos. El logo de la camiseta es inventado y cambia cada día."
+  },
+  {
+   "id": "pochi",
+   "name": "El Pochi",
+   "foto": true,
+   "pos": [
+    7,
+    8
+   ],
+   "role": "El primo del Foski, otaku y más malhablado que él: una camiseta de anime distinta cada día, ve hentai sin reparos y no soporta a los demás otakus (no se duchan y hablan con palabritas en japonés). Te insulta en cada frase, y también sin que le hables.",
+   "where": "Calle del Florido y su Bajada, a cualquier hora.",
+   "notes": "Personaje del usuario, 26/11/2026, con foto de referencia. De momento sin misiones. Fuera a propósito (Sistemas): las dos bromas del encargo sobre la edad de consentimiento y sobre una niña de 10 años. El dibujo de la camiseta es inventado."
+  },
+  {
+   "id": "angelus",
+   "name": "Ángelus Apátrida",
+   "foto": true,
+   "pos": [
+    10,
+    8
+   ],
+   "role": "Vive en la capital, pero lo que le tira es la salvajada y la fiesta del pueblo. Sostiene que las discotecas se forrarían vendiendo litronas, alterna con preguntas filosóficas («¿Tú piensas en la muerte?») y él coca no, «que eso no es sano»: solo alcohol y hachís.",
+   "where": "Abajo, en La Kueva de la Sala Cavernas KAE, siempre que la sala está abierta (arreglada, noches de jueves a domingo, de 23:00 a 6:00).",
+   "notes": "Personaje del usuario, 26/11/2026, dicho a Pretil: «Perilla, dejadez, delgado, camiseta de tirantes fosforita verde, ojos pequeños y pelo corto con flequillo levantado». Que esté en La Kueva (y no en la sala de arriba) es lectura de Pretil. Aspecto provisional."
   }
  ],
  "links": [
@@ -1018,6 +1102,46 @@
    "label": "te vende gafas",
    "detail": "Todas las gafas a 20 €, menos el parche de pirata, que no es de óptica. Van directas a tu armario de casa.",
    "source": "fatima_q"
+  },
+  {
+   "a": "tu",
+   "b": "pili",
+   "kind": "trato",
+   "label": "le traes los bacaladitos",
+   "detail": "Recado tras la herencia: los bacaladitos de la caja del Merkocarry, que son una panga. 50 € y 30 P.C.; decirle que no, −5 de confianza.",
+   "source": "pili_ask"
+  },
+  {
+   "a": "pescadera",
+   "b": "pili",
+   "kind": "trato",
+   "label": "le tienen prohibida la entrada",
+   "detail": "La semana pasada dio el pésame a toda la sección de congelados y se llevó una panga para enterrarla. Su foto tachada cuelga en la caja y junto a la puerta.",
+   "source": "pescadera_pili"
+  },
+  {
+   "a": "paca",
+   "b": "tu",
+   "kind": "familia",
+   "label": "te llama si estás ocioso",
+   "detail": "Si pasan 24 horas con alguna misión disponible sin empezar y nada en marcha, te llama: «¿qué haces tan ocioso?» y te dice en qué calle hay alguien con un recado.",
+   "source": "paca_ocio"
+  },
+  {
+   "a": "ezequiel",
+   "b": "frank",
+   "kind": "trato",
+   "label": "trabajan en la misma sala",
+   "detail": "Ezequiel, del DJ: «Ni se llama Frank ni es de Málaga. Pero pincha, que es lo que importa».",
+   "source": "ezequiel"
+  },
+  {
+   "a": "foski",
+   "b": "pochi",
+   "kind": "familia",
+   "label": "primos",
+   "detail": "El Pochi: «El Foski es mi primo. […] como le toques un pelo te arranco la cabeza». El Foski: «Mi primo el Pochi anda también por aquí. […] es buena gente, joder. Más o menos».",
+   "source": "pochi"
   }
  ],
  "cabos": [
@@ -1026,6 +1150,7 @@
   "De la familia del Alberto en la plataforma (nueve) no se conoce a nadie todavía.",
   "Don Anselmo, el teniente Torrezón, el tío Gerardo y la cabra no tienen parentescos ni tratos dichos en los diálogos (aunque todos tienen su manera de firmar, o de no firmar, por el puente).",
   "La Chiki: no se sabe de quién es hija ni dónde vive (es hermana de Don Luis; los dos descienden de Nazario, no se dice cómo). La madre del Alberto (dueña de la hucha) no tiene nombre.",
-  "Los hijos de la Tomasa y el chino del Arroyuelo no tienen nombre."
+  "Los hijos de la Tomasa y el chino del Arroyuelo no tienen nombre.",
+  "Los dos hijos de la Pili (treinta años, siguen en casa) y la Laura la mamporrera, que se murió ayer, hija de José Julián el mamporrero, solo se nombran."
  ]
 }

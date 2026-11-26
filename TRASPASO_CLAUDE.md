@@ -1858,6 +1858,303 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Publicada en 0.1.2** (commit 9d8824a, etiqueta v0.1.2, por Sistemas).
 - [LEEME](referencias/rotonda_norte/LEEME.md) · capturas en `guion/fotos/rotonda_norte/` (`rotonda_norte_03_azafran.jpg`, el azafrán).
 
+### 2026-11-25 · El cementerio, fuera del mapa, y el cambio de zona para llegar (Claude · Edificios Especiales)
+
+- **Luis**: «Vamos a poner las con el cementerio». Para llegar, eligió un cambio de zona como el de Borderlands 2: «que te acerques al cambio de zona y que un botón te transporte a la siguiente. Así podremos meter zonas fuera del pueblo sin ampliar el mapa». Y «A pie y en coche».
+- **El cambio de zona** (`zonas.gd`, `game.zonas`), mío:
+  - Una zona es un rectángulo del llano fuera del mapa (aquí x 300..640, z −2650..−2275), con su suelo y cuatro paredes invisibles. `limite.gd` no la cuenta como fuera del mapa (`in_zone`).
+  - Hay dos puertas sobre la carretera vieja del norte, con cartel y cortina: CEMENTERIO al final del mapa (289.9, −1806) y, en la zona (363.1, −2292), MADRIDEJOS, que luego pasó a NÚCLEO URBANO.
+  - Cerca de una puerta, a pie o en coche parado, el botón dice «Ir al Cementerio» o «Volver a Madridejos» (luego, «Volver al Núcleo Urbano»). Al pulsarlo apareces 10 m delante de la otra puerta, con el coche si vas en él (`car.place`).
+  - `_blocked()` no deja cruzar en estos casos:
+    - con la pasma: estrellas, persecución, `bust_t` o la cuenta atrás del borde;
+    - en la riña, con el coche en el taller o durante una llamada;
+    - con `comida.faint`;
+    - con `G.side` «trabajo», que incluye a Koke;
+    - con `G.side` «luis» mientras `sabotaje.stage` va de cine_out a cine_go.
+  - Esa lista la dio Sistemas. Con los recados sin reloj y en el Modo Chavisca sí se puede cruzar.
+- **El cementerio** (`cementerio.gd`, `world.cementerio`, sobre `obra.gd`), mío:
+  - Las esquinas de la tapia salen de la ortofoto del PNOA (`tools/ign/cementerio_todo.jpg`). Se mide en u/v con un paso bilineal por las cuatro esquinas.
+  - **La tapia** es encalada, de 2,4 m.
+  - **El pórtico** está en la tapia oeste:
+    - alas con tejados a cuatro aguas de teja vieja;
+    - un frente levantado con pináculos y un frontón ancho y bajo, de 4,95 a 6,1 m, con un tejadillo de teja de tres caras;
+    - la ventana estrecha a un lado y el banco debajo;
+    - el arco del norte, cerrado con reja;
+    - el arco del sur, abierto, de 1,5 m: se entra a pie y el coche no cabe. Su pasadizo tiene techo sólido para la cámara.
+  - **Lo comparé con Street View 2024** (la cámara de (385.19, −2441.6) con rumbo 76): primero hice un cuerpo saliente con frontón estrecho, y no era así.
+  - **Delante**:
+    - adoquines grises;
+    - la isleta en D con bordillo rojo y blanco, enebros, arbustos rojizos, dos cipreses, un árbol y la señal de dirección prohibida;
+    - la acera, el armario de la luz y seis farolas.
+  - **Dentro**:
+    - grava y el paseo de losetas entre cipreses;
+    - la avenida con 16 panteones (capillas, recintos con verja, losas);
+    - 4532 tumbas en 58 cuadros, en parejas de filas con pasillos de 1 m (el jugador mide 0,76). Van con MultiMesh y sin nombres ni fechas.
+- **Archivos compartidos**, solo inserciones:
+  - `game.gd`, con el visto bueno de Sistemas: preload, `var zonas`, su arranque, `interact`, `tick` y los dos avisos del botón;
+  - `limite.gd`: `in_zone`;
+  - `loc.gd`: `p_zona_cementerio`, `p_zona_madridejos`, `t_zona_pasma` y `t_zona_no`;
+  - `world.gd`: `CementerioS`, `var cementerio`, el paso «the cemetery» y `_build_cementerio()`;
+  - `selftest.gd`: `_zonas_checks()`, `_cementerio_checks()` y `_cem_walk()` (las dos comprobaciones van también en la prueba completa), y los modos `--zonas` y `--cementerio`.
+- **Pruebas**:
+  - `zonas`: 4 ok ([log](logs/selftest_zonas_20261125_122151.log));
+  - `cementerio`: 6 ok. Comprueba la tapia por los cuatro lados, la entrada por el arco, el arco cerrado, las tumbas sólidas, los pasillos y los paseos libres, y el jugador entrando de verdad y recorriendo un pasillo.
+  - No he pasado la prueba completa.
+- **Un fallo mío**: durante unos minutos, cementerio.gd (línea 714) y luego selftest.gd (`_cem_walk`) tuvieron errores de tipos que paraban cualquier Godot; a Sistemas le paró una prueba. Están arreglados.
+- **Luis, 25/11, al ver las vistas: «Bien»**, con tres respuestas:
+  - «no hace falta que ponga Madridejos a la hora de volver. Con que ponga Núcleo Urbano me basta. Así distinguimos distintas zonas que siguen siendo Madridejos». El cartel de la puerta de la zona dice NÚCLEO URBANO (`back_name`) y el botón, «Volver al Núcleo Urbano». En `loc.gd` la clave pasa a ser `p_zona_nucleo`.
+  - «Bien, ponlo en los dos» (el azafrán). Hay dos escondidos, en `cementerio._saffron()`:
+    - `cementerio_tumba`, en el jarrón de una tumba del rincón sureste, al final de su fila, que se coge desde el paseo;
+    - `cementerio_cipres`, al pie del ciprés de tronco encalado delante del pórtico (el tronco, encalado hasta 0,9 m).
+    - Se lo dije a Sistemas, que lleva la cuenta.
+  - «Abierto 24 horas. De noche quita la música chill que tenemos y deja solo el leve sonido del viento de vez en cuando. Que dé algo de mal rollo».
+    - `zonas.hush()`: de noche, dentro de la zona.
+    - En `game.gd` `_update_audio`, con el OK de Sistemas, van dos líneas: a pie no suena el lofi, y `Ambience.town(..., in_world and not hush)` quita los grillos y los perros. La radio del coche sigue.
+    - `zonas._tick_wind()` pone una ráfaga baja cada 8 a 24 s.
+    - Las tres ráfagas (`godot/assets/cementerio/viento_0..2.wav`, importadas) salen de `tools/cementerio/viento.py`: ruido marrón con un filtro que se mueve despacio, sin grabaciones.
+- **Pruebas**:
+  - `cementerio`: 9 ok ([log](logs/selftest_cementerio_20261125_125717.log)). Añade los dos azafranes (en el juego, escondidos y con sitio para cogerlos) y el silencio de noche (sí allí; ni de día ni en el pueblo), y que de verdad se calla el lofi y vuelve en el pueblo.
+  - `zonas`: 5 ok ([log](logs/selftest_zonas_20261125_125506.log)). Añade los carteles CEMENTERIO / NÚCLEO URBANO.
+- **Aprobado.**
+- **Fuera**: el paso de cebra, la A-4 y las naves de alrededor.
+- [LEEME](referencias/cementerio/LEEME.md) · capturas en `guion/fotos/cementerio/`.
+
+### 25/11 · Pretil: la carretera del cementerio sigue y la zona es un círculo
+
+- **Luis**: «la carretera en el cementerio se corta muy pronto y se nota mucho que es una zona aparte. Podríamos extender la carretera? También pondría un círculo invisible con centro en el cementerio y que llegase poco más lejos que las puertas de zona, para que la gente no se saliese del mapa».
+- **La carretera** (`zonas.gd`, `road_to`): ya no acaba al final de la zona. Sigue recta hacia el norte hasta (680.4, −4400), unos 2 km más, más lejos de lo que alcanza la cámara (1600 m), con sus rayas. Solo se ve: por ella no se sale.
+- **El círculo**: la zona ya no es un rectángulo. Es un círculo con centro en el medio del cementerio (la media de sus cuatro esquinas, (491.9, −2439.7)) y 210 m de radio.
+  - La puerta de zona queda a 196 m del centro, así que el círculo pasa 14 m más allá.
+  - `zone_at` mide la distancia al centro, y `limite.gd` sigue usando `in_zone` sin cambios.
+  - `_ground` pone el suelo en el cuadrado que lo contiene y la pared, invisible, en 72 cajas de 80 m de alto alrededor.
+- **Pruebas**:
+  - `zonas`: 5 ok ([log](logs/selftest_zonas_20261125_130450.log)). La comprobación de las paredes lanza 16 rayos alrededor del círculo y 2 por la carretera, en los dos sentidos: 18 de 18 parados. Y mira que el círculo pase entre 8 y 25 m más allá de la puerta.
+  - `cementerio`: 9 ok ([log](logs/selftest_cementerio_20261125_130634.log)). Saca dos vistas nuevas, `cementerio_norte` y `cementerio_norte_alto`.
+- Capturas: `guion/fotos/cementerio/cementerio_03_carretera.jpg`.
+
+### 25/11 · Pretil: matas y árboles sueltos en el campo del cementerio
+
+- **Luis**: «El suelo está muy plano y vacío. No había cambiado como se hace para que salgan malas hierba/arbustos/arboles sueltos de vez en cuando y darle más vida?».
+- **Por qué no salían**: `matojos.gd` (no es mío) solo siembra cerca de las manzanas de casas, en cuadros de 32 m a 2 o 4 cuadros de una manzana, y la zona está a 450 m de la última. No he tocado `matojos.gd` ni su caché.
+- **Lo nuevo**: `zonas._scrub(z)`, que se llama desde `setup` para cada zona.
+  - Pone las mismas matas que el pueblo, con las mismas mallas (`Matojos._tuft_mesh`, `_bush_mesh` y `_mata_mesh`, funciones estáticas), los mismos colores y la misma regla de manchas.
+  - Van en cuadros de 64 m bajo el nodo `zona_<id>_matas`, con `Parts._range` a 120 m y sin sombra. Salen más espesas en las cunetas y al pie de la tapia.
+  - Llegan 200 m más allá del círculo y se aclaran en los últimos 80 m.
+  - Los árboles (olivo, almendro y pino piñonero, con la regla de `_try_tree`) llegan hasta 1400 m del centro y se aclaran pasados los 400. Se dan al mundo en una sola llamada a `world.add_trees`, antes de que props.gd los indexe, así que se caen con el coche como los del pueblo.
+  - No salen al norte del mapa (`MapData.zmin`) ni dentro de él, ni a menos de 0,6 m del borde de la carretera (los árboles, a menos de 5 m), ni a menos de 9 m de una puerta (los árboles, 15 m), ni en lo que devuelve `cementerio.keep_off(trees, grow)`. Los árboles tampoco salen a menos de 8 m de la pared redonda.
+  - Con `--sin-matojos` no se ponen. Se calculan sin rayos ni caché, y salen 9443 matas y 685 árboles.
+- **Pruebas**:
+  - `zonas`: 6 ok ([log](logs/selftest_zonas_20261125_132630.log)). Hay una comprobación nueva: 9443 matas, 2752 de ellas dentro del círculo; 685 árboles, 400 lejos, todos en `world.tree_info`; y 0 fuera de sitio.
+  - `cementerio`: 9 ok ([log](logs/selftest_cementerio_20261125_132918.log)), con tres vistas nuevas: `cementerio_campo_oeste`, `_este` y `_alto`.
+- Capturas: `guion/fotos/cementerio/cementerio_04_campo.jpg`.
+
+### 25/11 · Pretil: la A-4, el enlace y el pueblo a lo lejos desde el cementerio
+
+- **Luis**: «Veo que la acera, los pinos y las farolas se cortan donde se cortaba antes la carretera. Podemos extenderlos también? Quizás mirando hacia el sur se podría ver un .PNG del pueblo, parecido a lo que hicimos con el castillo de la muela. Y quizás hacia el norte/oeste podríamos ver la autovía A4 uniéndose a la carretera, con .PNG de coches y camiones viajando».
+- **La carretera**: ahora acaba donde de verdad (OpenStreetMap), en (462.9, −2955), 515 m al norte del centro, donde salen los ramales de la A-4 (`zonas.ZONES` `road_to`). `cementerio._roadside()` sigue las farolas (cada 30 m), la fila de árboles del otro lado (cada 18 m, hasta z −2700 como en la ortofoto) y la acera con su bordillo, por la línea de la carretera (no por el marco del cementerio, que va un tercio de grado torcido). Se cortan en las puertas de zona. La acera entra en `keep_off` para que no le salgan matas.
+- **La A-4** (`autovia.gd`, nuevo, lo crea `zonas.setup` si la zona lleva `"autovia": true`):
+  - Las líneas vienen de OSM: `tools/cementerio/autovia.py` lee `tools/ign/a4_osm.json` y escribe `godot/data/autovia.json` (las dos calzadas, el lazo de entrada y el ramal de salida). Se corre con `python -I`.
+  - Tiene dos carriles y arcenes por sentido, líneas, quitamiedos en la mediana y una valla de malla 12 m al oeste de la calzada hacia el sur, desde donde entra el lazo. La valla es sólida dentro del círculo (la A-4 pasa por dentro, a 124 m del centro).
+  - `gap(p)` (con una rejilla de 32 m) hace que `zonas._road_gap` aparte también de la A-4 las matas y los árboles.
+  - El tráfico va en un MultiMesh de cuadros que miran a la cámara; el shader escoge el dibujo según desde dónde lo ves (16 vistas) y lee el tamaño de cuadro de `INSTANCE_CUSTOM.w`. Hay 4 carriles; los camiones van solo por el de la derecha. Guardan la distancia según la longitud de cada uno. De noche se suman los faros (`trafico_luces.png`).
+  - Solo se ve y se mueve con la cámara en la zona.
+- **Los dibujos** (`lejanias_foto.gd`, nuevo; modo `python tools/run_tests.py lejanias`, en ventana):
+  - Coches: las filas de `autovia.KINDS`, con los coches del juego (`Modelos.make_from(SK)`) en varios colores. Camiones: tráiler de caja, de lona, cisterna y rígido, hechos con piezas, porque el kit solo tiene pickups y una furgoneta.
+  - Cámara ortográfica a 3°, 256×128 px por cuadro, un cuadro de 12×6 m para los coches y 18×9 para los articulados.
+  - Trampa: el movimiento de la cámara llega a la imagen un fotograma tarde. Hay que esperar un `process_frame` antes de los `frame_post_draw`.
+- **El pueblo a lo lejos** (`lejanias.gd`, nuevo, con `"lejos": true`):
+  - El mismo modo saca 12 fotos de 30° desde el centro de la zona. Usa el mundo del juego sin distancia de dibujo (`Parts.draw = 0`) y `near` a 1300 m. Va sin cielo, nubes ni sierras, con el tono lineal y los reflejos del cielo del juego (con el fondo vacío salían de un gris y la noche quedaba clara). Hace dos tandas, a mediodía y a las 23:00, y se guardan en `user://lejanias/`.
+  - `tools/cementerio/lejanias.py` las pasa a una banda de −3° a +5°, a 32 px por grado, en cuatro cuartos (`assets/autovia/pueblo_dia_*.png` y `_noche_*`). `data/lejanias.json` guarda desde dónde y la luz del mediodía.
+  - En el juego es un anillo que el shader pone como si estuviera a 2,4 km, con profundidad 1e-5: detrás de lo que el juego dibuja y delante de las sierras. De día lleva la luz de la hora; de noche, la foto de noche. Se ve solo en la zona y no en el Modo Silent Hill.
+  - Para rehacerlo: el modo `lejanias`, luego `lejanias.py` con la carpeta que dice el log, y luego `--import`.
+- **Pruebas**:
+  - `zonas`: 7 ok ([log](logs/selftest_zonas_20261125_144914.log)). Hay una comprobación nueva de la A-4: empalma con el final de la carretera; la valla para antes de la calzada, a 124 m del centro; se ve desde la zona y no desde el pueblo; hay 69 vehículos (21 camiones) y ninguno se sale de su carril; la foto del pueblo está puesta.
+  - `cementerio`: 9 ok ([log](logs/selftest_cementerio_20261125_150136.log)), con vistas nuevas: `cementerio_autovia`, `_enlace`, `_autovia_alto`, `_pueblo` y `_pueblo_alto`, y `autovia` y `pueblo` también `_tarde` y `_noche`.
+- Capturas: `guion/fotos/cementerio/cementerio_05_autovia.jpg`.
+- No he tocado ningún archivo compartido: en `selftest.gd` solo he metido líneas.
+
+### 25/11 · Pretil: los arcos del pórtico, huecos de verdad, y la planta solar de enfrente
+
+- **Luis**, con dos imágenes (la hoja de capturas con el arco abierto rodeado y una captura de Street View de la puerta de la planta): «Un pequeño ajuste a los arcos. Que sale el hueco de entrada rectangular y luego clippeado un arco. Y un añadido. En frente del cementerio hay una planta solar. Estaría bien añadirla también. Por lo demás bastante bien. Daría un repaso por si hay alguna propuesta o mejora posible.»
+- **Los arcos** (`cementerio.gd`):
+  - El abierto era un hueco rectangular de 2,6 m con una cara fina de arco delante. Ahora es una bóveda de medio punto de lado a lado del edificio (`_vault()`, nueva: normales suaves, enjutas delante y detrás), y por dentro sale con el mismo arco. El techo sólido del pasadizo baja de 2,6 a 2,3 m.
+  - El cerrado era una cara oscura plana. Ahora el ala se parte en su vano y la puerta oscura queda 45 cm dentro del muro, bajo su bóveda, con su umbral (`SHUT_R`, `SHUT_SPRING`, `SHUT_DEEP`).
+- **La planta solar** (`planta_solar.gd`, nuevo, sobre `obra.gd`; la crea `zonas.setup` con `"solar": true`, `zonas.solares`):
+  - Medida del PNOA (`tools/ign/cementerio_solar.jpg` y `cementerio_solar_oeste.jpg`, nuevos) y de Street View de 2024 (la puerta), sin guardar ninguna foto de Google.
+  - Valla de malla todo alrededor (sólida donde se llega), puerta de tubo y malla con el cartel «PLANTA SOLAR / AGROINDUSTRIAL» (como el real, sin la letra pequeña: **pendiente de que Luis diga si quiere un nombre inventado**), entrada de tierra, caseta blanca, chatarra y un coche viejo.
+  - 28 seguidores de dos ejes (mesa de 16 × 13 m sobre mástil de 6,5 m), en un MultiMesh. Siguen al sol del juego y de noche se quedan casi planos; giran a 5° por segundo como mucho.
+  - Las matas de la zona crecen dentro, menos en la entrada, la caseta y los pies; ningún árbol suelto. `cementerio._roadside()` no planta árbol de la fila en la entrada.
+  - No entra nadie: no hace falta nada de Sistemas.
+- **Archivos tocados**: `cementerio.gd`, `zonas.gd` y `planta_solar.gd` (míos); en `selftest.gd` solo líneas metidas (una comprobación en `_zonas_checks` y vistas en el modo `--cementerio`). Ningún otro compartido.
+- **Pruebas**:
+  - `zonas`: 8 ok ([log](logs/selftest_zonas_20261125_161137.log)). La comprobación nueva: 28 seguidores, de cara al sol a mediodía (1,000), al este por la mañana y al oeste por la tarde, planos de noche; 54 tramos de valla sólidos y la puerta cerrada; 678 matas dentro, ninguna en la entrada ni al pie de un seguidor; ningún árbol dentro.
+  - `cementerio`: 9 ok ([log](logs/selftest_cementerio_20261125_161843.log)), con vistas nuevas de los arcos y de la planta.
+- **Repaso pedido por Luis**: propuestas dichas en el chat, a la espera de su palabra (ninguna hecha): azafrán escondido en la planta, las plantas grandes de paneles fijos del oeste, la nave blanca junto a la puerta de zona, el minimapa vacío en la zona, lamparillas en las tumbas de noche, el rumor de la A-4, carteles en el enlace y troncos encalados en la fila de árboles.
+- Capturas: `guion/fotos/cementerio/cementerio_06_arcos_solar.jpg`.
+
+### 25/11 · Pretil: las ocho cosas del repaso, y el cartel «Planta Industrial Agrosolar»
+
+- **Luis**, al repaso que pidió: «Haz las 8. Y el cartel "Planta Industrial Agrosolar"». Y a mitad del trabajo, con dos fotos de velas rojas de cementerio: «En el 2 cambiaría lamparillas por velas, que son las que se suelen poner».
+- **El cartel de la planta** dice ahora «PLANTA INDUSTRIAL» (azul) y «AGROSOLAR» (rojo): el nombre es de Luis (`planta_solar.SIGN`).
+- **Las ocho**, todas hechas y pendientes de su visto bueno (el detalle, en `referencias/cementerio/LEEME.md`):
+  1. Azafrán escondido `planta_solar_puerta`, al pie del poste sur de la puerta de la planta, por fuera, entre matas (`planta_solar._saffron()`). **Sistemas: es uno más en la cuenta de escondidos.**
+  2. Velas rojas de cementerio (no lamparillas) al pie de una tumba de cada siete, de una a tres; de noche brillan con un punto rojo que parpadea, sin luces de verdad (`cementerio.gd`: clases `candle` y `wax`, `_candle_glow()`, `tick()`).
+  3. La zona en el minimapa: `minimap.gd` (de Sistemas, avisado antes) lleva **solo líneas metidas**: `static var extras` y un bucle en `_draw()`. La rellena `zonas._plan()`.
+  4. La nave blanca junto a la puerta de zona (`afueras.gd`, nuevo, sobre `obra.gd`): dos bloques, portones, una sala abierta de verdad con foso y banco, solera y explanada. Sin rótulo.
+  5. Las dos plantas de paneles fijos del oeste, como filas bajas a lo lejos (`planta_solar._farms()`).
+  6. El rumor de la A-4 de día, más fuerte cuanto más cerca; de noche calla (`autovia.gd` `_tick_hum()`; el bucle lo hace `tools/cementerio/rumor.py`).
+  7. Tres carteles azules: el de la carretera vieja antes del enlace (Madrid de frente, Córdoba a la derecha), el mismo en el enlace y el de distancias en la A-4 (`afueras.gd`).
+  8. Troncos encalados en la fila de árboles de la carretera (`cementerio._whitewash()`); la cal se va con el árbol si un coche lo tumba.
+- **Archivos tocados**: míos, `cementerio.gd`, `zonas.gd`, `planta_solar.gd`, `autovia.gd` y `afueras.gd` (nuevo, lo precarga `zonas.gd` y también `cementerio.gd`). De otros, solo líneas metidas: `minimap.gd` (Sistemas) y `selftest.gd`. Recursos nuevos: `godot/assets/autovia/rumor.wav`, `tools/cementerio/rumor.py` y tres ortofotos en `tools/ign/` (`cementerio_nave`, `cementerio_fijas`, `cementerio_enlace`).
+- **Pruebas**:
+  - `zonas`: 9 ok, 0 fallos ([log](logs/selftest_zonas_20261125_170846.log)). La comprobación nueva: 634 tumbas de 4532 con velas, encendidas de noche y no de día; el rumor de la A-4 a −27 dB en la puerta del cementerio de día (−19 detrás de su tapia este, junto a la A-4) y callado de noche (−60); 43 troncos encalados; 3 carteles azules; la nave con el frente macizo y el taller abierto donde se puede entrar, sin árboles en su explanada; 81 filas de paneles fijos; el azafrán de la puerta en la lista y a mano; y la carretera de la zona y la tapia en el plano (41 cosas).
+  - `cementerio`: 9 ok, 0 fallos ([log](logs/selftest_cementerio_20261125_170226.log)), con las vistas nuevas `cementerio_ocho_*`.
+- **Queda para Luis**: el visto bueno; si la nave lleva algún rótulo inventado; y si los seguidores siguen al sol o los quiere fijos.
+- **Queda para Sistemas**: contar el azafrán nuevo; y, si se quiere ver la zona en el mapa entero, dejar que se desplace por encima del borde norte (`game.gd`).
+- Capturas: `guion/fotos/cementerio/cementerio_07_las_ocho.jpg`.
+
+### 25/11 · Pretil: los retoques del cementerio (R.I.P./D.E.P., rumor de noche, taller Recoveco)
+
+- **Qué dijo Luis**: «Muy buena pinta todo. Solo unos retoques: Poner R.I.P y D.E.P grabado en algunas lápidas (50% de todas ellas). Dejar el rumor de la autovía por la noche, pero mucho más bajo. La nave podemos modelarla también y en vez de Iveco llamarla Recoveco, y que funcione como los demás talleres, puerta plegable, arreglo y pintura. Los seguidores déjalos que sigan al sol. Por lo demás visto bueno».
+- **Aprobado**: las ocho cosas del repaso y el cartel «Planta Industrial Agrosolar».
+- **Los retoques**, hechos y pendientes de su visto bueno (el detalle, en `referencias/cementerio/LEEME.md`):
+  1. «R.I.P.» o «D.E.P.» en una tumba de cada dos, en la lápida de pie o tumbada en la losa (`cementerio._grave()`; dibujos de `tools/cementerio/lapidas.py`). Sin nombres ni fechas, como antes.
+  2. El rumor de la A-4 sigue de noche, 16 dB más bajo (`autovia.HUM_NIGHT`).
+  3. La nave se llama «Recoveco» (letras azules en el bloque bajo, carteles «TALLER OFICIAL» y «CHAPA Y PINTURA») y su portón del norte es un taller como los del pueblo, con el hueco y la persiana de `garage.gd` (`afueras._workshop()`).
+  4. Los seguidores siguen al sol: sin cambios.
+- **Para Sistemas**: el taller Recoveco **no** está en `game.garages` ni en `props.repairs` (está fuera del mapa: la grúa, `_limite_checks` y las pruebas de relieve cuentan con que todos estén dentro). `afueras.tick()` mueve su persiana y, con el coche parado dentro, pone `game.at_shop` y `game.at_garage` cada momento (después de `_drive_car`, que los borra); el pitido, la reparación, la pintura y el cobro son los de `game.gd`. No he tocado `game.gd`, `props.gd` ni `garage.gd`. Si se quiere el aviso «Mételo pa dentro», el cuadro azul del minimapa o la luz de noche, son suyos.
+- **Archivos tocados**: míos, `cementerio.gd`, `autovia.gd`, `afueras.gd` y `zonas.gd` (una llamada a `af.tick`). De otros, solo `selftest.gd`: función nueva `_recoveco_checks()`, una llamada, vistas `cementerio_retoque_*`, y tres retoques en mi propia comprobación de las ocho (el rumor de noche ya no es −60; la nave tiene 5 sólidos). Recursos nuevos: `godot/assets/cementerio/lapida_rip.png` y `lapida_dep.png`, y `tools/cementerio/lapidas.py`.
+- **Pruebas**:
+  - `zonas`: 11 ok, 0 fallos ([log](logs/selftest_zonas_20261125_173121.log)). Lápidas: 2240 de 4532 tumbas (49 %), 1094 con «R.I.P.» y 1146 con «D.E.P.»; 1407 en la lápida de pie y 833 en la losa; todas dibujadas. Taller: nombre y carteles puestos; fuera de las listas del pueblo y entero dentro de la zona; persiana bajada sin nadie y arriba al llegar un coche; dentro, precio y pitido («Apañar · 4 €»); al pitar baja, y sale arreglado, pintado y cobrado (4 €); sube otra vez y no vuelve a ofrecer nada.
+  - `cementerio`: 9 ok, 0 fallos ([log](logs/selftest_cementerio_20261125_174015.log)), con las vistas nuevas `cementerio_retoque_*`.
+- **Aprobado por Luis el 25/11**: «Déjalos. Creo que no queda nada. Visto bueno». Los carteles «TALLER OFICIAL» y «CHAPA Y PINTURA», que añadí por mi cuenta, se quedan. No queda nada pendiente en la zona del cementerio.
+- Capturas: `guion/fotos/cementerio/cementerio_08_retoques.jpg`.
+
+### 25/11 · Pretil: la sala de fiestas de la carretera vieja, gastada y arreglada
+
+- **Qué dijo Luis**, con una captura de Street View de noviembre de 2024: «Ponte ahora con Sala Cuevas KUE [...] Aquí voy a necesitar dos modelos también. Uno con todo bien y otro con la pintura desgastada, tablones en las puertas y cosas medio rotas, que parezca desgastado. Ya que es otro de los edificios que "arreglaremos" dentro del juego».
+- **Qué hay**: la sala real de la carretera antigua de Madrid a Cádiz (Catastro 5187003VJ5658N), hecha a mano en dos estados como la plaza de toros vieja. El detalle, en `referencias/cuevas/LEEME.md`.
+  - `godot/scripts/cuevas.gd`, `world.cuevas`. `set_restored(true/false)` cambia de estado; arranca gastada y con `--cuevas-arreglada` arranca arreglada.
+  - El frente oscuro con sus arcos y sus listones de colores, la torre del rótulo, el bar de la esquina, la terraza de verano con sus velas blancas, la rampa, el cobertizo de los coches, el patio del sur y las naves de detrás.
+  - Gastada: pintura desconchada, listones caídos, tablones en puertas y portones, celosías rotas, matas secas, pintadas de las peñas, rótulo medio borrado, una farola doblada, chapas y tejas que faltan.
+- **Pendiente de Luis**: el visto bueno, **el nombre de los rótulos** (llevan uno provisional mío, «SALA COVACHAS» y «KOVA», porque no se ponen marcas reales y no ha dado nombre) y si quiere un azafrán escondido (propuesto, no puesto).
+- **Para Sistemas**: `cuevas.lamps` son sus tres farolas; solo están en `world.lamp_spots` cuando está arreglada, y `game.gd` lee esa lista una vez al arrancar, así que encenderlas tras un cambio en marcha es cosa de `lights.add_lamp`. La actividad que la arregla queda para cuando Luis la pida. No está en el minimapa más que como bloque.
+- **Horneado**: bloque CUEVAS en `tools/bake_godot.py` (salta el RC, contornos en `block_list`, sin árboles del mapa en la parcela, clave `cuevas`). Sin cambio de relieve ni de calles. Horneé yo una vez, con el visto bueno de Sistemas; los horneados posteriores de Texturas (Calle de la Plata) ya llevan el bloque. Tras hornear: casas, árboles, calles y relieve iguales; `plantas_altas.py` da 0 casas.
+- **Archivos tocados**: míos, `cuevas.gd`, `tools/cuevas/texturas.py`, `godot/assets/cuevas/` (5 PNG), `tools/ign/cuevas.jpg` y `.json`, `referencias/cuevas/LEEME.md`. De otros, solo líneas insertadas: `tools/bake_godot.py` (bloque CUEVAS y cuatro líneas), `map_data.gd` (`var cuevas` y su lectura), `world.gd` (`CuevasS`, `var cuevas`, el paso y `_build_cuevas`), `selftest.gd` (`_cuevas_checks()`, el modo `--cuevas` y una llamada en la completa tras `_toros_checks()`).
+- **Pruebas**:
+  - `cuevas`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_20261125_203341.log)). Los dos estados construidos; gastada, con tablones, listones caídos y farolas apagadas; arreglada, con sus farolas entre las del pueblo; el frente, las puertas, el bar, la terraza, la rampa, la valla y las naves paran y la acera, el descampado y el cobertizo quedan libres; nada suyo en una calle.
+  - `cuevas cuevas-arreglada` (arranca arreglada, vistas de noche): CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_cuevas-arreglada_20261125_203147.log)).
+  - Sin pasada completa.
+- Capturas: `guion/fotos/cuevas/cuevas_01_dos_estados.jpg`, `cuevas_02_detalles_y_noche.jpg`. Sin commit.
+
+### 25/11 · Pretil: la sala se llama «Sala Cavernas KAE»; pintura con textura y azafrán bajo el cobertizo
+
+- **Qué dijo Luis**: «Nombre: "Sala Cavernas KAE". Azafrán bajo el cobertizo. La pintura tan negra y lisa hace que casi no se vean los outlines ni las formas. Le pondría algo de textura.»
+- **Nombre**: los rótulos dicen «SALA CAVERNAS» y «KAE» (`cuevas.NAME`, `NAME_SHORT`); en la gastada, con letras caídas.
+- **Pintura**: el frente arreglado ya no es negro liso, sino antracita sobre enfoscado rugoso (`godot/assets/cuevas/pintura_nueva.png`, de `tools/cuevas/texturas.py`), con la albardilla más clara.
+- **Azafrán escondido**: `"id": "cuevas"`, bajo el cobertizo de los coches, en el rincón entre el bar y el arranque de la rampa, tras unas cajas de botellas apiladas. Está en los dos estados. **Para Sistemas**: es uno más en la cuenta de los escondidos.
+- **Archivos tocados**: `cuevas.gd`, `tools/cuevas/texturas.py`, el PNG nuevo y, en `selftest.gd`, mi propia `_cuevas_checks()` (una comprobación más) y una vista más del modo `--cuevas`.
+- **Pruebas**: `cuevas`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_20261125_211043.log)); `cuevas cuevas-arreglada`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_cuevas-arreglada_20261125_211243.log)). Sin pasada completa.
+- Capturas: `guion/fotos/cuevas/cuevas_03_cavernas.jpg`. Sin commit. Pendiente del visto bueno de Luis.
+
+### 25/11 · Pretil: visto bueno de la Sala Cavernas KAE y su interior (luces, barra, Koka y Ná en el altillo del DJ)
+
+- **Qué dijo Luis**, con cuatro fotos del interior real: «Visto bueno. Me gustaría que se pudiera pasar y hubiese un interior con luces de fiesta, barra, y que sonase Koka Y Ná por unos altavoces al fondo, en el altillo del DJ. Paso fotos por dentro».
+- **La sala por fuera queda aprobada** (los dos estados, el nombre, la pintura con textura y el azafrán del cobertizo).
+- **El interior** (`godot/scripts/cuevas_dentro.gd`, `world.cuevas.dentro`; el detalle, en `referencias/cuevas/LEEME.md`, apartado «Por dentro»):
+  - Un decorado aparte en `(1650, 0)`, como los de las tiendas: una cueva de roca de 24 × 30 m con unas 2600 tiras colgando del techo, la barra al oeste con sus botellas, tres reservados al este, la pista con la jaula blanca, y al fondo el altillo del DJ con las letras «KAE», la pantalla de la emisora y dos torres de altavoces.
+  - Luces de fiesta: seis focos que barren, seis rayos de láser, tres bolas de espejos con sus reflejos por el suelo, neones y colores que cambian con el compás. Sin sombras y sin destellos.
+  - Suena «Koka y Ná FM» por los altavoces del altillo, la misma canción y el mismo punto que en la radio de los coches, más fuerte cuanto más cerca. Desde la carretera se oye apagada, solo con la sala abierta.
+  - **Se entra solo con la sala arreglada y de 23:00 a 6:00**, todas las noches: las puertas rojas se abren con luz rosa, y la flecha verde está delante. El tablón de la puerta dice ahora «TODAS LAS NOCHES» (decía «SÁBADO NOCHE»).
+  - Nadie modelado por mí: la gente es de Sistemas (`fiesta.gd`).
+- **Para Sistemas**:
+  - `game.gd`: dos líneas insertadas en `_update_audio`, tras el bloque de `recress.music()`, con su permiso («mételas tú»): con `inside_of.own_music == true` calla la música de la calle.
+  - Lo que lee `fiesta.gd` de `dentro` sigue igual: `dance_spots`, `client_spots`, `client_spot`, `bar_spot`, `dj_spot`. Para fotos sin entrar, `dentro.peek = true`.
+  - **La pista en blanco que vio en sus fotos está arreglada**: era el `Decal` de los reflejos de la bola (su luz es el color del dibujo, no el alfa).
+  - El horario de la puerta es ya el de la gente: 23 a 6 (`cuevas.OPEN_FROM`, `OPEN_TO`, `open_at`).
+  - Nada arregla la sala todavía en el juego (su actividad es de Sistemas, cuando Luis la pida): hoy solo se ve dentro con `--cuevas-arreglada` o llamando a `set_restored(true)`.
+- **Archivos tocados**: míos, `cuevas_dentro.gd` (nuevo), `cuevas.gd` (horario, puertas que se abren, `dentro`), `tools/cuevas/texturas.py` y cinco PNG nuevos en `godot/assets/cuevas/` (`roca`, `suelo_sala`, `pista`, `bola`, `motas`). De otros, solo líneas insertadas: `entradas.gd` (tres en `shops()`), `game.gd` (las dos de arriba) y `selftest.gd` (cinco comprobaciones más en mi `_cuevas_checks()` y once vistas `cuevas_dentro_*` en el modo `--cuevas`).
+- **Pruebas**:
+  - `cuevas`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_20261125_220115.log)). En ese registro hay un «SCRIPT ERROR: Bad address type» suelto al construir la cooperativa (`coop.gd:558`, un archivo sin cambios desde el 12/11): no es de la sala, no salió en la pasada de noche y no hizo fallar nada. Si se repite, es de quien lleve `coop.gd` o `parts.gd`.
+  - `cuevas cuevas-arreglada`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_cuevas-arreglada_20261125_215843.log)). El decorado construido; gastada no se entra, arreglada está cerrada de día y abierta de noche con la flecha en la acera; dentro paran el altillo, la barra, los reservados, la jaula, la escalera y una columna, y la pista queda libre; los focos se mueven y la emisora suena desde el altillo, más fuerte de cerca, con el lo-fi callado; al salir se oye apagada desde la carretera y calla al cerrar.
+  - Sin pasada completa.
+- Capturas: `guion/fotos/cuevas/cuevas_04_dentro.jpg`. Sin commit. **Pendiente del visto bueno de Luis** (el interior).
+
+### 25/11 · Pretil: la Sala Cavernas abre de jueves a domingo; se sube al altillo del DJ y, por su puerta, a la azotea
+
+- **Qué dijo Luis**, a mis dos preguntas (el visto bueno del interior, y si la sala va arreglada en Modo Golismeo): «1. Visto bueno, pero que solo abra jueves, viernes, sábados y domingos. Al altillo molaría poder subir y ver el pueblo desde ahí. Pon aires acondicionados antenas y eso. De momento que se pueda arreglar con 30 P.C., luego ya daremos misión. 2. Si, arreglada ahí.»
+- **El interior queda aprobado.**
+- **Noches de apertura**: arreglada, la sala abre de 23:00 a 6:00 solo las noches de jueves, viernes, sábado y domingo. La madrugada es de la noche anterior: el lunes está abierta hasta las 6 y el jueves no abre hasta las 23. `cuevas.opens(día, hora)` (estática, 0 = lunes; `OPEN_DAYS`) sustituye a `open_at(hora)`, que ya no existe. El tablón de la puerta dice «DE JUEVES A DOMINGO».
+- **El altillo se sube** (`cuevas_dentro.gd`): fuera la cadena y el «PRIVADO». Escalera de siete peldaños con el canto en rosa (una tarima con `low` en `MapData.decks`), y el altillo se pisa entero: paran su borde (de suelo a techo), la mesa del DJ, la cabina, los altavoces y las cajas. En la escalera y en ese extremo del altillo la cámara va detrás de ti (desde la del salón te tapaban una columna y un altavoz); el mando no cambia de sentido.
+- **La azotea** (mi lectura de «y ver el pueblo desde ahí»): en la pared del fondo del altillo, la puerta «AZOTEA» lleva a la cubierta de la sala en el pueblo. Es otra puerta del mismo decorado (`dentro.azotea`, `set_id` común). Se anda por los dos faldones (tarimas con `grad`), con bordes invisibles en la capa 16. Arriba, en los dos estados: la caseta de la escalera con su antena y su parabólica, cinco aires acondicionados en fila tras el peto, una máquina grande con su conducto, cuatro extractores en la cumbrera, un depósito, ocho lucernarios y otra antena; arreglada, además, barandilla, dos sillas de plástico con una caja por mesa y dos luces sin sombras. La emisora se oye apagada desde allí con la sala abierta. El detalle, en `referencias/cuevas/LEEME.md`, apartado «La azotea».
+- **Lo que puse por mi cuenta**: la caseta, los extractores, el depósito, los lucernarios, la máquina grande, la barandilla, las sillas y las luces (Luis pidió «aires acondicionados antenas y eso»), y el texto del tablón.
+- **Para Sistemas**:
+  - Arreglar con 30 P.C. y arreglada en Modo Golismeo: suyo, y ya hecho en `fiesta.gd` (su línea de PROJECT_STATE).
+  - La puerta de la azotea es `world.cuevas.dentro.azotea` (no `roof`: `obra.gd` ya tiene una función con ese nombre). Entres por la puerta que entres, `game.inside_of` acaba siendo `dentro` (lo cambia `cuevas_dentro._process`).
+  - `fiesta.gd` no cambia: `open()` ya llama a `sala.opens(weekday, clock)`.
+  - Nadie de la gente sube al altillo ni a la azotea (no lo he tocado): el DJ sigue en `dj_spot`.
+- **Archivos tocados**: míos, `cuevas.gd` y `cuevas_dentro.gd`. De otros, solo líneas insertadas o mías: `entradas.gd` (dos más en `shops()`) y `selftest.gd` (seis comprobaciones más en `_cuevas_checks()`, vistas de la azotea y de la escalera en el modo `--cuevas`). Sin rehorneado, sin texturas nuevas, sin nada descargado.
+- **Pruebas**:
+  - `cuevas`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_20261125_230031.log)), 17 comprobaciones. Es anterior a un último retoque (el tamaño de la letra del tablón de la puerta), que sí está en la pasada de noche.
+  - `cuevas cuevas-arreglada`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_cuevas-arreglada_20261125_230358.log)), 17 comprobaciones: las nueve horas de la semana probadas abren o cierran como deben; la escalera se sube andando de verdad y del altillo no se sale por el borde; por la puerta de la azotea se sale a la cubierta a su altura, con la bajada marcada solo allí arriba; los cuatro bordes paran y la cámara no los ve; de vuelta estás en la sala como por la puerta principal.
+  - Sin pasada completa.
+- Capturas: `guion/fotos/cuevas/cuevas_05_azotea.jpg`. Sin commit. **Pendiente del visto bueno de Luis** (la subida al altillo y la azotea).
+
+### 26/11 · Pretil: «La Kueva», la sala de abajo de la Sala Cavernas; el altillo y la azotea, aprobados
+
+- **Qué dijo Luis** (25/11): «Y también añade una escalera para abajo, será "La Kueva", una sala de fiestas oscura y turbia. Estará  a oscuras salvo por los rayos láser de fiesta, y la música sonará bass boosted».
+- **El altillo y la azotea quedan aprobados.** Sistemas le dijo a Luis: «De lo de Pretil quedará sin tu visto bueno, según me dice: la subida al altillo, la azotea y La Kueva cuando esté. Entrarán en la versión igualmente salvo que digas lo contrario.» Luis: «Tienen mi visto bueno». La Kueva no estaba hecha entonces: la frase vale para que entre en la 0.1.4, no como visto bueno del resultado (lectura de Sistemas, y mía).
+- **La bajada** (`cuevas_dentro.gd`): al fondo de los reservados, en la esquina del altillo, bajo un tablero «LA KUEVA» en verde. 24 peldaños con el canto en verde bajan 4,5 m por un túnel de roca, por debajo del altillo y de la pared del fondo. Es parte del mismo decorado: se baja y se sube andando, sin puerta.
+- **La sala** (16 × 15 m, 3 m de alto, tras un pasillo de 4 m): roca, dos pilares, pared de altavoces con un rack de amplificadores al fondo, una barra de tablón sobre bidones con una nevera apagada y cajas, dos sofás viejos, un palé, un colchón, bidones por mesa, botellas por el suelo y un rótulo verde «SALIDA» sobre la puerta. Nadie.
+- **A oscuras salvo por los láseres**: ninguna luz redonda; la roca tiene un tercio de la luz propia de la de arriba. Cuatro máquinas en el techo (verde, violeta, cian con rosa, roja) echan 31 rayos que barren al compás de la emisora; cada 16 tiempos cambian las que están encendidas. Ocho rayos son además focos estrechísimos sin sombras, que dejan el punto del láser en la roca y en quien pasa.
+- **Música con los graves subidos**: la misma emisora, por los altavoces de abajo y un bus propio (`CuevasKueva`): graves a +12 dB, agudos a −12 dB, algo de distorsión y un limitador. El efecto crece peldaño a peldaño.
+- **Cámara**: te sigue de cerca en la escalera y el pasillo y cuelga como arriba en la sala de abajo; el mando no cambia de sentido.
+- **Lo que puse por mi cuenta**: las tiras verdes de los peldaños, el foco verde de la boca, el rótulo «SALIDA», el mobiliario de abajo, el brazo más corto del último reservado (y sin roca detrás: es el paso a la escalera) y la barandilla que cierra el extremo del altillo sobre la bajada.
+- **Para Sistemas**:
+  - `dentro.level` es ahora 4,6 m más alto (el decorado entero subió para que La Kueva quede sobre el terreno). Quien use `level`, `MapData.foot` o los sitios que da el decorado no nota nada.
+  - Sitios nuevos para su gente si Luis la pide: `dentro.kueva_spots` (diez, en el suelo de abajo). `dentro.kueva_mix(p)` dice cuánto de abajo está un punto (0 a 1); `dentro.kueva_speakers`, de dónde sale la música allí.
+  - Bus de audio nuevo `CuevasKueva` (hijo de `Music`), creado al bajar la primera vez.
+  - El último reservado tiene el brazo del fondo más corto y el extremo este del altillo (x > 8,95) ya no se pisa. `dance_spots`, `bar_spot`, `dj_spot` y `client_spots` no cambian.
+  - `entradas.gd`, `game.gd` y `fiesta.gd`, sin tocar. En una sala a oscuras la gente se vería igual de clara que el jugador (los personajes tienen su propia luz).
+- **Archivos tocados**: mío, `cuevas_dentro.gd`. De otros, solo líneas insertadas: `selftest.gd` (cinco comprobaciones más en `_cuevas_checks()` y nueve vistas en el modo `--cuevas` de noche). Sin rehorneado, sin texturas nuevas, sin nada descargado.
+- **Pruebas**:
+  - `cuevas`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_20261126_001126.log)), 22 comprobaciones.
+  - `cuevas cuevas-arreglada`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_cuevas-arreglada_20261126_000511.log)), 22 comprobaciones. Las de La Kueva: los suelos y el terreno por debajo de todo; lo que para y lo que deja pasar (10 rayos, y nada de los campos dentro); se baja andando de verdad hasta la sala con la cámara bajo los techos; ninguna luz redonda, ninguna de arriba llega, 31 rayos que se mueven y 8 focos sin sombras; abajo suena por su bus con +12 dB en graves, y al subir vuelve la música de la sala y La Kueva se guarda.
+  - Sin pasada completa.
+- **Sin comprobar**: cómo suena de verdad el refuerzo de graves (las pruebas miran el bus y sus bandas, no el sonido), y la sala con gente dentro.
+- Capturas: `guion/fotos/cuevas/cuevas_06_kueva.jpg`. Sin commit. **Aprobada por Luis el 26/11 («Visto bueno»)** (La Kueva y sus dos azafranes).
+
+### 26/11 · Pretil: dos azafranes escondidos más en la Sala Cavernas (azotea y La Kueva)
+
+- **Qué dijo Luis** (26/11): «Angelus en La Kueva. Pon un azafrán en la azotea y otro en la Kueva. Que en la Kueva haya aparte 3-5 NPCs genéricos de drogadictos y borrachos, casi zombies, diciendo lo que les gusta esa parte porque es oscura.»
+- **Ángelus y los genéricos son de Sistemas** (`fiesta.gd`): le pasé las palabras de Luis. Ángelus ya está, en `kueva_spots[6]`. Los «casi zombies», en su entrada.
+- **Azafrán de la azotea** (`cuevas.gd`): en un tiesto viejo detrás del depósito de agua, en `P(37.7, -19.8)`; id `cuevas_azotea`. El depósito lo tapa al salir de la caseta. En los dos estados (a la azotea solo se sube con la sala arreglada y abierta).
+- **Azafrán de La Kueva** (`cuevas_dentro.gd`): en una caja de botellas abierta detrás de la barra de tablón, en `INSIDE + (17.75, 42.42)`; id `cuevas_kueva`. Cuelga de `kueva` (se oculta con ella) y se coge rodeando la barra por el fondo. Flor al 60 %.
+- Los dos van en `game.flowers` con `hidden`: la cuenta de escondidos sube en dos sola.
+- **Lo que puse por mi cuenta**: el tiesto y la caja de botellas, y el sitio exacto de cada uno (Luis dijo «en la azotea» y «en la Kueva»).
+- **Archivos tocados**: míos, `cuevas.gd` y `cuevas_dentro.gd`. De otros, solo líneas insertadas en `selftest.gd` (una comprobación más al final de `_cuevas_checks()`, prefijo `cvf_`; las vistas `azotea_azafran` y `kueva_azafran` del modo `--cuevas`). Hecho en el hueco que me abrió Sistemas con la carpeta congelada para la versión, que según me dice se llamará 0.2.0.
+- **Pruebas**: `cuevas`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_20261126_003659.log)), 23 comprobaciones. `cuevas cuevas-arreglada`: CUEVAS OK (0 failed) ([log](logs/selftest_cuevas_cuevas-arreglada_20261126_003414.log)), 23. Sin pasada completa.
+- **Sin comprobar**: coger de verdad cada flor andando (la prueba mira que estén donde deben, que se llegue a ellas y qué las tapa).
+- Capturas: `guion/fotos/cuevas/cuevas_07_azafranes.jpg`, enviada a Luis. Sin commit. La Kueva seguía entonces sin un visto bueno expreso de Luis después de verla; lo dio el mismo 26/11 («Visto bueno»), con los dos azafranes.
+
+### 26/11 · Pretil: dos comprobaciones mías fallaban solo en la prueba completa (corre sin ventana)
+
+- **Quién lo pidió**: Sistemas, para la 0.2.0. No es una petición de Luis. La completa dejaba dos fallos en comprobaciones mías que sueltas pasaban.
+- **Causa**: no era un fallo del juego. La completa corre con `--headless`, y sin ventana el motor no guarda las instancias de un MultiMesh: `get_instance_transform()` devuelve la identidad. Las dos comprobaciones leían posiciones de vuelta del motor.
+  - Plantas de la zona (`_zonas_checks`): cada mata se leía en el centro de su celda de 64 m. De ahí 2650 dentro del círculo y 601 fuera de sitio, frente a 2458 y 0 con ventana.
+  - Láseres de La Kueva (`_cuevas_checks`): el rayo 0 se leía igual antes y después de 30 fotogramas.
+- **Arreglo**: los scripts guardan su propio registro y las comprobaciones leen eso. Al motor se le pregunta además solo cuando hay ventana (`DisplayServer.get_name() != "headless"`).
+  - `zonas.gd`, `_scrub()`: meta `"ps"` en el MultiMeshInstance3D de cada celda, con el sitio de cada mata en el orden del búfer. Lo leen la comprobación de las plantas y la de la planta solar, que leía igual del motor y pasaba por casualidad.
+  - `cuevas_dentro.gd`, `_k_party()`: `b["d"]`, adónde apunta cada rayo.
+  - `selftest.gd`: las dos comprobaciones (variables `zp_*` y `cvk_*`). A los rayos se les mira tres veces en vez de dos. Los mensajes dicen ahora lo que callaban: lámparas redondas, sombras, instancias del MultiMesh y si se preguntó al motor.
+  - Mis modos `zonas` y `cuevas` aceptan `sinfotos`, como `ajedrez`: `python tools/run_tests.py zonas sinfotos --headless` corre como la completa, sin fotos, en un minuto.
+- **Pruebas**:
+  - Sin ventana: `zonas sinfotos --headless`: ZONAS OK (0 failed), 11 ([log](logs/selftest_zonas_sinfotos_20261126_015914.log)); `cuevas sinfotos --headless`: CUEVAS OK (0 failed), 23 ([log](logs/selftest_cuevas_sinfotos_20261126_020044.log)).
+  - Con ventana: `zonas`: ZONAS OK (0 failed), 11 ([log](logs/selftest_zonas_20261126_020235.log)); `cuevas`: CUEVAS OK (0 failed), 23 ([log](logs/selftest_cuevas_20261126_020635.log)).
+  - La completa la repite Sistemas.
+- **Queda**: la comprobación de las lápidas «R.I.P.»/«D.E.P.» (`_cementerio_checks`, `wmm.get_instance_transform(i).basis`) pasa en vacío sin ventana; con ventana (`cementerio`) sí mira. Necesita un registro en `cementerio.gd`, que no estaba abierto durante la congelación.
+- **Archivos tocados**: míos, `zonas.gd` y `cuevas_dentro.gd`. De otros, `selftest.gd` (mis comprobaciones y mis dos modos). Sin commit.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
@@ -3021,3 +3318,331 @@ Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductori
 - **Qué.** A petición de Luis: si el jugador permanece detenido dentro de un vehículo más de 5 s sin acelerar, frenar, girar, tirar de freno de mano ni desplazarse (`speed < 0.35 m/s`), la interfaz de juego (minimapa, calendario, velocímetro, pizarra, flecha guía 3D, etc.) se desvanece suavemente y, en PC/mando (`not Touch.on`), aparece abajo la tarjeta `CONTROLES DEL VEHÍCULO` con los iconos reales del dispositivo activo (teclado, Xbox o PlayStation) e idioma (`es`/`en`): Acelerar, Frenar / atrás, Girar, Freno de mano, Turbo o Autopiloto (según vehículo), Salir, Radio, Cambiar vista y Claxon. En Android/táctil (`Touch.on`) solo se oculta la interfaz sin mostrar la tarjeta. Al volver a moverse, pulsar controles de conducción, abrir mapa/pausa o salir del vehículo, el HUD regresa de inmediato.
 - **Archivos.** `godot/scripts/game.gd`, `godot/scripts/hud.gd`, `godot/scripts/loc.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`. Sin commit.
 - **Pruebas.** `car_idle --window` (6/6 ok + `godot/shots/car_idle_teclado.png` y `car_idle_mando.png`) y `palabros --headless` (3/3 ok).
+
+### El techo de la Z15 que asomaba desde fuera (25/11, Claude · Sistemas)
+
+- **Qué.** Luis vio en 3.ª persona, al subirse a la Z15, un «toldo» que atravesaba el coche: el forro del techo (`m_headliner`, 1,46 × 0,72 m) y la barra del parabrisas que `set_rosary` añade para la 1.ª persona. Ahora van en `car.gd` `_fp_only` y solo se ven con `_fp_hide_head` (`set_driver_head_visible` los enciende y apaga al cambiar de cámara).
+- **Pruebas.** `rosario --window`: 5 ok (nueva: «the Z15's headliner shows only in 1st person», más la foto `rosario_fuera.png`). Sin commit.
+
+### La peña El Bordillo se queda así (25/11, Claude · Worldbuilding)
+
+- Luis: «El Bordillo se sigue llamando así, su nombre original es El Cerquillo pero no puedo usar nombres reales». `guion/palabros.md` ya no dice que «hay quien les dice El Cerquillo»: es el nombre real y no va en el juego. Ningún texto lo usaba.
+- Sin commit.
+
+### Lo que dice el pueblo de los perros y los vehículos (25/11, Claude · Worldbuilding)
+
+- **Por qué.** Le propuse a Luis frases sobre los perros sueltos y los vehículos nuevos en cinco bloques; contestó «Me gustan todos». Avisado Sistemas antes de tocar sus archivos.
+- **A, charla (`loc.gd`).** Seis frases en `generic`, tres en `generic_old` y dos en `generic_kid` (galgo, mastín, 4L, Seta Panda, Edison, Hebro).
+- **B, atropellar un perro.** El perro dice `dog_hit` («¡Cai, cai, cai!», «¡Guau!»; antes `HIT_LINES` fijo en castellano, también en inglés). Si es tu coche, el vecino libre más cercano a 22 m grita `dog_hit_seen` (`perros.gd` `_witness`).
+- **C, acariciar.** El 40 % de las veces, un vecino a 12 m dice `dog_pet_seen`.
+- **D, primera vez en cada vehículo.** `game.gd` `_first_drive` (desde `_enter_car`): un aviso `car_first_<kind>` una sola vez por modelo; stats `conducidos`. La Z15 del Kokas cuenta como Z15.
+- **E, chismes.** `perros.gd` `_count` lleva stats `perros_atropellados`, `perros_acariciados` y `perros_galletas`. A 3 atropellos y a 10 caricias entra la noticia `perros_atropello` / `perros_caricias` en `chismes.gd` (`NEWS`; `said` usa `chisme_<id>` si no hay versión bien/mal/igual). Con una galleta dada, el murmullo `murmullo_galletas`.
+- **Prueba.** `_perros_frases_checks` dentro de `perros` (12/12). La regla «pa» de `_palabros_checks` deja pasar «se para» y «te para» (el verbo); `palabros` 3/3.
+- **Escrito en** `guion/palabros.md`.
+- Sin commit.
+
+### El Cerro: 17 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `cer_5` a `cer_37`, los impares de la Urbanización El Cerro (hilera de 1993), escritas por el scratchpad `cer_write.py` (en `casas_calles.gd`, tras `vald_7`). Comprobado contra las zonas y los scripts hechos a mano: lo más cerca es `molino_zone`, a 117 m.
+- **Catastro.** Dibuja el cuarto de delante (4 m) y el patio de cada parcela, pero en espejo en varios pares frente a Street View (visto en las tomas del 21 y del 37; la placa «19» confirma el orden de las casas). Solo se usa el ancho de cada parcela: fachadas a toda la anchura en una línea, `fill` 1,3 m, `floors: 1`, h 6,2 (el 33, 7,2).
+- **Dibujo.** Tipo A (patio a la izquierda) y B (a la derecha): patio `arc ... sq=1 g=bars`, tejado del cuarto con `teja`, tejadillo de la puerta. El 11 lleva `band` azul en la línea de arriba; el 37, `ciego` (hastial al campo).
+- **Alineación.** alinea.py 0,0 en las 17. Horneado: 17 nuevas, nada cambiado; holguras 1122 (6,6 → 6,5) y 1123 (6,8 → 5,6); árboles igual (2943).
+- **Pruebas.** Test `casas solo=cer_` OK. APROBADA por el usuario («Visto bueno y seguimos»). Sin commit.
+
+### Constitución norte: 10 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `ctn_130, 128, 128b, 97s, 132a, 134, 136b, 136, 138, 109`, escritas por el scratchpad `ctn_write.py` (en `casas_calles.gd`, tras `cer_37`). Prefijo `ctn_` porque `constitucion_132` ya era otra casa (4398801). Comprobado contra las zonas: lo más cerca es `cuartel_zone`, a más de 100 m.
+- **Frentes.** Los de `house_street.py`, salvo tres: `ctn_132a` alargado a 13,6 m por la casa entera (retirada tras su jardín), y `ctn_136` / `ctn_138` llevados a la linde común (11,5, -804,6). 97 (4298523) y 103 (4096412) se dejan: quedan detrás de `constitucion_95` y `_101`.
+- **Alineación.** alinea.py 0,0-0,2. Horneado: 10 nuevas, nada cambiado; holgura 1097 (8,5 → 8,4).
+- **Pruebas.** Test `casas solo=ctn_` OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### Clavel este: 5 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `clavel_fp31a, clavel_103, clavel_eu1, clavel_eu2, clavel_al25`, escritas por el scratchpad `clv_write.py` (en `casas_calles.gd`, tras `ctn_109`). Frentes de `house_street.py` sin tocar. Comprobado contra las zonas: lo más cerca, `named_u` / `merkocarry_built`, a más de 270 m.
+- **Dejadas.** `4993708` (el 105, 10 m atrás tras una tapia) y `5090002` (Santa Ana 137, 10 m atrás).
+- **Alineación.** alinea.py 0,0. Horneado: 5 nuevas; `clavel_74` solo cambia la medianera.
+- **Pruebas.** El primer `casas` falló por un error de análisis en `selftest.gd` / `loc.gd` (`Portrait`) mientras otra sesión los editaba; repetido luego, OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### La Pili, los carros de la compra y la tía Paca si estás ocioso (25/11, Claude · Sistemas)
+
+- **Qué.** Tres cosas que pidió Luis el 25/11, con una foto de referencia de una señora con su carro de cuadros rojo.
+- **La Pili (`pili.gd`, nuevo).** Sigue el molde de `tomasa.gd` y ocupa el hueco de recado (`G.side` con id `pili`). Su etapa va en `stats.pili`.
+  - Aparece cuando la tía Paca ha contado la herencia y el curro (`stats.curro`, y `fondo_casa._tour` ya acabado), de 8 a 22.
+  - Con el recado sin hacer, sube y baja por la Calle del Arroyuelo Medio (`ARROYO`). Si estás a menos de 14 m, a pie y con las manos libres, te persigue soltando frases («¡Oye, tú!», `pili_chase`). A más de 30 m se rinde.
+  - En la charla salen el bacalao, sus hijos de 30 años y la Laura la mamporrera. Decirle que no cuesta −5 de confianza.
+  - Si dices que sí, el pez de los «bacaladitos» (`pickups.gd`) aparece en la primera caja del set del Merkocarry. Al cogerlo, La Pescadera (`pescadera`, nombre de Luis; en la caja mientras la pescadería está cerrada) explica lo de la panga.
+  - El cartel tachado (su retrato de `Portrait` más una cruz roja y «PROHIBIDA LA ENTRADA») se cuelga desde `pili.gd`, sin tocar `merkocarry_dentro.gd` de Pretil. Va en el frente de la caja 1 y en la pared junto a la puerta.
+  - Se entrega en su casa, por la Magdalena: «¿Esto es una puta panga?». Paga 50 € y 30 P.C. Después pasa unos 40 s en la puerta de cada una de 13 tiendas, súpers y bares (nunca el Merkocarry), y en sus charlas cuenta y pregunta demasiado (`pili_after`).
+  - **Ojo:** a más de 185 m `game.gd` oculta a todos los NPC y deja de moverlos. Por eso `givers()` mira solo `away`, no `visible`, y la Pili se teletransporta a su casa si no se la ve.
+- **Carro (`chara.gd`).** `_carrito` monta bolsa de cuadros (textura hecha en código), armazón, solapa negra y dos ruedas.
+  - Andando va inclinado detrás, con el asa en la mano derecha. Parado, queda de pie al lado (`_carro_k`, `CARRO_TIP`, `_carro_pose`, `_carro_hand`).
+  - Lo lleva el 20 % de las ancianas y el 5 % de los ancianos (`_neighbour_look`), en 12 colores; uno de cada cuatro es liso o de flores (`carro_dibujo`). `driver_look`, `sit()` y la gente de Sopiss lo quitan.
+- **Paca, si estás ocioso (`fondo_casa.gd` `_ocio`, `idle_giver`, `where`).** El reloj va en `stats.ocio_h`. Tras 24 h de juego con alguien de `marcas.givers()` (sin contar trabajos, Paca ni Edmundo) y nada en marcha, llama (`paca_ocio`) diciendo la calle con artículo. Avisa una vez por misión (`stats.ocio_avisos`, `mission_key`). En el Modo Chavisca no llama.
+- **Pruebas.** `pili` 10/10, con imágenes `pili shots` (hoja `godot/shots/pili_hoja.png`). `palabros` y `firmas` OK. Retratos nuevos en `guion/fotos`; `relaciones.json`/`.html` y `misiones.html` actualizados, y el artefacto 8A6YH1Dg7CE2meCEoRaqiK republicado. Sin commit.
+
+### Juan XXIII: 15 entradas (25/11, Claude · Texturas)
+
+- **Qué.** Prefijo `jx_`: `jx_24, 29, 28, 33, 30, 35, 37, 39, 32, 32b, 34, 36, 38, 40, 47`, escritas por el scratchpad `jx_write.py` (en `casas_calles.gd`, tras `clavel_al25`). Frentes de `house_street.py`. Comprobado contra las zonas: el Merkocarry, a más de 180 m; ningún RC del tramo aparece en `bake_godot.py` ni en los scripts.
+- **Alineación.** alinea.py antes del horneado. Horneado: 15 nuevas; `delicias_68` solo cambia la medianera.
+- **Pruebas.** El primer `casas solo=jx_` dio «NO RESULT (timeout)» con el log vacío; repetido, OK (88 s). APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### Juan XXIII, tramo sur: 13 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `jx_9, 11, 13, 15, 17, 10, 10d, 10e, rem1, 12, 14, 16, 18`, escritas por el scratchpad `jx2_write.py` (en `casas_calles.gd`, tras `jx_47`). La parcela `4791001` en dos: `jx_10d` (la parte de 2 plantas, frente cortado a mano) y `jx_10e` (`only: 1`, el almacén). Comprobado contra las zonas: lo más cerca, `named_u` / `merkocarry_zone`, a más de 100 m; ningún RC del tramo en `bake_godot.py` ni en los scripts.
+- **Dejadas.** `4791017` (San Cristóbal 1, 6 m atrás), `4692155` y `4693026` (no dan a la calle).
+- **Alineación.** alinea.py 0 salvo `jx_10` / `jx_10e` (2,3 m, del Catastro). Horneado: 13 nuevas, nada más cambia.
+- **Pruebas.** `jx_10e` sin huecos falló «too little» (`boxes < 12`); con la cancela, OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### Versión 0.2.0 (26/11, Claude · Sistemas)
+
+- **Orden de Luis.** «En cuanto termine Petril lo suyo. Commit a todo y release», y después «Para la prueba porque a esta versión la vamos a llamar 0.2.0 y vamos a meter a Ángelus, El Foski y El Pochi». No hay 0.1.4.
+- **Prueba completa: 1141/1141**, a la sexta pasada (42, 10, 4, 4, una cortada por un cierre del motor y 0). Ningún fallo era del juego. Lecciones para quien haga la siguiente:
+  - Una comprobación nueva escrita para su modo suelto (menú cerrado, `phase` «free») falla en la completa, donde corre con el título en pantalla, y además deja el juego en mal estado para las siguientes (30 de los 42 primeros fallos eran arrastre). En la completa van dentro de `_as_in_its_mode(check, nombre)` (selftest.gd, junto a `_check`).
+  - Cada `_check` que falla imprime debajo cómo estaba el juego (fase, menú, llamada, encargo, riña, dónde). Mirar eso antes que el código.
+  - La completa corre sin ventana: ahí un MultiMesh no devuelve sus instancias (`get_instance_transform()` da la identidad). Las comprobaciones leen un registro propio del script, no el motor (Pretil: zonas, La Kueva; pendiente, las lápidas R.I.P./D.E.P.).
+  - La completa salta días enteros: lo que depende del día (la llamada de la tía Paca por ocio, las visitas al cementerio de las rondas) se cuela en comprobaciones ajenas. `fondo_casa.ocio_quiet` la calla en la completa; rondas y Vizum apartan el cementerio mientras duran.
+  - El tráfico es aleatorio: un coche puede tirar un poste del cruce antes de las comprobaciones de los semáforos (se reparan antes de empezar).
+  - Una pasada se cortó con 1078 bien por un cierre del motor (signal 11) en `_riot_gestures` (selftest.gd:9543), en código de la riña sin cambios desde la 0.1.3; no se repitió en la siguiente. Registro: `logs/selftest_full_20261126_022102.log`. A vigilar.
+- **Memoria con el renderizador de móvil:** 936 MB estática, 2353 MB de vídeo (0.1.2: 809 / 2159). Registro con los tiempos de cada paso de la carga: `logs/boot_movil_0.2.0.log` (53 s en total con las cachés recién hechas: casas 20,7 s, vecinos 5,6 s, suelo 4,8 s, matas 3,9 s, árboles 2,0 s).
+- **Orden de construcción desde esta versión:** `python tools/make_apk.py X.Y.Z` PRIMERO (escribe la versión en `project.godot`), luego `make_installer.py` y `make_linux.py`. Si no, Windows y Linux saldrían con la versión vieja y el aviso de versión nueva avisaría siempre.
+- **Va sin el visto bueno de Luis:** el aviso de versión nueva, Foski, El Pochi, el aspecto de Ángelus, de Ezequiel y de Frank, los parroquianos de La Kueva y el encuadre de las charlas.
+- **Lo siguiente (0.2.1), pedido por Luis:** «El juego tarda muchísimo en cargar para lo que es (un cozy low-poly). Porqué tarda tanto? Se puede agilizar?». Plan dicho a Luis: guardar las casas ya construidas (mallas fundidas) en una caché que se rehaga sola al cambiar una casa, luego árboles, objetos y edificios lentos, y crear los vecinos según te acercas.
+
+### El Pochi, Ángelus Apátrida y los parroquianos de La Kueva (26/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** El Pochi, con foto: «Primo de El Foski. Camisetas de anime todos los días. Le gusta el anime, no tiene reparos con el hentai, más malablado y con más palabrotas que su primo. Te insulta constantemente. […] Es un Otaku pero odia a los otros otakus por no ducharse y hablar con palabras en japonés, le dan asco, él al menos tiene cierta dignidad sobre ellos». Ángelus, por Pretil: «Quiero siempre que esté KAE abierto haya un NPC llamado Ángelus Apátrida. Perilla, dejadez, delgado, camiseta de tirantes fosforita verde, ojos pequeños y pelo corto con flequillo levantado. Dirá lo que le gusta este rollo del pueblo, aunque de normal vive en la capital, pero lo que le tira de verdad es la salvajada y la fiesta del pueblo. De que ojalá vendiesen litronas en las discotecas, se forrarían. Y alternará con preguntas filosóficas o que si piensas en la muerte. Y que él coca no, que eso no es sano, él solo alcohol y hachís», y después «Angelus en La Kueva. […] Que en la Kueva haya aparte 3-5 NPCs genéricos de drogadictos y borrachos, casi zombies, diciendo lo que les gusta esa parte porque es oscura». Estado: hechos y enseñados; falta su visto bueno. La versión en que salen se llama 0.2.0 por orden suya.
+- **Dejado fuera a propósito (dicho a Luis).** De El Pochi, la queja sobre la edad de consentimiento y la frase del dragón de 1000 años en cuerpo de niña. No se escriben chistes de sexo con menores; quien siga, que no los meta por su cuenta.
+- **Ficheros.** `godot/scripts/pochi.gd` (nuevo: `LOOK`, `STREETS`, `TEES`, `street()`, `start()`, `off_street()`, `tick()`, `_insult()`, `wear(day)`, `dress()`, `chibi()`); `foski.gd` (`print_on()` ahora estático y compartido); `game.gd` (`PochiS`, `pochi`, tras Foski); `fiesta.gd` (`ANGELUS_LOOK`, `ANGELUS_SPOT`, `angelus`, `angelus_spot()`, `ZOMBIES`, `_zombies()`, `_kueva_tick()`, `_down`; `of("kueva")`); `trabajos.gd` (Ángelus fuera de `_order_for`); `loc.gd` (`n_pochi`, `pochi`, `pochi_insultos`, `n_angelus`, `angelus`, `fiesta_kueva`, firmas del puente de los dos); `selftest.gd` (`_pochi_checks`, modo `--pochi`; punto 5c de `_fiesta_checks`); `guion/relaciones.json` y retratos.
+- **Los recuadros de Luis para El Pochi.** Luis: «Son chistes de humor negro lo de El Pochi, si no quieres/puedes escribirlos déjame recuadros de texto y los escribo yo. Tu no los verás ni los escribirás». Un archivo de `godot/data/` con nombre sin significado, a petición suya («cambiale el nombre a valores alfanuméricos para que nadie sepa que archivo es»; el nombre está en `pochi.OWN` y no se escribe en las notas): cada renglón entre corchetes (`[1]`) abre un recuadro, cada renglón de debajo es un bocadillo, `#` son notas. `pochi.own_lines()` lo lee (nunca con `--selftest`), `pochi.extra` los guarda y `game._chat` los añade a su turno. Va en los instaladores por `data/*.txt` en los tres presets. **Ese archivo es solo de Luis: no abrirlo, no imprimirlo, no pasarle `git diff`, no reescribirlo.**
+- **La camiseta de Ángelus.** Luis: «Ponle algún número a la camiseta de Ángelus, que parezca más una camiseta de basket que eso que parece un vestido». `fiesta.jersey(c)`: dorsal 13 delante y detrás (`dorsal()`, cifras de 5×7 en `DIGITS`, sobre `Foski.print_on`), ribetes blancos y un pantalón corto oscuro como banda (`c._band`). El cuerpo de los muñecos es un cono del color de la camiseta: sin esa banda, una camiseta lisa parece un vestido.
+- **Cómo se cambia de camiseta El Pochi.** `tick` mira cada 5 s si `G.day_n` ha cambiado y, si no le ves (`G.sees`), llama a `wear(day)`: `set_look` rehace el muñeco, así que `dress` vuelve a ponerle el dibujo y la muñequera.
+- **La gente de La Kueva.** Viven en `people` con `kind` «kueva» y se crean con la noche (`_fill`), `away` y ocultos. `_kueva_tick` los enseña, con Ángelus, solo mientras `dentro.kueva.visible` y el jugador está en ese decorado. Usan los sitios de Pretil `dentro.kueva_spots` menos el 6, que es el de Ángelus.
+- **Sin hacer.** Misiones y relaciones de los tres; figuras en las máquinas de bolas; el aspecto de Ángelus es un primer intento.
+- **Pruebas.** `pochi` 4 ok, `foski` 3 ok, `fiesta` 18 ok, `palabros` 3 ok.
+
+### Foski, personaje único (26/11, Claude · Sistemas)
+
+- **Qué pidió Luis** (con una foto suya de referencia). «vamos a añadir otro NPC único. De momento sin misiones, solo andará dando vueltas por la calle del florido. Se llamará Foski, te paso referencias física. Tatuajes, camisetas negras de grupos de metal, dejadez, hermoso. Personalidad: Le gusta el metal, el anime, tiene diversos problemas de salud (bromea con no llegar a los 40), le gustan las góticas y las transexuales, dice bastantes tacos hablando y es malablado en general, (pero es buen tío). Que haya una broma donde bromee sobre suicidarse y luego haya un *silencio incómodo* antes de continuar la conversación». Estado: hecho y enseñado; falta su visto bueno.
+- **Ficheros.** `godot/scripts/foski.gd` (nuevo: `LOOK`, `street()`, `line()`, `start()`, `off_street()`, `tick()`, `dress()`, `logo(seed)`); `game.gd` (`FoskiS`, `foski`, se crea tras Feliciano, `foski.tick`; en el tic del diálogo, `hush`); `loc.gd` (`n_foski`, `foski`, `firma_si_/firma_no_foski`, `HUSH_A/B` y `_hush` en `rich()`); `selftest.gd` (`_foski_checks`, modo `--foski`, y en la completa tras Feliciano); `guion/relaciones.json` + `guion/fotos/foski.png`.
+- **Cómo anda.** `n.walker = true`, `n.beat` = los nodos de la carretera llamada exactamente «Calle del Florido» (la Bajada no), `wspeed` 1,05. Es el mismo mecanismo de Dolores y de la ruta del colesterol (`game._walker_plan`). A cualquier hora.
+- **La marca `~~…~~`.** Una línea de diálogo que empieza por `~~` es un silencio: `Loc.rich` la muestra en gris como `*texto*`, y `game.gd` no le pone voz y la escribe a un tercio de la velocidad. Sirve para cualquier otro personaje.
+- **Lo suyo encima del muñeco.** `dress(c)`: el logo es una malla curva sobre el pecho (como `chara._pena_print`) con una textura generada; la tinta y el anillo son hijos de las bolas de las manos (`c._hl`, `c._hr`). Si alguna vez se le llama a `set_look`, hay que volver a llamar a `dress`.
+- **Trampas.** En un modo de prueba suelto los vecinos no se mueven hasta que `g.phase` es `free` o `play` y el menú está cerrado. Los scripts de ayuda escritos con heredoc convierten `\\n` en salto de línea real: escribirlos con la herramienta Write.
+- **El Pochi.** Luis, 26/11: «El Foski será primo de "El Pochi". Otro NPC único que también dará vueltas por esas calles. Empezamos con él cuando terminemos a El Foski». En `guion/relaciones.json` como persona nombrada (`foto: false`) con el lazo de primos; nada más hecho: esperar a que Luis dé a Foski por terminado y a su descripción.
+- **El pelo.** Estilo 14 (`pelo_rapao_fino`); se probó el 13 (raya) y Luis dijo «El primer corte de pelo se parecía más».
+- **Sin hacer.** Misiones, relaciones con otros vecinos, figura en las máquinas de bolas (`gacha.FIGURES`).
+- **Pruebas.** `foski` 3 ok, `palabros` 3 ok. Sin pasar: la completa.
+
+### Aviso de versión nueva al abrir el juego (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «sería posible añadir una manera de que al abrir el juego detecte si hay una versión nueva disponible y de opción de Actualizar o Jugar versión actual?». Estado: hecho y enseñado; falta su visto bueno.
+- **Ficheros.** `godot/scripts/actualiza.gd` (nuevo: `check()`, `read(d)`, `available()`, `go()`, y las estáticas `valid`, `newer`, `safe`); `game.gd` (`ActualizaS`, `actualiza`, en `_boot_done` se crea y pregunta; `_first_page()`, `update_found()`, `_update_go()`; páginas `update` y `update_go` y la línea de arriba de `main` en `_menu_page`); `loc.gd` (`menu_update`, `upd_*`); `export_presets.cfg` (`permissions/internet=true` en Android); `selftest.gd` (`_actualiza_checks(ask)`, modo `--actualiza`, y en la completa sin la petición real).
+- **Cómo decide.** Compara los tres números de la etiqueta de GitHub con `application/config/version` (que `tools/make_apk.py <versión>` escribe al publicar). Borradores y prelanzamientos no cuentan. El enlace del instalador se toma del propio GitHub y solo se acepta si empieza por `https://github.com/LomoXSoft/Matritellus/`.
+- **De qué depende.** Etiquetas `vX.Y.Z`, ficheros `Matritellus-X.Y.Z-Windows.exe` / `-Android.apk` / `-Linux.tar.gz` y repositorio público. Si un día el repositorio vuelve a ser privado, el aviso calla sin romper nada.
+- **Trampas.** Los textos del menú también pasan por `palabros` («Ha salío», «ná»). El subtítulo de una página de menú no parte líneas solo: lleva `\n`. En las pruebas `actualiza.dry = true` para no abrir el navegador.
+- **Sin hacer (propuesto, no pedido).** Descargar e instalar desde dentro del juego; en Android no se puede instalar un APK desde GDScript sin un plugin.
+- **Pruebas.** `actualiza` 4 ok, `palabros` 3 ok. Sin pasar: la completa.
+
+### La plaza de toros arreglada, visitable por dentro (25/11, Claude · Sistemas, en `toros.gd` de Pretil)
+
+- **Qué pidió Luis.** «Se puede visitar la plaza de toros? Estaria bien poder visitarla por dentro. Te adjunto referencias de como se vería». Sus dos fotos (otras plazas): `referencias/plaza_toros/usuario_02_ruedo.png` y `usuario_03_galeria.png`. Estado: aprobado el 25/11 («Así está bien. Visto bueno»), con el palco solo sobre los toriles: le ofrecí la galería con tejado dando toda la vuelta y prefirió dejarlo así.
+- **Qué cambia en `toros.gd`** (solo el estado «nuevo»). Constantes `FRONT`, `TIER`, `TOP`, `R_TOP`, `STAIRS`, `FLIGHT`, `PENS_TOP`, `RED`, `PAINT`; `_stand_decks`, `_deck()`, `_note_floors()`; `set_restored` mete y saca esas tarimas de `MapData.decks` (llevan la clave `"toros"`); `_stairs()`, `_circles()`, `_palco()`; en `_ring`: los sólidos del pasillo de entrada suben a 5,8 m con barandilla, las escaleras sustituyen a `_tiers` en sus tramos, y el sólido del frente de las gradas pasa a ser un tope de 5,2 m en el borde (en la ruina sigue como estaba); `_pens_block` tapa los cantos de las dos gradas que sobresalen de su techo; `_barrier` añade juntas y postes.
+- **Trampas.** Las tarimas de pendiente (`grad`) dan la altura en `o`: la escalera es una sola tarima inclinada, no veinte. Entre gradas no hay topes: se sube y se baja de una a otra andando (0,6 m). El orden importa: las escaleras van antes que los suelos. Los rayos de choque van a la altura de los pies más ~0,9 m: un sólido que acaba a la altura del suelo de arriba no para a quien anda por arriba.
+- **Pruebas.** `arreglos` 4 ok (con `_toros_dentro_checks`), `toros` 5 ok. Sin pasar: la completa.
+
+### Arreglar la plaza de toros con 15 P.C. (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «Añade también la plaza de toros para arreglar igual 15 P.C.». Estado: hecho y enseñado.
+- **Archivos.** `godot/scripts/arreglos.gd` (nuevo): `PLACES` (coste, clave de `stats`, textos, bandera de pruebas), `place(id)`, `spot(id)`, `begin()`, `here()`, `can_fix()`, `prompt()`, `fix()`. `game.gd`: `ArreglosS`, `var arreglos`, alta tras `fiesta.setup`, `arreglos.begin()` tras `fiesta.begin()`, rama `elif arreglos.can_fix(): arreglos.fix()` y aviso, ambos tras los de la sala. `loc.gd`: `p_toros`, `t_toros_open`. `selftest.gd`: `_arreglos_checks()` y el modo `--arreglos`.
+- **Modo Golismeo.** La plaza sale arreglada (Luis lo confirmó después: «Si, todo arreglado en Modo Golismeo»).
+- **Para añadir otro sitio.** Una entrada en `PLACES` y sus ramas en `place()` y `spot()`; el sitio necesita `restored` y `set_restored(on)`.
+- **Pruebas.** `arreglos` 2 ok (paga con el botón de acción de verdad, `g.interact()`), `fiesta` 16 ok, `palabros` 3 ok. Sin pasar: la completa ni `toros`.
+
+### Arreglar la Sala Cavernas con 30 P.C., Golismeo y noches de jueves a domingo (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis (a través de Pretil).** «Visto bueno, pero que solo abra jueves, viernes, sábados y domingos. […] De momento que se pueda arreglar con 30 P.C., luego ya daremos misión. 2. Si, arreglada ahí» (Modo Golismeo). Estado: hecho; el pago es provisional hasta que haya misión.
+- **Archivos.** `godot/scripts/fiesta.gd`: `NIGHTS`, `FIX_COST`, `FIX_REACH`, `FIX_KEY`, `open()`, `night_on(weekday, hour)` (estática), `begin()`, `restore(on)`, `fix_spot()`, `can_fix()`, `fix_prompt()`, `fix()`. `game.gd`: `fiesta.begin()` en `start_game` tras `bridge.close_off`; `elif fiesta != null and fiesta.can_fix(): fiesta.fix()` en el botón de acción, tras el puente; el aviso tras el del puente (no si hay un vecino a tiro). `loc.gd`: `p_cavernas`, `t_cavernas_open`. `selftest.gd`: el punto 0 de `_fiesta_checks()` (dos comprobaciones) y la foto `fiesta_arreglar`; la prueba pone sábado para lo demás.
+- **Trampas.** `stats["cavernas"]` es la única memoria del arreglo: quien llame a `set_restored` a mano lo pierde al cargar (`begin()` manda). Las farolas añadidas a `lights` no se quitan si luego se carga una partida sin arreglar (no hay `remove` en `lights.gd`). `cuevas.is_open` se pone al día en `_process`: en una prueba, en el mismo frame que `set_time`, usar `fiesta.open()`.
+- **Pruebas.** `fiesta` 16 ok, `palabros` 3 ok. Sin pasar: la completa.
+
+### Ezequiel y Frank Málaga, camarero y DJ de la Sala Cavernas KAE (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «Al camarero le llamaremos Ezequiel, y al DJ Frank Málaga». Estado: hecho y enseñado; falta su visto bueno. Sus aspectos son un primer intento: los personajes los pule él.
+- **Archivos.** `godot/scripts/fiesta.gd`: `EZEQUIEL_LOOK`, `FRANK_LOOK`, `SHOUT`, `BAR_SHIFT`, `ezequiel`, `frank`, `_staff()` (los crea una vez, cuando la sala tiene decorado), `_worker()`, `_staff_in(here)` (los pone en su sitio o los quita: `away` + `visible`, no se liberan), `_dj(dt, pp)`. `loc.gd`: `n_ezequiel`, `n_frank`, `ezequiel`, `frank`, `frank_gritos`. `trabajos.gd`: los dos en la lista de excluidos de `_order_for`. `selftest.gd`: el punto 5b de `_fiesta_checks()` y las fotos `fiesta_ezequiel`, `fiesta_frank`. `guion/relaciones.json`: los dos y su enlace; retratos en `guion/fotos/`.
+- **Trampas.** `bar_spot` del decorado cae justo detrás de la caja registradora: por eso `BAR_SHIFT`. El frente negro de la cabina tapa a Frank hasta el cuello desde la pista: la mano en alto va a 1,6 m para que asome. No están en el gacha (`FIGURES` es una lista a mano) ni tienen cartas propias (usan `carta_bien_x`/`carta_mal_x`).
+- **Pruebas.** `fiesta` 14 ok, `palabros` 3 ok. Sin pasar: la completa.
+
+### La gente de noche de la Sala Cavernas KAE (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «NPCs aleatorios (y únicos, con la misma posibilidad que los demás locales según NPC) cuando esté arreglado de 23:00-06:00, incluidos 2 o 3 en la puerta fumando. Con frases típicas de fiesta, humor negro, exageradas, alcohol, drogas, peleas, ya sabes». Estado: hecho y enseñado; falta su visto bueno.
+- **Archivos.** `godot/scripts/fiesta.gd` (nuevo): `open()`, `sync(force)`, `_fill()`/`_clear()` (los crea y los libera cada noche, como el cliente de Sopiss), `_dance(dt)`, `unique_spots()`, `is_mine(p)`, `of(kind)`. `game.gd`: `FiestaS`, `var fiesta`, alta entre `luto` y `rondas`, `fiesta.tick(dt)` tras `luto.tick`. `rondas.gd`: `_spots(kind)` y `_party_over(now)`. `loc.gd`: `fiesta`, `fiesta_puerta` (es/en). `selftest.gd`: `_fiesta_checks()` y el modo `--fiesta`.
+- **Qué lee de lo de Pretil (sin tocar `cuevas*.gd`).** `world.cuevas.restored`, `P()`, y de `cuevas.dentro` con `get()`: `dance_spots`, `client_spots` o `client_spot`, `bar_spot`, `dj_spot`, `unique_spots` (si lo diera). Sin decorado, solo salen los fumadores y los únicos van a la puerta.
+- **Trampas.** El decorado solo se ve si entras con `g._use_door(true, sala.dentro)`: teletransportar al jugador a sus coordenadas enseña tierra pelada. Las frases en manchego pasan por las reglas de `palabros` (tiés, l'á, entoavía, «ande» y no «por ande»): correr `palabros` tras tocar `loc.gd`. `MapData.at()` da la altura del terreno, no la del suelo del decorado: para cámaras dentro, `MapData.foot()`.
+- **Pendiente.** Lo de Pretil quedó resuelto el mismo día (la pista en blanco era el `Decal` de la bola; la puerta ya es 23–6; `client_spots` de seis, se usan tres) y las fotos se repitieron bien. Nada arregla la sala dentro del juego todavía (`set_restored` solo lo llaman las pruebas): hasta que Luis diga cuándo se arregla, esta gente no se ve en partida. De Luis: si quiere a alguien detrás de la barra y en los platos (no se ha puesto a nadie).
+- **Pruebas.** `fiesta` 12 ok, `luto` 10 ok, `palabros` 3 ok. Sin pasar: la completa.
+
+### Cámara de conversación de dos y etiqueta de nombre (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «La cámara de conversación cinemática actual que tenemos tapa un poco a los personajes y no deja ver bien el tuyo, creo que sería mejor un plano en el que ambos se viesen claramente [...] Además si puedes añadir la etiqueta con el nombre de quién habla a la burbuja de diálogo [...] Propón diseños». Estado: **etiqueta elegida («Me quedo con la C»: la del color de la ropa de quien habla); los otros dos diseños y `tag_style` se quitaron. Del encuadre no ha dicho nada en contra**.
+- **Cámara (`game.gd`).** `_talk_camera()` reescrita: plano fijo de los dos (constantes `TALK_*`), sin cortes; `_talk_with` (para quién está montado el plano) sustituye a `_talk_line`; `_talk_room` (cuánto del camino cabe, por `_clear_to`) y `_talk_fov` (campo que pide el plano; lo recoge el `want_fov` del final de `_process`). Paso atrás: `_talk_step(dt)` se inyecta en el movimiento a pie (`step_back`), sin girar al jugador. El código viejo está en el scratchpad de la sesión (`talk_camera_antes.gd`) y en git.
+- **Etiqueta (`hud.gd`, `hud_bits.gd`).** `dlg_tag` (PanelContainer `top_level` dentro de `dlg_slot`, después de la cola), `dlg_tag_text`, `set_dlg_name`, `dress_tag`; se coloca en `_process` con la burbuja. `game.gd`: `say` y `ask` llaman a `hud.set_dlg_name(who, _speaker_colour(...))` (color = `Parts.col(look_data["shirt"])`, o almagre si la voz no tiene figura). Quien añada otro sitio que escriba el nombre debe usar `set_dlg_name`, no `dlg_name.text`.
+- **Trampas.** Las cabezas miden un metro: de costado, a menos de ~1,5 m una tapa a la otra (por eso el paso atrás). El plano se pensó a 55° de campo: con otro FOV en Ajustes la distancia se escala. En la prueba, la Paca se mueve entre pasadas y `_pavement` recoloca al jugador: por eso la prueba lo pone a 0,9 m a mano.
+- **Pruebas.** `azafran` 8 ok, `herencia` 16 ok. Sin pasar: la completa, y los modos que hablan con otros únicos (el paso atrás mueve al jugador ~0,8 m al empezar a hablar).
+
+### La flecha de dirección, un metro sobre el objetivo (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «Podemos hacer que la flecha de dirección apunte como un metro más arriba del objetivo, a veces sale mirando hacia el suelo si te acercas mucho al objetivo».
+- **`game.gd`** (bloque «GPS + guide arrow» de `_process`): `arrow_body.rotation.x` ya no sale de `close * close`; es `atan2(altura de la flecha − (MapData.height(aim) + 1.0), max(distancia, 0.5))`, acotado a [−0,6, 1,1], con el mismo suavizado y el mismo vaivén. El giro, el tamaño y el latido no cambian.
+- **`selftest.gd`, modo `--flecha`**: tras el paseo se pone a 8, 3 y 1,5 m del objetivo por el lado de la calle y comprueba que el morro corta la altura de 1 m cerca del objetivo; imprime `FLECHA OK`. Las fotos `flecha_cerca_*.png` no valen (la cámara queda dentro del personaje junto a la Loli).
+- **Aviso.** Una pasada dio «Parse Error» con un carácter inválido y 7 líneas de registro: otra sesión estaba escribiendo `selftest.gd` en ese segundo. Repetir bastó.
+
+### El puente enlaza con la herencia (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «Después de los 10 P.C. para desbloquear el puente sigue saliendo lo de "hasta aquí lo hecho date una vuelta", cuando debería pasar directamente a la herencia de la eufrasia. Solo que dándole media hora in-game, en vez de dos».
+- **Qué era.** Tras `_unlock_bridge` la historia entra en el paso `tbc` y la hoja del día ponía `obj_free` («... o date un garbeo»); la Paca llamaba a las 2 h de juego.
+- **Cambios.** `fondo_casa.gd`: `CALL_AFTER_H := 0.25` (primero 0.5; Luis, acto seguido: «vamos a reducirlo a 15 minutos in-game»); `leaf()` ("" si no toca); `_leaf_was` y, en `tick`, `G.leaf_refresh()` cuando `leaf()` cambia y no hay `dlg` ni `phone_call` (la etapa cambia dentro de la llamada y de la charla). `game.gd`: `_show_step`, rama `tbc`/`free`: texto de `fondo_casa.leaf()` si lo hay (no en `chavisca`), y `set_target` a la Paca en la etapa `paca`; `leaf_refresh()` solo actúa con `side == null` y en `tbc`/`free`. `loc.gd`: `obj_casa_espera`, `obj_casa_paca`. El paso `tbc` y `obj_free` siguen: es lo que se ve con la deuda ya contada.
+- **Pruebas.** `selftest.gd` `_casa_checks`: sitúa `si` en `tbc` si corre sola; comprueba que a 0,1 h no llama y la hoja dice `obj_casa_espera`, que a 0,3 h llama y la hoja manda a la Paca, y que tras la charla vuelve `obj_free`. `herencia` 16 ok, `firmas` 20 ok, `palabros` OK. En la completa, la comprobación «no to-be-continued screen» espera `obj_casa_espera`: sin pasar. Ojo en la completa: la Paca llama ahora a los 30 s reales de abrir el puente (antes a los cuatro); si alguna comprobación posterior se cruza con su llamada, es por esto.
+
+### Alturas de menos, segunda pasada (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «Podemos repasar lo de las alturas de menos? Que hay edificios que tienen ventanas que sobresalen por arriba».
+- **`casas.gd`.** `_rhythm(f, L, ground, room)`: si la ventana tipo (alféizar + alto) no cabe en `room` (el alto de la planta), no devuelve ninguna; `_facade` le pasa `h`. En la última planta, un parche se corta en el borde del muro y un rótulo baja a `h - 0,46`.
+- **`casas_calles.gd`.** `h=` añadido a la planta baja de `co_31`, `vgracia_12`, `tembleque_95`, `santo_69`, `peso_b006`, `md_33`, `cip_16`, `abajo_7` (las líneas de antes, en `git diff`).
+- **`tools/casas/plantas_altas.py`** reescrito: lee las fichas como `_unpack`, también «lado» y «quiebro». `tools/casas/alturas.gd` (lo mismo con el parser del juego, `Godot --headless --path godot -s ../tools/casas/alturas.gd -- salida.json`) está sin probar: el día que lo lancé `casas.gd` tenía un error de sintaxis de otra sesión (`var br := _mat(...)`, arreglado por ella a los cinco minutos).
+- **Lo comprobado y descartado.** El tejado nunca baja del borde del muro (`_roof_y`), los edificios sin ficha estiran su textura con las plantas (`world.gd`), y recercos, dinteles y frontones de la última planta caben en las 3269 fichas.
+- **Pruebas.** `casas solo=` con las trece: 4 ok. Fotos en `guion/fotos/dobles/alturas_3.png`. Nada en commit.
+
+### Fachadas dobles: repaso de las 27, una por una (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «Revisamos las 27 y vamos una por una». Por cada casa, una hoja A/B (`guion/fotos/dobles/<id>_comparativa.png`) y él elige. Sus respuestas: «Rellenar» (`valencia_13`); «Haz el quiebro y ponme una comparativa. Y elijo» y luego «B» (`sanisidro_30`); «B» en `sanisidro_34`, `amargura_9`, `parto_10`, `cip_4`; «Las que sean rellenar, rellénalas directamente»; «Las del arreglo tienen mejor pinta» (`cri_xb` y las tres hechas sin preguntar); «Hay ventanas que quedan fuera de la fachada» (sobre `rsof_b402` y `cruces_22`).
+- **`calles.json`.** `fill`: `valencia_13` [[4.1, 11.4, 3.1]], `cip_4` [[9.31, 19.32, 2.2]], `sev_21` [[3.4, 8.77, 1.95]], `ctn_132a` [[8.86, 13.76, 2.32]]. `clear`: `real_43` 0.95, `real_31` 1.4, `rsof_b402` 0.85, `cruces_22` 1.05, `bs_22` 1.1, `vin_x2` 0.85, `flo_26` 0.85, `fle_10` 1.0, `stana_31` 0.9, `co_14` 1.15, `stana_27` 0.9. `front` nuevo: `sanisidro_30`, `sanisidro_34`, `parto_10`, `rol_br19`, `cri_xb`, `monjas_8`, `jym_rs45`, `co_40`, `amargura_9`, `amargura_11`. `h`: `rsof_b402` y `constitucion_30b` 6.4, `cruces_22` y `cruces_11` 9.3, `md_12` 12.3. Casa nueva `amargura_11g` (va justo antes de `amargura_11`: el horneado toma la primera que encaja; `only` 2 y `only` 1).
+- **`casas_calles.gd`.** Fichas reescritas: `sanisidro_30` (líneas «lado» para su tramo girado), `sanisidro_34`, `cri_xb`, `co_40` (líneas «quiebro»), `amargura_9` (6,2 m, `ciego`), `amargura_11g` (nueva), `amargura_11` (portón en .78). Las líneas de antes están en el scratchpad de la sesión (`*_antes.txt`), no en el repo: para volver atrás, `git diff`.
+- **`casas.gd`.** `_unpack`: una línea que empieza por `quiebro ` va a `spec["turn"]`. En `_from_spec`, al dibujar un lado a calle de 3 m o más: si la ficha tiene `turn` y el borde corre a lo largo del frente (`|dx| > 0,9 · largo`) y uno de sus extremos está en el frente (`_on_front`), se dibuja con esas líneas (se ponen un momento en `spec["flank"]` y `_flank` a verdadero). Los carteles de una línea «quiebro» van a esa pared (`lado` 1 por defecto, como en «lado»).
+- **Lo aprendido.** (1) Las piezas de Catastro por delante de la línea con una planta menos que el cuerpo son vuelos de las plantas altas; `_step` las sacaba como planta baja adelantada. Se recortan con `clear` y, si la ficha lleva `fly`, el vuelo se ve arriba. (2) El «6,25» que apunté para la esquina de `sanisidro_30` era del anillo ya crecido por el horneado, no de Catastro: para leer el solar real, el mapa de antes del arreglo o `partes_catastro.py`. (3) Las líneas «lado» van a la pared más larga a otra calle; un tramo girado más corto que esa se quedaba con ventanas genéricas: de ahí «quiebro». (4) Con `tol` propio en la ficha (`alemania_9`, 1,1) la cuenta de `fachadas_dobles.py` da un falso positivo.
+- **Sin tocar.** `ctn_136` y `ctn_138` (cuerpos reales de 1,5–1,9 m en la medianera; el juego los saca como porche con terraza: Luis, 25/11: «Déjalos como están»). La tapia de `amargura_11` tiene zócalo de piedra en el juego y una franja marrón pintada en la foto. Los tres portones más altos que su planta baja.
+- **Pruebas.** `casas solo=` con todas las tocadas, por tandas: 4 ok cada vez. Cuelgues de Godot al arrancar (señal 11, `game.gd:728`): unas siete veces hoy, siempre bien al repetir. Nada en commit.
+
+### Fachadas dobles: el frente y el solar (25/11, Claude · Sistemas)
+
+- **Qué pidió Luis.** «Hay muchas fachadas que salen dobles. Con una segunda fachada adelantada al bloque del edificio. A que puede deberse?», en «Calle tembleque con rosa de Santamaría» (`rsm_t12d`, `rsm_b113`). Tras el diagnóstico: «Hazlo tú cuando termines tu tanda, ya que lo has analizado. Y lo arreglas». Texturas avisó de que su tanda había terminado antes de que yo tocara nada.
+- **Causa.** `front` más de 0,6 m por delante del borde del solar. `casas.gd` `_from_spec` no reconoce ese borde como fachada (`_on_front`, `tol` 0,6) y lo dibuja otra vez (`_facade(ln, spec, true)` si da a calle y mide 3 m o más). En el cruce, la hilera `rsm_t12d`/`rsm_24`/`rsm_b019` estaba sobre una sola recta y la calle quiebra 4°: 1,1 m de desfase en la esquina y la bocacalle a 2,8 m de ancho (Catastro: 4,9 m).
+- **`tools/bake_godot.py`.** Bloque nuevo «The body reaches the front» antes de `for hand, (bid, floors, pieces) in hand_groups.items()`. Constantes `FRONT_REACH` 3,0, `FRONT_SURE` 1,9, `FRONT_TOL` 0,5, `FRONT_ROAD` 2,1. Por cada casa de `_from_spec` (fuera: `["obra"]`, `func _<id>` de `casas.gd`, `ADOSADOS`, `ROSAS`, `HILERA21`, `rc` nulo, `strip`, `"grow": 0`): barre el solar hacia la línea (`_sweep`), quita su porche, las demás casas descritas y la calzada (`_roadway`: los ejes de las calles con 2,1 m), y añade el hueco a las piezas de la casa. Un entrante de más de 1,9 m que coge entre el 15 % y el 85 % del frente no se rellena (se lista). Con `MATRI_FRONTS=<archivo>` escribe además, para cada casa con hueco y sin `porch`/`fill`/`clear`, la recta que de verdad tiene su solar (los dos puntos más separados de su contorno que no dejan nada a más de 0,15 m por delante).
+- **`tools/casas/frentes_al_solar.py`** (nuevo). Lee ese archivo y pone en `calles.json` el frente de las casas cuya línea se metía en la calzada, y el de las vecinas que compartían extremo si así se cierra la junta. Se repite horneado + script hasta que no mueve nada (a la segunda vuelta, cero). `calles.json` se reescribe con `json.dumps(indent=1)`, idéntico byte a byte a como estaba salvo los frentes.
+- **Números.** 153 frentes retrasados (19 de ellos por acompañar; de Texturas hoy: solo `sce_vm`, 0,15–0,32 m). 61 solares crecidos, 151 m². Dobles por la medida de `fachadas_dobles.py` (carpeta de notas): de 137 a 27.
+- **Sin tocar.** Las 17 casas con el solar por DELANTE de la línea (`_step`: planta baja adelantada): `alemania_9`, `real_43`, `real_31`, `stana_27`, `stana_31`, `jym_rs45`, `monjas_8`, `rsof_b402`, `cruces_22`, `bs_22`, `vin_x2`, `flo_26`, `fle_10`, `co_14`, `co_40`, `ctn_136`, `ctn_138`; algunas serán de verdad. Los pareados de 1995 de Florido y del Rollo (`flo_p*`, `rol_b*`, con `strip`): tapia en la calle y casa detrás, a propósito.
+- **Líneas que aún rozan la calzada** (el horneado las lista; casi todas por menos de 1 m²): `mon_n25` `rol_br19` `jym_10` `peso_24` `jym_8` `amargura_7` `sanisidro_30` `sanisidro_34` `sanisidro_55` `jym_rs26` `castilla_16` `parto_b301` `parto_10` `colon_s11` `real_49` `fle_1` `romero_5` `romero_3` `constitucion_44` `rsa_16` `delicias_36d` `cri_xb` `stana_56` `jx_10` `clavel_eu1`.
+- **Trampas.** (1) El primer recuento (285) estaba inflado: contaba la pared trasera de piezas poco hondas; hay que mirar hacia dónde mira el borde. (2) Rellenar siempre hasta la línea dejaba calles con 0,9 m de paso libre: por eso la calzada manda. (3) `casas` sin `solo=` fotografía las 3280 y no acaba en 600 s; con `solo=` hace sus comprobaciones de todas igualmente.
+- **Pruebas.** `casas solo=rsm_t12d,rsm_b113,rsm_24,toledo_t65,sanisidro_10,real_78,monjas_r23,cov_r9`: 4 ok. Nada en commit.
+
+### La toquilla y el mandil (25/11, Claude · Sistemas)
+
+- **Qué.** Luis, con una foto de cada prenda: «Para las ancianas habría que añadir de ropa posible una toquilla (negra para el cementerio, de colores fuera) y para todas las mujeres no niñas un posible mandil».
+- **`chara.gd`.** Claves de look `toquilla` y `mandil` (un color; −1 o sin clave: nada). `_layers(top_id)` va tras `_clothes`, sobre cualquier ropa, separado por `_top_pad`. `_shell` es un generador de telas sobre el cono del cuerpo: `at(u, v)` → ángulo, altura y separación; uv en metros; ribete con color de vértice (dos líneas juntas en cada borde para que quede nítido); en caché por clave.
+  - Toquilla: textura de agujeros al tresbolillo con alpha scissor (`TOQUILLA_CELL`), las dos mitades cruzadas abajo en el centro, el V abierto al cuello y tres bolas de nudo.
+  - Mandil: vichy (`GINGHAM_TILE`), peto con tirantes y sisas, espalda, tira de flores sobre azul oscuro, bolsillos. Sobre los vestidos (ropa 22 y 25) se abre abajo con la falda (`flare`); sin eso, la falda lo atravesaba.
+- **Creador.** Opciones 28 y 29 (añadidas al final), en Pintas tras el estampado, en `COLOUR_OPTIONS`, en `WARDROBE` con `NOTHING` 0 (los armarios guardados las reciben solos: `armario_owned`). Etiquetas en `c_names` y `c_values`.
+- **Quién las lleva.** `_neighbour_look`: toquilla de color en el 18 % de `old_f`; mandil en el 22 % de `old_f` y el 8 % de `adult_f`. `luto.gd`: toquilla negra en el 45 % de las viejas (`TOQUILLA`); el mandil, si sale, negro; nada al viejo. Los NPC únicos no cambian.
+- **Modelos libres y Blender, probados y descartados.** Luis pidió probar modelos libres o hechos en Blender. En OverScore Proxy (CC0) la «Shoulder Wrap» casi todo son mangas y la «Sleeveless Scoop Neck Tunic» sale con bultos. Se hizo una versión desde cero en Blender, con grosor, bordes enrollados, nudo y ribete en relieve. Luis prefirió la de código: «Las de las foto mejor. Han quedado increíbles». APROBADAS así; el script de Blender se borró.
+- **Pruebas.** Foto `guion/fotos/toquilla_mandil.png` (de frente y de espaldas, `portraits --window --cuerpo --looks=`). `creador` 21 ok, `luto` 10 ok (comprobación nueva de la toquilla), `palabros` OK. Sin commit.
+
+### El Modo Chavisca pasa a llamarse Modo Golismeo (25/11, Claude · Sistemas)
+
+- **Qué.** Luis: «Modo Chavisca* sería modo golismeo». Cambian solo los textos que se ven: `loc.gd` `menu_chavisca` («Modo Golismeo» / «Golismeo mode»), `menu_chavisca_t` («MODO GOLISMEO»), `obj_chavisca`; y `guion/misiones.html` (y su artifact).
+- **Lo que no cambia.** `G.chavisca`, las claves de Loc, los guardados `chavisca_*.json` (las partidas de antes siguen ahí), las pruebas `--chavisca` y `--chavisca_intro` y las notas viejas. La prueba busca «Golismeo» en el objetivo.
+- **Pruebas.** `chavisca shots`: 8 ok; foto `chavisca_menu` con «Modo Golismeo». Sin commit.
+
+### La gente de luto del cementerio (25/11, Claude · Sistemas)
+
+- **Qué.** Luis: «En el cementerio habrá siempre 4/6 NPCs dando vueltas. Varias ancianas y un anciano. Vestirán de negro/colores oscuros y las mujeres siempre pañoleta negra se llamarán simplemente Viejo/a de luto y dirán frases en tono humor negro manchego ... No serán NPCs únicos ... También hay probabilidades de que aparezca un NPC único aquí si no está trabajando/de misión». Luego: «Mejor que solo un 25% de la viejas lleve la pañoleta» (`luto.SCARF`).
+- **`luto.gd`** (preparado en `game.gd` antes de `rondas`, `tick` tras la Pili). Seis NPC sin `id`, nombre `generic_names` 10/11, frases `luto_f` / `luto_m`. Cada día salen `4 + posmod(day_n*7+3, 3)`, el viejo siempre; los demás `away` y ocultos, y solo cambian cuando no los ves. Aspecto: `_neighbour_look` y encima colores oscuros, zapatos negros, sin carro, sin tabaco; gafas y pendientes discretos; las viejas sin la blusa blanca sola (ropa 16 fuera).
+- **Por dónde andan.** Una rejilla de paseos (`lanes_u`, `lanes_v`, en el marco del cementerio `cm.map_at` / `cm.P`) por los huecos de `COLS` / `ROWS`; ruta BFS, `_edge_ok` no deja cruzar un par de filas. `_uv` invierte `P` con Newton (la aproximación daba falsos «a través de tumbas»). Visitan pasillos de tumbas a menos de 35 m (`NEAR`).
+- **Únicos.** `rondas.gd` `CEMENTERIO` (probabilidad por perfil) y `cementerio(id)` con un hash por tramo de dos horas, de 9 a 20; nunca niños; `zones["cementerio"] = G.luto.spots()`.
+- **Pañoleta.** `chara.hat_cut("panoleta")` = 3 y `_hair` no pinta pelo con corte 3: antes algunos peinados asomaban por encima.
+- **Pruebas.** `luto shots`: 9 ok (116 de 400 aspectos con pañoleta), fotos `luto_vieja`, `luto_grupo`. `palabros` OK. Sin commit.
+
+### La Pili como la referencia: piezas nuevas de Lustre y Pintas (25/11, Claude · Sistemas)
+
+- **Qué.** Luis: «La Pili se parece muy poco a la referencia. Crea nuevos elementos de Lustre y Pintas si lo ves necesario. Propón aspectos». Se le enseñaron cuatro (`guion/fotos/pili_aspectos.png`) y eligió la A. `PILI_LOOK` en `pili.gd` es esa.
+- **Opciones nuevas del creador** (añadidas al final de `OPTIONS`, como manda la regla):
+  - 24 `canas`;
+  - 25 `brow_color` (−1 es el color del pelo);
+  - 26 `nose`;
+  - 27 `estampado`.
+  También el peinado 35 (`Chara.MATA`) y la ropa 25 (`Chara.REBECA_VESTIDO`). Etiquetas en `loc.gd` (`c_names`, `c_values`). `TABS`: las tres primeras van en Lustre y el estampado en Pintas. `not_used` las apaga cuando no aplican.
+- **Cómo están hechas (`chara.gd`).**
+  - `_mata`: unos 150 rizos con bultos en una cáscara alrededor de la cabeza, en caché, más la bola de pelo normal debajo.
+  - `_canas`: tras `_hair`, cambia los materiales del color del pelo por un shader de ruido. Los colores se pasan en lineal: con `source_color` y `Parts.col` salían grises.
+  - `_cardi_fronts`: el cuerpo de la rebeca, curvo, con la V, da toda la vuelta, porque la rebeca del modelo libre deja un hueco en la espalda.
+  - `_print_on`: textura triplanar con `uv1_triplanar_sharpness` alto, para que no emborrone.
+  - `_nose`.
+- **Creador (`game._refresh_creator`).** El panel tiene 12 filas (`hud.CREATOR_ROWS`) y Lustre ahora 15: la lista se desplaza con el cursor (`_creator_first`).
+- **Vecinas.** `_neighbour_look` `old_f`: 14 % con la mata, 18 % con pelo oscuro y canas, 16 % con rebeca y vestido.
+- **Pruebas.** `creador` 21 ok, `pili shots` 10 ok, `palabros` OK. `portraits looks=<json> out=<carpeta> [cuerpo] [giro=]` sirve para probar aspectos sin tocar los NPC. Retratos de la Pili rehechos y `relaciones.html` regenerado. Sin commit.
+
+### Juan XXIII, los dos extremos: 15 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `jx_5, 7, 8, 6, 4, 2, 2s, 49, 51, 53, 55, 57, 59, 42, 44`, escritas por el scratchpad `jx3_write.py` (en `casas_calles.gd`, tras `jx_18`). Comprobado contra las zonas: `merkocarry_zone` a 36 m o más del extremo sur, `almazara_zone` a más de 300 m del norte; ningún RC en `bake_godot.py` ni en los scripts.
+- **Dejadas.** `4591026` (el 3, detrás del 5).
+- **Alineación.** alinea.py 0. Horneado: 15 nuevas; `stana_79` y `bs_j61p` solo cambian la medianera.
+- **Pruebas.** `casas` OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### San Cristóbal, tramo oeste: 14 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `scr_1, 3, 5, 9b, 9, 11, 13, 15, 17, 17b, 4, 6, fp11, fp10`, escritas por el scratchpad `scr_write.py` (en `casas_calles.gd`, tras `jx_44`). El 7 (`4791014`) es «suelo» en el Catastro: `scr_5` lleva `fill` sobre él. `4791013` y `4891021` van partidos por plantas (`only`). Comprobado: nada a menos de 90 m de `named_u` ni de `merkocarry_zone`; ningún RC en `bake_godot.py` ni en los scripts.
+- **Dejadas.** La tapia por San Cristóbal de `jx_8` (`4791501_part3`, de una planta), que sigue como bloque normal; y el tramo este de la calle (el 19 y siguientes; el ladrillo de tres plantas `4891529`), para la próxima tanda.
+- **Alineación.** alinea.py 0. Horneado: 14 nuevas; `jx_10` solo cambia la medianera.
+- **Pruebas.** `casas` OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### San Cristóbal, tramo este: 15 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `sce_19, 21, 23, 23b, 25, 27, 29, 31, vm, v11, 18, 20, 22, 24, 26`, escritas por el scratchpad `sce_write.py` (en `casas_calles.gd`, tras `scr_fp10`). `sce_23b` va sin RC (tapia). `sce_29` (`4891015`) es un solar: `porch` de 4,4 m y `fill` de 0,3 m para la valla. `sce_v11` es Vázquez Mella 11 (`4891527`) con `fill`. `sce_vm` es `4891529` (sin dirección). Comprobado: nada a menos de 120 m de `named_u` ni de `merkocarry_zone`; ningún RC en `bake_godot.py` ni en los scripts.
+- **Dejadas.** Del 33 al 45, el 28, Alegría 7 y la Travesía de San Cristóbal 2, para la próxima tanda.
+- **Alineación.** alinea.py 0. Horneado: 15 nuevas, ningún cambio en las demás.
+- **Pruebas.** `casas` OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### San Cristóbal, último tramo: 10 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `scf_33, 35, 39, 41, 43, 45, t2, tapia, 28, a7`, escritas por el scratchpad `scf_write.py` (en `casas_calles.gd`, tras `sce_26`). `scf_tapia` va sin RC. `scf_t2` es `4891506` con líneas `lado` a la Travesía. Comprobado: nada a menos de 180 m de `named_u` ni de `merkocarry_zone`; ningún RC en `bake_godot.py` ni en los scripts. `sce_26` solo cambia la medianera con `scf_t2`.
+- **Dejadas.** Las fachadas de la Calle de la Alegría del 45 y de Alegría 7.
+- **Alineación.** alinea.py 0. Horneado: 10 nuevas; `sce_26` solo cambia la medianera.
+- **Pruebas.** `casas` OK (la tapia necesitó sus juntas de tapial para pasar de 12 piezas). APROBADA por el usuario («Visto bueno y paramos»). Sin commit.
+
+### Los Remedios, tramo oeste: 15 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `rem_1d, 3, 5, 7, 9, 11, 13, 15, 15a, 17, 2, 2d, 4, 6, 8`, escritas por el scratchpad `rem_write.py` (en `casas_calles.gd`, tras `scf_t2`). Frentes de `house_street.py` sin tocar; huecos medidos con `rem_px.py` (rayos de la panorámica sobre las fachadas).
+- **Frentes nuevos.** Horneado con las líneas `fronts:` de Sistemas: ninguna `rem_*` metida en la calzada ni con hueco.
+- **Pruebas.** `casas` OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### Los Remedios, segundo tramo: 15 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `rem_fp23, fp22, 19, 21, 23, 25, 27, 29, fp20, 14, p9, 18, 20, 22, 24`, escritas por el scratchpad `rem2_write.py` (en `casas_calles.gd`, tras `rem_8`). Frentes de `house_street.py`; el del 22 llevado a la línea de sus vecinos con `clear: 1.0`. Huecos medidos con `px_cast.py` (rayos de la panorámica sobre las fachadas).
+- **Frentes nuevos.** Línea `fronts:`: solo `rem_fp20` con 0,6 m² en la calzada (cuña de esquina); `frentes_al_solar.py` movió 0 frentes. Se deja así.
+- **Pruebas.** `casas` OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### Los Remedios, tercer tramo: 21 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `rem_31 … rem_57` (impares) y `rem_26 … rem_al15` (pares), escritas por el scratchpad `rem3_write.py` (en `casas_calles.gd`, tras `rem_24`). Tres tapias rc null. Para los tramos de otra fábrica, `paño` y no `parche` (el parche tapa los huecos).
+- **Frentes nuevos.** Ninguna `rem_*` nueva metida en la calzada; `alinea.py` 0.
+- **Pruebas.** `casas` OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+- **Lo que faltaba (usuario: «Ponte con lo que falta frente a las fotos»).** Adosados del 31 al 45: frentes 2,6 m atrás con `clear: 3.0` y tapias rc null a la calle (`rem_tw`, `rem_te`, `rem_39g`); `esc` y `ter` para escaleras y porches. Dos funciones nuevas en `casas.gd` tras `_des_9`: `_rem_36` (la bandera) y `_rem_t49b` (hastial y tejado de la nave). Ojo: `var br = _mat(...)` sin `:=` (con `:=` es un error de análisis que para todas las pruebas; lo arreglé al momento). Horneado: 4 nuevas y las 10 vecinas; ninguna `rem_*` nueva en la calzada. `casas` OK.
+
+### La Plata, mitad oeste: 25 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `pla_*`, escritas por el scratchpad `pla_write.py` (en `casas_calles.gd`, tras la última fila `rem_`). Frentes de `pla_fronts.py`: norte en la línea del Catastro, sur a 2,45 m del eje de la calle del mapa (que va 3 m al sur de la real; el pasillo de la calle recorta los solares a 2,4 m del eje, así que no hace falta `clear`).
+- **Trucos.** Un RC con dos edificios: dos entradas con `reach` (Fray Petronilo 17). Un RC con una parte de una planta al lado de una de dos: la entrada de una planta con `only: 1` y `reach`, ANTES en calles.json (`house_of` se queda con la primera que encaja). Tapias rc null: el área tiene que pasar de 5 m² o el horneado las tira (`pla_fp17g` con `deep` 0,8). Ojo con el orden de `win`: posición, ancho, antepecho, alto.
+- **Frentes nuevos.** `pla_8` con 0,2 m² en la calzada de la Fray Petronilo (esquina), se deja; `pla_1` tenía el patio hundido 2,8 m: `fill`.
+- **Pruebas.** `casas` OK. APROBADA ("Visto bueno y continuar"). Sin commit.
+
+### La Plata, mitad este: 17 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `pla_*` del scratchpad `pl2_write.py`, en `casas_calles.gd` tras `pla_16b`. Norte en la línea del Catastro; sur en el borde del pasillo de la calle del mapa.
+- **Trucos.** Fill de 0,3 m: lo tira `simplify(0.3)`, poner 0,6. Un RC compartido con una casa ya hecha (`rem_p21`): la entrada nueva con `only` va ANTES en calles.json. Una tapia de 2,4 m necesita detalle real (hiladas, remate) para pasar de 12 cajas: no inventar pilares.
+- **Vecinas tocadas.** `sce_29` pierde sus dos piezas a la Plata (ahora `pla_sol`), `rem_p21` la de dos plantas (ahora `pla_21`); vistas en el juego, bien.
+- **Pruebas.** `casas` OK. APROBADA ("Visto bueno y continuar"). Sin commit.
+
+### Vázquez de Mella: 28 entradas (25/11, Claude · Texturas)
+
+- **Qué.** `vm_*` del scratchpad `vm_write.py`, en `casas_calles.gd` tras `pla_30`. La calle del mapa coincide con la real (panorámicas a menos de 1 m del eje).
+- **Trucos.** Parcela con frente a dos calles: la entrada nueva con `only`/`reach` va ANTES en calles.json (`vm_11` antes de `sce_v11`, `vm_12` antes de `stana_97`). El aviso «a deep recess ... left alone» del horneado con un frente liso en la foto: `fill` a mano. Una obra sin huecos no pasa de 12 cajas: la entrada abierta es `gar ... k=void`, no un parche.
+- **Vecinas tocadas.** `stana_101` (aprobada) gana dos filas `lado`; `stana_97`, `stana_99`, `stana_103`, `stana_105` y `sce_v11` pierden piezas de atrás; vistas en el juego, sus fachadas igual.
+- **Pruebas.** `casas` OK. APROBADA ("Visto bueno y paramos"). Sin commit.

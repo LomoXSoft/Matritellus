@@ -64,6 +64,11 @@ func givers() -> Array:
 		for n in G.tomasa.givers(free_hands):
 			if n != null and not (n in out):
 				out.append(n)
+	# La Pili (pili.gd): up and down the Arroyuelo with her errand, or waiting for her fish by the Magdalena
+	if G.get("pili") != null:
+		for n in G.pili.givers(free_hands):
+			if n != null and not (n in out):
+				out.append(n)
 	# La Chiki, her walls still to be shown to you (pintadas.gd)
 	if G.get("pintadas") != null:
 		for n in G.pintadas.givers(free_hands):

@@ -121,6 +121,7 @@ func _new_customer() -> void:
 		customer.queue_free()
 	var voice: String = CUSTOMER_VOICES[_customers % CUSTOMER_VOICES.size()] if _customers < CUSTOMER_VOICES.size() else CUSTOMER_VOICES.pick_random()
 	var look: Dictionary = G._neighbour_look(voice)
+	look.erase("carro")                       # (no shopping trolley at the desk)
 	look["hat"] = ""                          # (one takes it off, inside)
 	var desks: Array = place.desk_spots
 	customer = _person(look, voice, desks[1])

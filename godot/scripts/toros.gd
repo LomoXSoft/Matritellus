@@ -27,9 +27,23 @@ const WEST_A := Vector2(-19.6, -28.0)              # the old wall along the Call
 const WEST_B := Vector2(-42.5, 27.4)                # ...as far as the corner of Vista Alegre (six metres in from the middle of each street)
 const SOUTH_B := Vector2(18.5, 65.8)               # the corner of Vista Alegre and San Agustín (the fence's)
 const EAST_N := Vector2(47.1, -14.5)               # where the fence of San Agustín ends, at the houses' yards
+# The restored stands, walked on (the user, 25 November 2026: "Se puede visitar la plaza de toros? Estaria bien poder
+# visitarla por dentro. Te adjunto referencias de como se vería": referencias/plaza_toros/usuario_02_ruedo.png and
+# usuario_03_galeria.png). From those two pictures: the two white rings on the sand, the barrier of red boards between
+# white posts, flights of steps up the stands, a box with a tiled roof on red posts and its red railing.
+const FRONT := 1.6                                 # the stands' front wall
+const TIER := Vector2(1.2, 0.6)                    # each of its five steps: how deep, how high
+const TOP := 4.0                                   # the last of them (FRONT + 4 * TIER.y)...
+const R_TOP := 25.4                                # ...which begins here
+const STAIRS := [12, 45, 62]                       # the stretches that are a flight of steps from the alley up to the last tier
+const FLIGHT := 20                                 # the steps of each
+const PENS_TOP := 3.3                              # the pens' flat roof: the floor of the box
+const RED := 0x8c1f1a
+const PAINT := 0xf2efe6
 
 var restored := false
 var _state := {}                                   # "viejo" / "nuevo" -> {node, first, last (its solids among the body's)}
+var _stand_decks: Array = []                       # the restored stands' floors: in MapData.decks only while it is restored
 
 func _material(key) -> Material:
 	if _mats.has(key):
@@ -99,6 +113,56 @@ func set_restored(on: bool) -> void:
 		(_state[st]["node"] as Node3D).visible = mine
 		for i in range(int(_state[st]["first"]), int(_state[st]["last"])):
 			(body.get_child(i) as CollisionShape3D).set_deferred("disabled", not mine)
+	var has: bool = MapData.decks.any(func(d): return d.has("toros"))
+	if on and not has:                               # (the stands are floors only when there are stands)
+		MapData.decks = _stand_decks + MapData.decks
+	elif not on and has:
+		MapData.decks = MapData.decks.filter(func(d): return not d.has("toros"))
+
+## a floor of the stands for MapData.decks: its outline in the ring's frame, its height over the lot; `grad` (how much
+## it rises to the metre, as a vector) makes it a slope, and then y is its height at `at`
+func _deck(pts: Array, y: float, at = null, grad = null) -> Dictionary:
+	var poly := PackedVector2Array()
+	var mid := Vector2.ZERO
+	for q in pts:
+		poly.append(spot(q.x, q.y))
+		mid += q / float(pts.size())
+	var o: Vector2 = spot(at.x, at.y) if at != null else spot(mid.x, mid.y)
+	var r2 := 0.0
+	for q in poly:
+		r2 = maxf(r2, o.distance_squared_to(q))
+	var d := {"o": o, "poly": poly, "r2": r2 + 0.5, "top": level + y, "toros": true}
+	if grad != null:
+		d["grad"] = grad                             # (the ring's axes are the map's)
+	return d
+
+## the floors of the restored stands: the flights of steps first (they lie before the floors they join), then each
+## tier in lengths of six stretches, then the pens' roof
+func _note_floors(door_k: int, pens_k: int) -> void:
+	var step := 360.0 / N
+	for k in STAIRS:
+		var am: float = (k + 0.5) * step
+		_stand_decks.append(_deck([_p(k * step, R_STAND), _p((k + 1) * step, R_STAND), _p((k + 1) * step, R_TOP), _p(k * step, R_TOP)],
+			TOP / 2.0, _p(am, (R_STAND + R_TOP) / 2.0), _p(am, 1.0) * (TOP / (R_TOP - R_STAND))))
+	for j in range(5):
+		var r0: float = R_STAND + TIER.x * j
+		var r1: float = r0 + TIER.x if j < 4 else R - THICK
+		var run: Array = []
+		for k in range(N + 1):
+			var tier: bool = k < N and k != door_k and k != pens_k and k != pens_k + 1 and (j == 4 or not (k in STAIRS))
+			if tier:
+				run.append(k)
+			if (not tier or run.size() == 6) and not run.is_empty():
+				var pts: Array = []
+				for q in range(int(run[0]), int(run[-1]) + 2):
+					pts.append(_p(q * step, r0))
+				for q in range(int(run[-1]) + 1, int(run[0]) - 1, -1):
+					pts.append(_p(q * step, r1))
+				_stand_decks.append(_deck(pts, FRONT + TIER.y * j))
+				run = []
+	var b0: float = pens_k * step
+	_stand_decks.append(_deck([_p(b0, R_STAND - 0.2), _p(b0 + step, R_STAND - 0.2), _p(b0 + 2.0 * step, R_STAND - 0.2),
+		_p(b0 + 2.0 * step, R - THICK), _p(b0 + step, R - THICK), _p(b0, R - THICK)], PENS_TOP))
 
 # ---------------- helpers ----------------
 func _p(deg: float, r: float) -> Vector2:
@@ -247,19 +311,30 @@ func _ring(fine: bool) -> void:
 				var side: Array = [_p(a, R_STAND), _p(a, R - THICK)]
 				_plain(side[0], side[1], 0.0, 4.0, "white")
 				_plain(side[1], side[0], 0.0, 4.0, "white")
-				solid(_up(_p(a, (R_STAND + R) / 2.0), 2.0), Vector3(R - R_STAND, 4.0, 0.3), -deg_to_rad(a))
+				solid(_up(_p(a, (R_STAND + R) / 2.0), 2.9), Vector3(R - R_STAND, 5.8, 0.3), -deg_to_rad(a))      # (as tall as stops who walks the last tier)
+				for y in [TOP + 0.45, TOP + 0.9]:    # (and a red rail along the top of each)
+					bar(_up(_p(a, R_STAND + 0.1), y), _up(_p(a, R - THICK - 0.1), y), 0.07, 0.07, RED)
+				for i in range(5):
+					drum(_up(_p(a, R_STAND + 0.1 + i * (R - THICK - R_STAND - 0.2) / 4.0), TOP), 0.04, 0.04, 0.9, RED, 6)
 		elif k == pens_k or k == pens_k + 1:
 			_pens_block(a0, a1, fine, k == pens_k)
+		elif fine and k in STAIRS:
+			_stairs(a0, a1)
 		elif fine:
 			_tiers(a0, a1)
 		else:
 			_slope(a0, a1, k)
-		if not (k == door_k and fine):
+		if not fine:
 			solid(_up(_p(am, R_STAND + 0.3), 0.8), Vector3(0.6, 1.6, 2.0), -deg_to_rad(am))
+		elif k != door_k and not (k in STAIRS):      # (tall enough to stop who stands on the first tier, or on the pens' roof, too)
+			solid(_up(_p(am, R_STAND + 0.12), 2.6), Vector3(0.3, 5.2, 2.0), -deg_to_rad(am))
 	# the floor of the ring, and what is in it
 	if fine:
 		flat(_circle(R_STAND, 56), 0.035, "albero")
 		_barrier(door_k * step + step / 2.0)
+		_circles()
+		_palco(pens_k * step, (pens_k + 2) * step)
+		_note_floors(door_k, pens_k)
 	else:
 		flat(_circle(R_STAND, 56), 0.035, "tierra")
 		for j in range(46):                          # (weeds, thick in the middle of it)
@@ -292,6 +367,61 @@ func _tiers(a0: float, a1: float) -> void:
 		if j > 0:
 			_plain(_p(a0, r0), _p(a1, r0), y - 0.6, y, "hormigon")
 
+## a stretch of the restored stands that is a flight of steps: from the alley, through the front wall, up to the last
+## tier, between two stepped walls with a red handrail
+func _stairs(a0: float, a1: float) -> void:
+	var going: float = (R_TOP - R_STAND) / FLIGHT
+	var rise: float = TOP / FLIGHT
+	for i in range(FLIGHT):
+		var r0: float = R_STAND + going * i
+		flat(PackedVector2Array([_p(a0, r0), _p(a1, r0), _p(a1, r0 + going), _p(a0, r0 + going)]), rise * (i + 1), "hormigon")
+		_plain(_p(a0, r0), _p(a1, r0), rise * i, rise * (i + 1), PAINT)
+	flat(PackedVector2Array([_p(a0, R_TOP), _p(a1, R_TOP), _p(a1, R - THICK), _p(a0, R - THICK)]), TOP, "hormigon")
+	for a in [a0, a1]:
+		for j in range(4):                           # (as high as the tier beside it or as the steps, whichever is the higher)
+			var r0: float = R_STAND + TIER.x * j
+			var top: float = maxf(FRONT + TIER.y * j, TOP * TIER.x * (j + 1) / (R_TOP - R_STAND)) + 0.14
+			_plain(_p(a, r0), _p(a, r0 + TIER.x), 0.0, top, "white")
+			_plain(_p(a, r0 + TIER.x), _p(a, r0), 0.0, top, "white")
+		bar(_up(_p(a, R_STAND + 0.1), 1.05), _up(_p(a, R_TOP - 0.1), TOP + 0.95), 0.07, 0.07, RED)
+		for i in range(5):
+			var f: float = i / 4.0
+			drum(_up(_p(a, lerpf(R_STAND + 0.1, R_TOP - 0.1, f)), TOP * f), 0.04, 0.04, lerpf(1.05, 0.95, f), RED, 6)
+		solid(_up(_p(a, (R_STAND + R_TOP) / 2.0), 2.9), Vector3(R_TOP - R_STAND, 5.8, 0.2), -deg_to_rad(a))
+
+## the two white rings painted on the sand
+func _circles() -> void:
+	for r in [13.2, 10.4]:
+		for i in range(72):
+			var b0: float = 5.0 * i
+			flat(PackedVector2Array([_p(b0, r), _p(b0 + 5.0, r), _p(b0 + 5.0, r + 0.18), _p(b0, r + 0.18)]), 0.05, PAINT)
+
+## The box over the bull pens: on their flat roof, a railing and three posts of red wood, a lean-to roof of tiles from
+## them up to the drum's wall, raised to carry it (the one thing of all this that is seen from the street).
+func _palco(a0: float, a2: float) -> void:
+	var am: float = (a0 + a2) / 2.0
+	var keep := _xf
+	_xf = Transform3D(Basis(Vector3.UP, PI / 2.0 - deg_to_rad(am)), _up(_p(am, R_STAND - 0.2), 0.0))       # (+z: out from the ring)
+	var deep: float = R - THICK - (R_STAND - 0.2)
+	var fy := PENS_TOP
+	for x in [-1.7, -0.06, 1.58]:
+		box(x, fy, 0.1, 0.12, 2.2, 0.12, RED)
+	box(-1.8, fy + 2.2, 0.06, 3.6, 0.16, 0.2, RED)
+	box(-1.7, fy + 0.88, 0.12, 3.4, 0.07, 0.08, RED)
+	box(-1.7, fy + 0.12, 0.13, 3.4, 0.05, 0.06, RED)
+	for i in range(16):
+		box(-1.5 + i * 0.2, fy + 0.17, 0.14, 0.04, 0.71, 0.04, RED)
+	box(-2.5, H - 0.05, deep - 0.05, 5.0, 1.55, THICK + 0.1, "white")
+	var low := fy + 2.4
+	var high := H + 1.6
+	var eave: Array = [Vector3(-2.2, low, -0.35), Vector3(2.2, low, -0.35), Vector3(2.55, high, deep + 0.35), Vector3(-2.55, high, deep + 0.35)]
+	roof(eave)
+	var under := Vector3(0, 0.05, 0)
+	quad(eave[0] - under, eave[1] - under, eave[2] - under, eave[3] - under, 0x7a5a40, Vector3(0, -1, 0))
+	for x in [-1.64, 0.0, 1.64]:                     # (its rafters)
+		bar(Vector3(x, low - 0.12, -0.3), Vector3(x * 1.15, high - 0.12, deep), 0.09, 0.12, RED)
+	_xf = keep
+
 ## the same stretch in the ruin: a slope of earth behind what is left of the front wall
 func _slope(a0: float, a1: float, k: int) -> void:
 	var y0: float = 0.7 + 0.7 * _roll(k, 14)
@@ -313,6 +443,12 @@ func _pens_block(a0: float, a1: float, fine: bool, first: bool) -> void:
 		_plain(_p(a, R - THICK), _p(a, R_STAND - 0.2), 0.0, top, skin)
 	else:
 		_plain(_p(a, R_STAND - 0.2), _p(a, R - THICK), 0.0, top, skin)
+	if fine:                                         # (the ends of the two tiers that come up higher than its roof)
+		for j in [3, 4]:
+			var r0: float = R_STAND + TIER.x * j
+			var r1: float = r0 + TIER.x if j < 4 else R - THICK
+			_plain(_p(a, r0), _p(a, r1), top, FRONT + TIER.y * j, "white")
+			_plain(_p(a, r1), _p(a, r0), top, FRONT + TIER.y * j, "white")
 	if first:                                        # (the gate, in the middle of the two)
 		var g0: Vector2 = _p(a1 - 3.0, R_STAND - 0.26)
 		var g1: Vector2 = _p(a1 + 3.0, R_STAND - 0.26)
@@ -335,6 +471,10 @@ func _barrier(door_deg: float) -> void:
 		bar(_up(_p(a0, R_RING), 0.72), _up(_p(a1, R_RING), 0.72), 0.09, 1.45, red)
 		bar(_up(_p(a0, R_RING), 1.47), _up(_p(a1, R_RING), 1.47), 0.13, 0.06, 0xf2efe6)
 		bar(_up(_p(a0, R_RING + 0.07), 0.35), _up(_p(a1, R_RING + 0.07), 0.35), 0.05, 0.1, 0x6e1713)       # (the step the men vault from)
+		for y in [0.5, 0.98]:                        # (the joints of its boards, on the side of the sand)
+			bar(_up(_p(a0, R_RING - 0.045), y), _up(_p(a1, R_RING - 0.045), y), 0.02, 0.03, 0x6e1713)
+		for a in [a0, a1]:                           # (and a white post at each end of it)
+			drum(_up(_p(a, R_RING - 0.06), 0.0), 0.055, 0.055, 1.5, PAINT, 6)
 		solid(_up(_p(am, R_RING), 0.75), Vector3(0.2, 1.5, 2.05), -deg_to_rad(am))
 	for g in gaps:                                   # the "burladeros"
 		var c: Vector2 = _p(g, R_RING - 0.75)

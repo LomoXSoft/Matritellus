@@ -16,12 +16,12 @@ const OPTIONS := [
 	{"key": "brows", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8]},                  # (4-5: from free models, chara.gd CEJAS; 6-8: expressive curved brows)
 	{"key": "face", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},       # beards (see chara.gd; 9 on: from free models, BARBAS)
 	{"key": "gender", "values": [0, 1]},          # 0 man, 1 woman: only changes how people talk to you
-	{"key": "hair_style", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34]},     # (13 on: from free models, chara.gd PELOS; 17 buzz cut in hair colour; 31 curlers; 32 bald; 33 shaved grey; 34 four hairs)
+	{"key": "hair_style", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]},     # (13 on: from free models, chara.gd PELOS; 17 buzz cut in hair colour; 31 curlers; 32 bald; 33 shaved grey; 34 four hairs; 35 mop of curls)
 	{"key": "pena", "values": [0, 1, 2, 3, 4, 5]},      # your peña (crew): see PENAS
 	{"key": "glasses", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]},
 	{"key": "earrings", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]},
 	{"key": "pendant", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},          # (6 on: custom neckwear, chara.gd CUELLO)
-	{"key": "top", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]},     # (21: the peña's T-shirt, the wardrobe's; 22 dress, 23 Hawaiian shirt, 24 lab/work coat)     # (11 on: from free models, chara.gd ROPA; 9 and 10 are neighbours' own)
+	{"key": "top", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]},     # (21: the peña's T-shirt, the wardrobe's; 22 dress, 23 Hawaiian shirt, 24 lab/work coat)     # (11 on: from free models, chara.gd ROPA; 9 and 10 are neighbours' own)
 	{"key": "build", "values": [1.0, 0.86, 1.2]},
 	{"key": "shoe_type", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]},       # canvas, boots, alpargatas, flip-flops; 4 bare feet; 5..14 custom shoes (chara.gd CALZADO)
 	{"key": "shoes", "values": [0x4a3424, 0x1b1b1f, 0xf8f8f8, 0xb23a3a, 0x3b5fa8, 0x3f7d4a, 0xe6c229, 0xef8fa9]},
@@ -30,12 +30,18 @@ const OPTIONS := [
 	{"key": "shirt2", "values": [-1, 0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f, 0x8a6a48, 0x8d99ae]},      # clothes with more parts: the second one's colour (-1 as it comes)
 	{"key": "shirt3", "values": [-1, 0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f, 0x8a6a48, 0x8d99ae]},      # ...and the third's
 	{"key": "barba3", "values": [0, 1]},                # three days' beard, yes or no, in the beard's colour, with any beard or none
+	{"key": "canas", "values": [0, 1, 2, 3]},           # grey hairs: none, streaks, salt and pepper, mostly grey (La Pili's, 25 Nov 2026)
+	{"key": "brow_color", "values": [-1, 0x2a1c14, 0x5a3a22, 0x9a9aa0, 0xd9d9de, 0xd9a441, 0xb5451b]},      # the eyebrows' colour (-1: the hair's)
+	{"key": "nose", "values": [0, 1, 2]},               # none, a pink button, a button
+	{"key": "estampado", "values": [0, 1, 2, 3]},       # the print on a dress: plain, little flowers, polka dots, checks
+	{"key": "toquilla", "values": [-1, 0x1b1b1f, 0x6a2433, 0x4a3a5e, 0x2b3352, 0x7a7d80, 0xe6dfcf, 0xb08a4a, 0x8a5a3a, 0x3f5e45]},      # a crocheted shawl (25 Nov 2026): none, black, wine, plum, navy, grey, cream, mustard, brown, green
+	{"key": "mandil", "values": [-1, 0x2f5fb8, 0xd23b3b, 0xe87aa8, 0x2f9a4a, 0x26262b, 0x6a4fb0]},      # a gingham apron: none, blue, red, pink, green, black, purple
 ]
 
 ## The choices come on two pages: Lustre (what you were born with, more or less) and Pintas (what you have put on).
 const TABS := [
-	[9, 11, 16, 3, 4, 10, 8, 23, 7, 19, 5, 6],
-	[0, 1, 15, 2, 21, 22, 17, 18, 12, 13, 14],
+	[9, 11, 16, 3, 4, 10, 24, 8, 23, 7, 25, 19, 5, 6, 26],
+	[0, 1, 15, 2, 21, 22, 27, 28, 29, 17, 18, 12, 13, 14],
 ]
 ## Options that are not in the creator: only the wardrobe at home has them (the user, 16 November 2026: "El armario solo
 ## tendrá el lustre que selecciona el jugador en el creador de personaje + el pañuelo de la peña")
@@ -60,9 +66,9 @@ static func skipped(option: int, index: int) -> bool:
 	return wardrobe_only(option, index) or (RETIRED.has(option) and OPTIONS[option]["values"][index] in RETIRED[option])
 
 ## the wardrobe's rows: the creator's Pintas, and the neckerchief
-const WARDROBE := [0, 1, 15, 2, 17, 18, 12, 13, 14, 20]
+const WARDROBE := [0, 1, 15, 2, 28, 29, 17, 18, 12, 13, 14, 20]
 ## for each option of the wardrobe that can be taken off, the value that is "nothing"
-const NOTHING := {0: 3, 12: 0, 13: 0, 14: 0, 17: 4, 20: 0}
+const NOTHING := {0: 3, 12: 0, 13: 0, 14: 0, 17: 4, 20: 0, 28: 0, 29: 0}
 
 ## What the wardrobe has to begin with: what you put on in the creator, each with taking it off where that can be
 ## done, and the neckerchief of your peña. option (as text, for the save) -> the values you have.
@@ -98,14 +104,14 @@ const KERCHIEFS := [0x2f63d6, 0xf28a00, 0xf2c200, 0x8cc63f, 0xd42a1e, 0x1e8c3a] 
 
 
 ## options that are a colour: the creator shows a sample of it beside its name
-const COLOUR_OPTIONS := [1, 2, 3, 4, 6, 18, 21, 22]
+const COLOUR_OPTIONS := [1, 2, 3, 4, 6, 18, 21, 22, 25, 28, 29]
 
 ## the colour to show beside option `option` at value `value` (null if it is not a colour; [inside, round it] for two)
 static func swatch(option: int, value: int):
 	if not (option in COLOUR_OPTIONS):
 		return null
 	var v = OPTIONS[option]["values"][value]
-	if v == null or (int(v) < 0 and option >= 21):
+	if v == null or (int(v) < 0 and option >= 21):      # (and no shawl, no apron)
 		return null                                 # (bald; a part of the clothes as it comes)
 	if int(v) < 0:
 		return [Color("c0392b"), Color("f2c230")]
@@ -119,8 +125,12 @@ static func not_used(sel: Array, option: int) -> bool:
 	match option:
 		1:
 			return sel[0] == 1 or sel[0] == 3 or sel[0] == 13
-		10:
+		10, 24:
 			return OPTIONS[4]["values"][sel[4]] == null
+		25:
+			return OPTIONS[7]["values"][sel[7]] == 3
+		27:
+			return not (top in [22, CharaS.REBECA_VESTIDO])
 		18:
 			return sel[17] == 4
 		2:
@@ -138,7 +148,7 @@ static func top_parts(top: int) -> int:
 	if top == 2:
 		var mt: Mesh = CharaS.pieza("ropa_traje")
 		return mt.get_surface_count() if mt != null else 1
-	if top == 22 or top == 24:
+	if top == 22 or top == 24 or top == CharaS.REBECA_VESTIDO:
 		return 2
 	if top < CharaS.FIRST_ROPA or top - CharaS.FIRST_ROPA >= CharaS.ROPA.size():
 		return 1

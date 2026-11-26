@@ -1,0 +1,166 @@
+{
+ "rc": "4692155VJ5649S",
+ "record": {
+  "address": "AV JUAN XXIII 23 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Almacen-Estacionamiento.Uso Residencial",
+  "built_m2": "12",
+  "year": "1930",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "01",
+    "m2": "12"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4692155VJ5649S_part1",
+   "floors": 0,
+   "below": 0,
+   "area": 23.5,
+   "ring": [
+    [
+     467.76,
+     -68.26
+    ],
+    [
+     467.31,
+     -65.72
+    ],
+    [
+     460.79,
+     -66.89
+    ],
+    [
+     461.55,
+     -71.11
+    ],
+    [
+     465.29,
+     -70.45
+    ],
+    [
+     464.98,
+     -68.74
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      467.76,
+      -68.26
+     ],
+     "b": [
+      467.31,
+      -65.72
+     ],
+     "len": 2.58,
+     "out": [
+      0.985,
+      0.174
+     ],
+     "street": "Calle de Juan XXIII",
+     "to_centre": 4.89
+    },
+    {
+     "a": [
+      467.31,
+      -65.72
+     ],
+     "b": [
+      460.79,
+      -66.89
+     ],
+     "len": 6.62,
+     "out": [
+      -0.177,
+      0.984
+     ],
+     "street": "Calle de Juan XXIII",
+     "to_centre": 8.17
+    },
+    {
+     "a": [
+      460.79,
+      -66.89
+     ],
+     "b": [
+      461.55,
+      -71.11
+     ],
+     "len": 4.29,
+     "out": [
+      -0.984,
+      -0.177
+     ],
+     "street": "",
+     "to_centre": 8.89
+    },
+    {
+     "a": [
+      461.55,
+      -71.11
+     ],
+     "b": [
+      465.29,
+      -70.45
+     ],
+     "len": 3.8,
+     "out": [
+      0.174,
+      -0.985
+     ],
+     "street": "Calle de San Rafael",
+     "to_centre": 6.64
+    },
+    {
+     "a": [
+      465.29,
+      -70.45
+     ],
+     "b": [
+      464.98,
+      -68.74
+     ],
+     "len": 1.74,
+     "out": [
+      0.984,
+      0.178
+     ],
+     "street": "Calle de Juan XXIII",
+     "to_centre": 7.74
+    },
+    {
+     "a": [
+      464.98,
+      -68.74
+     ],
+     "b": [
+      467.76,
+      -68.26
+     ],
+     "len": 2.82,
+     "out": [
+      0.17,
+      -0.985
+     ],
+     "street": "Calle de San Rafael",
+     "to_centre": 8.19
+    }
+   ],
+   "ground": [
+    -0.64,
+    -0.3
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": 451.7869963221546,
+  "z0": -80.11187292758936,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

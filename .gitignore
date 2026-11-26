@@ -6,6 +6,8 @@ godot/shots/
 dist/
 # walk-through videos: too big for GitHub (over 100 MB)
 *.mp4
+# packed videos for the social networks: the same (over 100 MB)
+*.rar
 # Python
 __pycache__/
 *.pyc

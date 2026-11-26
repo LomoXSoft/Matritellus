@@ -81,6 +81,12 @@ var card_title: Label
 var card_sub: RichTextLabel
 var dlg_slot: Control
 var dlg_name: Label
+var dlg_tag: PanelContainer     # the speaker's name on a tab over the bubble's top left-hand edge (set_dlg_name)
+var dlg_tag_text: Label
+## (the user, 25 Nov 2026: "si puedes añadir la etiqueta con el nombre de quién habla a la burbuja de diálogo [...]
+## Propón diseños"; of the three shown -- almagre, the sign-writer's letters on paper, the colour of what the speaker
+## wears -- "Me quedo con la C": the speaker's own colour)
+var _tag_col: Color = Color("d9643a")
 var dlg_text: RichTextLabel
 var dlg_key: RichTextLabel
 var dlg_arrow: Control
@@ -536,6 +542,13 @@ func _ready() -> void:
 	dlg_pointer.bubble = dp
 	dlg_slot.add_child(dlg_pointer)            # (inside the slot: shown and hidden with the bubble, drawn over its edge)
 	dlg_pointer.top_level = true
+	dlg_tag = PanelContainer.new()
+	dlg_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dlg_tag_text = _label(22, Color.WHITE)
+	dlg_tag.add_child(dlg_tag_text)
+	dlg_slot.add_child(dlg_tag)                # (after the tail: over the bubble's edge and over the tail's root)
+	dlg_tag.top_level = true
+	dlg_tag.visible = false
 	dlg_slot.visible = false
 
 	# big map
@@ -1013,6 +1026,37 @@ func set_suspicion(level: float, on: bool) -> void:
 	else:
 		suspicion_fill.bg_color = GOLD
 
+## Who is talking: their name on a tab over the bubble's edge, the colour of what they wear (`colour`; null, a voice
+## with no figure, leaves it almagre). dlg_name.text is always the name, though the label itself is no longer shown.
+func set_dlg_name(who: String, colour = null) -> void:
+	dlg_name.text = who
+	_tag_col = colour if colour is Color else TERRA
+	dress_tag()
+
+func dress_tag() -> void:
+	var on: bool = dlg_name.text != ""
+	dlg_name.visible = false
+	dlg_tag.visible = on
+	if not on:
+		return
+	var bg: Color = _tag_col
+	var ink: Color = INK if bg.get_luminance() > 0.6 else Color.WHITE      # (a pale colour: dark letters)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = INK
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(18)
+	sb.content_margin_left = 20; sb.content_margin_right = 20; sb.content_margin_top = 2; sb.content_margin_bottom = 4
+	sb.shadow_color = Color(0.29, 0.2, 0.14, 0.35)
+	sb.shadow_size = 2
+	sb.shadow_offset = Vector2(0, 3)
+	dlg_tag.add_theme_stylebox_override("panel", sb)
+	dlg_tag_text.text = dlg_name.text
+	dlg_tag_text.add_theme_color_override("font_color", ink)
+	dlg_tag_text.add_theme_constant_override("outline_size", 3)       # (the letters a little fatter)
+	dlg_tag_text.add_theme_color_override("font_outline_color", ink)
+	dlg_tag.reset_size()
+
 ## where on the screen the tail of the bubble should point (Vector2), or null for a voice from nowhere
 func set_dlg_point(at) -> void:
 	dlg_pointer.at = at
@@ -1128,6 +1172,12 @@ func _process(dt: float) -> void:
 			c.pivot_offset = c.size / 2.0
 			c.rotation_degrees = tilt[1]
 	if dlg_slot.visible:
+		if dlg_tag.visible:                      # the name's tab: astride the bubble's top edge, at its left, a little askew
+			dlg_tag.reset_size()
+			dlg_tag.pivot_offset = dlg_tag.size / 2.0
+			dlg_tag.rotation_degrees = -3.0
+			dlg_tag.position = dlg_bubble.global_position + Vector2(34.0, -dlg_tag.size.y * 0.6)
+		dlg_pointer.left = (dlg_tag.size.x + 34.0 + 46.0) if dlg_tag.visible else 70.0      # (the tail grows out clear of the tab)
 		dlg_more.modulate.a = 1.0 if dlg_ready else 0.0
 		var key_text: String = Loc.t("dlg_next")
 		rt(dlg_key, key_text)

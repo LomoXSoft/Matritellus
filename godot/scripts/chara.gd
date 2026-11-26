@@ -21,6 +21,10 @@ const CLEAR := 0.3             # how far off the ground a walker is carried over
 ##   pendant     0 none · 1 gold chain · 2 medal · 3 cross · 4 pearls · 5 fiesta neckerchief (colour: kerchief)
 ##   shoe_type   0 trainers · 1 boots · 2 alpargatas · 3 flip-flops (their colour is "shoes")
 ##   hat         "cap" | "beret" | "straw" | "bun" | "tricorn" | "tophat" | "horns" | "collar" | ""      hat_color, emblem
+##   canas       grey hairs through the hair: 0 none · 1 streaks · 2 salt and pepper · 3 mostly grey (25 Nov 2026)
+##   brow_color  the eyebrows' own colour (-1: the hair's)      nose  0 none · 1 a pink button · 2 a button
+##   estampado   the print on a dress: 0 plain · 1 little flowers · 2 polka dots · 3 checks
+##   toquilla    a crocheted shawl over the shoulders, its colour (-1: none)    mandil  a gingham apron, its colour (-1: none)
 
 const Parts = preload("res://scripts/parts.gd")
 const Brand = preload("res://scripts/brand.gd")
@@ -48,6 +52,10 @@ var size := 1.0
 var guard := false         # fists up in front of the face (boxing)
 var phone := false         # holding a phone to the ear
 var hand_at = null         # Vector3: where the right hand is held up, whatever else (motin.gd: a weapon shown off), null as usual
+var _carro: Node3D = null  # the shopping trolley an old neighbour pulls along (look "carro"), its axle on the ground
+var _carro_k := 0.0        # 0 stood upright beside them .. 1 tipped back on its wheels, pulled along
+const CARRO_TIP := 0.68    # how far it leans back when pulled (radians from upright)
+const CARRO_LONG := 0.72   # from its axle to its handle
 var _phone: Node3D
 var punch := 0.0          # > 0 while throwing a punch (seconds left)
 var look: Dictionary = {}  # what they were last made to look like
@@ -154,9 +162,11 @@ func setup(o: Dictionary) -> void:
 const LEAN := 0.3               # how far back a sitter leans (radians)
 func sit(o: Dictionary, driving: bool) -> Node3D:
 	var as_they_are: Dictionary = o
-	if not o.has("shirt"):
+	if not o.has("shirt") or o.has("carro"):
 		as_they_are = o.duplicate()
-		as_they_are["shirt"] = 0x3b5fa8
+		as_they_are.erase("carro")                  # (no shopping trolley in a car's seat or at a table)
+		if not o.has("shirt"):
+			as_they_are["shirt"] = 0x3b5fa8
 	vis = Node3D.new()
 	add_child(vis)
 	set_look(as_they_are)
@@ -306,6 +316,8 @@ func set_look(o: Dictionary) -> void:
 		body_hex = 0xdbe6f2 if sc0.r * 0.3 + sc0.g * 0.59 + sc0.b * 0.11 > 0.85 else 0xf4f1e8
 	elif top_id == 22:                                               # dress: bare shoulders / neckline above the bodice
 		body_hex = skin
+	elif top_id == REBECA_VESTIDO:                                   # a cardigan open over a dress: the dress shows down the front
+		body_hex = _dress_hex(o)
 	elif top_id == 24:                                               # lab/work coat: Colour 2 undershirt, or scrub-blue / white contrast
 		var s2_b: int = int(o.get("shirt2", -1))
 		if s2_b >= 0:
@@ -319,6 +331,7 @@ func set_look(o: Dictionary) -> void:
 	_add("body", body_hex, Vector3(0, 0.62, 0), Vector3(_girth, 1.0, _girth))
 	_add("head", skin, Vector3(0, 1.38, 0), Vector3.ONE)
 	_clothes(top_id, o["shirt"], skin)
+	_layers(top_id)                              # (a toquilla and a mandil, over any top: 25 Nov 2026)
 	# eyes, cheeks, brows
 	var eye_c: int = o.get("eye_color", 0x5a3a22)
 	var eyes: int = o.get("eyes", 0)
@@ -326,8 +339,10 @@ func set_look(o: Dictionary) -> void:
 	var eh := _eyes(eyes, eye_c, lashes, skin)
 	for sx in [-1.0, 1.0]:
 		_acc("ball", 0xf59a8c, Vector3(sx * 0.3, 1.27, 0.37), Vector3(0.09, 0.06, 0.04))
+	_nose(int(o.get("nose", 0)), skin)
 	var brows: int = o.get("brows", 3)
-	_brows(brows, hair_c, eh)
+	var brow_c: int = int(o.get("brow_color", -1))
+	_brows(brows, brow_c if brow_c >= 0 else hair_c, eh)
 	_beard(int(o.get("face", 0)), hair_c, skin)
 	if int(o.get("barba3", 0)) == 1 and int(o.get("face", 0)) != 5:      # (three days' beard: an option of its own, with any beard or none)
 		_barba3(hair_c)
@@ -347,7 +362,11 @@ func set_look(o: Dictionary) -> void:
 	inner.add_child(_phone)
 	var hat: String = o.get("hat", "")
 	if hair != null:
+		var n0 := neck.get_child_count()
+		var i0 := inner.get_child_count()
 		_hair(int(o.get("hair_style", 0)), hair, skin, hat_cut(hat))
+		if int(o.get("canas", 0)) > 0:
+			_canas(int(hair), int(o.get("canas", 0)), neck.get_children().slice(n0) + inner.get_children().slice(i0))
 	var hatc: int = o.get("hat_color", 0xd9643a)
 	match hat:
 		"beret":
@@ -410,7 +429,98 @@ func set_look(o: Dictionary) -> void:
 		_panuelo(int(o.get("pena", 0)), int(o.get("kerchief", 0xd23b3b)))
 	if bool(o.get("smoke", false)):
 		_cigarette()
+	_carro = null
+	if bool(o.get("carro", false)):
+		_carrito(int(o.get("carro_color", 0xb8202a)), String(o.get("carro_dibujo", "")))
 	Parts.thin(vis)                              # (eyes, buttons and earrings are not drawn from across the square)
+
+## The Manchegan shopping trolley (the user, 25 Nov 2026: "quiero que lleven un carro de compra manchego los NPCs
+## ancianos", with a photo): a tartan bag on a metal frame, a black flap over its top, two wheels, the handle in the right
+## hand. Pulled along behind on its wheels; stood upright beside them when they stop. Built with its axle at the origin.
+static var _tartan := {}
+func _carrito(base: int, dibujo := "") -> void:
+	var c := Node3D.new()
+	c.name = "carro"
+	inner.add_child(c)
+	_carro = c
+	_carro_k = 0.0
+	var tkey := "%x_%s" % [base, dibujo]
+	if not _tartan.has(tkey):
+		var img := Image.create(16, 16, false, Image.FORMAT_RGB8)
+		var b := Parts.col(base)
+		var dark := Color(0.08, 0.08, 0.16)
+		var cream := Color(0.95, 0.9, 0.72)
+		for py in range(16):
+			for px in range(16):
+				var col := b
+				if dibujo == "liso":                 # plain, a seam along its edge
+					if px == 0 or py == 0:
+						col = b.darkened(0.25)
+				elif dibujo == "flores":             # little flowers on it: a pale bloom with a dot, in a staggered grid
+					var fx: int = (px + (8 if (py / 8) % 2 == 1 else 0)) % 8
+					var fy: int = py % 8
+					var dd: int = absi(fx - 3) + absi(fy - 3)
+					if dd == 0:
+						col = Color(0.98, 0.82, 0.25)
+					elif dd == 1:
+						col = cream
+					elif dd == 2 and (fx == 3 or fy == 3):
+						col = b.lerp(cream, 0.5)
+				else:                                # tartan
+					var bx: bool = px < 3
+					var by: bool = py < 3
+					if bx and by:
+						col = dark.lerp(b, 0.15)
+					elif bx or by:
+						col = b.lerp(dark, 0.62)
+					if px == 9 or py == 9:
+						col = col.lerp(cream, 0.7)
+					elif px == 6 or py == 6 or px == 12 or py == 12:
+						col = col.lerp(dark, 0.35)
+				img.set_pixel(px, py, col)
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = ImageTexture.create_from_image(img)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		m.uv1_triplanar = true
+		m.uv1_scale = Vector3.ONE * 2.2
+		m.roughness = 0.9
+		_tartan[tkey] = m
+	var metal := 0xb9bec4
+	for sx in [-1.0, 1.0]:
+		var w := Parts.part("cyl", 0x1c1c1e, Vector3(sx * 0.17, 0.0, 0.0), Vector3(0.17, 0.045, 0.17))
+		w.rotation.z = PI / 2.0
+		c.add_child(w)
+		var hub := Parts.part("cyl", 0xd8d8d4, Vector3(sx * 0.19, 0.0, 0.0), Vector3(0.07, 0.012, 0.07))
+		hub.rotation.z = PI / 2.0
+		c.add_child(hub)
+		c.add_child(Parts.part("cyl", metal, Vector3(sx * 0.14, 0.36, 0.11), Vector3(0.022, 0.72, 0.022)))      # the frame's two uprights
+	var axle := Parts.part("cyl", metal, Vector3(0.0, 0.0, 0.0), Vector3(0.02, 0.36, 0.02))
+	axle.rotation.z = PI / 2.0
+	c.add_child(axle)
+	var grip := Parts.part("cyl", 0x1a1a1a, Vector3(0.0, CARRO_LONG, 0.11), Vector3(0.035, 0.34, 0.035))
+	grip.rotation.z = PI / 2.0
+	c.add_child(grip)
+	c.add_child(Parts.part("box", metal, Vector3(0.0, 0.06, -0.02), Vector3(0.3, 0.018, 0.26)))                   # the foot plate
+	var bag := Parts.part("box", base, Vector3(0.0, 0.33, -0.02), Vector3(0.31, 0.46, 0.24))
+	bag.material_override = _tartan[tkey]
+	c.add_child(bag)
+	c.add_child(Parts.part("box", 0x151515, Vector3(0.0, 0.575, -0.025), Vector3(0.325, 0.07, 0.255)))           # the flap over its top
+	c.add_child(Parts.part("box", 0x151515, Vector3(0.0, 0.5, -0.146), Vector3(0.2, 0.14, 0.012)))               # ...hanging down its front
+	c.add_child(Parts.part("box", 0x2a2a2a, Vector3(0.0, 0.44, -0.15), Vector3(0.05, 0.03, 0.014)))              # its buckle
+	_carro_pose()
+
+## where the trolley is for how far it is tipped (_carro_k): stood beside them, a little ahead, or pulled a step behind
+func _carro_pose() -> void:
+	if _carro == null:
+		return
+	_carro.position = Vector3(lerpf(_hx + 0.12, _hx + 0.06, _carro_k), 0.085, lerpf(0.1, -0.68, _carro_k))
+	_carro.rotation = Vector3(CARRO_TIP * _carro_k, 0.0, 0.0)
+
+## the right hand on the trolley's handle, wherever the trolley is
+func _carro_hand() -> Vector3:
+	var a := CARRO_TIP * _carro_k
+	var at := _carro.position
+	return Vector3(at.x, 0.085 + CARRO_LONG * cos(a) - 0.11 * sin(a), at.z + CARRO_LONG * sin(a) + 0.11 * cos(a))
 
 ## A lit cigarette at the corner of the mouth (5 % of adult/elderly neighbours, never kids, plus Tomasa once she gets hers).
 static var _ember_mat: StandardMaterial3D
@@ -508,8 +618,27 @@ func _clothes(top: int, shirt: int, skin: int) -> void:
 		return
 	var sc := Parts.col(shirt)
 	var detail: int = 0x2a2a30 if sc.r * 0.3 + sc.g * 0.59 + sc.b * 0.11 > 0.55 else 0xf4f1e8
+	if top == REBECA_VESTIDO:                    # a cardigan (colour 1) open over a dress (colour 2, with its print) to the knee
+		var dress := _wear("ropa_vestido", _dress_hex(look), false)
+		_print_on(dress, _dress_hex(look))
+		var cardi := _wear("ropa_rebeca", shirt, false, [-1, int(look.get("shirt3", -1))])
+		if cardi != null:
+			cardi.scale *= Vector3(1.07, 1.0, 1.07)           # (over the dress, all round: at 1.035 it poked through at the back)
+		# its fronts buttoned up from the hips to the chest, a V open above it to the neck (as on the picture), three
+		# buttons and two patch pockets
+		var lift: float = 0.05 * _girth
+		var fronts := MeshInstance3D.new()
+		fronts.mesh = _cardi_fronts(_girth, lift)
+		fronts.material_override = _vc_hair(shirt)
+		inner.add_child(fronts)
+		for sx in [-1.0, 1.0]:
+			_strip(_mix(shirt, 0x101018, 0.14), sx * 0.5, 0.37, 0.49, 0.13 * _girth, lift + 0.006, 0.012)
+		for by in [0.6, 0.5, 0.4]:
+			_dot(_mix(shirt, 0x101018, 0.35), 0.0, by, 0.022, 0.45, lift + 0.012 - (_r_at(by, 0.0) - _r(by)))
+		return
 	if top == 22:                                # dress (CC0 Cocktail Dress + waist sash in Colour 2)
-		_wear("ropa_vestido", shirt, false)
+		var dress22 := _wear("ropa_vestido", shirt, false)
+		_print_on(dress22, shirt)
 		var s2_v: int = int(look.get("shirt2", -1))
 		var sash: int = s2_v if s2_v >= 0 else (0x2a2d36 if sc.r * 0.3 + sc.g * 0.59 + sc.b * 0.11 > 0.72 else 0xf4f1e8)
 		_band(sash, 0.58, 0.055, 0.040)
@@ -658,8 +787,11 @@ static func pieza(name: String, cut := 0) -> Mesh:
 		_piezas[name] = got
 	return _piezas[name][clampi(cut, 0, 2)]
 
-## how much of the hair a hat leaves: 0 all of it, 1 what is under a cap's rim, 2 what is under a higher hat's
+## how much of the hair a hat leaves: 0 all of it, 1 what is under a cap's rim, 2 what is under a higher hat's, 3 none
+## (a headscarf)
 static func hat_cut(hat: String) -> int:
+	if hat == "panoleta":                        # (a headscarf covers it all, the sides and the back too: under a cap's cut the long
+		return 3                                 # hair came through it -- the user, 25 Nov 2026, "Algunos peinados clippean sobre la pañoleta")
 	if hat in ["beret", "straw", "tophat", "tricorn", "chef"]:
 		return 2
 	if hat == "cap" or (SOMBREROS.has(hat) and hat != "diadema"):
@@ -754,6 +886,507 @@ func _pieza_on(name: String, hex: int, cut := 0, lift := 0.0) -> MeshInstance3D:
 	mi.position.y = lift
 	neck.add_child(mi)
 	return mi
+
+# ---------------- La Pili's look (the user, 25 Nov 2026, with a picture: "La Pili se parece muy poco a la referencia.
+# Crea nuevos elementos de Lustre y Pintas si lo ves necesario") ----------------
+const MATA := 35                                 # hair_style: a big mop of tight curls, round and wide, the ears and the forehead clear
+const REBECA_VESTIDO := 25                       # top: a knitted cardigan open over a dress with a print, to the knee
+const VESTIDO_DE_SERIE := 0x2b3352               # the dress's colour when colour 2 is "as it comes": navy
+
+static func _dress_hex(o: Dictionary) -> int:
+	var s2: int = int(o.get("shirt2", -1))
+	return s2 if s2 >= 0 else VESTIDO_DE_SERIE
+
+## the cardigan's body over the dress (the free model's gives it its sleeves, collar and hem), curved round the body: from the hips up, meeting down the middle
+## (buttoned), a V open from the chest to the neck; cached by how wide the body is
+static var _cardi_meshes := {}
+func _cardi_fronts(girth: float, lift: float) -> ArrayMesh:
+	var key := "%d" % int(round(girth * 100.0))
+	if _cardi_meshes.has(key):
+		return _cardi_meshes[key]
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var cols := PackedColorArray()
+	var idx := PackedInt32Array()
+	var ROWS := 10
+	var COLS := 16
+	var sl: float = _slope()
+	for side in [-1.0, 1.0]:
+		var base := verts.size()
+		for a in range(ROWS + 1):
+			var y: float = lerpf(0.31, 0.97, float(a) / float(ROWS))
+			var open_k: float = clampf((y - 0.62) / 0.35, 0.0, 1.0)
+			var a0: float = -0.03 + 0.48 * open_k          # (just over the middle where it is buttoned)
+			var a1: float = PI + 0.03                       # (round to the back as well: the free model's cardigan leaves a gap there)
+			var r: float = _r(y) + lift + (0.004 if side < 0.0 else 0.0)
+			for b in range(COLS + 1):
+				var ang: float = side * lerpf(a0, a1, float(b) / float(COLS))
+				verts.append(Vector3(sin(ang) * r, y, cos(ang) * r))
+				norms.append(Vector3(sin(ang) * cos(sl), sin(sl), cos(ang) * cos(sl)))
+				cols.append(Color(0.92, 0.92, 0.92))
+		for a in range(ROWS):
+			for b in range(COLS):
+				var i0: int = base + a * (COLS + 1) + b
+				var i1: int = i0 + COLS + 1
+				if side > 0.0:
+					idx.append_array([i0, i1, i0 + 1, i0 + 1, i1, i1 + 1])
+				else:
+					idx.append_array([i0, i0 + 1, i1, i0 + 1, i1 + 1, i1])
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = verts
+	arr[Mesh.ARRAY_NORMAL] = norms
+	arr[Mesh.ARRAY_COLOR] = cols
+	arr[Mesh.ARRAY_INDEX] = idx
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	_cardi_meshes[key] = m
+	return m
+
+## the mop: a hundred-odd lumpy curls on a shell round the head (none over the face, the hairline high on the forehead,
+## down to the nape behind and to the top of the ears at the sides), over the ordinary head of hair so nothing shows
+## between them. One mesh for everybody (cached), shaded at the bottom of each curl; under a hat, only what is under it.
+static var _mata_mesh := {}
+func _mata(hair: int, cut: int) -> void:
+	_add("ball", hair, Vector3(0, 1.5, -0.06), Vector3(0.5, 0.42, 0.5))
+	var key: int = clampi(cut, 0, 2)
+	if not _mata_mesh.has(key):
+		_mata_mesh[key] = _build_mata(key)
+	var mi := MeshInstance3D.new()
+	mi.mesh = _mata_mesh[key]
+	mi.material_override = _vc_hair(hair)
+	mi.lod_bias = 100.0
+	neck.add_child(mi)
+
+static func _build_mata(cut: int) -> ArrayMesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3535
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var cols := PackedColorArray()
+	var idx := PackedInt32Array()
+	var C := Vector3(0.0, 1.40, -0.03)
+	var top: float = 1.6 if cut == 1 else (1.7 if cut == 2 else 99.0)
+	var n := 250
+	for i in range(n):
+		var yy: float = 1.0 - 2.0 * (float(i) + 0.5) / float(n)
+		var rr: float = sqrt(maxf(0.0, 1.0 - yy * yy))
+		var th: float = float(i) * 2.39996
+		var d := Vector3(cos(th) * rr, yy, sin(th) * rr)
+		d = (d + Vector3(rng.randf_range(-0.07, 0.07), rng.randf_range(-0.07, 0.07), rng.randf_range(-0.07, 0.07))).normalized()
+		var zf: float = d.z
+		var ymin: float
+		if zf > 0.3:
+			ymin = lerpf(0.30, 0.60, (zf - 0.3) / 0.7)
+		elif zf > -0.3:
+			ymin = lerpf(-0.18, 0.30, (zf + 0.3) / 0.6)
+		else:
+			ymin = lerpf(-0.18, -0.55, (-0.3 - zf) / 0.7)
+		var keep_r1 := rng.randf()
+		var keep_r2 := rng.randf()
+		var keep_r3 := rng.randf()
+		if d.y < ymin:
+			continue
+		var R: float = 0.51 + keep_r1 * 0.05 + 0.05 * maxf(d.y, 0.0)
+		var c: Vector3 = C + d * R * Vector3(1.1, 1.0, 0.94)          # (wider at the sides than behind)
+		if c.y > top:
+			continue
+		var s: float = lerpf(0.07, 0.10, keep_r2)
+		var ph: float = keep_r3 * TAU
+		var base := verts.size()
+		var SEG := 7
+		var RING := 5
+		for a in range(RING + 1):
+			var v: float = PI * float(a) / float(RING)
+			for b in range(SEG + 1):
+				var u: float = TAU * float(b) / float(SEG)
+				var nn := Vector3(sin(v) * cos(u), cos(v), sin(v) * sin(u))
+				var wob: float = 1.0 + 0.16 * sin(3.0 * u + ph) * sin(2.0 * v) + 0.06 * sin(5.0 * v + ph)
+				var p: Vector3 = c + nn * s * wob
+				verts.append(p)
+				norms.append(nn)
+				var out_k: float = clampf(nn.dot(d) * 0.5 + 0.5, 0.0, 1.0)
+				var low_k: float = clampf((p.y - (C.y - 0.3)) / 0.5, 0.0, 1.0)
+				var sh: float = lerpf(0.40, 1.0, out_k) * lerpf(0.7, 1.0, low_k)
+				cols.append(Color(sh, sh, sh))
+		for a in range(RING):
+			for b in range(SEG):
+				var i0: int = base + a * (SEG + 1) + b
+				var i1: int = i0 + SEG + 1
+				idx.append_array([i0, i0 + 1, i1, i0 + 1, i1 + 1, i1])
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = verts
+	arr[Mesh.ARRAY_NORMAL] = norms
+	arr[Mesh.ARRAY_COLOR] = cols
+	arr[Mesh.ARRAY_INDEX] = idx
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	return m
+
+## Grey hairs through any head of hair: whatever of the hairstyle is in the hair's colour gets a material that turns
+## locks of it grey (patches of a noise, finely streaked, more of them the greyer you are). The procedural parts keep their
+## own size in the noise, so the locks are the same size on all of them.
+const CANAS_GREY := 0xcdcdd2
+const CANAS_AMOUNT := [0.0, 0.30, 0.50, 0.78]
+static var _canas_shader: Shader
+static var _canas_mats := {}
+static func _canas_mat(hex: int, level: int, vc: bool) -> ShaderMaterial:
+	var key := "%x_%d_%s" % [hex, level, vc]
+	if not _canas_mats.has(key):
+		if _canas_shader == null:
+			_canas_shader = Shader.new()
+			_canas_shader.code = """shader_type spatial;
+render_mode cull_disabled;
+uniform vec4 base;
+uniform vec4 grey;
+uniform float amount;
+uniform float use_vc;
+varying vec3 op;
+varying vec4 vcol;
+float h3(vec3 p) { return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+float vnoise(vec3 p) {
+	vec3 i = floor(p); vec3 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(mix(h3(i), h3(i + vec3(1,0,0)), f.x), mix(h3(i + vec3(0,1,0)), h3(i + vec3(1,1,0)), f.x), f.y),
+		mix(mix(h3(i + vec3(0,0,1)), h3(i + vec3(1,0,1)), f.x), mix(h3(i + vec3(0,1,1)), h3(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+void vertex() {
+	vec3 sc = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz));
+	op = VERTEX * sc;
+	vcol = COLOR;
+}
+void fragment() {
+	float n = vnoise(op * vec3(4.5, 3.4, 4.5)) * 0.75 + vnoise(op * 10.0 + 7.0) * 0.25;
+	float fine = vnoise(op * vec3(16.0, 34.0, 16.0));
+	float t = 1.0 - amount;
+	float g = smoothstep(t - 0.025, t + 0.025, n + (fine - 0.5) * 0.10);
+	vec3 c = mix(base.rgb, grey.rgb, g);
+	c *= mix(vec3(1.0), vcol.rgb, use_vc);
+	ALBEDO = c;
+	ROUGHNESS = 1.0;
+	RIM = 0.35;
+	RIM_TINT = 0.6;
+}
+"""
+		var m := ShaderMaterial.new()
+		m.shader = _canas_shader
+		m.set_shader_parameter("base", Parts.col(hex).srgb_to_linear())          # (linear, as the material's albedo is)
+		m.set_shader_parameter("grey", Parts.col(CANAS_GREY).srgb_to_linear())
+		m.set_shader_parameter("amount", float(CANAS_AMOUNT[clampi(level, 0, CANAS_AMOUNT.size() - 1)]))
+		m.set_shader_parameter("use_vc", 1.0 if vc else 0.0)
+		_canas_mats[key] = m
+	return _canas_mats[key]
+
+func _canas(hex: int, level: int, nodes: Array) -> void:
+	var want := Parts.col(hex)
+	var todo: Array = nodes.duplicate()
+	while not todo.is_empty():
+		var n = todo.pop_back()
+		todo.append_array(n.get_children())
+		if not (n is MeshInstance3D):
+			continue
+		var mat = n.material_override
+		if mat is StandardMaterial3D and (mat as StandardMaterial3D).albedo_color.is_equal_approx(want):
+			n.material_override = _canas_mat(hex, level, (mat as StandardMaterial3D).vertex_color_use_as_albedo)
+
+## a nose: 1 a little pink button (as the cheeks), 2 a button of the skin, a shade darker
+func _nose(kind: int, skin: int) -> void:
+	match kind:
+		1:
+			_acc("ball", _mix(skin, 0xf08a80, 0.55), Vector3(0.0, 1.345, 0.488), Vector3(0.062, 0.044, 0.036))
+		2:
+			_acc("ball", _mix(skin, 0x8a5c4a, 0.18), Vector3(0.0, 1.345, 0.49), Vector3(0.056, 0.05, 0.04))
+
+## A print on a dress (estampado): little flowers (cream with an orange heart, and blue specks between them, as on the
+## user's picture), polka dots or checks over the colour, a pattern laid on from all sides (as the trolley's tartan).
+static var _prints := {}
+func _print_on(mi: MeshInstance3D, hex: int) -> void:
+	var kind: int = int(look.get("estampado", 0))
+	if mi == null or kind <= 0:
+		return
+	var key := "%x_%d" % [hex, kind]
+	if not _prints.has(key):
+		var N := 48
+		var img := Image.create(N, N, false, Image.FORMAT_RGB8)
+		var b := Parts.col(hex)
+		var light: bool = b.r * 0.3 + b.g * 0.59 + b.b * 0.11 > 0.6
+		var cream := Color(0.95, 0.90, 0.76) if not light else Color(0.25, 0.3, 0.5)
+		var heart := Color(0.93, 0.6, 0.25)
+		var speck := Color(0.5, 0.6, 0.82) if not light else Color(0.85, 0.45, 0.5)
+		img.fill(b)
+		match kind:
+			1:
+				var spots := [Vector2i(6, 7), Vector2i(30, 4), Vector2i(18, 21), Vector2i(41, 25), Vector2i(7, 36), Vector2i(29, 40), Vector2i(44, 44)]
+				for sp: Vector2i in spots:
+					for dy in range(-3, 4):
+						for dx in range(-3, 4):
+							var rr2: int = dx * dx + dy * dy
+							var ang: float = atan2(float(dy), float(dx))
+							var petal: float = 2.2 + 0.9 * cos(5.0 * ang)
+							if rr2 <= 1:
+								img.set_pixel(posmod(sp.x + dx, N), posmod(sp.y + dy, N), heart)
+							elif float(rr2) <= petal * petal:
+								img.set_pixel(posmod(sp.x + dx, N), posmod(sp.y + dy, N), cream)
+				for sp in [Vector2i(18, 6), Vector2i(42, 12), Vector2i(4, 21), Vector2i(31, 17), Vector2i(15, 33), Vector2i(40, 36), Vector2i(20, 46), Vector2i(4, 46)]:
+					for o in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
+						img.set_pixelv(Vector2i(posmod(sp.x + o.x, N), posmod(sp.y + o.y, N)), speck)
+			2:
+				for sp in [Vector2i(6, 6), Vector2i(30, 6), Vector2i(18, 18), Vector2i(42, 18), Vector2i(6, 30), Vector2i(30, 30), Vector2i(18, 42), Vector2i(42, 42)]:
+					for dy in range(-3, 4):
+						for dx in range(-3, 4):
+							if dx * dx + dy * dy <= 9:
+								img.set_pixel(posmod(sp.x + dx, N), posmod(sp.y + dy, N), cream)
+			3:
+				for py in range(N):
+					for px in range(N):
+						var c := b
+						if px % 24 < 7 or py % 24 < 7:
+							c = b.lerp(cream, 0.35)
+						if px % 24 < 7 and py % 24 < 7:
+							c = b.lerp(cream, 0.6)
+						img.set_pixel(px, py, c)
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = ImageTexture.create_from_image(img)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		m.uv1_triplanar = true
+		m.uv1_scale = Vector3.ONE * (2.4 if kind == 1 else 2.0)
+		m.uv1_triplanar_sharpness = 12.0                   # (no smears where the sides blend)
+		m.vertex_color_use_as_albedo = true
+		m.roughness = 1.0
+		m.rim_enabled = true
+		m.rim = 0.35
+		m.rim_tint = 0.6
+		_prints[key] = m
+	mi.set_surface_override_material(0, _prints[key])
+
+# ---------------- the toquilla and the mandil (the user, 25 Nov 2026, with pictures: "Para las ancianas habría que
+# añadir de ropa posible una toquilla (negra para el cementerio, de colores fuera) y para todas las mujeres no niñas un
+# posible mandil") ----------------
+## look "toquilla": the colour of a crocheted shawl of open mesh over the shoulders, its two ends crossed and twisted on
+## the chest (-1 or missing: none). look "mandil": the colour of a gingham pinafore apron, front and back, piped round,
+## with a band of embroidered flowers under the bust and two pockets with flowers along their tops (-1: none). Both go
+## over whatever top is worn, the shawl over the apron.
+const TOQUILLA_CELL := 0.085                     # one tile of the shawl's mesh (two holes, staggered), metres
+const GINGHAM_TILE := 0.07                       # two checks of the apron
+func _layers(top_id: int) -> void:
+	var pad: float = _top_pad(top_id) * _girth
+	var mandil: int = int(look.get("mandil", -1))
+	if mandil >= 0:
+		_mandil(mandil, pad)
+	var toq: int = int(look.get("toquilla", -1))
+	if toq >= 0:
+		_toquilla(toq, pad + (0.018 if mandil >= 0 else 0.0))
+
+## A piece of cloth on a shell round the body. `at` maps (u, v), both 0..1, to Vector3(angle round the body (0 the
+## front), height, lift off the body). Its uv: metres round the body, and metres up (or v itself, with `v_uv`, for a
+## band with one row of pattern). The outermost `rim` of it (in u and v) has the vertex colour `edge`: piping. Cached
+## by `key` (which must say everything the shape depends on: the build and the lift).
+static var _shells := {}
+func _shell(key: String, cols: int, rows: int, at: Callable, edge := Color(1, 1, 1), rim := 0.0, v_uv := false) -> ArrayMesh:
+	if _shells.has(key):
+		return _shells[key]
+	var us: Array = []
+	var vs: Array = []
+	for pair in [[us, cols], [vs, rows]]:
+		var out: Array = pair[0]
+		var n: int = pair[1]
+		if rim > 0.0:                            # (two lines close together at each edge: the piping ends sharp)
+			out.append_array([0.0, rim])
+			for k in range(n - 3):
+				out.append(lerpf(rim + 0.004, 1.0 - rim - 0.004, float(k) / float(maxi(1, n - 4))))
+			out.append_array([1.0 - rim, 1.0])
+		else:
+			for k in range(n + 1):
+				out.append(float(k) / float(n))
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var colours := PackedColorArray()
+	var uvs := PackedVector2Array()
+	var idx := PackedInt32Array()
+	var sl: float = _slope()
+	for v in vs:
+		for u in us:
+			var q: Vector3 = at.call(float(u), float(v))
+			var r: float = _r(q.y) + q.z
+			verts.append(Vector3(sin(q.x) * r, q.y, cos(q.x) * r))
+			norms.append(Vector3(sin(q.x) * cos(sl), sin(sl), cos(q.x) * cos(sl)))
+			uvs.append(Vector2(q.x * r, (1.0 - float(v)) if v_uv else -q.y))
+			var on_edge: bool = rim > 0.0 and (float(u) <= rim + 0.0001 or float(u) >= 1.0 - rim - 0.0001 or float(v) <= rim + 0.0001 or float(v) >= 1.0 - rim - 0.0001)
+			colours.append(edge if on_edge else Color(1, 1, 1))
+	var w: int = us.size()
+	for a in range(vs.size() - 1):
+		for b in range(w - 1):
+			var i0: int = a * w + b
+			var i1: int = i0 + w
+			idx.append_array([i0, i0 + 1, i1, i0 + 1, i1 + 1, i1])
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = verts
+	arr[Mesh.ARRAY_NORMAL] = norms
+	arr[Mesh.ARRAY_COLOR] = colours
+	arr[Mesh.ARRAY_TEX_UV] = uvs
+	arr[Mesh.ARRAY_INDEX] = idx
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	_shells[key] = m
+	return m
+
+func _put_shell(m: ArrayMesh, mat: Material) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.mesh = m
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	inner.add_child(mi)
+	return mi
+
+## a matt cloth material over a texture (drawn on both sides; vertex colours multiplied in, for the piping)
+static func _cloth(tex: Texture2D, tint: Color, tile: Vector2, scissor := false) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = tex
+	m.albedo_color = tint
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	m.uv1_scale = Vector3(1.0 / tile.x, 1.0 / tile.y, 1.0)
+	m.vertex_color_use_as_albedo = true
+	m.vertex_color_is_srgb = true
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 1.0
+	m.rim_enabled = true
+	m.rim = 0.35
+	m.rim_tint = 0.6
+	if scissor:
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.alpha_scissor_threshold = 0.5
+	return m
+
+## the shawl: from the neck over the shoulders and down to the elbows at the sides, lower behind than at the neck, the
+## two ends coming down across the chest from the shoulders, crossing low in the middle and twisted into a knot there;
+## an open mesh of round holes, staggered (the shirt shows through), thick yarn round them
+static var _toq_tex: ImageTexture = null
+static var _toq_mats := {}
+func _toquilla(hex: int, pad: float) -> void:
+	if _toq_tex == null:
+		var N := 32
+		var img := Image.create(N, N, true, Image.FORMAT_RGBA8)
+		for py in range(N):
+			for px in range(N):
+				var p := Vector2((float(px) + 0.5) / N, (float(py) + 0.5) / N)
+				var d: float = 9.0
+				for c in [Vector2(0.25, 0.25), Vector2(0.75, 0.75), Vector2(-0.25, 0.75), Vector2(1.25, 0.25), Vector2(0.75, -0.25), Vector2(0.25, 1.25), Vector2(-0.25, -0.25), Vector2(1.25, 1.25)]:
+					d = minf(d, p.distance_to(c))
+				var hole: bool = d < 0.215
+				var shade: float = clampf(0.62 + 2.2 * (d - 0.215), 0.62, 1.0)       # (darker into the holes: the yarn is round)
+				var bump: float = 0.92 + 0.08 * sin(float(px + py) * 1.6)             # (the twist of the stitches)
+				img.set_pixel(px, py, Color(shade * bump, shade * bump, shade * bump, 0.0 if hole else 1.0))
+		img.generate_mipmaps()
+		_toq_tex = ImageTexture.create_from_image(img)
+	if not _toq_mats.has(hex):
+		_toq_mats[hex] = _cloth(_toq_tex, Parts.col(hex), Vector2(TOQUILLA_CELL, TOQUILLA_CELL), true)
+	var mat: Material = _toq_mats[hex]
+	for side in [-1.0, 1.0]:
+		var extra: float = pad + (0.008 if side < 0.0 else 0.0)
+		var key := "toq_%d_%d_%d" % [int(round(_girth * 100.0)), int(round(extra * 1000.0)), int(side)]
+		var at := func(u: float, v: float) -> Vector3:
+			var ybot: float = lerpf(0.50, 0.71, smoothstep(0.0, 0.42, u)) if u < 0.42 else lerpf(0.71, 0.655, (u - 0.42) / 0.58)
+			var y: float = lerpf(ybot, 1.0, v)
+			var a0: float = -0.11 + 0.56 * clampf((y - 0.56) / 0.40, 0.0, 1.0)      # (the V open at the neck, crossed below)
+			var ang: float = lerpf(a0, PI + 0.03, u)
+			var drape: float = lerpf(0.02, 0.058, sin(clampf(ang, 0.0, PI)))      # (furthest out over the arms)
+			return Vector3(side * ang, y, extra + 0.024 + (1.0 - v) * drape)
+		_put_shell(_shell(key, 20, 12, at), mat)
+	var knot_c: int = _mix(hex, 0x000000, 0.06)
+	for k in range(3):                           # the knot where the ends are crossed and twisted
+		var ky: float = 0.505 + 0.035 * k
+		var kr: float = _r(ky) + pad + 0.06 - 0.008 * k
+		var kb := _acc("ball", knot_c, Vector3((k - 1) * 0.03, ky, kr), Vector3(0.07 - 0.01 * k, 0.042, 0.04))
+		kb.rotation.z = 0.5 * (1 - k)
+		kb.material_override = _toq_knot(knot_c)
+
+static var _knot_mats := {}
+func _toq_knot(hex: int) -> Material:
+	if not _knot_mats.has(hex):
+		_knot_mats[hex] = _cloth(_toq_tex, Parts.col(hex), Vector2(TOQUILLA_CELL * 0.4, TOQUILLA_CELL * 0.4))
+	return _knot_mats[hex]
+
+## the apron: a panel in front from the knees to the bust, its straps over the shoulders, the arms out through its open
+## sides, and one behind; gingham (white, the colour, and the half where the stripes cross), piped round in the colour,
+## a band of flowers on dark blue under the bust and two pockets low in front, flowers along their tops
+static var _ging := {}
+static var _flores_tex: ImageTexture = null
+func _mandil(hex: int, pad: float) -> void:
+	if not _ging.has(hex):
+		var N := 32
+		var img := Image.create(N, N, true, Image.FORMAT_RGB8)
+		var c := Parts.col(hex)
+		var white := Color(0.97, 0.97, 0.95)
+		for py in range(N):
+			for px in range(N):
+				var a: bool = (px % 16) < 8
+				var b: bool = (py % 16) < 8
+				img.set_pixel(px, py, c if (a and b) else (white.lerp(c, 0.5) if (a or b) else white))
+		img.generate_mipmaps()
+		_ging[hex] = _cloth(ImageTexture.create_from_image(img), Color(1, 1, 1), Vector2(GINGHAM_TILE, GINGHAM_TILE))
+	if _flores_tex == null:
+		var W := 64
+		var H := 16
+		var img2 := Image.create(W, H, true, Image.FORMAT_RGB8)
+		img2.fill(Color(0.11, 0.15, 0.33))
+		var petals := [Color(0.88, 0.22, 0.22), Color(0.95, 0.76, 0.19), Color(0.94, 0.5, 0.66), Color(0.35, 0.69, 0.91)]
+		for f in range(4):
+			var cx: int = 8 + f * 16
+			for dy in range(-6, 7):
+				for dx in range(-6, 7):
+					var rr: float = sqrt(float(dx * dx + dy * dy))
+					var ang: float = atan2(float(dy), float(dx))
+					var px: int = posmod(cx + dx, W)
+					var py: int = 8 + dy
+					if py < 1 or py > H - 2:
+						continue
+					if rr < 1.6:
+						img2.set_pixel(px, py, Color(0.98, 0.85, 0.3))
+					elif rr < 3.2 + 1.6 * cos(5.0 * ang):
+						img2.set_pixel(px, py, petals[f])
+			for lx in [cx + 7, cx + 8]:                  # (green leaves between the flowers)
+				for ly in [6, 7, 9, 10]:
+					img2.set_pixel(posmod(lx, W), ly, Color(0.2, 0.6, 0.3))
+		img2.generate_mipmaps()
+		_flores_tex = ImageTexture.create_from_image(img2)
+	var ging: Material = _ging[hex]
+	var edge := Parts.col(hex)
+	var g100: int = int(round(_girth * 100.0))
+	var flare: float = 0.07 if int(look.get("top", 0)) in [22, REBECA_VESTIDO] else 0.0      # (a dress's skirt flares out: over it, not through it)
+	var p1000: int = int(round(pad * 1000.0)) + int(round(flare * 100.0)) * 10000
+	var out := func(y: float) -> float:
+		return pad + flare * pow(clampf((0.64 - y) / 0.34, 0.0, 1.0), 1.6)
+	var front := func(u: float, v: float) -> Vector3:
+		var ang: float = lerpf(-1.15, 1.15, u)
+		var a: float = absf(ang)
+		var top: float = lerpf(0.80, 0.985, smoothstep(0.30, 0.44, a))      # (the bib, and up into the straps)
+		top = lerpf(top, 0.72, smoothstep(0.74, 0.92, a))                     # (the arms out through the side)
+		var y: float = lerpf(0.29, top, v)
+		return Vector3(ang, y, out.call(y) + 0.014)
+	var back := func(u: float, v: float) -> Vector3:
+		var ang: float = lerpf(-0.95, 0.95, u)
+		var a: float = absf(ang)
+		var top: float = lerpf(0.87, 0.985, smoothstep(0.28, 0.40, a))
+		top = lerpf(top, 0.72, smoothstep(0.66, 0.85, a))
+		var y: float = lerpf(0.30, top, v)
+		return Vector3(PI + ang, y, out.call(y) + 0.014)
+	_put_shell(_shell("mf_%d_%d" % [g100, p1000], 28, 10, front, edge, 0.018), ging)
+	_put_shell(_shell("mb_%d_%d" % [g100, p1000], 22, 10, back, edge, 0.02), ging)
+	var flores: Material = _cloth(_flores_tex, Color(1, 1, 1), Vector2(0.24, 1.0)) if not _ging.has("flores") else _ging["flores"]
+	_ging["flores"] = flores
+	var band := func(u: float, v: float) -> Vector3:
+		return Vector3(lerpf(-0.74, 0.74, u), lerpf(0.69, 0.745, v), pad + 0.02)
+	_put_shell(_shell("mband_%d_%d" % [g100, p1000], 20, 1, band, Color(1, 1, 1), 0.0, true), flores)
+	for sx in [-1.0, 1.0]:
+		var pocket := func(u: float, v: float) -> Vector3:
+			var y: float = lerpf(0.37, 0.52, v)
+			return Vector3(sx * 0.5 + lerpf(-0.2, 0.2, u), y, out.call(y) + 0.021)
+		_put_shell(_shell("mpk_%d_%d_%d" % [g100, p1000, int(sx)], 8, 6, pocket, edge, 0.05), ging)
+		var ptop := func(u: float, v: float) -> Vector3:
+			var y: float = lerpf(0.485, 0.52, v)
+			return Vector3(sx * 0.5 + lerpf(-0.2, 0.2, u), y, out.call(y) + 0.027)
+		_put_shell(_shell("mpt_%d_%d_%d" % [g100, p1000, int(sx)], 6, 1, ptop, Color(1, 1, 1), 0.0, true), flores)
 
 ## The classic head of an old lady's on a Saturday (the user, 16 November 2026: "para viejos, me gustaría añadir una
 ## cabeza con rulos clásica de señora mayor"): her hair short and close (the "pelusilla" piece) and, over the top of
@@ -980,6 +1613,8 @@ func _degradado(hex: int) -> void:
 
 # ---------------- hair ----------------
 func _hair(style: int, hair: int, skin: int, cut: int) -> void:
+	if cut >= 3:                            # under a headscarf: none of it shows
+		return
 	var hatted := cut > 0
 	if style == CALVO:                      # nothing on top at all
 		return
@@ -994,6 +1629,9 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 		return
 	if style == RULOS:
 		_rulos(hair, cut)
+		return
+	if style == MATA:
+		_mata(hair, cut)
 		return
 	if style >= FIRST_PELO:
 		if style - FIRST_PELO < PELOS.size():
@@ -1734,6 +2372,7 @@ static func _top_pad(top_id: int) -> float:
 		15, 16, 24:    return 0.042       # waistcoat, cardigan, lab coat
 		11, 17, 18:    return 0.036       # collared shirt, hi-vis vest, football shirt
 		22:            return 0.024       # dress
+		REBECA_VESTIDO: return 0.042      # cardigan over a dress
 		9, 10, 19:     return 0.018       # NPC jackets & Breton top
 	return 0.0
 
@@ -1944,6 +2583,11 @@ func anim(moving: bool, dt: float, speed: float, bob := true) -> void:
 		hr = Vector3(0.2, 1.16, 0.44)
 	if phone:
 		hr = Vector3(0.5, 1.28, 0.12)
+	if _carro != null and not phone and not guard:      # (the trolley: its handle in the right hand)
+		var want := 1.0 if moving else 0.0
+		_carro_k = move_toward(_carro_k, want, dt * 2.5)
+		_carro_pose()
+		hr = _carro_hand()
 	if hand_at != null:
 		hr = hand_at
 	if _phone.visible != phone:
@@ -1987,6 +2631,8 @@ func anim(moving: bool, dt: float, speed: float, bob := true) -> void:
 		_hr.position = hr
 	if absf(inner.position.y - iy) > 0.00001:   # (the standing bob moves less than a millimetre a frame: still written)
 		inner.position.y = iy
+	if _carro != null:                           # (the trolley's wheels stay on the ground under the bob)
+		_carro.position.y = 0.085 - iy
 	_blink_tick(dt)
 
 ## Ring colours keep the fists visible against these big heads and the crowd.

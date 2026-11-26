@@ -87,6 +87,7 @@ var riders: Array = [{}, {}]      # the looks of whoever is at the wheel and of 
 var _rider_nodes: Array = [null, null]
 var _fp_hide_head := false        # true in first-person driving mode: hide driver's head so POV sits above shoulders
 var _rosary_root: Node3D = null   # interior rearview mirror + swinging silver rosary (Z15 only, spawned while player rides)
+var _fp_only: Array = []          # pieces of a cockpit seen only in 1st person (the Z15's headliner pokes out of its roof from outside: the user, 25 Nov 2026)
 var _rosary_piv: Node3D = null    # upper beaded loop + medallion pivot
 var _rosary_drop: Node3D = null   # lower pendant + crucifix secondary follow-through pivot
 var _dash_root: Node3D = null     # iconic C15 dashboard + working speedometer + single-spoke wheel (Z15 only while driving)
@@ -267,6 +268,9 @@ func seat(o: Dictionary, place := 0) -> void:
 ## Shows or hides only the driver's head (keeps shoulders, hands on wheel, and steering wheel visible for 1st-person POV).
 func set_driver_head_visible(on: bool) -> void:
 	_fp_hide_head = not on
+	for pc in _fp_only:
+		if pc != null and is_instance_valid(pc):
+			(pc as Node3D).visible = _fp_hide_head
 	var m_mode := SubViewport.UPDATE_ALWAYS if _fp_hide_head else SubViewport.UPDATE_DISABLED
 	if _mirror_vp != null and is_instance_valid(_mirror_vp):
 		_mirror_vp.render_target_update_mode = m_mode
@@ -493,8 +497,14 @@ func set_rosary(on: bool) -> void:
 	# Clean interior cab roof headliner & upper windscreen header bar (sk/z15.glb's exterior roof sits higher/one-sided!)
 	var m_headliner := Parts.mat(0xb8bcc2)
 	var m_hdr_trim := Parts.mat(0x282b30)
-	_rosary_root.add_child(_ros_part("box", m_hdr_trim, Vector3(-0.07, 0.068, 0.025), Vector3(1.44, 0.042, 0.095)))
-	_rosary_root.add_child(_ros_part("box", m_headliner, Vector3(-0.07, 0.095, -0.34), Vector3(1.46, 0.032, 0.72)))
+	# (only in 1st person: from outside, in 3rd person, they stick out through the roof and the windscreen -- "aparece una
+	# especie de toldo que clippea en el coche", the user, 25 Nov 2026)
+	_fp_only.clear()
+	for pc in [_ros_part("box", m_hdr_trim, Vector3(-0.07, 0.068, 0.025), Vector3(1.44, 0.042, 0.095)),
+			_ros_part("box", m_headliner, Vector3(-0.07, 0.095, -0.34), Vector3(1.46, 0.032, 0.72))]:
+		pc.visible = _fp_hide_head
+		_fp_only.append(pc)
+		_rosary_root.add_child(pc)
 
 	# Interior rearview mirror + stalk mounted to cab header
 	var stalk := _ros_part("cyl", Parts.mat(0x202226), Vector3(0.0, 0.032, 0.015), Vector3(0.008, 0.068, 0.008))

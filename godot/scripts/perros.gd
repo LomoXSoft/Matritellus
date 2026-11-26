@@ -47,7 +47,6 @@ const BREEDS := {
 	},
 }
 
-const HIT_LINES := ["¡Ay! ¡Guau!", "¡Guau!"]
 
 var G
 var list: Array = []        # Array of dog Dictionaries
@@ -403,6 +402,7 @@ func feed(d: Dictionary) -> bool:
 	d["t"] = 1.4
 	d["h"] = atan2(pp.x - p.x, pp.y - p.y)
 	feed_count += 1
+	G.stats["perros_galletas"] = int(G.stats.get("perros_galletas", 0)) + 1      # (the town notices: chismes.gd whispers)
 	d["anim"] = ""
 	_play(d, "Walk", 0.12)
 	_sync(d)
@@ -596,6 +596,29 @@ func pet(d: Dictionary) -> void:
 	d["yip_t"] = 0.24
 	_pop_heart(d)
 	_sync(d)
+	if randf() < 0.4:
+		_witness(p, 12.0, "dog_pet_seen")
+	_count("perros_acariciados", 10, "perros_caricias")
+
+## A neighbour near `p` who is free to talk says one of `key`'s lines (when you hit a dog, or stroke one)
+func _witness(p: Vector2, reach: float, key: String) -> void:
+	var best = null
+	var bd := reach
+	for n in G.npcs:
+		if n.visible and not n.away and n.state == "idle" and not n.is_barking() and n.voice != "goat":
+			var dd: float = n.p.distance_to(p)
+			if dd < bd:
+				bd = dd
+				best = n
+	if best != null:
+		best.bark(Loc.t(key).pick_random(), 2.6)
+
+## Counts it in stats; at `at`, the town has something to talk about (chismes.gd)
+func _count(stat: String, at: int, news: String) -> void:
+	var k: int = int(G.stats.get(stat, 0)) + 1
+	G.stats[stat] = k
+	if k == at and G.chismes != null:
+		G.chismes.mission_over(news)
 
 ## check if a moving car hits or nudges any dog (called for the player's car and duty vehicles)
 func check_car(c, by_player := false) -> void:
@@ -639,8 +662,10 @@ func hit(d: Dictionary, vel: Vector2, vy: float, by_player := false, dist := 0.0
 	d["anim"] = ""
 	_play(d, "Idle_HitReact_Left" if randf() < 0.5 else "Idle_HitReact_Right", 0.05)
 	_woof(d, dist, 3.0, 1.32)
-	_say(d, HIT_LINES.pick_random(), 2.4)
+	_say(d, Loc.t("dog_hit").pick_random(), 2.4)
 	if by_player:
+		_witness(d["p"], 22.0, "dog_hit_seen")             # (somebody always sees it)
+		_count("perros_atropellados", 3, "perros_atropello")
 		G.shake = maxf(float(G.shake), 0.25)
 		G.police.add_heat(14.0)
 		Sfx.noise(0.14, -14.0)

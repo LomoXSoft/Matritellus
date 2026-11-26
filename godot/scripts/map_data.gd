@@ -44,6 +44,7 @@ var mercamona: Dictionary = {}   # the supermarket's (mercamona.gd): {o: the sho
 var correos: Dictionary = {}     # the post office of the Calle de Zaragoza's (correos.gd): {o: its front's middle}; empty on a map baked without it
 var cristobal: Dictionary = {}   # the little hermitage of San Cristóbal (cristobal.gd): {o: its south-west corner, u: the street's way}; empty on a map baked without it
 var almazara: Dictionary = {}    # the oil mill of the road to Villacañas (almazara.gd): {o: its corner on the road, u: along its front}; empty on a map baked without it
+var cuevas: Dictionary = {}      # the dance hall of the old Madrid-Cádiz road (cuevas.gd): {o: Catastro's north-west corner of the hall, u: along its front}; empty on a map baked without it
 var rize: Dictionary = {}        # the Cafetería Rize and its alley, off the Avenida de Juan Carlos I (rize.gd): {o: the corner of the café and the end wall}; empty on a map baked without it
 var travesia: Dictionary = {}    # the Travesía del Clavel, a raised walk for people on foot (travesia.gd): {o: the south end of its east row's front, u: north along it}; empty on a map baked without it
 var cristoprado: Dictionary = {}   # the hermitage of the Cristo del Prado (cristoprado.gd): {o: the nave's south-west corner, u: its south side's way}; empty on a map baked without it
@@ -124,6 +125,7 @@ func _ready() -> void:
 	cristobal = data.get("cristobal", {})
 	almazara = data.get("almazara", {})
 	rize = data.get("rize", {})
+	cuevas = data.get("cuevas", {})
 	travesia = data.get("travesia", {})
 	cristoprado = data.get("cristoprado", {})
 	residencia = data.get("residencia", {})

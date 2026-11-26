@@ -107,6 +107,11 @@ func shops() -> Array:
 	var op = G.world.get("optica") if G.world != null else null
 	if op != null and op.get("dentro") != null and not (G.get("tiendas_ropa") != null and G.tiendas_ropa.shut(op.dentro)):   # the optician "Óptica Corsa" of the Calle del Salvador (its set: optica_dentro.gd; shut to you until Josefa's Vizum: tiendas_ropa.gd)
 		out.append(op.dentro)
+	var cvs = G.world.get("cuevas") if G.world != null else null
+	if cvs != null and cvs.get("dentro") != null:  # the «Sala Cavernas KAE» of the old road, once restored and only at night (its set: cuevas_dentro.gd)
+		out.append(cvs.dentro)
+		if cvs.dentro.get("azotea") != null:       # ...and the door from its mezzanine up to the roof: the same set, another way out (the user, 25 Nov 2026)
+			out.append(cvs.dentro.azotea)
 	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
 		out.append(G.casa)
 	return out

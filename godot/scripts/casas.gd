@@ -792,6 +792,9 @@ static func _word(s: String):
 ## same way (positions along that wall from its left end as you face it; its notices, signs, awnings and lean-tos go on it). Without them that wall
 ## gets a plain row of the house's own windows; a floor written "lado wall=..." with nothing else is a blank wall.
 ## A line "ciego" makes every side to another street a blank wall (the ones the "lado" lines do not reach too).
+## A line that begins "quiebro " is a floor of the wall that carries the front on past a bend of the street (a street
+## side that starts at an end of the front and runs on along it), written like a "lado" line, from its left end as you
+## face it. For a house whose "lado" lines belong to a longer wall on another street (sanisidro_34, 25 Nov 2026).
 static func _unpack(a: Array) -> Dictionary:
 	var spec := {"eaves": String(a[0]), "floors": []}
 	var usual := {"win": [1.1, 1.0, 1.2], "bal": [1.1, 2.2], "door": [1.1, 2.3], "gar": [2.8, 2.6], "shop": [3.0, 2.6], "arc": [1.6, 0.1, 2.4]}
@@ -803,6 +806,11 @@ static func _unpack(a: Array) -> Dictionary:
 			line = line.substr(5).strip_edges()
 			if not spec.has("flank"):
 				spec["flank"] = []
+		if line.begins_with("quiebro "):           # a floor of the wall that carries the front on past a bend (see the docs)
+			into = "turn"
+			line = line.substr(8).strip_edges()
+			if not spec.has("turn"):
+				spec["turn"] = []
 		if line == "ciego":                     # every side to another street a blank wall (huts, sheds: Texturas, 23 Nov 2026)
 			spec["blind"] = true
 			continue
@@ -844,7 +852,7 @@ static func _unpack(a: Array) -> Dictionary:
 				"cartel":                         # a notice: cartel at y kind (sevende, sealquila, vado, noaparcar, papel) [z=out] [c=colour] [t=1] [lado=1]
 					if not f.has("plates"):
 						f["plates"] = []
-					f["plates"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]), float(o.get("z", 0.04)), int(o.get("c", -1)), int(o.get("t", 0)), int(o.get("lado", 1 if into == "flank" else 0))])
+					f["plates"].append([String(words[0]).to_float(), String(words[1]).to_float(), String(words[2]), float(o.get("z", 0.04)), int(o.get("c", -1)), int(o.get("t", 0)), int(o.get("lado", 1 if into != "floors" else 0))])
 				"awn":
 					if not f.has("awnings"):
 						f["awnings"] = []
@@ -1154,7 +1162,9 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 				surround(Rect2(x, y, w, gh), face, _mat(o["s"]), float(o.get("sb", 0.15)), true)
 
 ## the windows of a wall that gives on to another street: the house's own, in a plain row
-func _rhythm(f: Dictionary, L: float, ground: bool) -> Array:
+## (`room`: the height of the floor; a floor too low for the window -- a loft, a yard wall, a stone foot -- gets none:
+## they stood out above the wall, the user, 25 Nov 2026: "hay edificios que tienen ventanas que sobresalen por arriba")
+func _rhythm(f: Dictionary, L: float, ground: bool, room := 1e9) -> Array:
 	if L < 2.6:
 		return []
 	var tmpl: Array = []
@@ -1166,6 +1176,8 @@ func _rhythm(f: Dictionary, L: float, ground: bool) -> Array:
 			tmpl = ["win", 0.0, op[2], 1.0, 1.2, op[-1] if op[-1] is Dictionary else {}]
 	if tmpl.is_empty():
 		tmpl = ["win", 0.0, 1.1, 1.0, 1.2, {}]
+	if float(tmpl[3]) + float(tmpl[4]) > room + 0.001:
+		return []
 	var o: Dictionary = (tmpl[-1] as Dictionary).duplicate() if tmpl[-1] is Dictionary else {}
 	o.erase("bal")
 	if ground and not o.has("g"):
@@ -1187,7 +1199,7 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 		var f: Dictionary = floors[i]
 		var h: float = gh if i == 0 else (top - gh) / float(n - 1)
 		var fly: float = 0.0 if side else float(f.get("fly", prev_fly))
-		var ops: Array = ([] if spec.get("blind", false) else _rhythm(f, L, i == 0)) if side else f.get("open", [])
+		var ops: Array = ([] if spec.get("blind", false) else _rhythm(f, L, i == 0, h)) if side else f.get("open", [])
 		var panels: Array = [] if side else f.get("panels", [])
 		if side and _flank and spec.has("flank") and i < (spec["flank"] as Array).size():
 			f = f.duplicate()                    # (the long side as it is in the photos: its own openings, render, foot)
@@ -1260,6 +1272,8 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 		if not side:
 			for pt in f.get("patches", []):          # a window walled up, a mended stretch: laid on the face of the wall
 				var px0: float = float(pt[0]) * L - float(pt[1]) / 2.0
+				if i == n - 1:                       # (on the top floor it ends at the wall's top)
+					pt = [pt[0], pt[1], pt[2], minf(float(pt[3]), h - float(pt[2]))] + pt.slice(4)
 				box(px0, y + float(pt[2]), fly - 0.01, pt[1], pt[3], 0.025, _mat(pt[4]))
 				if pt.size() > 5 and pt[5] == "chapa" and pt[4] is int:      # (k=chapa: corrugated sheet, its ribs)
 					for k in range(1, int(float(pt[1]) / 0.19) + 1):
@@ -1278,14 +1292,15 @@ func _facade(L: float, spec: Dictionary, side := false) -> float:
 			for sg in deco.get("signs", []):         # the board over a shop, and what it says on it
 				var sx0: float = float(sg[0]) * L
 				var sw: float = (float(sg[1]) - float(sg[0])) * L
-				box(sx0, y + 2.66, fly, sw, 0.46, 0.07, int(sg[2]))
+				var sy: float = y + (minf(2.66, h - 0.46) if i == n - 1 else 2.66)      # (under the top of a low wall)
+				box(sx0, sy, fly, sw, 0.46, 0.07, int(sg[2]))
 				var word := Label3D.new()
 				word.text = String(sg[3])
 				word.font_size = 64
 				word.pixel_size = minf(0.0052, sw * 0.86 / maxf(1.0, String(sg[3]).length() * 40.0))
 				word.modulate = Parts.col(int(sg[4]))
 				word.outline_size = 0
-				word.transform = _xf * Transform3D(Basis.IDENTITY, Vector3(sx0 + sw / 2.0, y + 2.89, fly + 0.075))      # (_xf: the long side's frame)
+				word.transform = _xf * Transform3D(Basis.IDENTITY, Vector3(sx0 + sw / 2.0, sy + 0.23, fly + 0.075))      # (_xf: the long side's frame)
 				add_child(word)
 			for aw in deco.get("awnings", []):          # an awning let down over a shop window
 				var ax0: float = float(aw[0]) * L
@@ -1633,9 +1648,18 @@ func _from_spec(spec: Dictionary) -> void:
 				_plain(a, b, nrm, top - 0.02, side_key)
 			elif e[3] and ln >= 3.0:                          # it gives on to another street: a front of its own
 				_xf = Transform3D(Basis(Vector3(-d.x, 0.0, -d.y), Vector3.UP, Vector3(nrm.x, 0.0, nrm.y)), Vector3(b.x, 0.0, b.y))
-				_flank = ln >= flank - 0.001
+				# (the front carried on past a bend of the street: what its "quiebro" lines say, in the place of the "lado" ones)
+				var bend: bool = spec.has("turn") and absf(b.x - a.x) > 0.9 * ln and (_on_front(a, tol) or _on_front(b, tol))
+				var keep = spec.get("flank")
+				if bend:
+					spec["flank"] = spec["turn"]
+				_flank = bend or ln >= flank - 0.001
 				_facade(ln, spec, true)
 				_flank = false
+				if bend and keep == null:
+					spec.erase("flank")
+				elif bend:
+					spec["flank"] = keep
 				_acera(ln)
 				if not _flat_roof:
 					box(-0.05, top - 0.05, 0.0, ln + 0.1, 0.11, 0.14, 0xc9a07a)
@@ -1932,6 +1956,38 @@ func _des_9() -> void:
 	box(xc - w / 2.0, sill - 0.18, 0.07, w, 0.24, 0.02, red)           # ...and down the wall: the top red stripe,
 	box(xc - w / 2.0, sill - 0.55, 0.07, w, 0.37, 0.02, yellow)        # the yellow twice as wide,
 	box(xc - w / 2.0, sill - 0.73, 0.07, w, 0.18, 0.02, red)           # the bottom red
+
+## Calle de los Remedios 36 (Street View, November 2024; the user, 25 Nov 2026: "Ponte con lo que falta frente a las
+## fotos"): the house is its short description (casas_calles.gd); on the rail of its balcony a pole leans out with the
+## flag of Spain hanging from it, red, yellow, red, as in the photo.
+func _rem_36() -> void:
+	_from_spec(_unpack(Short.HOUSES[id]))
+	var xc := 0.3 * length                       # (the balcony: "bal .3 2.4 2.2 bw=3.4" over a ground floor 3 m high)
+	var rail := 3.0 + 0.95
+	var z := 0.36                                # (the rail, at the balcony's edge)
+	box(xc - 0.02, rail - 0.6, z, 0.04, 1.9, 0.04, 0xd8d8d4)           # the pole, tied to the rail
+	var red := 0xc60b1e
+	var yellow := 0xf1bf00
+	var w := 0.95
+	var fy := rail + 1.3                         # (the flag's top, at the pole's head)
+	box(xc + 0.02, fy - 0.16, z, w, 0.16, 0.02, red)                   # the top red stripe,
+	box(xc + 0.02, fy - 0.48, z, w, 0.32, 0.02, yellow)                # the yellow twice as wide,
+	box(xc + 0.02, fy - 0.64, z, w, 0.16, 0.02, red)                   # the bottom red
+
+## A brick shed at the east end of the yard walls of the Calle de los Remedios (Street View, November 2024; nothing in
+## Catastro): its short description gives the front and the gate; over it the gable of brick to the street and a roof of
+## tiles on its two slopes back to the end of the piece (the user, 25 Nov 2026: "Ponte con lo que falta frente a las fotos").
+func _rem_t49b() -> void:
+	_from_spec(_unpack(Short.HOUSES[id]))
+	var L := length
+	var g := 1.4                                 # (how high the ridge stands over the walls)
+	var dp := 4.0                                # (the piece's depth, calles.json "deep")
+	var o := 0.25                                # (the eaves out over the front)
+	var br = _mat("brick_orange")
+	quad(Vector3(0, top, 0), Vector3(L, top, 0), Vector3(L / 2.0, top + g, 0), Vector3(L / 2.0, top + g, 0), br, Vector3(0, 0, 1))
+	quad(Vector3(L, top, -dp), Vector3(0, top, -dp), Vector3(L / 2.0, top + g, -dp), Vector3(L / 2.0, top + g, -dp), br, Vector3(0, 0, -1))
+	quad(Vector3(-0.1, top - 0.05, o), Vector3(L / 2.0, top + g + 0.05, o), Vector3(L / 2.0, top + g + 0.05, -dp - 0.1), Vector3(-0.1, top - 0.05, -dp - 0.1), "tiles", Vector3(-g, L / 2.0, 0))
+	quad(Vector3(L + 0.1, top - 0.05, o), Vector3(L + 0.1, top - 0.05, -dp - 0.1), Vector3(L / 2.0, top + g + 0.05, -dp - 0.1), Vector3(L / 2.0, top + g + 0.05, o), "tiles", Vector3(g, L / 2.0, 0))
 
 ## Avenida de la Reina Sofía 10 (Street View, February 2020 and November 2024): the new building where Catastro's photo
 ## still has a brick social centre. The house is its short description (casas_calles.gd); its whole front is a screen of

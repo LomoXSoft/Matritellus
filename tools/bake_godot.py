@@ -603,6 +603,21 @@ rize = {'o': [-196.82, 85.25]}
 _rize_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'rize.gd')
 if not (os.path.exists(_rize_gd) and 'const READY := true' in open(_rize_gd, encoding='utf-8').read()):      # (not built yet: Catastro's buildings stay)
     RIZE_RCS, rize, rize_built = set(), {}, []
+# The dance hall of the old Madrid-Cádiz road, 140 m south of the Mercamona (godot/scripts/cuevas.gd; the user, 25
+# November 2026; referencias/cuevas/): Catastro's building of it (the hall, the bar, the sheds behind) is not raised --
+# cuevas.gd builds it in two states, worn and restored, with its summer terrace and its car shelter, which Catastro has
+# not got -- and the map plants no trees on its plot nor on the pavement before it. No relief or road change.
+CUEVAS_RC = '5187003VJ5658N'
+def _cue(x, z): return (898.35 - 0.23202 * x - 0.97272 * z, 399.28 + 0.97272 * x - 0.23202 * z)      # x along its front from north to south, z out of it towards the road
+cuevas_built = [
+    Polygon([_cue(4.2, 0.0), _cue(38.7, 0.0), _cue(38.7, 5.0), _cue(43.2, 5.0), _cue(43.2, 0.7), _cue(69.6, 0.7), _cue(69.6, -26.0), _cue(41.6, -26.0), _cue(41.6, -23.2), _cue(4.2, -23.2)]).buffer(0),      # the hall, the bar and the terrace
+    Polygon([_cue(8.77, -35.29), _cue(32.48, -30.88), _cue(33.6, -23.2), _cue(41.6, -23.2), _cue(41.26, -26.76), _cue(49.99, -26.48), _cue(49.11, -33.28), _cue(10.55, -42.37)]).buffer(0),      # the sheds behind
+]
+cuevas_zone = Polygon([_cue(-14.0, 9.0), _cue(105.0, 9.0), _cue(105.0, -44.0), _cue(-14.0, -44.0)]).buffer(0.5)
+cuevas = {'o': [898.35, 399.28], 'u': [-0.23202, 0.97272]}
+_cuevas_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'cuevas.gd')
+if not (os.path.exists(_cuevas_gd) and 'const READY := true' in open(_cuevas_gd, encoding='utf-8').read()):      # (not built yet: Catastro's building stays)
+    CUEVAS_RC, cuevas, cuevas_built, cuevas_zone = None, {}, [], Polygon()
 # The Travesía del Clavel (above; referencias/travesia_clavel/): Catastro has the row on its west side as a strip (part 2
 # of 4494604) drawn 1.4 to 5 m short of the alley -- the aerial photo has its front 7 m from the east row's all the way.
 # That strip is not raised: travesia.gd builds the row where it stands, and the white house on the corner of the Calle
@@ -819,6 +834,7 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid == CRISTOBAL_RC: return                               # ...and the little hermitage of San Cristóbal
     if bid == ALMAZARA_RC: return                                # ...and the oil mill of the road to Villacañas
     if bid in RIZE_RCS: return                                   # ...and the Cafetería Rize and the garage opposite it in its alley
+    if bid == CUEVAS_RC: return                                  # ...and the dance hall of the old road
     if bid == TRAVESIA_RC and travesia_zone.contains(c): return  # ...and the west row of the Travesía del Clavel
     floors_c = min(floors, 5)
     if look: style, h = 7 + LOOK_NAMES.index(look['look']), floors_c * FLOOR_H + 0.5
@@ -893,6 +909,92 @@ for name, hd in HOUSES.items():           # the ones that are not in Catastro at
         o_, u_, n_, ln_ = house_frame(hd)
         at_ = lambda s, d: (o_[0] + u_[0] * s + n_[0] * d, o_[1] + u_[1] * s + n_[1] * d)
         hand_groups[name] = ['HAND_' + name, hd['floors'], [Polygon([at_(0, 0), at_(ln_, 0), at_(ln_, -hd['deep']), at_(0, -hd['deep'])])]]
+# The body reaches the front. A front is a line of its own (a whole row is laid on one straight line, a corner follows
+# its street), and Catastro's plot seldom ends exactly on it. Where the plot stopped short of the line by more than the
+# game takes for the front itself (0.6 m: casas.gd, _on_front), the game drew the plot's edge as a second front behind
+# the first, which stood loose before it ("fachadas dobles", 25 November 2026). So the plot of a house drawn from its
+# spec grows forward to its line wherever it lies less than FRONT_REACH behind it -- what "fill" does by hand -- but
+# never over its own porch, another described house, or the roadway of the map's street (FRONT_ROAD from its line: a
+# front that runs into it is a front drawn wrong, and tools/casas/frentes_al_solar.py takes it back to its plot in
+# calles.json, and its neighbours with it -- MATRI_FRONTS=<file> makes this bake write what that tool reads). Left as they are: the houses whose gap
+# is under FRONT_TOL all along; the ones built by a function of their own (terraces behind their gardens); the ones
+# with "strip" (a yard wall on the street, the house back behind it) or "grow": 0; and a recess deeper than FRONT_SURE
+# that takes only a part of the front (a porch, a stair, a yard: it may be real, and is listed).
+FRONT_REACH, FRONT_SURE, FRONT_TOL, FRONT_ROAD = 3.0, 1.9, 0.5, 2.1
+_gd = lambda f: open(os.path.join(HERE, '..', 'godot', 'scripts', f), encoding='utf-8').read()
+_cc, _cg = _gd('casas_calles.gd'), _gd('casas.gd')
+_own_build = set(re.findall(r'"([a-z0-9_]+)":\s*\["obra"\]', _cc)) | (set(re.findall(r'^func _([a-z0-9_]+)\(\) -> void:', _cg, re.M)) & set(HOUSES))
+for _t in ('ADOSADOS', 'ROSAS', 'HILERA21'):
+    _own_build |= set(re.findall(r'"([a-z0-9_]+)":', re.search(r'^const %s := \{(.*)$' % _t, _cc, re.M).group(1)))
+def _sweep(g, vx, vz):
+    """every point of g carried along (vx, vz): g, g moved, and what each of its edges sweeps on the way"""
+    res = []
+    for q in (g.geoms if hasattr(g, 'geoms') else [g]):
+        if q.geom_type != 'Polygon' or q.is_empty: continue
+        c = list(q.exterior.coords)
+        res.append(q); res.append(Polygon([(x + vx, z + vz) for x, z in c]))
+        for (ax, az), (bx, bz) in zip(c, c[1:]):
+            s = Polygon([(ax, az), (bx, bz), (bx + vx, bz + vz), (ax + vx, az + vz)])
+            if s.area > 1e-4: res.append(s.buffer(0))
+    return unary_union([q for q in res if q.is_valid and not q.is_empty])
+_whole = {name: shapely.make_valid(unary_union([shapely.make_valid(q).buffer(0.2, join_style=2) for q in g[2]]).buffer(-0.2, join_style=2)) for name, g in hand_groups.items()}
+_names = list(_whole); _tree = STRtree([_whole[k] for k in _names])
+_roadway = unary_union([LineString([npts[i] for i in r['p']]) for r in roads if len(r['p']) > 1]).buffer(FRONT_ROAD)
+front_grown, front_left, front_road, front_pull = [], [], [], {}
+for name in _names:
+    hd = HOUSES[name]
+    if name in _own_build or hd['rc'] is None or hd.get('strip') or hd.get('grow') == 0: continue
+    o_, u_, n_, ln_ = house_frame(hd)
+    at_ = lambda s, d: (o_[0] + u_[0] * s + n_[0] * d, o_[1] + u_[1] * s + n_[1] * d)
+    def _gap(reach):
+        slab = Polygon([at_(0.0, 0.0), at_(ln_, 0.0), at_(ln_, -reach), at_(0.0, -reach)])
+        near = _whole[name].intersection(slab)
+        if near.is_empty: return near
+        g = shapely.make_valid(_sweep(near, n_[0] * reach, n_[1] * reach)).intersection(slab).difference(_whole[name])
+        if 'porch' in hd:
+            a0, a1, deep = hd['porch']
+            g = g.difference(Polygon([at_(a0, 1.0), at_(a1, 1.0), at_(a1, -deep), at_(a0, -deep)]))
+        for j in _tree.query(g):
+            if _names[j] != name and _whole[_names[j]].intersects(g): g = g.difference(_whole[_names[j]].buffer(0.05, join_style=2))
+        return g
+    _run = lambda g, d: g.intersection(LineString([at_(0.0, -d), at_(ln_, -d)])).length
+    gap = _gap(FRONT_REACH)
+    if gap.is_empty: continue
+    if os.environ.get('MATRI_FRONTS') and not ('porch' in hd or 'fill' in hd or 'clear' in hd):
+        # the line the plot really has along this front: through the two points of its outline farthest apart along
+        # it that leave nothing of the plot more than a hand's breadth ahead of the line, which is then moved out to touch
+        near = _whole[name].intersection(Polygon([at_(0.0, 0.0), at_(ln_, 0.0), at_(ln_, -FRONT_SURE), at_(0.0, -FRONT_SURE)]))
+        sd = [((x - o_[0]) * u_[0] + (z - o_[1]) * u_[1], (x - o_[0]) * n_[0] + (z - o_[1]) * n_[1])
+              for q in (near.geoms if hasattr(near, 'geoms') else [near]) if q.geom_type == 'Polygon' for x, z in q.exterior.coords]
+        sd = sorted(set((round(p, 3), round(q, 3)) for p, q in sd))
+        best = None
+        for i0 in range(len(sd)):
+            for i1 in range(len(sd) - 1, i0, -1):
+                span = sd[i1][0] - sd[i0][0]
+                if span < 0.6 * ln_ or (best and span <= best[0]): break
+                k = (sd[i1][1] - sd[i0][1]) / span
+                lift = max(d - (sd[i0][1] + k * (p - sd[i0][0])) for p, d in sd)
+                if lift <= 0.15: best = (span, sd[i0][1] + lift - k * sd[i0][0], k)
+        if best:
+            d0 = min(0.0, best[1]); d1 = min(0.0, best[1] + best[2] * ln_)
+            if max(-d0, -d1) >= 0.25: front_pull[name] = [[r2(v) for v in at_(0.0, d0)], [r2(v) for v in at_(ln_, d1)], round(-d0, 2), round(-d1, 2), bool(gap.intersects(_roadway) and gap.intersection(_roadway).area >= 0.5)]
+    if _run(gap, FRONT_TOL) < 0.3: continue      # (the plot's edge is the front, near enough: as it was)
+    far = _run(gap, FRONT_SURE)
+    if 0.15 * ln_ < far < 0.85 * ln_:
+        gap = _gap(FRONT_SURE); front_left.append((name, round(far, 1), round(ln_, 1)))
+        if gap.is_empty or _run(gap, FRONT_TOL) < 0.3: continue
+    if gap.intersects(_roadway):
+        front_road.append((name, round(gap.intersection(_roadway).area, 1)))
+        gap = gap.difference(_roadway)
+    pcs = [q for q in (gap.geoms if hasattr(gap, 'geoms') else [gap]) if q.geom_type == 'Polygon' and q.area > 0.02]
+    if not pcs: continue
+    deep = max(-((x - o_[0]) * n_[0] + (z - o_[1]) * n_[1]) for q in pcs for x, z in q.exterior.coords)
+    for q in pcs: hand_groups[name][2].append(q.buffer(0.02, join_style=2))
+    front_grown.append((name, round(sum(q.area for q in pcs), 1), round(_run(gap, FRONT_TOL), 1), round(deep, 2)))
+print('fronts: %d plots grown to their front line, %.0f m2 (%d by more than 1.6 m)' % (len(front_grown), sum(q[1] for q in front_grown), sum(1 for q in front_grown if q[3] > 1.6)))
+print('fronts: a deep recess over a part of the front left alone (review):', ' '.join('%s(%.1f/%.1f)' % q for q in front_left))
+print('fronts: the line of the front runs into the roadway, not grown there (review):', ' '.join('%s(%.1f)' % q for q in front_road))
+if os.environ.get('MATRI_FRONTS'): json.dump({'grown': front_grown, 'left': front_left, 'road': front_road, 'pull': front_pull}, open(os.environ['MATRI_FRONTS'], 'w'))
 for hand, (bid, floors, pieces) in hand_groups.items():
     u = unary_union([q.buffer(0.2, join_style=2) for q in pieces]).buffer(-0.2, join_style=2)
     for g in (u.geoms if u.geom_type == 'MultiPolygon' else [u]):
@@ -1284,6 +1386,7 @@ if sebastian: block_list.extend([sebastian_built, sebastian_chapel])      # (the
 if cristobal: block_list.append(cristobal_built)    # (the little hermitage of San Cristóbal, likewise)
 if almazara: block_list.extend(almazara_built)      # (the oil mill, its long wall and its tall nave on the road, likewise)
 if rize: block_list.extend(rize_built)              # (the Cafetería Rize, the garage opposite and the wall at the alley's end, likewise)
+if cuevas: block_list.extend(cuevas_built)          # (the dance hall of the old road, its terrace and its sheds, likewise)
 if travesia: block_list.extend(travesia_built)      # (the west row of the Travesía del Clavel and the white house on the Clavel, likewise)
 if cristoprado: block_list.append(cristoprado_built)    # (the hermitage of the Cristo del Prado, likewise)
 if residencia: block_list.extend(residencia_built)    # (and the old people's home beside it)
@@ -1356,6 +1459,7 @@ trees = [t for t in trees if not ferial_park.contains(Point(t[0], t[1]))]      #
 trees = [t for t in trees if not sebastian_zone.contains(Point(t[0], t[1]))]   # ...and the park of San Sebastián and round its hermitage (sebastian.gd plants its own)
 trees = [t for t in trees if not cristoprado_zone.contains(Point(t[0], t[1]))]   # ...and round the hermitage of the Cristo del Prado (cristoprado.gd plants its own)
 trees = [t for t in trees if not almazara_zone.contains(Point(t[0], t[1]))]     # ...and the oil mill's plot and the verge before it (almazara.gd plants its own pines)
+trees = [t for t in trees if not cuevas_zone.contains(Point(t[0], t[1]))]       # ...and the dance hall's plot and the pavement before it (cuevas.gd plants its own cypresses)
 # single trees Street View no longer has: the two before the Red Cross on the earth square of the Av. Juan Carlos I
 # (Street View 2024: red barriers and one young tree, which requejo.gd plants; Pretil, 23 November 2026)
 NO_TREES = [(-430.7, 173.8), (-417.7, 173.9)]
@@ -1372,7 +1476,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'cristobal': cristobal, 'cristoprado': cristoprado, 'residencia': residencia, 'colegio': colegio, 'cuartel': cuartel, 'almazara': almazara, 'rize': rize, 'travesia': travesia, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'cristobal': cristobal, 'cristoprado': cristoprado, 'residencia': residencia, 'colegio': colegio, 'cuartel': cuartel, 'almazara': almazara, 'rize': rize, 'cuevas': cuevas, 'travesia': travesia, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

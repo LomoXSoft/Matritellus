@@ -52,6 +52,7 @@ const COLORS := {
 	"tabaco": Color(0.98, 0.78, 0.24),
 	"pollo": Color(1.0, 0.66, 0.22),
 	"galletas_perro": Color(1.0, 0.72, 0.24),
+	"bacaladitos": Color(0.45, 0.82, 1.0),
 }
 
 var G
@@ -363,6 +364,21 @@ func _build_mesh(kind: String) -> Node3D:
 				for sy: float in [-0.045, 0.045]:
 					bone.add_child(Parts.part("ball", 0xd89b44, Vector3(sx, sy, 0.0), Vector3(0.062, 0.062, 0.05)))
 			holder.add_child(bone)
+		"bacaladitos":
+			# La Pili's "bacaladitos" (pili.gd): a whole pale fish on a white tray -- a panga, as she finds out
+			holder.rotation.z = deg_to_rad(10.0)
+			holder.add_child(Parts.part("box", 0xf4f4f2, Vector3(0.0, -0.1, 0.0), Vector3(0.62, 0.035, 0.26)))      # the foam tray
+			holder.add_child(Parts.part("ball", 0xd6dade, Vector3(0.0, 0.0, 0.0), Vector3(0.5, 0.15, 0.12)))         # its body
+			holder.add_child(Parts.part("ball", 0x7d8690, Vector3(0.0, 0.045, 0.0), Vector3(0.46, 0.08, 0.1)))       # a darker back
+			holder.add_child(Parts.part("ball", 0xc4c9ce, Vector3(0.22, -0.005, 0.0), Vector3(0.14, 0.12, 0.105)))   # the head
+			for sz in [-1.0, 1.0]:
+				holder.add_child(Parts.part("ball", 0x1c1c20, Vector3(0.265, 0.02, sz * 0.05), Vector3(0.025, 0.025, 0.012)))      # eyes
+				var tail := Parts.part("box", 0x8e969e, Vector3(-0.29, sz * 0.04, 0.0), Vector3(0.12, 0.03, 0.02))
+				tail.rotation.z = sz * 0.6
+				holder.add_child(tail)
+			var fin := Parts.part("box", 0x8e969e, Vector3(0.0, 0.085, 0.0), Vector3(0.18, 0.04, 0.012))
+			fin.rotation.z = -0.25
+			holder.add_child(fin)
 		_:
 			holder.add_child(Parts.part("ball", 0xf2c230, Vector3.ZERO, Vector3(0.32, 0.32, 0.32)))
 	return holder

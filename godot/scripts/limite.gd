@@ -36,6 +36,8 @@ func tick(dt: float, pp: Vector2, frozen: bool) -> void:
 		_show()
 		return
 	var out: bool = outside(pp) and not G.indoors
+	if out and G.get("zonas") != null and G.zonas.in_zone(pp):      # (zonas) in a zone off the map, through its gate: not out of town
+		out = false
 	if hunting:
 		if out:
 			_more_t -= dt

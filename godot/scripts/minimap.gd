@@ -29,6 +29,11 @@ var _passes := [[], [], []]  # segments by road kind: asphalt, dirt, footpath
 const CELL := 90.0
 var _seg_cells := [{}, {}, {}]      # the same, by map cell: Vector2i -> Array (so the minimap only looks at what is near)
 var _ring_cells := {}
+## What stands off the town's own plan, drawn as its streets and blocks are (zonas.gd fills it once, _plan: the
+## cemetery's zone -- its road, the A-4, the cemetery's wall, the solar plant; Pretil, 25 Nov 2026, lines put in only).
+## Each: [kind, PackedVector2Array of points no farther apart than some 30 m, half its width in metres]; kind 0 to 2 a
+## road as the town's (asphalt, dirt, footpath), 3 an outline as a block's.
+static var extras: Array = []
 
 const INK := Color("3a2a12")
 const GOLD := Color("f2c230")
@@ -176,6 +181,15 @@ func _draw() -> void:
 						if s.a.distance_squared_to(c) > reach:
 							continue
 						draw_line((s.a - c) * k + half, (s.b - c) * k + half, cols[pass_i], maxf((2.6 if dark_gps else 2.0) if pass_i == 0 else 1.0, s.hw * 2.0 * k * 0.8))
+	for zx in extras:                             # (off the town's plan: the zones' roads and outlines, zonas.gd _plan)
+		var zpts: PackedVector2Array = zx[1]
+		var zkind: int = zx[0]
+		var zcol: Color = cols[zkind] if zkind < 3 else blk_line
+		var zwide: float = maxf(2.0 if zkind == 0 else 1.0, float(zx[2]) * 2.0 * k * 0.8)
+		for zi in range(zpts.size() - 1):
+			if not full and zpts[zi].distance_squared_to(c) > reach:
+				continue
+			draw_line((zpts[zi] - c) * k + half, (zpts[zi + 1] - c) * k + half, zcol, zwide)
 	var pts: PackedVector2Array = MapData.route_pts
 	if pts.size() > 1:
 		var line := PackedVector2Array()

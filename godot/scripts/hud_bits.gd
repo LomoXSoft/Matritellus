@@ -363,7 +363,9 @@ class PlateRim extends Control:
 class Pointer extends Control:
 	var bubble: Control
 	var at = null                 # where on the screen the speaker is (Vector2), or null: no tail
+	var left := 70.0              # how far in from the bubble's left end a tail out of its top may start (the name's tab is there)
 	var _was = null
+	var _left_was := 70.0
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -372,8 +374,9 @@ class Pointer extends Control:
 	func _process(_dt: float) -> void:
 		if not is_visible_in_tree():
 			return
-		if (at == null) != (_was == null) or (at != null and (at as Vector2).distance_to(_was) > 0.5):
+		if (at == null) != (_was == null) or (at != null and (at as Vector2).distance_to(_was) > 0.5) or left != _left_was:
 			_was = at
+			_left_was = left
 			queue_redraw()
 
 	func _draw() -> void:
@@ -384,7 +387,7 @@ class Pointer extends Control:
 		var foot: Vector2
 		var across: Vector2                           # along the edge the tail grows out of
 		if target.y < box.position.y - 14.0:          # above: out of the top
-			foot = Vector2(clampf(target.x, box.position.x + 70.0, box.end.x - 70.0), box.position.y + 4.0)
+			foot = Vector2(clampf(target.x, box.position.x + minf(left, box.size.x - 140.0), box.end.x - 70.0), box.position.y + 4.0)
 			across = Vector2(1, 0)
 		elif target.x > box.end.x + 10.0:             # beside it, on the right (the phone)
 			foot = Vector2(box.end.x - 4.0, clampf(target.y, box.position.y + 34.0, box.end.y - 38.0))

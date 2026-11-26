@@ -21,9 +21,9 @@ const BPM := 128.0
 const BEAT := 60.0 / BPM          # 0.46875 s
 const BAR := BEAT * 4.0           # 1.875 s
 const PHASE := 0.200              # First downbeat offset in the WAV file
-const TARGET_SIZE := Vector2i(1920, 1080)   # True Full-HD 16:9 Widescreen resolution
+const TARGET_SIZE := Vector2i(3840, 2160)   # True 4K UHD 16:9 Widescreen resolution
 const FOV_9X16_BOOST := 0.0       # Full original vertical span preserved; horizontal span widened to 16:9
-const RECORD_FPS := 30
+const RECORD_FPS := 60
 
 var G
 var active := false
@@ -41,6 +41,9 @@ var fade_rect: ColorRect
 var title_holder: Control
 var title_logo: TextureRect
 var title_sub: Label
+var title_prox: TextureRect
+var badge_steam: TextureRect
+var badge_android: TextureRect
 
 var _shot_idx := -1
 var _shot_t := 0.0
@@ -281,16 +284,58 @@ func _build_nodes() -> void:
 	title_sub.name = "TitleSub"
 	title_sub.text = "MADRIDEJOS  ·  MUNDO ABIERTO"
 	title_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_sub.add_theme_font_size_override("font_size", 36)
+	title_sub.add_theme_font_size_override("font_size", 72)
 	title_sub.add_theme_color_override("font_color", Color("fff6e0"))
 	title_sub.add_theme_color_override("font_outline_color", Color(0.10, 0.06, 0.03, 0.92))
-	title_sub.add_theme_constant_override("outline_size", 14)
+	title_sub.add_theme_constant_override("outline_size", 28)
 	title_sub.anchor_left = 0.10
 	title_sub.anchor_right = 0.90
 	title_sub.anchor_top = 0.37
 	title_sub.anchor_bottom = 0.45
 	title_sub.modulate.a = 0.0
 	title_holder.add_child(title_sub)
+
+	title_prox = TextureRect.new()
+	title_prox.name = "TitleProx"
+	title_prox.texture = _load_tex("res://assets/titulo/proximamente.png")
+	title_prox.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	title_prox.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	title_prox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_prox.anchor_left = 0.32
+	title_prox.anchor_right = 0.68
+	title_prox.anchor_top = 0.69
+	title_prox.anchor_bottom = 0.77
+	title_prox.pivot_offset = Vector2(TARGET_SIZE.x * 0.18, TARGET_SIZE.y * 0.04)
+	title_prox.modulate.a = 0.0
+	title_holder.add_child(title_prox)
+
+	badge_steam = TextureRect.new()
+	badge_steam.name = "BadgeSteam"
+	badge_steam.texture = _load_tex("res://assets/titulo/badge_steam.png")
+	badge_steam.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	badge_steam.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	badge_steam.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge_steam.anchor_left = 0.33
+	badge_steam.anchor_right = 0.49
+	badge_steam.anchor_top = 0.785
+	badge_steam.anchor_bottom = 0.895
+	badge_steam.pivot_offset = Vector2(TARGET_SIZE.x * 0.08, TARGET_SIZE.y * 0.055)
+	badge_steam.modulate.a = 0.0
+	title_holder.add_child(badge_steam)
+
+	badge_android = TextureRect.new()
+	badge_android.name = "BadgeAndroid"
+	badge_android.texture = _load_tex("res://assets/titulo/badge_android.png")
+	badge_android.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	badge_android.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	badge_android.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge_android.anchor_left = 0.51
+	badge_android.anchor_right = 0.67
+	badge_android.anchor_top = 0.785
+	badge_android.anchor_bottom = 0.895
+	badge_android.pivot_offset = Vector2(TARGET_SIZE.x * 0.08, TARGET_SIZE.y * 0.055)
+	badge_android.modulate.a = 0.0
+	title_holder.add_child(badge_android)
 
 	fade_rect = ColorRect.new()
 	fade_rect.name = "FadeRect"
@@ -303,6 +348,16 @@ func _build_nodes() -> void:
 	anim_player = AnimationPlayer.new()
 	anim_player.name = "TrailerAnimationPlayer"
 	add_child(anim_player)
+
+func _load_tex(res_path: String) -> Texture2D:
+	var abs_p := ProjectSettings.globalize_path(res_path)
+	if FileAccess.file_exists(abs_p):
+		var img := Image.load_from_file(abs_p)
+		if img != null:
+			return ImageTexture.create_from_image(img)
+	if ResourceLoader.exists(res_path):
+		return load(res_path)
+	return null
 
 func _compute_shot_keypoints() -> void:
 	_shot_keypoints.clear()
@@ -613,6 +668,58 @@ func _build_animation() -> void:
 	anim.track_insert_key(tr_sub_a, 56.05, 0.95)
 	anim.track_insert_key(tr_sub_a, 58.33, 0.95)
 	anim.track_insert_key(tr_sub_a, 59.85, 0.0)
+
+	# Track 6b: TitleProx ("PRÓXIMAMENTE") & Platform Badges (Steam + Android)
+	var tr_prox_a := anim.add_track(Animation.TYPE_VALUE)
+	anim.track_set_path(tr_prox_a, "TrailerRenderViewport/TrailerCanvas/TrailerUI/TitleHolder/TitleProx:modulate:a")
+	anim.track_set_interpolation_type(tr_prox_a, Animation.INTERPOLATION_CUBIC)
+	anim.track_insert_key(tr_prox_a, 0.0, 0.0)
+	anim.track_insert_key(tr_prox_a, 55.45, 0.0)
+	anim.track_insert_key(tr_prox_a, 56.05, 1.0)
+	anim.track_insert_key(tr_prox_a, 58.33, 1.0)
+	anim.track_insert_key(tr_prox_a, 59.85, 0.0)
+
+	var tr_prox_s := anim.add_track(Animation.TYPE_VALUE)
+	anim.track_set_path(tr_prox_s, "TrailerRenderViewport/TrailerCanvas/TrailerUI/TitleHolder/TitleProx:scale")
+	anim.track_set_interpolation_type(tr_prox_s, Animation.INTERPOLATION_CUBIC)
+	anim.track_insert_key(tr_prox_s, 0.0, Vector2(0.86, 0.86))
+	anim.track_insert_key(tr_prox_s, 55.45, Vector2(0.86, 0.86))
+	anim.track_insert_key(tr_prox_s, 56.10, Vector2(1.0, 1.0))
+	anim.track_insert_key(tr_prox_s, 60.0, Vector2(1.02, 1.02))
+
+	var tr_steam_a := anim.add_track(Animation.TYPE_VALUE)
+	anim.track_set_path(tr_steam_a, "TrailerRenderViewport/TrailerCanvas/TrailerUI/TitleHolder/BadgeSteam:modulate:a")
+	anim.track_set_interpolation_type(tr_steam_a, Animation.INTERPOLATION_CUBIC)
+	anim.track_insert_key(tr_steam_a, 0.0, 0.0)
+	anim.track_insert_key(tr_steam_a, 55.80, 0.0)
+	anim.track_insert_key(tr_steam_a, 56.35, 1.0)
+	anim.track_insert_key(tr_steam_a, 58.33, 1.0)
+	anim.track_insert_key(tr_steam_a, 59.85, 0.0)
+
+	var tr_steam_s := anim.add_track(Animation.TYPE_VALUE)
+	anim.track_set_path(tr_steam_s, "TrailerRenderViewport/TrailerCanvas/TrailerUI/TitleHolder/BadgeSteam:scale")
+	anim.track_set_interpolation_type(tr_steam_s, Animation.INTERPOLATION_CUBIC)
+	anim.track_insert_key(tr_steam_s, 0.0, Vector2(0.84, 0.84))
+	anim.track_insert_key(tr_steam_s, 55.80, Vector2(0.84, 0.84))
+	anim.track_insert_key(tr_steam_s, 56.38, Vector2(1.0, 1.0))
+	anim.track_insert_key(tr_steam_s, 60.0, Vector2(1.02, 1.02))
+
+	var tr_android_a := anim.add_track(Animation.TYPE_VALUE)
+	anim.track_set_path(tr_android_a, "TrailerRenderViewport/TrailerCanvas/TrailerUI/TitleHolder/BadgeAndroid:modulate:a")
+	anim.track_set_interpolation_type(tr_android_a, Animation.INTERPOLATION_CUBIC)
+	anim.track_insert_key(tr_android_a, 0.0, 0.0)
+	anim.track_insert_key(tr_android_a, 56.00, 0.0)
+	anim.track_insert_key(tr_android_a, 56.55, 1.0)
+	anim.track_insert_key(tr_android_a, 58.33, 1.0)
+	anim.track_insert_key(tr_android_a, 59.85, 0.0)
+
+	var tr_android_s := anim.add_track(Animation.TYPE_VALUE)
+	anim.track_set_path(tr_android_s, "TrailerRenderViewport/TrailerCanvas/TrailerUI/TitleHolder/BadgeAndroid:scale")
+	anim.track_set_interpolation_type(tr_android_s, Animation.INTERPOLATION_CUBIC)
+	anim.track_insert_key(tr_android_s, 0.0, Vector2(0.84, 0.84))
+	anim.track_insert_key(tr_android_s, 56.00, Vector2(0.84, 0.84))
+	anim.track_insert_key(tr_android_s, 56.58, Vector2(1.0, 1.0))
+	anim.track_insert_key(tr_android_s, 60.0, Vector2(1.02, 1.02))
 
 	# Track 7: Audio volume fade-out at 58.33s - 60.00s
 	var tr_vol := anim.add_track(Animation.TYPE_VALUE)
@@ -1284,9 +1391,9 @@ func _tick_shot_actors(dt: float) -> void:
 			n.p += (e["dir"] as Vector2) * spd * dt
 			var floor_y: float = G.recress.sala.floor_y if _shot_idx == 13 else MapData.foot(n.p)
 			n.global_position = Vector3(n.p.x, floor_y, n.p.y)
-			n.anim(true, dt, spd, true)
+			n.anim(true, dt, spd)
 		else:
-			n.anim(false, dt, 0.0, true)
+			n.anim(false, dt, 0.0)
 		n.sync()
 
 	# 3. Special mode ticks: Henry's Ham brawl (Shot 8 & Shot 9)
@@ -1332,9 +1439,9 @@ func _tick_shot_actors(dt: float) -> void:
 					n.p += dir * minf(2.4 * dt, d - 1.3)
 					n.global_position = MapData.at(n.p, MapData.foot(n.p) - MapData.height(n.p))
 					n.h = lerp_angle(n.h, atan2(dir.x, dir.y), 1.0 - exp(-8.0 * dt))
-					n.anim(true, dt, 2.4, true)
+					n.anim(true, dt, 2.4)
 				else:
-					n.anim(false, dt, 0.0, true)
+					n.anim(false, dt, 0.0)
 			n.sync()
 		M.pose(G.player)
 		M.face_bars(cam)
@@ -1425,7 +1532,7 @@ func _step_world(dt: float) -> void:
 		if d2 < 95.0 * 95.0:
 			n.visible = true
 			if _shot_idx != 8 and _shot_idx != 9:
-				n.anim(false, dt, 0.0, d2 < 25.0 * 25.0)
+				n.anim(false, dt, 0.0)
 				n.sync()
 
 	_tick_shot_actors(dt)
@@ -1513,7 +1620,7 @@ func _record_trailer() -> void:
 		if shot_mid_frames.has(f_idx):
 			img.save_png("%s/trailer_%s.png" % [shots_dir, shot_mid_frames[f_idx]])
 		if f_idx % 150 == 0 or f_idx == total_frames - 1:
-			print("  frame %4d / %4d  (t = %5.2f s, shot %02d)  [%.1f s elapsed]" % [f_idx + 1, total_frames, t_now, _shot_idx, (Time.get_ticks_msec() - t_start) / 1000.0])
+			print("  ok: frame %4d / %4d  (t = %5.2f s, shot %02d)  [%.1f s elapsed]" % [f_idx + 1, total_frames, t_now, _shot_idx, (Time.get_ticks_msec() - t_start) / 1000.0])
 
 	_cleanup_special_modes(-1)
 	_clear_shot_actors()

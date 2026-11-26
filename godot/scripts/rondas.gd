@@ -39,6 +39,13 @@ const PLAN := {
 	"kid": [[0.0, 24.0, "park"]],
 }
 
+## how likely, in each two hours of the day from 9 to 20, that somebody with nothing to do for you is at the cemetery
+## instead (the user, 25 Nov 2026: "También hay probabilidades de que aparezca un NPC único aquí si no está
+## trabajando/de misión. Igual que si fuese un bar o un restaurante"): the old ones, the priest and the undertaker more
+const CEMENTERIO := {"old": 0.2, "old_social": 0.2, "undertaker": 0.35, "priest": 0.2, "old_miller": 0.15, "mayor": 0.08}
+const CEMENTERIO_ANY := 0.06
+const CEMENTERIO_HOURS := [9.0, 20.0]
+
 var G
 var zones := {}                 # "church", "square", "comida", "bar", "pub", "recreativos", "salud", "park" -> [points on the pavement]
 var base := {}                  # id -> [where they usually are, still there?]
@@ -91,6 +98,7 @@ func setup(game) -> void:
 			zones["salud"] += kerb.call(of.call(w.salud))
 	if zones["salud"].is_empty():
 		zones["salud"] = zones["square"].duplicate()
+	zones["cementerio"] = G.luto.spots() if G.get("luto") != null else []      # (in the aisles by the graves: luto.gd)
 	zones["park"] = []
 	if w != null and w.plaza != null:
 		zones["park"].append(G._pavement(w.plaza.spot(w.plaza.PLAY.x, w.plaza.PLAY.y) + Vector2(w.plaza.PLAY_R + 2.0, 0.0)))
@@ -122,6 +130,16 @@ func wanted(n) -> bool:
 	if id == "alberto" and G.recress != null and (G.recress.cine or G.recress.active()):
 		return true
 	return n.away or n.state == "fly" or n.state == "down" or n.state == "busy"
+
+## is this one at the cemetery in these two hours? (the same answer all through them, so they stay there a while)
+func cementerio(id: String) -> bool:
+	var kind: String = ROUNDS.get(id, "")
+	if kind == "kid" or kind == "" or (zones.get("cementerio", []) as Array).is_empty():
+		return false
+	if float(G.clock) < CEMENTERIO_HOURS[0] or float(G.clock) >= CEMENTERIO_HOURS[1]:
+		return false
+	var slot: int = int(G.day_n) * 12 + int(float(G.clock) / 2.0)
+	return float(posmod(hash([id, slot, "cementerio"]), 1000)) / 1000.0 < float(CEMENTERIO.get(kind, CEMENTERIO_ANY))
 
 func _recress_open() -> bool:
 	return G.recress != null and G.recress.done() and G.recress.open_hours(G.clock) and not (zones.get("recreativos", []) as Array).is_empty()
@@ -172,14 +190,16 @@ func tick(dt: float) -> void:
 					_at.erase(id)
 			continue
 		var want := where(ROUNDS[id])
+		if want != "home" and cementerio(id):
+			want = "cementerio"
 		var now: Dictionary = _at.get(id, {"kind": "home", "p": home, "until": 0.0})
-		if want == String(now["kind"]) and (want == "home" or G.time < float(now["until"])):
+		if want == String(now["kind"]) and (want == "home" or G.time < float(now["until"])) and not _party_over(now):
 			continue
 		var to: Vector2 = home
 		if want != "home":
-			var options: Array = (zones.get(want, []) as Array).filter(func(q): return q != now["p"])
+			var options: Array = _spots(want).filter(func(q): return q != now["p"])
 			if options.is_empty():
-				options = zones.get(want, [])
+				options = _spots(want)
 			if options.is_empty():
 				continue
 			to = options.pick_random()
@@ -188,6 +208,21 @@ func tick(dt: float) -> void:
 				_at.erase(id)
 			else:
 				_at[id] = {"kind": want, "p": to, "until": G.time + randf_range(STAY[0], STAY[1])}
+
+## The spots of a kind of place, now: the town's own and, among the pubs, the Sala Cavernas KAE while its night is on
+## (fiesta.gd; the user, 25 Nov 2026: "y únicos, con la misma posibilidad que los demás locales según NPC"): one more
+## place among them, no likelier than any other.
+func _spots(kind: String) -> Array:
+	var out: Array = zones.get(kind, [])
+	if kind == "pub" and G.get("fiesta") != null and G.fiesta != null:
+		var hall: Array = G.fiesta.unique_spots()
+		if not hall.is_empty():
+			out = out + [hall.pick_random()]
+	return out
+
+## at the party hall, and its night is over: off they go
+func _party_over(now: Dictionary) -> bool:
+	return G.get("fiesta") != null and G.fiesta != null and now.get("p") is Vector2 and G.fiesta.is_mine(now["p"]) and not G.fiesta.open()
 
 ## everybody back at their usual spot at once, seen or not (for the self-test, which moves people about itself)
 func home_all() -> void:

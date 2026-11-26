@@ -324,7 +324,7 @@ func _order_for(henry):
 	if ids.size() < 3:                           # (early on you know hardly anybody: anyone in town, then)
 		ids = G.named.keys()
 	for id in ids:
-		if id in ["henry", "goat", "faenas", "edmundo", "chino", "javi"] or not G.named.has(id):
+		if id in ["henry", "goat", "faenas", "edmundo", "chino", "javi", "ezequiel", "frank", "angelus"] or not G.named.has(id):       # (...nor the two of the party hall: inside it, and only at night)
 			continue
 		var n = G.named[id]
 		if not is_instance_valid(n) or n.away:      # (not "visible": far off, or with you inside a set, nobody is drawn)

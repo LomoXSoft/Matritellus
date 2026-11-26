@@ -1,0 +1,15 @@
+# RECUADROS DE LUIS PARA EL POCHI
+#
+# Lo que escribas aquí lo dice El Pochi en el juego, por turno con sus otras charlas.
+#   - Cada recuadro empieza con un renglón entre corchetes: [1], [2]... Puedes añadir más: [3], [4]...
+#   - Cada renglón que escribas debajo es un bocadillo de esa charla.
+#   - Un recuadro sin renglones no sale.
+#   - Los renglones que empiezan por # no salen en el juego.
+#   - Un renglón como ~~silencio~~ es un silencio: sale en gris y sin voz.
+# Este archivo solo lo lee el juego. Ninguna prueba lo carga ni lo enseña, y Claude no lo abre.
+
+[1]No entiendo porqué subieron la edad de consentimiento, con lo bien que estaba antes...
+
+
+[2]N-No lo entiendes, es un dragón de 1000 años en el cuerpo de una niña de 10... ¡Es completamente legal!
+

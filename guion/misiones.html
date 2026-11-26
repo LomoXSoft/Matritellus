@@ -85,7 +85,7 @@ code { font-family: var(--mono); font-size: 13px; }
 <main>
   <header style="display:flex;flex-direction:column;gap:6px">
     <h1>Misiones de Matritellus</h1>
-    <p class="sub">Leído del código el 21/11/2026, sobre la 0.0.18 con los cambios de ese día; el taxi del Kokas se añadió el 23/11. Quién da cada misión, cuándo se puede hacer y qué abre al acabarla. Pulsa un recuadro del diagrama para ir a su ficha.</p>
+    <p class="sub">Leído del código el 21/11/2026, sobre la 0.0.18 con los cambios de ese día; el taxi del Kokas se añadió el 23/11, y desde el 25/11 el puente enlaza con la herencia. Quién da cada misión, cuándo se puede hacer y qué abre al acabarla. Pulsa un recuadro del diagrama para ir a su ficha.</p>
   </header>
 
   <div class="legend" aria-label="Leyenda">
@@ -153,12 +153,7 @@ code { font-family: var(--mono); font-size: 13px; }
       <ol><li>Recoge 5 firmas de vecinos antes de que cambie la luz. Los tres primeros a los que preguntas dicen que no.</li>
       <li>Vuelve con <span class="p">Alberto</span>: él y <span class="p">Chiki</span> pasan a tu Agenda.</li>
       <li>Gasta 10 Puntos Cívicos en desbloquear el <span class="l">puente</span>.</li></ol>
-      <div class="chips"><a class="chip" href="#m-chiki">Las pintadas de las peñas</a><a class="chip" href="#m-recress">Un torneo en los Galaxy Recress</a><a class="chip" href="#m-fin">Fin de lo hecho</a></div>
-    </article>
-    <article class="card hist" id="m-fin">
-      <span class="tag">Fin de lo hecho</span>
-      <h3>Hasta aquí llega lo que hay hecho</h3>
-      <dl><dt>Qué es</dt><dd>Sin pantalla de «continuará»: sigues jugando y el objetivo te manda al mapa y a la Agenda, donde están las secundarias abiertas.</dd></dl>
+      <div class="chips"><a class="chip" href="#m-chiki">Las pintadas de las peñas</a><a class="chip" href="#m-recress">Un torneo en los Galaxy Recress</a><a class="chip" href="#m-casa">Sigue: La herencia de la Eufrasia</a></div>
     </article>
   </div>
 
@@ -249,15 +244,26 @@ code { font-family: var(--mono); font-size: 13px; }
       <li>Te pide que te eches uno con ella. Digas sí o no, te lo fumas: la cámara sube al cielo y pasan 6 horas. Luego te da tres.</li></ol>
       <div class="chips"><a class="chip" href="#pitillos">Abre: pitillos en los chinos, 3 por 6 €</a></div>
     </article>
+    <article class="card sec" id="m-pili">
+      <span class="tag">Secundaria · tras la herencia</span>
+      <h3>Los bacaladitos de la Pili</h3>
+      <dl><dt>La da</dt><dd><span class="p">La Pili</span>, por la <span class="l">Calle del Arroyuelo Medio</span>. Si te acercas, te persigue andando: «¡Oye, tú!»</dd>
+      <dt>Cuándo</dt><dd>Después de que la <span class="p">tía Paca</span> te cuente la herencia y cómo ganar dinero; de 8 a 22</dd>
+      <dt>Premio</dt><dd>50 € y 30 P.C. Decirle que no: −5</dd></dl>
+      <ol><li>Te cuenta lo caro que está el bacalao, lo de sus dos hijos de treinta años y que se ha muerto la Laura la mamporrera.</li>
+      <li>Ve a la primera caja del <span class="l">Merkocarry</span> y coge los <span class="o">bacaladitos</span>. <span class="p">La Pescadera</span>, puesta en la caja mientras la pescadería está cerrada, te dice que a la Pili le tienen prohibida la entrada (su foto tachada cuelga en la caja y en la puerta), por darle cristiana sepultura a una panga.</li>
+      <li>Llévaselos a su casa, por la <span class="l">Magdalena</span>: es una panga. Te manda a tomar por culo, pero te paga.</li></ol>
+      <div class="chips"><span class="chip">Después: da vueltas por tiendas, súpers y bares, y te cuenta demasiado</span></div>
+    </article>
   </div>
 
   <h2 id="fondo">De fondo</h2>
   <p class="sub">Misiones que van a su aire mientras juegas: no ocupan el hueco de los encargos ni el objetivo de la hoja. Están en la Agenda, página 3, «Misiones de fondo».</p>
   <div class="cards">
     <article class="card sec" id="m-casa">
-      <span class="tag">De fondo · después del puente</span>
+      <span class="tag">De fondo · lo que sigue al puente</span>
       <h3>La herencia de la Eufrasia</h3>
-      <dl><dt>La da</dt><dd><span class="p">Tía Paca</span> te llama 2 h de juego después de abrir el puente; te espera al lado de casa</dd>
+      <dl><dt>La da</dt><dd><span class="p">Tía Paca</span> te llama 15 minutos de juego después de abrir el puente (la hoja del día avisa de que estés al teléfono, y luego te manda a verla); te espera al lado de casa</dd>
       <dt>Pagos</dt><dd>En el <span class="l">cajero del Banco Cantabria</span>, a plazos: 100 €, 500 €, 1.000 € o todo lo que lleves</dd>
       <dt>Premio</dt><dd>La casa es tuya, y luego sus obras</dd></dl>
       <ol><li>La Eufrasia defraudaba a Hacienda: la casa debe <b>10.000 €</b>, y hay que pagarlos sí o sí.</li>
@@ -307,11 +313,12 @@ code { font-family: var(--mono); font-size: 13px; }
     <article class="card"><h3>Gacha</h3><p>1 € la bola en la máquina del <span class="l">Tele Dürum</span>. Figuras de los vecinos con nombre, en la Agenda, página «Colección».</p></article>
     <article class="card" id="pitillos"><h3>Pitillos</h3><p>Objeto clave que da <span class="p">Tomasa</span>; en los <span class="l">chinos del Arroyuelo</span>, 3 por 6 €. Desde la Mochila → Usar: la cámara sube al cielo y pasan 6 horas. Tres al día como mucho, solo a pie y sin misión ni persecución en marcha.</p></article>
     <article class="card"><h3>Dormir</h3><p>En tu cama, dentro de casa. Después de acostarte, hasta pasadas 24 horas de juego no vuelves a tener sueño (la hora de dormir de la historia no espera).</p></article>
+    <article class="card" id="ocio"><h3>La tía Paca, si estás ocioso</h3><p>Si pasan 24 horas de juego con alguna misión disponible sin empezar y nada en marcha, te llama, una vez por misión, la <span class="p">tía Paca</span>: «¿Se pué saber qué haces tan ocioso?», y te dice en qué calle tiene alguien un recado pa ti. No cuentan los trabajos ni en el Modo Golismeo.</p></article>
     <article class="card"><h3>Chismes y secretos</h3><p>Después de cada misión el pueblo habla de ella (menos la de Tomasa). A 100 de confianza cuentan su secreto Dolores, Katakumba69 y Chiki.</p></article>
     <article class="card"><h3>Sin hacer todavía</h3><p>La plaza de toros restaurada no está ligada a ninguna misión. Los modelos de los estados de la casa y el interior del banco los está haciendo Pretil.</p></article>
   </div>
 
-  <p class="foot">Fuentes: <code>missions.gd</code>, <code>game.gd</code>, <code>recress.gd</code>, <code>sabotaje.gd</code>, <code>motin.gd</code>, <code>pintadas.gd</code>, <code>ajedrez_humano.gd</code>, <code>tomasa.gd</code>, <code>fondo_casa.gd</code>, <code>trabajos.gd</code>, <code>javi.gd</code>, <code>koke.gd</code>, <code>cartas.gd</code> y <code>loc.gd</code> en X:\MatritellusGPT.</p>
+  <p class="foot">Fuentes: <code>missions.gd</code>, <code>game.gd</code>, <code>recress.gd</code>, <code>sabotaje.gd</code>, <code>motin.gd</code>, <code>pintadas.gd</code>, <code>ajedrez_humano.gd</code>, <code>tomasa.gd</code>, <code>pili.gd</code>, <code>fondo_casa.gd</code>, <code>trabajos.gd</code>, <code>javi.gd</code>, <code>koke.gd</code>, <code>cartas.gd</code> y <code>loc.gd</code> en X:\MatritellusGPT.</p>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
@@ -330,7 +337,6 @@ code { font-family: var(--mono); font-size: 13px; }
       'noche[' + L('A casica, que se hace de noche', 'a casa y a dormir') + ']:::hist',
       'movil[' + L('El móvil de la Josefa', 'Paca llama · Josefa · Fonsi') + ']:::hist',
       'puente[' + L('El puente de Arroyuelo Medio', 'Alberto') + ']:::hist',
-      'fin[' + L('Hasta aquí lo hecho', 'juego libre') + ']:::hist',
       'box([' + L('Combate de boxeo', 'minijuego') + ']):::mini',
       'inf([' + L('Negocio: informática', '') + ']):::des',
       'menu[' + L('El menú de la Josefa', 'Josefa') + ']:::sec',
@@ -348,6 +354,7 @@ code { font-family: var(--mono); font-size: 13px; }
       'ajedrez[' + L('Partidas en la cabeza', 'el alcalde') + ']:::sec',
       'ajm([' + L('Ajedrez humano', 'minijuego, 4 niveles') + ']):::mini',
       'tomasa[' + L('Un paquete pa la Tomasa', 'Tomasa Malvora') + ']:::sec',
+      'pili[' + L('Los bacaladitos de la Pili', 'La Pili') + ']:::sec',
       'casa[' + L('La herencia de la Eufrasia', 'Paca · de fondo') + ']:::fondo',
       'obras[' + L('Obras de la casa', 'Edmundo Monedero · de fondo') + ']:::fondo',
       'faenas([' + L('Trabajos', 'El de las faenas, en la plaza') + ']):::des',
@@ -359,7 +366,6 @@ code { font-family: var(--mono); font-size: 13px; }
       'velatorio --> noche',
       'noche -->|"por la mañana"| movil',
       'movil -->|"Josefa te manda con Alberto"| puente',
-      'puente -->|"10 PC al puente"| fin',
       'movil -->|"ganas a Fonsi"| box',
       'movil -->|"vuelves con Josefa"| inf',
       'inf --> menu',
@@ -377,7 +383,8 @@ code { font-family: var(--mono); font-size: 13px; }
       'recress -->|"habla con el alcalde"| ajedrez',
       'ajedrez --> ajm',
       'ini -.->|"con los chinos abiertos"| tomasa',
-      'puente -->|"2 h después, te llama la Paca"| casa',
+      'puente ==>|"10 PC al puente; 15 min después te llama la Paca"| casa',
+      'casa -->|"tras la charla de la herencia"| pili',
       'casa -->|"10.000 € pagados en el cajero"| obras',
       'faenas -.->|"el dinero"| casa',
       'casa -->|"Vizum de la Josefa, y 1 h después"| koke',
@@ -392,8 +399,8 @@ code { font-family: var(--mono); font-size: 13px; }
       'classDef des fill:' + paper + ',stroke:' + soft + ',color:' + ink + ',stroke-width:2px,stroke-dasharray:5 4'
     ].join('\n');
   }
-  var CARD = { aceite: 'm-aceite', velatorio: 'm-velatorio', noche: 'm-noche', movil: 'm-movil', puente: 'm-puente', fin: 'm-fin',
-    menu: 'm-menu', luis: 'm-luis', jueves: 'm-jueves', chiki: 'm-chiki', recress: 'm-recress', ajedrez: 'm-ajedrez', tomasa: 'm-tomasa', casa: 'm-casa', obras: 'm-casa', faenas: 'm-faenas', koke: 'm-koke', pedidos: 'm-pedidos', javi: 'm-javi',
+  var CARD = { aceite: 'm-aceite', velatorio: 'm-velatorio', noche: 'm-noche', movil: 'm-movil', puente: 'm-puente',
+    menu: 'm-menu', luis: 'm-luis', jueves: 'm-jueves', chiki: 'm-chiki', recress: 'm-recress', ajedrez: 'm-ajedrez', tomasa: 'm-tomasa', pili: 'm-pili', casa: 'm-casa', obras: 'm-casa', faenas: 'm-faenas', koke: 'm-koke', pedidos: 'm-pedidos', javi: 'm-javi',
     box: 'mini', jamon: 'mini', tokken: 'mini', rally: 'mini', hit: 'mini', ajm: 'mini', sala: 'mini', inf: 'm-menu', rest: 'm-luis', pc: 'm-puente' };
   function go(id) {
     var el = document.getElementById(id);

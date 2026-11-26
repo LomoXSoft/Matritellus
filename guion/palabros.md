@@ -56,11 +56,14 @@ Y más (Luis, 23-11-2026), también en boca de todos:
 - **«Sentido» → «sentío»:** **«¡Que me has dao en tó el sentío!»**, «Y no en el buen sentío».
 - **Sin arcaísmos:** las formas viejas de «Cómo hablan los mayores» (abora, cimenterio, escuro, dispierto, poblema,
   bueso, uguas, mujuer, ebros, busanillo…) no van en los diálogos: «Son demasiado arcaicas» (Luis, 23-11-2026).
-- **«Bordillo» → «cerquillo»:** **«Ese cerquillo no estaba ahí»**. La peña sigue llamándose «El Bordillo».
+- **«Bordillo» → «cerquillo»:** **«Ese cerquillo no estaba ahí»**. La peña sigue llamándose «El Bordillo» (Luis, 25-11-2026: no cambia).
+- **Perros y vehículos (Luis, 25-11-2026: «Me gustan todos»):** el Renol 4L es **«un cuatro latas»**; el perro
+  atropellado dice **«¡Cai, cai, cai!»**; al que le da al perro le gritan **«¡Animal! ¡Que es un perro, no un bolo!»**. Los
+  textos van en `loc.gd` (`dog_*`, `car_first_*`, `chisme_perros_*`, `murmullo_galletas` y las charlas de siempre).
 - **Golismero / golismera:** el cotilla (abajo, en «Cómo es la gente»). La Maruja: «Que no soy golismera, {hermoso|hermosa}.
   Yo archivo.»
 - **«Moto» → «amoto»:** **«me he comprao una amoto»**; los mayores lo contraen: **«me' comprao una amoto»**.
-- La prueba `palabros` avisa también si algún texto dice «se te», «vi», «parec…» (menos «parecío»), «de ande», «moto», «to» o «na» sin tilde, «sentido» o «bordillo» (menos la peña El Bordillo).
+- La prueba `palabros` avisa también si algún texto dice «se te», «vi», «parec…» (menos «parecío»), «de ande», «moto», «to» o «na» sin tilde, «sentido» o «bordillo» (menos la peña El Bordillo). «Para» sin «pa» solo vale como verbo: «se para», «te para».
 
 Y la prueba `palabros` vigila también las reglas de la casa (Luis, 17-11-2026: el Niño Negro Gordo de Pueblo se las
 saltaba): «lé», «la'é», «l'á», el participio en -ao / -ío detrás de «haber» («he leío», «ha ganao»), «pa», «to / toa /
@@ -107,8 +110,9 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
   - **Nietos de Marzo**: azul y naranja, un sol sobre un tejado en triángulo. (Hasta el 13/11/2026 se llamaban «Nietos de
     Marzo» en el juego; Luis lo dejó como en su logo.)
   - **La Croquetilla** («Peña Manchega»): una croqueta con zapatillas y un botellín en la mano.
-  - **El Bordillo**: la silla de plástico blanca y las latas a la puerta de casa. Como «cerquillo» y «bordillo» son lo
-    mismo, hay quien les dice **El Cerquillo**.
+  - **El Bordillo**: la silla de plástico blanca y las latas a la puerta de casa. Es el nombre del juego: la peña real
+    se llama de otra forma y no se puede usar. Se queda «El Bordillo» aunque «bordillo» sea «cerquillo» (Luis, 25-11-2026);
+    nadie la llama de otra manera en los textos.
   - **Peña Centradito** (antes «Los Centraditos» en el juego): un caballo con gafas de sol y el lema «Iustitia ·
     Exactitudo · Perfectio». Son los **cabalitos** del pueblo: quisquillosos, todo exacto, todo en su sitio.
   - **Costrola Peña** (nueva): un bandido con sombrero y pañuelo rojo, una torre y un árbol; rojo y amarillo.

@@ -41,6 +41,7 @@ const CristobalS = preload("res://scripts/cristobal.gd")
 const AlmazaraS = preload("res://scripts/almazara.gd")
 const AsadorS = preload("res://scripts/asador.gd")
 const RizeS = preload("res://scripts/rize.gd")
+const CuevasS = preload("res://scripts/cuevas.gd")
 const TravesiaS = preload("res://scripts/travesia.gd")
 const MatiasS = preload("res://scripts/matias.gd")
 const CristopradoS = preload("res://scripts/cristoprado.gd")
@@ -59,6 +60,7 @@ const PisacastanaS = preload("res://scripts/pisacastana.gd")
 const OpticaS = preload("res://scripts/optica.gd")
 const EntradaS = preload("res://scripts/entrada.gd")
 const RotondaNorteS = preload("res://scripts/rotonda_norte.gd")
+const CementerioS = preload("res://scripts/cementerio.gd")
 const RequejoS = preload("res://scripts/requejo.gd")
 const CruceS = preload("res://scripts/cruce.gd")
 const Detalles = preload("res://scripts/detalles.gd")
@@ -155,6 +157,7 @@ var cristobal                   # the little hermitage of San Cristóbal, built 
 var almazara                    # the oil mill of the road to Villacañas, "González de la Ruz", built by hand (almazara.gd)
 var asador                      # the roast chicken shop "Javi" of the Calle de los Arcos, built by hand on its house of the map (asador.gd), with its inside
 var rize                        # the Cafetería Rize and its alley, off the Avenida de Juan Carlos I, built by hand (rize.gd)
+var cuevas                      # the dance hall of the old Madrid-Cádiz road, built by hand worn and restored (cuevas.gd: set_restored)
 var travesia                    # the Travesía del Clavel, a raised walk between San Rafael and the Clavel, built by hand (travesia.gd)
 var matias                      # the house of the Calle de Matías Pérez, built by hand on its house of the map (matias.gd)
 var cristoprado                 # the hermitage of the Cristo del Prado, built by hand (cristoprado.gd)
@@ -165,6 +168,7 @@ var beige                       # the two-storey house north of the Salvador, on
 var maxiprecio                  # the clothes shop "MaxiPrecio" of the Calle de los Arcos (the HiperTextil Miniprecio), built by hand on its house of the map (maxiprecio.gd), with its hours and its inside
 var tetoqa                      # the accessories shop "Tetoqa" at the corner of Santa Ana and the Cristo (the real Tutoq), built by hand on its house of the map (tetoqa.gd), with its hours and its inside
 var rotonda_norte               # the roundabout at the north entrance: its brick gate, its board MADRIDEJOS, its jar, its island, built by hand (rotonda_norte.gd)
+var cementerio                  # the town's cemetery, past the map's north end in the zone of zonas.gd: its wall, its gatehouse, its graves (cementerio.gd)
 var entrada                     # the two signs at the north entrance by the old road: the whitewashed wall with Don Quixote and the twinning sign (entrada.gd; entrada.cartel the sign)
 var optica                      # the optician "Óptica Corsa" of the Calle del Salvador (the real Centro Óptico Corts), built by hand on its house of the map (optica.gd), with its hours and its inside
 var pisacastana                 # the shoe shop "Pisacastaña" at the corner of the Arcos and the Calle Argentina (the real Pisamorena), built by hand on its house of the map (pisacastana.gd), with its hours and its inside
@@ -188,7 +192,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the shop MaxiPrecio", _build_maxiprecio], ["the shop Tetoqa", _build_tetoqa], ["the shop Pisacastaña", _build_pisacastana], ["the optician Óptica Corsa", _build_optica], ["the signs at the north entrance", _build_entrada], ["the roundabout at the north entrance", _build_rotonda_norte], ["the Plaza de Jesús Requejo", _build_requejo], ["the crossroads' traffic lights", _build_cruce], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the dance hall of the old road", _build_cuevas], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the shop MaxiPrecio", _build_maxiprecio], ["the shop Tetoqa", _build_tetoqa], ["the shop Pisacastaña", _build_pisacastana], ["the optician Óptica Corsa", _build_optica], ["the signs at the north entrance", _build_entrada], ["the roundabout at the north entrance", _build_rotonda_norte], ["the cemetery", _build_cementerio], ["the Plaza de Jesús Requejo", _build_requejo], ["the crossroads' traffic lights", _build_cruce], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -295,6 +299,12 @@ func _build_rize() -> void:
 	rize = RizeS.new()               # (the Cafetería Rize and its alley, off the Avenida de Juan Carlos I: rize.gd)
 	rize.build(self)
 
+func _build_cuevas() -> void:
+	if MapData.cuevas.is_empty():    # (a map baked before it: Catastro's building still stands there)
+		return
+	cuevas = CuevasS.new()           # (the dance hall of the old Madrid-Cádiz road, worn and restored: cuevas.gd)
+	cuevas.build(self)
+
 func _build_travesia() -> void:
 	if MapData.travesia.is_empty():  # (a map baked before it: the alley is still a street for cars)
 		return
@@ -367,6 +377,12 @@ func _build_pisacastana() -> void:
 			pisacastana = PisacastanaS.new()
 			pisacastana.build(self, hd)
 			return
+
+func _build_cementerio() -> void:
+	cementerio = CementerioS.new()      # (the cemetery, off the map: reached through the gate of zonas.gd at the end of the old road)
+	if not cementerio.build(self):
+		cementerio.free()
+		cementerio = null
 
 func _build_rotonda_norte() -> void:
 	rotonda_norte = RotondaNorteS.new()   # (the roundabout where the old road comes into the town from the north: rotonda_norte.gd, on the island of the ring road the map has there)

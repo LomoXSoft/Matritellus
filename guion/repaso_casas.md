@@ -1001,6 +1001,148 @@ Una casa no puede quedar suelta, adelantada a sus vecinas y enseñando un trozo 
 - **Sin hacer:** el 8 y el 6, que ya estaban como casas genéricas.
 - **Hojas:** `fotos/tanda34/valdespino_1` y `valdespino_2`.
 
+## Urbanización El Cerro
+
+- **Hecho:** la hilera de 1993 de los impares, del 5 al 37 (`cer_5..cer_37`), desde Street View 2024 (noviembre).
+- **Cómo son:** pares en espejo. Delante, un cuarto de una planta a la acera (casi siempre el garaje) y al lado un patio pequeño con murete, reja y la puerta bajo un tejadillo; detrás, la casa de dos plantas. Los dos garajes de cada par van juntos en medio.
+- **Catastro al revés:** en varios pares el Catastro pone el cuarto y el patio cambiados respecto a Street View. Solo se toma el ancho de cada parcela; lo demás, de las fotos. Las fotos del Catastro son de otras casas de la urbanización.
+- **Simplificado:** el patio sale como un hueco con reja en la fachada, a ras de acera, y el piso de arriba también a ras (en la realidad está 1,2 m más atrás, encima del cuarto). Las torrecillas del 5 y del 29 no se ponen.
+- **`cer_33`:** más alta, con alero de canecillos, dos balcones de hierro con persianas marrones y la puerta enrollable marrón.
+- **`cer_23`:** solo se ve en los bordes de las fotos; aproximada.
+- **El ladrillo salmón** (17 y 23) sale más naranja que en la realidad.
+- **Hojas:** `fotos/tanda34/cerro_1`, `cerro_2` y `cerro_3`.
+
+## Avenida de la Constitución, al norte de la Calle Sueños
+
+- **Hecho:** los pares 128, 130 y la casa de talleres de al lado (`ctn_128`, `ctn_130`, `ctn_128b`), el 132 A, 134, 136 B, 136 y 138 (`ctn_132a` a `ctn_138`), y enfrente la casa larga de la Calle Sueños 1 (`ctn_97s`) y el taller (`ctn_109`), desde Street View 2024.
+- **`ctn_132a`:** retirada detrás de su jardín; sale la fachada de la casa, no el jardín. Los bloques blancos alrededor de los huecos salen como marcos.
+- **`ctn_136`, `ctn_138`:** sus frentes van hasta la linde de las parcelas; el Catastro dejaba un hueco de 7 m que en las fotos es casa.
+- **`ctn_109`:** la nave del taller, retirada; la valla de chapa roja y la cancela azul de la acera no se ponen. Rótulo: TALLER.
+- **`ctn_128b`:** la galería de madera del piso de arriba sale más clara y acristalada que en la realidad.
+- **`ctn_97s`:** las tiras marrones encima de las ventanas no se ponen.
+- **Sin hacer:** el 97 y el 103, que quedan detrás de casas ya hechas; el 130 sin la cancela de madera de su izquierda.
+- **Hojas:** `fotos/tanda34/constitucion_n1` y `constitucion_n2`.
+
+## Calle del Clavel, el final este
+
+- **Hecho:** la casa baja de la esquina de Fray Petronilo Cobo (`clavel_fp31a`), el bloque de pisos entre ella y la Calle de la Niña (`clavel_103`), la nave del taller de coches antes de la Alegría (`clavel_eu1`, `clavel_eu2`) y el costado de la casa de la esquina de la Alegría (`clavel_al25`), desde Street View 2024.
+- **`clavel_103`:** la planta baja, abierta entre pilares, está tapiada con bloques; sale como pared lisa con su puerta gris y el cartel de se alquila. Los miradores blancos de los pisos no se ponen.
+- **`clavel_eu2`:** el rótulo dice solo TALLER; la marca de la nave no se pone.
+- **`clavel_fp31a`:** el cuerpo más alto de detrás no se pone.
+- **Sin hacer:** el 105, que está 10 m atrás tras una tapia de ladrillo con cancela azul, y el almacén de Santa Ana 137, también retirado.
+- **Hoja:** `fotos/tanda34/clavel_este`.
+
+## Calle de Juan XXIII (del cruce del Clavel al 40 y el 47)
+
+- **Hecho:** 15 casas a los dos lados (`jx_24` a `jx_47`), desde Street View 2024.
+- **`jx_29`:** el ladrillo sale más naranja que el rojo de la foto; el hastial de ladrillo de detrás no se pone.
+- **`jx_36`:** el balcón ancho curvo sale recto.
+- **`jx_34`:** los arcos de la planta baja salen como recercados.
+- **Huecos de los pares:** al norte del 30 y del 36 son calles que cruzan; se quedan vacíos.
+- **Sin hacer:** el resto de la calle (la parte norte, junto al Merkocarry, y más allá del 40 y el 47), para otras tandas.
+- **Hojas:** `fotos/tanda34/juanxxiii_1`, `_2`, `_3`.
+
+## Calle de Juan XXIII, el tramo sur (de la esquina de San Cristóbal al 17 y el 18)
+
+- **Hecho:** 13 entradas a los dos lados (`jx_9` a `jx_18`, `jx_10d`, `jx_10e`, `jx_rem1`), desde Street View 2024.
+- **`jx_11`:** los paneles de piedra azul del ladrillo no se ponen.
+- **`jx_10`:** la tienda lleva el toldo rojo pero no el rótulo (es un negocio real); las rejas de las ventanas de la esquina salen claras, en la foto son oscuras.
+- **`jx_10d`:** el balcón de la esquina lleva barandilla de hierro, no la balaustrada blanca.
+- **`jx_10e`:** la cancela blanca del patio está en realidad en el hueco justo al norte; se pone en el extremo norte del almacén (una pared sin huecos no pasa el test). Escalón de 2,3 m con el 10, del Catastro.
+- **Sin hacer:** San Cristóbal 1 (6 m atrás de la línea) y los trocitos 23 y 27.
+- **Hojas:** `fotos/tanda34/juanxxiii_4`, `_5`, `_6`.
+
+## Calle de Juan XXIII, los dos extremos
+
+- **Hecho:** el extremo sur (`jx_5`, `jx_7`; `jx_2`, `jx_4`, `jx_6`, `jx_8`, la tapia del solar `jx_2s`) y el norte (`jx_49` a `jx_59`; `jx_42`, `jx_44` en las dos esquinas de la Calle del Sol), desde Street View 2024. La calle queda entera.
+- **`jx_2s`:** la tapia del solar vacío sale con tapa plana; la albardilla de teja no se pone (con tejado, salía un tejado encima del solar).
+- **`jx_44`:** la azotea con barandillas sale como tejado plano sin barandillas.
+- **Sin hacer:** el 3, que está detrás del 5 y no da a la calle.
+- **Hojas:** `fotos/tanda34/juanxxiii_7`, `_8`, `_9`.
+
+## Calle de San Cristóbal, el tramo oeste
+
+- **Hecho:** de la esquina de Juan XXIII hasta pasada la Fray Petronilo Cobo, los dos lados: impares `scr_1`, `scr_3`, `scr_5`, `scr_9b`, `scr_9`, `scr_11`, `scr_13`, `scr_15`, `scr_17`, `scr_17b`; pares `scr_4`, `scr_6`, `scr_fp11`, `scr_fp10`. Desde Street View 2024.
+- **Dos casas en una parte del Catastro (`paño`):** el 3 (crema y amarilla), el 6 (la tapia agrietada del almacén y la casa estrecha de la puerta verde), Fray Petronilo Cobo 11 (la esquina de ladrillo y la casa naranja), Fray Petronilo Cobo 10 (la beige larga y la granate).
+- **El 7:** solar en el Catastro, pero en la calle está edificado. El ladrillo del 5 sigue encima (`fill`) y luego viene la casita crema de dos plantas del 9.
+- **`scr_6`:** todo a 4,8 m. La casa de la puerta verde es en realidad una planta más alta que la tapia, y no se puede separar: es la misma parte del Catastro.
+- **Sin dibujar:** la azotea cubierta del 3, los paños de mampostería en el ladrillo del 5, la chapa ondulada del alero del 4 y la tapia del patio de la esquina de Juan XXIII (`jx_8`) por San Cristóbal, que sigue como bloque normal.
+- **Hojas:** `fotos/tanda34/sancristobal_1`, `_2`, `_3`.
+
+## Calle de San Cristóbal, el tramo este
+
+- **Hecho:** del 19 y la esquina de Vázquez Mella hasta el 31 y el 26, los dos lados: impares `sce_19`, `sce_21`, `sce_23`, `sce_23b`, `sce_25`, `sce_27`, `sce_29`, `sce_31`; pares `sce_vm`, `sce_v11`, `sce_18`, `sce_20`, `sce_22`, `sce_24`, `sce_26`. Desde Street View 2024.
+- **Entre el 23 y el 25 (`sce_23b`):** el Catastro no tiene nada; es una tapia blanca con pilares de ladrillo y un portón gris de chapa (`rc: None`).
+- **El 29 (`sce_29`):** el Catastro aún tiene los almacenes viejos, pero en 2024 es un solar con valla de obra verde. Las partes se recortan 4,4 m (`porch`) y la valla va delante (`fill`). Al fondo queda un trozo de las partes viejas, como tapias del solar.
+- **Vázquez Mella 11 (`sce_v11`):** da a San Cristóbal la trasera: una cochera beige con portón gris y una tapia con una puerta vieja de madera (`fill` donde el Catastro no llega a la calle). Toda a 3,6 m; la tapia de verdad es más baja.
+- **Una planta más que en el Catastro:** el 19 (la de arriba, baja bajo el alero) y el 26 (bloque nuevo de tres plantas). El 21 tiene dos plantas, no una.
+- **Sin dibujar:** el cobertizo medio caído al fondo del solar del 29, el resto de la fachada del 31 hacia el 33 (siguiente tanda) y los paneles de la cornisa del 22.
+- **Hojas:** `fotos/tanda34/sancristobal_4`, `_5`, `_6`.
+
+## Calle de San Cristóbal, el último tramo
+
+- **Hecho:** del 33 a la esquina de Alegría: impares `scf_33`, `scf_35`, `scf_39`, `scf_41`, `scf_43`, `scf_45`; pares `scf_t2` (Travesía de San Cristóbal 2), `scf_tapia`, `scf_28`, `scf_a7` (Alegría 7, su costado a San Cristóbal). Desde Street View 2024. La calle queda entera.
+- **El 35:** un solo edificio del Catastro con dos puertas (dos viviendas). Ladrillo arriba; abajo, losas de arenisca con un tramo encalado (`paño`).
+- **La tapia (`scf_tapia`):** tierra apisonada sobre mampostería con albardilla de cemento, del 28 a la esquina de la Travesía; nada en el Catastro (`rc: None`). La pintada de verdad sale como una de las peñas. No dobla por la Travesía, que no está en el mapa.
+- **Sin dibujar:** los miradores redondeados de la planta de arriba de Alegría 7, el dibujo de rombos del zócalo del 45 y las fachadas de Alegría del 45 y de Alegría 7 (son de esa calle).
+- **Hojas:** `fotos/tanda34/sancristobal_7`, `_8`.
+
+## Calle de los Remedios, el tramo oeste
+
+- **Hecho:** de la esquina de Juan XXIII al 17 (impares) y al 8 (pares): `rem_1d`, `rem_3`, `rem_5`, `rem_7`, `rem_9`, `rem_11`, `rem_13`, `rem_15`, `rem_15a`, `rem_17`; `rem_2`, `rem_2d`, `rem_4`, `rem_6`, `rem_8`. Desde Street View 2024.
+- **El 1 D:** clínica de fisioterapia de una planta, hoy crema (el Catastro la tiene naranja); rótulo FISIOTERAPIA sin el nombre de la clínica.
+- **El 13:** dos plantas, una en el Catastro.
+- **Sin dibujar:** las rejas de la cancela blanca del 2 D (sale lisa), el tejadillo de los toldos grandes del 9 y los aparatos de aire.
+- **Siguiente:** la esquina de la Fray Petronilo Cobo (su 23) y lo que sigue al este.
+- **Hojas:** `fotos/tanda34/remedios_1`, `_2`, `_3`.
+
+## Calle de los Remedios, el segundo tramo
+
+- **Hecho:** las esquinas de la Fray Petronilo Cobo (su 23, su 22 y su 20, con sus costados en filas `lado`) y al este hasta el 29 (impares) y el 24 (pares): `rem_fp23`, `rem_fp22`, `rem_19`, `rem_21`, `rem_23`, `rem_25`, `rem_27`, `rem_29`; `rem_fp20`, `rem_14`, `rem_p9`, `rem_18`, `rem_20`, `rem_22`, `rem_24`. Desde Street View 2024.
+- **Tres plantas (dos en el Catastro):** el 19, el 21, el 22 y el 24.
+- **El 23:** casa de ladrillo de 1994; la foto del Catastro aún enseña la tapia del corral.
+- **El 29:** tienda de muebles; rótulo MUEBLES sin el nombre de la tienda.
+- **El 22:** frente en la línea del 20 y el 24, `clear: 1.0` para quitar el trozo de solar que sacaba la planta baja.
+- **Sin dibujar:** las escaleras del 19 y el 21, las piezas de piedra del 23, el vuelo de las plantas de ladrillo del 22 y su chapado de canto rodado (sale beige liso), el cartel colgado del 14 (nombre de comercio), los aparatos de aire.
+- **Siguiente:** lo que sigue al este de la Calle de los Remedios.
+- **Hojas:** `fotos/tanda34/remedios_4`, `_5`, `_6`.
+
+## Calle de los Remedios, el tercer tramo
+
+- **Hecho:** del 31 a la esquina de la Alegría por los impares (`rem_31`, `33`, `35`, `37`, `39`, `41`, `43`, `45`, `t45`, `49a`, `t49`, `57`) y del 26 a la esquina de Alegría 15 por los pares (`rem_26`, `p21`, `t30`, `30`, `32`, `34`, `36`, `38`, `al15`). Desde Street View 2024 y las fotos del Catastro.
+- **El 49 A:** casa nueva, desde la foto del Catastro de 2025 (Street View 2024 aún enseña la tapia).
+- **Tapias sin Catastro:** `rem_t45` (puerta verde de madera y bloques), `rem_t49` (ladrillo, bloques encalados y nave de chapa), `rem_t30` (puerta gris y placa de vado).
+- **El 38:** taller de coches; rótulo TALLER sin el nombre.
+- **Corregido tras «Ponte con lo que falta frente a las fotos»:** los adosados 2,6 m detrás de sus tapias (`rem_tw`, `rem_te`), con escaleras y porches; la cochera del 39 a la calle (`rem_39g`); la nave de ladrillo con hastial (`rem_t49b`); la bandera del 36; esquinas y friso de ladrillo en Alegría 15; el rótulo TALLER más ancho.
+- **Sin dibujar aún:** las rampas hundidas de las cocheras de los adosados, los contadores blancos de sus tapias, los aparatos de aire.
+- **Fuera:** Alegría 17 (su fachada queda detrás de la tira del 57), Alegría 18 y 20 (no dan a los Remedios).
+- **Hojas:** `fotos/tanda34/remedios_7`, `_8`, `_9`, `_10`, `_11`.
+
+## Calle de la Plata, la mitad oeste
+
+- **Hecho:** por los impares, del fondo ciego (`pla_fin`, `pla_1`) a la Fray Petronilo (`pla_fp17`, `fp17g`, `fp17e`) y de la esquina de Fray Petronilo 16 al 19 (`pla_fp16`, `fp16g`, `7`, `9`, `11`, `13`, `15`, `17`, `19`); por los pares, del 2 a la esquina (`pla_2`, `4`, `6`) y de la esquina al 16 B (`pla_8`, `10`, `12b`, `12d`, `12`, `14`, `16`, `16b`). Desde Street View 2024 (el 1 y el 2 desde 2013) y las fotos del Catastro.
+- **La calle del mapa va 3 m al sur de la real:** la acera norte queda ancha; las casas de la acera sur, en el borde del pasillo de la calle (más estrechas que en el Catastro).
+- **Sin dibujar aún:** el remate de celosía del pretil del garaje de Fray Petronilo 16; los bloques de hormigón del piso alto de Fray Petronilo 17 (un muro gris liso); las macetas y el aire acondicionado; el arco del portal del 12 B (puerta recta con reja).
+- **A revisar:** en el fondo ciego, junto al extremo sur de la tapia, se ve en las vistas del juego un panel claro medio transparente (hoja `plata_1`, casas A y B).
+- **Hojas:** `fotos/tanda34/plata_1`, `_2`, `_3`, `_4`, `_5`.
+
+## Calle de la Plata, la mitad este
+
+- **Hecho:** por los impares, del 21 a la esquina de Alegría (`pla_21`, `23`, `25`, `25g`, `27`, `t29`, `31`, `t33`); por los pares, del solar a la esquina (`pla_sol`, `18`, `20`, `t22`, `t24`, `26`, `28a`, `28`, `30`). Desde Street View 2024 y las fotos del Catastro.
+- **El Catastro va atrasado:** faltan los bloques de tres plantas (`pla_27`, `pla_31`) y la casa baja `pla_28`, que van sin RC; el 18 y el 23 tienen dos plantas.
+- **La calle del mapa va unos 2,5 m al sur de la real:** acera norte ancha, casas del sur recortadas.
+- **Sin dibujar aún:** los miradores acristalados de la esquina (ventanas normales); la retícula de ladrillo y paneles va con parches; las pintadas, macetas y aires acondicionados; el escalón de altura de la tapia `pla_t22`; la señal de no aparcar de la tapia de la esquina va como placa en la pared (en la foto es una señal redonda con poste).
+- **Hojas:** `fotos/tanda34/plata_6`, `_7`, `_8`, `_9`.
+
+## Calle de Vázquez de Mella
+
+- **Hecho:** por los impares, de la esquina de Fray Petronilo a la de Alegría (`vm_1`, `3`, `5`, `7`, `9`, `11`, `18`, `13`, `15`, `17`, `19`, `21`, `25`, `27`, `29`, `29c`); por los pares, de Fray Petronilo a Alegría (`vm_2`, `4`, `6`, `t3`, `8`, `10`, `12`, `14`) y los fondos de las casas de Santa Ana (`vm_s103`, `s105`, `s107`, `t107`). Desde Street View 2024 y las fotos del Catastro.
+- **Casas aprobadas tocadas:** `stana_101` gana su costado a Vázquez de Mella (filas `lado`); `stana_97`, `stana_99`, `stana_103`, `stana_105` y `sce_v11` pierden las piezas de atrás que ahora son de esta calle (sus fachadas no cambian).
+- **En las hojas:** la foto del Catastro de `vm_s103`..`vm_t107` es la de la fachada de Santa Ana (la misma parcela), no la de esta calle. `vm_18` no tiene foto del Catastro y en Street View no se le ve puerta: va sin ella.
+- **Google va unos 2 m al este del Catastro** en la acera sur: los cortes entre casas se tomaron corregidos.
+- **Sin dibujar aún:** la terraza con balaustrada en la azotea de la esquina `vm_1`; el arco de medio punto del porche de `vm_14` (puerta recta); el arco de ladrillo de la ventana de `vm_5` (marco recto); la obra `vm_13` va con el hueco oscuro, sin andamio ni materiales; la celosía de la terraza de `vm_s107` es aproximada; las señales de tráfico, cables y macetas.
+- **Hojas:** `fotos/tanda34/vmella_1` a `_6`.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

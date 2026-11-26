@@ -31,6 +31,8 @@ const CartasS = preload("res://scripts/cartas.gd")
 const RayaS = preload("res://scripts/raya.gd")
 const MotinS = preload("res://scripts/motin.gd")
 const FelicianoS = preload("res://scripts/feliciano.gd")
+const FoskiS = preload("res://scripts/foski.gd")
+const PochiS = preload("res://scripts/pochi.gd")
 const RutaS = preload("res://scripts/ruta.gd")
 const PerrosS = preload("res://scripts/perros.gd")
 const RondasS = preload("res://scripts/rondas.gd")
@@ -40,6 +42,7 @@ const LimiteS = preload("res://scripts/limite.gd")
 const LlamadasS = preload("res://scripts/llamadas.gd")
 const MarcasS = preload("res://scripts/marcas.gd")
 const EntradasS = preload("res://scripts/entradas.gd")
+const ZonasS = preload("res://scripts/zonas.gd")
 const RecressS = preload("res://scripts/recress.gd")
 const RallyS = preload("res://scripts/rally.gd")
 const TokkenS = preload("res://scripts/tokken.gd")
@@ -59,6 +62,11 @@ const CaballeteS = preload("res://scripts/caballete.gd")
 const PickupsS = preload("res://scripts/pickups.gd")
 const InventarioS = preload("res://scripts/inventario.gd")
 const TomasaS = preload("res://scripts/tomasa.gd")
+const PiliS = preload("res://scripts/pili.gd")
+const LutoS = preload("res://scripts/luto.gd")
+const FiestaS = preload("res://scripts/fiesta.gd")
+const ArreglosS = preload("res://scripts/arreglos.gd")
+const ActualizaS = preload("res://scripts/actualiza.gd")
 const FondoCasaS = preload("res://scripts/fondo_casa.gd")
 const TrabajosS = preload("res://scripts/trabajos.gd")
 const JaviS = preload("res://scripts/javi.gd")
@@ -208,6 +216,8 @@ var clientes                    # whoever comes in off the street to eat there (
 var derrape                     # tyres squealing and the marks they leave (derrape.gd)
 var _arrow_beat := 0.0          # the phase of the guide arrow's bob, run on its own (see _physics_process)
 var motin                       # the roast ham riot outside La Cocina de Henry, and the minigame it is (motin.gd)
+var foski                       # Foski, up and down the Calle del Florido (foski.gd)
+var pochi                       # El Pochi, his cousin, round the same streets (pochi.gd)
 var feliciano                   # Feliciano, at every roast ham riot, by the Poor Clares' convent the rest of the week (feliciano.gd)
 var ruta                        # the walkers in tracksuits along the «ruta del colesterol», the old Madrid–Cádiz road (ruta.gd)
 var perros                      # five roaming dogs of three breeds (galgo, mastin, chucho) strolling the pavements (perros.gd)
@@ -244,8 +254,9 @@ var _terraza_d := 999.0
 var _terraza_t := 0.0
 var near_steal = null           # a traffic car close and slow enough to steal
 var talk_npc = null             # who you are talking to (talk_to), while the talk lasts
-var _talk_line := -1
+var _talk_with = null           # who the talk's shot is set up for (_talk_camera)
 var _talk_side := 1.0
+var _talk_room := 1.0            # how much of the way out to its place the talk camera can go (a wall behind it: 0..1)
 var _fly_i := -1
 var _fly_t := 0.0
 var _fly_shots: Array = []
@@ -325,6 +336,11 @@ var marcas                      # who has a mission for you: photo on the map, g
 var pickups                     # 3D floating spinning glowing item pickups (pickups.gd)
 var inventario                  # Animal Crossing-style pocket inventory (inventario.gd)
 var tomasa                      # Tomasa Malvora & los chinos del Arroyuelo shopkeeper (tomasa.gd)
+var pili                        # La Pili, her bacaladitos and La Pescadera at the Merkocarry (pili.gd)
+var luto                        # the old people in mourning going round the cemetery (luto.gd)
+var fiesta                      # the night crowd of the Sala Cavernas KAE, at its door and inside (fiesta.gd)
+var arreglos                    # places restored with Puntos Cívicos before their doors: the old bullring (arreglos.gd)
+var actualiza                   # is there a newer version out? asked when the game is opened (actualiza.gd)
 var marciano                    # Marciano, across from the café: the eighties and the ruta del bacalao (marciano.gd)
 var sopiss_gente                # the people inside Seguros Sopiss, seen and heard through the glass (sopiss_gente.gd)
 var azafran                     # the four saffron sellers at the real saffron shops' doors (azafran.gd)
@@ -353,6 +369,7 @@ var _air_cine_pos := Vector3.ZERO
 var _air_land_t := 0.0
 var _air_side := 1.0
 var entradas                    # the green arrows into the small shops, and back out (entradas.gd)
+var zonas                       # the gates to the zones off the map (the cemetery), on foot or car and all (zonas.gd)
 var recress                     # "Un torneo en los Galaxy Recress", the Civismo line's second mission (recress.gd)
 var rally
 var tokken                      # Tokken 9, the fighting game on the Recress's machines (tokken.gd): the phase "tokken" is its own
@@ -707,6 +724,11 @@ func _boot_rest() -> void:
 func _boot_done() -> void:
 	apply_graphics()
 	var testing := OS.get_cmdline_user_args().has("--selftest")
+	actualiza = ActualizaS.new()
+	add_child(actualiza)
+	actualiza.setup(self)
+	if not testing and not OS.get_cmdline_user_args().has("--trailer") and not has_node("TrailerDirector"):
+		actualiza.check()                        # (answered, if it is, while the logo and the title go by)
 	cam_pos = Vector3(_start["p"].x, 60, _start["p"].y + 80)
 	if not testing and (OS.get_cmdline_user_args().has("--trailer") or has_node("TrailerDirector")):
 		save_prefix = "user://selftest_save_"
@@ -765,9 +787,25 @@ func _title_go() -> void:
 	tw.tween_callback(func():
 		phase = "title"
 		_input_lock = 0.35
-		menu.open("main")
+		menu.open(_first_page())
 		menu.modulate.a = 0.0
 		create_tween().tween_property(menu, "modulate:a", 1.0, 0.6))
+
+## the page the menu opens on: the main one, or, the first time, the word that a newer version is out
+func _first_page() -> String:
+	if actualiza != null and actualiza.available() and not actualiza.offered:
+		actualiza.offered = true
+		return "update"
+	return "main"
+
+## GitHub has answered that a newer version is out (actualiza.gd): said at once if you are at the main menu
+func update_found() -> void:
+	if phase == "title" and menu.visible and menu.page == "main":
+		menu.open(_first_page())
+
+func _update_go() -> void:
+	actualiza.go()
+	menu.open("update_go")
 
 # ================= setup =================
 func _setup_sky() -> void:
@@ -1090,6 +1128,18 @@ func _neighbour_look(voice: String) -> Dictionary:
 				o["earrings"] = [1, 5, 5].pick_random()
 			if randf() < 0.55:
 				o["pendant"] = [2, 3, 3, 4, 9].pick_random()
+			# La Pili's pieces, now and then (the user, 25 Nov 2026: "Sí, alguna"): the mop of curls; dark hair going grey;
+			# a cardigan over a dress with a print
+			if randf() < 0.14:
+				o["hair_style"] = Chara.MATA
+			if randf() < 0.18:
+				o["hair"] = [0x2a2626, 0x3a2a22, 0x4a4040].pick_random()
+				o["canas"] = [1, 2, 2, 3].pick_random()
+				o["brow_color"] = 0x9a9aa0
+			if randf() < 0.16:
+				o["top"] = Chara.REBECA_VESTIDO
+				o["shirt2"] = [0x2b3352, 0x2b3352, 0x1b1b1f, 0x3a2a40, 0x24402e].pick_random()
+				o["estampado"] = [1, 1, 2, 0].pick_random()
 		"old_m":
 			o["hat"] = ["beret", "beret", "parpusa", "straw", "", "cap"].pick_random()
 			o["hair_style"] = [0, 10, 10, 3].pick_random()
@@ -1119,6 +1169,24 @@ func _neighbour_look(voice: String) -> Dictionary:
 		o["emblem"] = 0xf2c230
 	if voice != "kid" and randf() < 0.05:                # 5 % of non-kid neighbours carry a lit cigarette
 		o["smoke"] = true
+	# the toquilla and the mandil (the user, 25 Nov 2026: "Para las ancianas habría que añadir de ropa posible una
+	# toquilla (negra para el cementerio, de colores fuera) y para todas las mujeres no niñas un posible mandil"): a
+	# coloured shawl on some of the old women, a gingham apron on some women, more of the old ones (chara.gd _layers)
+	if voice == "old_f" and randf() < 0.18:
+		o["toquilla"] = [0x6a2433, 0x4a3a5e, 0x2b3352, 0x7a7d80, 0xe6dfcf, 0xb08a4a, 0x8a5a3a, 0x3f5e45].pick_random()
+	if randf() < float({"old_f": 0.22, "adult_f": 0.08}.get(voice, 0.0)):
+		o["mandil"] = [0x2f5fb8, 0x2f5fb8, 0xd23b3b, 0xe87aa8, 0x2f9a4a, 0x26262b, 0x6a4fb0].pick_random()
+	# the Manchegan shopping trolley (the user, 25 Nov 2026: "probabilidad del 20% en mujeres y del 5% en hombres" of
+	# the old ones): tartan, mostly the red of the user's photo; "Más colores" (the user, 25 Nov 2026): other tartans,
+	# and one in four plain or with flowers (chara.gd _carrito)
+	if randf() < float({"old_f": 0.2, "old_m": 0.05}.get(voice, 0.0)):
+		o["carro"] = true
+		o["carro_color"] = [0xb8202a, 0xb8202a, 0xb8202a, 0xa01c2c, 0x2a3f7a, 0x2f5a36, 0x2a2a2e, 0x6a4030, 0x6a3a8a, 0x7a7d80, 0xc8a040, 0x3a7a9a].pick_random()
+		var cut := randf()
+		if cut < 0.13:
+			o["carro_dibujo"] = "liso"
+		elif cut < 0.25:
+			o["carro_dibujo"] = "flores"
 	return o
 
 ## an anonymous neighbour standing at an exact spot (used by terrazas); still = they stay put
@@ -1129,6 +1197,7 @@ func driver_look() -> Dictionary:
 		kind = randi() % NEIGHBOUR_VOICES.size()
 	var o := _neighbour_look(NEIGHBOUR_VOICES[kind])
 	o["voice_i"] = kind
+	o.erase("carro")                               # (the trolley does not drive)
 	return o
 
 ## Uniformed driver for police / Guardia Civil patrol cars (Pitufo: blue uniform + blue cap; Tricornio: clone of Ramírez).
@@ -1636,6 +1705,10 @@ func _setup_places_and_actors() -> void:
 	_add_nino_negro()
 	feliciano = FelicianoS.new()
 	feliciano.setup(self)
+	foski = FoskiS.new()
+	foski.setup(self)
+	pochi = PochiS.new()
+	pochi.setup(self)
 	ruta = RutaS.new()
 	ruta.setup(self)
 	perros = PerrosS.new()
@@ -1723,9 +1796,18 @@ func _setup_places_and_actors() -> void:
 	entradas = EntradasS.new()
 	add_child(entradas)
 	entradas.setup(self)
+	zonas = ZonasS.new()
+	add_child(zonas)
+	zonas.setup(self)
 	recress = RecressS.new()
 	add_child(recress)
 	recress.setup(self)
+	luto = LutoS.new()                           # (before the rounds: the cemetery's spots for the unique ones are its)
+	luto.setup(self)
+	fiesta = FiestaS.new()                       # (the party hall's night crowd; the rounds send the unique ones there too)
+	fiesta.setup(self)
+	arreglos = ArreglosS.new()
+	arreglos.setup(self)
 	rondas = RondasS.new()                       # (after recress and all places/named NPCs are built so every leisure zone exists)
 	rondas.setup(self)
 	pickups = PickupsS.new()
@@ -1735,6 +1817,8 @@ func _setup_places_and_actors() -> void:
 		perros.spawn_vet_pickups()
 	tomasa = TomasaS.new()
 	tomasa.setup(self)
+	pili = PiliS.new()
+	pili.setup(self)
 	fondo_casa = FondoCasaS.new()
 	fondo_casa.setup(self)
 	trabajos = TrabajosS.new()
@@ -1926,6 +2010,8 @@ func _menu_page(id: String) -> Dictionary:
 		"main":                                  # the two ways to play, each with its own saves (the user, 23 Nov 2026: "en vez de
 			# Continuar y Nueva partida estas dos opciones estarán dentro de Modo Historia. Debajo de modo historia estará
 			# Modo Chavisca")
+			if actualiza != null and actualiza.available():      # (a newer version is out: its line stays here, whatever you answered)
+				items.append({"text": Loc.t("menu_update") % actualiza.latest, "do": _goto.bind("update")})
 			items.append({"text": Loc.t("menu_story"), "do": _open_mode.bind(false)})
 			items.append({"text": Loc.t("menu_chavisca"), "do": _open_mode.bind(true)})
 			items.append({"text": Loc.t("m_settings"), "do": _open_settings.bind("main")})
@@ -1933,6 +2019,14 @@ func _menu_page(id: String) -> Dictionary:
 			items.append({"text": Loc.t("m_credits"), "do": _goto.bind("credits")})
 			items.append({"text": Loc.t("m_quit"), "do": _quit_app})
 			return {"title": "", "sub": Loc.t("m_place"), "crest": true, "items": items, "foot": Loc.t("m_foot")}      # (no name on its plaque: it has just faded in and out over the town, the user, 14 Nov 2026)
+		"update":                                # a newer version is out (actualiza.gd; the user, 25 Nov 2026: "de opción de Actualizar o Jugar versión actual")
+			items.append({"text": Loc.t("upd_yes"), "do": _update_go})
+			items.append({"text": Loc.t("upd_no"), "do": _goto.bind("main")})
+			return {"title": Loc.t("upd_title"), "sub": Loc.t("upd_sub") % [actualiza.latest, actualiza.mine], "items": items, "back": "main", "foot": Loc.t("m_foot")}
+		"update_go":                             # its download is open in the browser
+			items.append({"text": Loc.t("upd_quit"), "do": _quit_app})
+			items.append({"text": Loc.t("upd_stay"), "do": _goto.bind("main")})
+			return {"title": Loc.t("upd_go_title"), "sub": Loc.t("upd_go_sub") % actualiza.latest, "items": items, "back": "main", "foot": Loc.t("m_foot")}
 		"story", "chavisca":                     # Continuar (with a save of that mode) and Nueva partida
 			if _any_save():
 				items.append({"text": Loc.t("menu_continue"), "do": _goto.bind("slots")})
@@ -2340,7 +2434,7 @@ func _dev_jump(first: int) -> void:
 ## The developer's page lists every mission, not only the story's: [section, [[id, title key], ...]]
 const DEV_OTHERS := [
 	["dev_sec_side", [["menu", "josefa_menu_title"], ["luis", "luis_title"], ["jueves", "ham_title"], ["chiki", "chiki_title"],
-		["recress", "rec_title"], ["ajedrez", "aj_title"], ["tomasa", "tomasa_title"]]],
+		["recress", "rec_title"], ["ajedrez", "aj_title"], ["tomasa", "tomasa_title"], ["pili", "pili_title"]]],
 	["dev_sec_bg", [["casa", "casa_title"], ["obras", "dev_obras"]]],
 	["dev_sec_jobs", [["faenas", "n_faenas"], ["pedido", "faena_title_pedido"]]],
 ]
@@ -2394,6 +2488,10 @@ func _dev_side(id: String) -> void:
 		"tomasa":
 			stats["tomasa"] = ""
 			who = "tomasa"
+		"pili":
+			stats["pili"] = ""
+			stats["curro"] = true
+			who = "pili"
 		"casa":
 			stats["casa"] = {"st": "paca", "debe": 0, "estado": 0, "obra": -1, "obra_dia": -1}
 			who = "paca"
@@ -2675,17 +2773,23 @@ func _apply_look() -> void:
 	player.set_look(Creator.look(look_sel))
 	Loc.fem = look_sel[9] == 1
 
+var _creator_first := 0             # the first of a page's rows the creator's panel shows
 func _refresh_creator() -> void:
 	_apply_look()
 	var names: Array = Loc.t("c_names")
 	var values: Array = Loc.t("c_values")
 	var rows: Array = Creator.TABS[creator_tab]
+	# (a page longer than the panel's rows -- Lustre, since La Pili's canas, eyebrow colour and nose, 25 Nov 2026 --
+	# shows the rows round the cursor, moving only when the cursor goes past the top or the bottom)
+	var room: int = hud.CREATOR_ROWS
+	_creator_first = clampi(_creator_first, creator_row - room, creator_row - 1)
+	_creator_first = clampi(_creator_first, 0, maxi(rows.size() - room, 0))
 	var shown: Array = []
-	for row in range(rows.size()):
+	for row in range(_creator_first, mini(rows.size(), _creator_first + room)):
 		var i: int = rows[row]
 		var off: bool = Creator.not_used(look_sel, i)       # (a cap's colour with no cap, a hairstyle with no hair...)
 		shown.append({"name": names[i], "value": "—" if off else String(values[i][look_sel[i]]), "colour": Creator.swatch(i, look_sel[i]), "off": off})
-	hud.show_creator(Loc.t("c_title"), shown, Loc.t("c_tabs"), creator_tab, creator_row - 1)
+	hud.show_creator(Loc.t("c_title"), shown, Loc.t("c_tabs"), creator_tab, creator_row - 1 - _creator_first)
 
 ## In the creator, the easel with the peña's graffiti (the user, 16 November 2026: "El grafiti debe salir también durante
 ## el selector de personaje. Quizás en un cuadro en un caballete al lado del personaje"): a step behind you and to the
@@ -2926,16 +3030,49 @@ func _end_cutscene() -> void:
 	start_game(0)
 
 ## A talk with one of the town's own characters (the user, 23 Nov 2026: "las conversaciones con NPCs únicos deben ser
-## cinemáticas, esto es con la cámara al hombro. Salvo que sea una cinemática especial (recress galaxy, misión de
-## Henry, ...)"): the opening cutscene's over-the-shoulder shots, a cut at each line -- past you to them when they
-## speak, past them to you on the next. A special scene has its own camera (cam_fixed, cine_lock, the riot) and wins;
-## so does a place with a set of its own (entradas.gd), and the car. Out to whichever side of the two has room.
+## cinemáticas [...] Salvo que sea una cinemática especial (recress galaxy, misión de Henry, ...)"). Since 25 Nov 2026 it
+## is one steady shot of the two of you, not the over-the-shoulder cuts it began with (the user: "tapa un poco a los
+## personajes y no deja ver bien el tuyo, creo que sería mejor un plano en el que ambos se viesen claramente"): the
+## camera stands well off to one side of the two of you, almost square to the line between you (people here are a metre
+## across: from further round one covers the other) and a little to your end of it, above your heads, so that both are
+## seen whole and apart, side on, in the top of the picture over the bubble. It eases in from where the camera was and
+## stays put for the whole talk. It is set for the 55 degrees the game opens with: with a wider view asked for in the
+## settings it stands nearer, and with a wall behind it it stands nearer still and opens the view instead (_talk_fov). A special scene has its own camera (cam_fixed, cine_lock, the riot) and
+## wins; so does a place with a set of its own (entradas.gd), and the car. Out to whichever side of the two has room.
+const TALK_SIDE := 4.0           # how far out to the side of the two of you the camera stands, for two people 1.6 m apart or less
+const TALK_BACK := 1.3           # ...and how far back towards your side
+const TALK_UP := 2.6             # its height over the ground
+const TALK_AIM := 0.65           # the height it looks at, between the two (low: the two of you sit high in the picture)
+const TALK_FOV_MAX := 84.0       # how far the view opens when a wall keeps the camera near
+var _talk_fov := 0.0             # the view the talk's shot asks for while it lasts (0: the one in the settings)
+const TALK_EASE := 0.45          # seconds from the camera you had to this one
+## People here are a metre across and you can walk up to 0.85 m from one: side on, one head would cover the other. So a
+## talk begun nearer than TALK_APART opens with a step back from them, facing them, with the walk's own collisions (a
+## wall behind you: you stay where you are, and after TALK_STEP_SECS you stop trying).
+const TALK_APART := 1.65         # how far apart the two of you stand in the shot, at least
+const TALK_STEP_SPEED := 2.6
+const TALK_STEP_SECS := 0.6
+var _talk_step_t := 0.0
+func _talk_step(dt: float) -> Vector2:
+	if _talk_with == null or _talk_with != talk_npc or not is_instance_valid(talk_npc) or _talk_step_t >= TALK_STEP_SECS:
+		return Vector2.ZERO
+	var away: Vector2 = player.p - talk_npc.p
+	if away == Vector2.ZERO or away.length() >= TALK_APART:
+		return Vector2.ZERO
+	_talk_step_t += dt
+	return away.normalized()
+
+var _talk_t := 0.0
+var _talk_from := Vector3.ZERO
+var _talk_look0 := Vector3.ZERO
 func _talk_camera() -> bool:
+	_talk_fov = 0.0
 	if talk_npc == null:
+		_talk_with = null
 		return false
 	if not is_instance_valid(talk_npc) or (dlg == null and _ask == null):
 		talk_npc = null
-		_talk_line = -1
+		_talk_with = null
 		return false
 	var n = talk_npc
 	if n.id == "" or indoors or in_car != null or cine_lock or cam_fixed != null or not (phase == "play" or phase == "free" or phase == "talking") 			or (recress != null and recress.cine) or n.p.distance_to(player.p) > 6.0:
@@ -2946,27 +3083,40 @@ func _talk_camera() -> bool:
 	if dir == Vector2.ZERO:
 		return false
 	var right := Vector2(-dir.y, dir.x)
-	var line: int = (int(dlg["i"]) if dlg != null else _talk_line + 1)
-	if line != _talk_line:
-		_talk_line = line
-		var room_r := _clear_to(a, atan2(-right.x, -right.y), 1.9, 1.6)      # (a wall beside you: the other side)
-		var room_l := _clear_to(a, atan2(right.x, right.y), 1.9, 1.6)
-		_talk_side = 1.0 if room_r >= room_l else -1.0
-	var side: Vector2 = right * _talk_side
-	var from: Vector2
-	var look: Vector3
+	var mid := (a + b) / 2.0
+	var base_fov: float = float(Settings.data.get("fov", 55.0))
+	var k: float = clampf(lerpf(1.0, a.distance_to(b) / 1.6, 0.6), 1.0, 2.2) * tan(deg_to_rad(27.5)) / tan(deg_to_rad(base_fov * 0.5))      # (further apart: the camera further off; a wider view: nearer)
+	if _talk_with != n:                          # the talk begins: you turn to them, and the side with room is chosen once
+		_talk_with = n
+		_talk_t = 0.0
+		_talk_step_t = 0.0
+		_talk_from = cam.position
+		_talk_look0 = cam.position - cam.global_transform.basis.z * maxf(2.0, cam.position.distance_to(MapData.at(mid, 1.0)))
+		player.h = atan2(dir.x, dir.y)
+		player.sync()
+		var best := -1.0
+		for sd in [1.0, -1.0]:
+			var off: Vector2 = (right * sd * TALK_SIDE - dir * TALK_BACK) * k
+			var free := _clear_to(mid, atan2(-off.x, -off.y), off.length(), TALK_UP * k)
+			var near_now: float = 0.02 if (Vector2(cam.position.x, cam.position.z) - mid).dot(right * sd) > 0.0 else 0.0      # (as good both ways: the side the camera is on)
+			if free + near_now > best:
+				best = free + near_now
+				_talk_side = sd
+				_talk_room = free
+	var room: float = maxf(_talk_room, 0.4)
+	var out: Vector2 = (right * _talk_side * TALK_SIDE - dir * TALK_BACK) * k * room
 	var gy: float = MapData.foot(a)
-	if line % 2 == 0:            # past you to them
-		from = a - dir * 1.15 + side * 1.25
-		look = Vector3(a.x + dir.x * 1.1, gy + 1.15, a.y + dir.y * 1.1)
-	else:                        # past them to you
-		from = b + dir * 1.15 + side * 1.25
-		look = Vector3(b.x - dir.x * 1.1, gy + 1.15, b.y - dir.y * 1.1)
+	var from := Vector3(mid.x + out.x, gy + TALK_AIM + (TALK_UP - TALK_AIM) * k * room, mid.y + out.y)
+	if room < 0.98:                               # (a wall behind it: nearer, and the view opened by as much)
+		_talk_fov = minf(TALK_FOV_MAX, rad_to_deg(2.0 * atan(tan(deg_to_rad(base_fov * 0.5)) / room)))
+	var look := Vector3(mid.x, gy + TALK_AIM, mid.y)
+	_talk_t = minf(1.0, _talk_t + get_process_delta_time() / TALK_EASE)
+	var e: float = smoothstep(0.0, 1.0, _talk_t)
 	cam.near = 0.1
-	cam.position = Vector3(from.x, gy + 1.7, from.y)
-	cam.look_at(look)
+	cam.position = _talk_from.lerp(from, e)
+	cam_look = _talk_look0.lerp(look, e)
+	cam.look_at(cam_look)
 	cam_pos = cam.position
-	cam_look = look
 	return true
 
 ## close over-the-shoulder shots that swap sides with every line, Hit & Run style
@@ -3060,6 +3210,8 @@ func start_game(from_step := 0) -> void:
 	recress.load_state()
 	if tomasa != null:
 		tomasa.restore()
+	if pili != null:
+		pili.restore()
 	if fondo_casa != null:
 		fondo_casa.restore()
 	if azafran != null:
@@ -3081,6 +3233,10 @@ func start_game(from_step := 0) -> void:
 	phase = "play"
 	indoors = false
 	bridge.close_off(not stats.has("puente") and not chavisca)    # (fenced off until you unlock it; open in the Modo Chavisca)
+	if fiesta != null:
+		fiesta.begin()                           # (the Sala Cavernas: restored if this game paid for it, and always in the Modo Chavisca)
+	if arreglos != null:
+		arreglos.begin()                         # (and the old bullring the same)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED        # the mouse looks around from here on
 	named["paca"].visible = true
 	_refresh_counts()
@@ -3373,7 +3529,7 @@ func ask(n, who: String, line: String, options: Array) -> void:
 		var h: Vector3 = n.global_position + Vector3(0, 1.55 * float(n.look_data.get("scale", 1.0)), 0)
 		head = null if cam.is_position_behind(h) else cam.unproject_position(h)
 	hud.set_dlg_point(head)
-	hud.dlg_name.text = who
+	hud.set_dlg_name(who, _speaker_colour(n if n != null else _speaker(who)))
 	hud.dlg_text.text = Loc.rich(line)
 	hud.dlg_text.visible_characters = -1
 	hud.dlg_slot.visible = true
@@ -4227,13 +4383,19 @@ func _speaker(who: String):
 		return near_npc
 	return null
 
+## the colour for a speaker's name tab: what they wear (hud.gd set_dlg_name); null for a voice with no figure
+func _speaker_colour(n):
+	if n == null or not is_instance_valid(n) or n.get("look_data") == null or not (n.look_data is Dictionary) or not n.look_data.has("shirt"):
+		return null
+	return Parts.col(int(n.look_data["shirt"]))
+
 func say(who: String, lines, voice: String, on_done = null) -> void:
 	var arr: Array = lines if lines is Array else [lines]
 	arr = padron.by_name(arr, who)               # (your name instead of "hijo" or "hermosa", if they know it: padron.gd)
 	dlg = {"lines": arr, "i": 0, "shown": 0.0, "voice": voice, "on_done": on_done, "cool": 0.25}
 	dlg["from"] = _speaker(who)
 	hud.set_dlg_point(null)
-	hud.dlg_name.text = who
+	hud.set_dlg_name(who, _speaker_colour(dlg["from"]))
 	hud.dlg_text.text = Loc.rich(arr[0])
 	hud.dlg_text.visible_characters = 0
 	hud.dlg_slot.visible = true
@@ -4280,7 +4442,8 @@ func _update_dialog(dt: float) -> void:
 		return
 	var before := int(dlg["shown"])
 	var prof: String = dlg["voice"]
-	dlg["shown"] = minf(line.length(), dlg["shown"] + dt * Sfx.voice_speed(prof))
+	var hush: bool = line.begins_with("~~")      # (a silence, not something said: no voice, and it takes its time -- Loc.rich)
+	dlg["shown"] = minf(line.length(), dlg["shown"] + dt * Sfx.voice_speed(prof) * (0.3 if hush else 1.0))
 	var now := int(dlg["shown"])
 	if now != before:
 		hud.dlg_text.visible_characters = now
@@ -4288,7 +4451,7 @@ func _update_dialog(dt: float) -> void:
 		var question := line.contains("?")
 		for i in range(before, now):
 			var ch := line.substr(i, 1)
-			if not Sfx.is_vowel(ch):
+			if hush or not Sfx.is_vowel(ch):
 				continue
 			var lift := 1.0
 			if question and i > line.rfind("?") - 9 and i < line.rfind("?"):
@@ -4398,6 +4561,8 @@ func talk_to(n, chat_only := false) -> void:
 		return
 	if n.id in ["tomasa", "chino"] and tomasa != null and (phase == "play" or phase == "free") and tomasa.talk(n):
 		return
+	if n.id in ["pili", "pescadera"] and pili != null and (phase == "play" or phase == "free") and pili.talk(n):
+		return
 	_chat(n, s)
 
 ## what they say when there is nothing else to it: their own lines (a step's, a mission's after it) or the common stock
@@ -4419,6 +4584,8 @@ func _chat(n, s: Dictionary) -> void:
 	if n.has_meta("protest"):
 		key = "protest_" + String(n.get_meta("protest"))
 	var said = Loc.t(key)
+	if n.id == "pochi" and pochi != null and not pochi.extra.is_empty():
+		said = said + pochi.extra                      # (the user's own talks for him: pochi.OWN)
 	if key == "generic" and n.voice.begins_with("old"):
 		said = Loc.t("generic_old") + said             # (the old ones have their own sayings too: palabros.md, «Cómo hablan los mayores»)
 	if key == "generic" or key == "generic_kid":
@@ -4634,6 +4801,17 @@ func _enter_car(c) -> void:
 	_vehicle_context_changed()
 	if koke != null:
 		koke.entered(c)                          # (Koke's yellow taxi: the day's run starts as you sit in it, koke.gd)
+	_first_drive(c)
+
+## The first time you drive each make, a line about it (the user, 25 Nov 2026). Stats "conducidos": the makes driven.
+func _first_drive(c) -> void:
+	var kind: String = "z15" if c.kind == "kokas" else String(c.kind)
+	var done: Array = stats.get("conducidos", [])
+	if done.has(kind) or not Loc.TX.has("car_first_" + kind):
+		return
+	done.append(kind)
+	stats["conducidos"] = done
+	hud.toast(Loc.t("car_first_" + kind), 3.4)
 
 func _vehicle_context_changed() -> void:
 	_find_interaction()
@@ -5257,6 +5435,8 @@ func interact() -> void:
 		return
 	if phone_call != null and not phone_call["on"]:
 		_answer_call()
+	elif zonas.here() != null:                 # (zonas) before a zone's gate, on foot or stopped in a car: to the other gate
+		zonas.go()
 	elif in_car != null:
 		_exit_car()
 	elif sabotaje.can_act():
@@ -5295,6 +5475,10 @@ func interact() -> void:
 		ajedrez.offer()
 	elif _can_unlock():
 		_unlock_bridge()
+	elif fiesta != null and fiesta.can_fix():    # before the worn Sala Cavernas: have it restored with Puntos Cívicos (fiesta.gd)
+		fiesta.fix()
+	elif arreglos != null and arreglos.can_fix():      # ...or before the ruined bullring (arreglos.gd)
+		arreglos.fix()
 	elif near_npc != null:
 		talk_to(near_npc)
 	elif near_dog != null and perros != null:
@@ -5548,9 +5732,13 @@ func _update_audio(dt: float) -> void:
 					track = "radio_%d" % Ambience.station; db = -14.0
 			else:
 				track = "lofi"; db = -23.0          # on foot: there to keep you company, not to be listened to
+				if zonas != null and zonas.hush():  # (at night in the cemetery, none: only the wind now and then, zonas.gd)
+					track = ""
 	if recress != null and recress.music()[0] != "" and (phase == "play" or phase == "free" or phase == "talking"):
 		track = recress.music()[0] if recress.music()[0] != "none" else ""
 		db = recress.music()[1]
+	if indoors and inside_of != null and inside_of.get("own_music") == true and (phase == "play" or phase == "free" or phase == "talking"):
+		track = ""                              # (a set with loudspeakers of its own plays its own music: the Sala Cavernas, cuevas_dentro.gd)
 	if not paused and not map_open:              # (paused, what was playing waits where it was: a new station waits for the end of the pause)
 		Ambience.music(track, db)
 	_terraza_t -= dt
@@ -5561,7 +5749,7 @@ func _update_audio(dt: float) -> void:
 		for t in props.terrazas:
 			_terraza_d = minf(_terraza_d, (t["p"] as Vector2).distance_to(ear))
 	var in_world: bool = phase in ["play", "free", "talking", "failed", "flyover", "cutscene", "boxing", "ajedrez"] and not paused and not map_open
-	Ambience.town(dt, moment, _terraza_d, in_world)
+	Ambience.town(dt, moment, _terraza_d, in_world and not (zonas != null and zonas.hush()))      # (no crickets nor dogs there either)
 
 func _physics_process(delta: float) -> void:
 	if not _booted:
@@ -5784,6 +5972,11 @@ func _physics_process(delta: float) -> void:
 			else:                                # (a key is all or nothing: there, running is its own key)
 				speed = 9.0 if Input.is_action_pressed("run") else 5.2
 			mv = mv.normalized()
+		var step_back := _talk_step(dt)          # a talk begun nose to nose: a step back from them (_talk_camera)
+		if step_back != Vector2.ZERO:
+			mv = step_back
+			speed = TALK_STEP_SPEED
+			moving = true
 		if comida.faint != null:                 # stuffed to fainting: the legs go where they like, and now and then from under you
 			var reel: Array = comida.stagger(mv, speed, dt)
 			mv = reel[0]
@@ -5793,7 +5986,7 @@ func _physics_process(delta: float) -> void:
 			mv = Vector2.ZERO
 			speed = 0.0
 			moving = false
-		if moving:
+		if moving and step_back == Vector2.ZERO:     # (the step back in a talk is taken facing them)
 			player.h = lerp_angle(player.h, atan2(mv.x, mv.y), 1.0 - exp(-14.0 * dt))
 		_ride_car()                              # standing on a car that moves: it carries you
 		player.walk(mv, speed)             # real collisions: slides along walls, cars and trees
@@ -5825,6 +6018,7 @@ func _physics_process(delta: float) -> void:
 	_door_cool -= dt
 	vip.tick(dt, in_car == null and not indoors and player.p.distance_to(vip.door_out) < 5.5)
 	entradas.tick(dt)
+	zonas.tick(dt)
 	_mark("doors and arrows")
 	var pp: Vector2 = player.p
 	var map_p: Vector2 = ((inside_of if inside_of != null else vip).out_spawn) if indoors else pp      # where you are as far as the map is concerned
@@ -5853,6 +6047,12 @@ func _physics_process(delta: float) -> void:
 		pickups.tick(dt, pp)
 	if tomasa != null:
 		tomasa.tick(dt, pp)
+	if pili != null:
+		pili.tick(dt, pp)
+	if luto != null:
+		luto.tick(dt)
+	if fiesta != null:
+		fiesta.tick(dt)
 	if fondo_casa != null:
 		fondo_casa.tick(dt)
 	if trabajos != null:
@@ -5880,6 +6080,10 @@ func _physics_process(delta: float) -> void:
 	motin.tick(dt, pp)
 	if feliciano != null:
 		feliciano.tick(dt)
+	if foski != null:
+		foski.tick(dt)
+	if pochi != null:
+		pochi.tick(dt)
 	if ruta != null:
 		ruta.tick(dt)
 	if perros != null:
@@ -5945,7 +6149,11 @@ func _physics_process(delta: float) -> void:
 		_arrow_beat += dt * beat                 # (sin(time * beat) jumped about whenever `beat` changed, that is, whenever you moved)
 		arrow.position = Vector3(pp.x, _feet_y() + (4.1 if in_car != null else 2.75) + absf(sin(_arrow_beat)) * (0.22 + close * 0.2) * (1.0 if in_car != null else 0.5), pp.y)
 		arrow_body.rotation.y = lerp_angle(arrow_body.rotation.y, atan2(aim.x - pp.x, aim.y - pp.y), 1.0 - exp(-8.0 * dt))
-		arrow_body.rotation.x = lerpf(arrow_body.rotation.x, lerpf(0.0, 0.95, close * close) + sin(_arrow_beat) * 0.05, 1.0 - exp(-6.0 * dt))     # level with the ground; nose down only at the door
+		# Its nose at a point a metre above the place, from where the arrow floats: nearly level a street away, and never
+		# at the ground in front of you (it tipped 54 degrees down from 8 m off, at a spot two metres ahead; the user,
+		# 25 Nov 2026: "que apunte como un metro más arriba del objetivo, a veces sale mirando hacia el suelo")
+		var nose: float = clampf(atan2(_feet_y() + (4.1 if in_car != null else 2.75) - (MapData.height(aim) + 1.0), maxf(left, 0.5)), -0.6, 1.1)
+		arrow_body.rotation.x = lerpf(arrow_body.rotation.x, nose + sin(_arrow_beat) * 0.05, 1.0 - exp(-6.0 * dt))
 		arrow_body.rotation.z = sin(_arrow_beat * 0.5) * 0.1
 		var pulse: float = 1.0 + 0.1 * sin(_arrow_beat * 2.0)
 		arrow_body.scale = Vector3(1.5 / pulse, 1.5, 1.5 * pulse) * (0.72 if in_car != null else 0.34)        # (at the wheel: smaller and half seen through, out of the way of the road)
@@ -5969,6 +6177,9 @@ func _physics_process(delta: float) -> void:
 	if not frozen:
 		if in_car != null:
 			pr = Loc.t("p_out") if speed < 3.0 else ""
+			if zonas.here() != null:             # (zonas) stopped before a zone's gate: the button takes you through, and the
+				pr = zonas.prompt()              #  prompt does not fade with the parked car's HUD
+				_reset_car_idle()
 			if mending != null:
 				pr = Loc.t("p_mending")
 			elif at_garage:
@@ -5978,6 +6189,8 @@ func _physics_process(delta: float) -> void:
 				for gar in garages:              # at the door with a dented or wanted car: they do not work in the street
 					if pp.distance_to(gar.mouth) < 16.0 and not gar.holds(pp, 0.0):
 						pr = Loc.t("p_garage_in")
+		elif zonas.here() != null:               # (zonas) before a zone's gate on foot
+			pr = zonas.prompt()
 		elif recress.shop_near(pp) != null:
 			pr = Loc.t("p_rec_poster")
 		elif recress.at_hit_vip(pp):
@@ -6039,6 +6252,12 @@ func _physics_process(delta: float) -> void:
 		about = null
 	if not frozen and _can_unlock():
 		pr = Loc.t("p_puente") % int(steps[si].get("cost", 10))
+		about = null
+	if not frozen and near_npc == null and fiesta != null and fiesta.can_fix():
+		pr = fiesta.fix_prompt()
+		about = null
+	if not frozen and near_npc == null and arreglos != null and arreglos.can_fix():
+		pr = arreglos.prompt()
 		about = null
 	if phone_call != null and not phone_call["on"] and not frozen:
 		pr = Loc.t("p_answer")
@@ -6239,6 +6458,9 @@ func _side_drop() -> void:
 	if side["id"] == "tomasa":
 		tomasa.abort()
 		return
+	if side["id"] == "pili":
+		pili.abort()
+		return
 	if side["id"] == "trabajo":
 		trabajos.abort()
 		return
@@ -6288,6 +6510,9 @@ func _side_show() -> void:
 	if side["id"] == "tomasa":
 		tomasa.show()
 		return
+	if side["id"] == "pili":
+		pili.show()
+		return
 	if side["id"] == "trabajo":
 		trabajos.show()
 		return
@@ -6300,12 +6525,19 @@ func _side_show() -> void:
 		hud.set_objective(_tag(), Loc.t("obj_menu_bring" if menu_job else "obj_ham_bring") % who.shown_name())
 		set_target(vip.door_out if side["who"] == "vip" else who.p, false)
 
+## The calendar leaf written again, when what it says at the end of the story's steps has changed (fondo_casa.gd: the
+## inheritance beginning). Nothing while an errand or a step of the story has the leaf.
+func leaf_refresh() -> void:
+	if side == null and si >= 0 and (phase == "play" or phase == "free") and (phase == "free" or steps[si]["type"] == "tbc"):
+		_show_step()
+
 ## ...and what the main story wants, once the side mission is out of the way
 func _show_step() -> void:
 	var s: Dictionary = steps[si]
 	if phase == "free" or s["type"] == "tbc":
-		set_target(null, false)
-		hud.set_objective(_tag(), Loc.t("obj_chavisca" if chavisca else "obj_free"))
+		var casa_leaf: String = fondo_casa.leaf() if fondo_casa != null and not chavisca else ""      # (the bridge leads on to the inheritance: fondo_casa.gd)
+		set_target(named["paca"].p if casa_leaf != "" and fondo_casa.stage() == "paca" and named.has("paca") else null, false)
+		hud.set_objective(_tag(), Loc.t("obj_chavisca") if chavisca else (casa_leaf if casa_leaf != "" else Loc.t("obj_free")))
 		return
 	if s.has("obj"):
 		hud.set_objective(_tag(), Loc.t(s["obj"]))
@@ -6328,7 +6560,7 @@ func side_bump() -> void:
 	pass
 
 func _side_tick(dt: float, pp: Vector2) -> void:
-	if side["id"] == "luis" or side["id"] == "recress" or side["id"] == "tomasa" or side["id"] == "trabajo":
+	if side["id"] == "luis" or side["id"] == "recress" or side["id"] == "tomasa" or side["id"] == "pili" or side["id"] == "trabajo":
 		return
 	if side["stage"] == "fetch":
 		if motin.in_the_way():                   # there is a crowd after the same ham: it has to be fought for (motin.gd)
@@ -6824,7 +7056,7 @@ func _update_air_cine(real_dt: float) -> void:
 	else:
 		Engine.time_scale = want_scale
 	var base_fov: float = float(Settings.data.get("fov", 55.0))
-	var want_fov: float = base_fov - 8.0 if air_cine else base_fov
+	var want_fov: float = base_fov - 8.0 if air_cine else (_talk_fov if _talk_fov > 0.0 else base_fov)
 	if absf(cam.fov - want_fov) > 0.05:
 		cam.fov = lerpf(cam.fov, want_fov, 1.0 - exp(-6.0 * real_dt))
 	else:

@@ -26,7 +26,7 @@ extends RefCounted
 const DEBT := 10000
 const STEP := 10000             # each step costs this much more than the one before (the tax debt counts as the first)
 const TOP := 5
-const CALL_AFTER_H := 2.0       # game hours after the bridge is unlocked before Tía Paca rings
+const CALL_AFTER_H := 0.25      # game hours after the bridge is unlocked before Tía Paca rings (two until 25 Nov 2026; the user that day: "dándole media hora in-game, en vez de dos", then "vamos a reducirlo a 15 minutos in-game")
 const EDM_CALL_H := 0.25        # ...and after a debt is paid off before Edmundo does
 const ATM_REACH := 1.3
 const AMOUNTS := [100, 500, 1000]
@@ -44,6 +44,8 @@ const VIZUM_AWAY := 60.0        # metres off from Tía Paca (where she told you 
 var _edm_due := -1.0            # game hours when Edmundo rings (-1: he is not going to)
 var _t := 0.0
 var _talk_i := 0
+var _leaf_was := ""             # what leaf() gave when the calendar leaf was last written
+const OCIO_H := 24.0            # game hours with something to do waiting and nothing under way before Tía Paca rings (ocio)
 var _tour := false              # Tía Paca telling you how to earn money: the camera goes round what she speaks of
 var _tour_line := -1
 
@@ -105,6 +107,73 @@ func _apply() -> void:
 		if o != null and o.has_method("set_state"):
 			o.set_state(e)
 
+# ---------------- Tía Paca, when you have been idle ----------------
+## The user, 25 Nov 2026: "Si en 24 horas no has empezado alguna misión [que] tenías disponible y siempre que no tengas
+## otra empezada, te llamará la tía Paca diciendo que qué haces tan ocioso, que si no tienes nada que hacer, igual alguien
+## tiene algún recado para ti en [calle/ubicación del NPC con misión disponible]". The clock (G.stats "ocio_h", game
+## hours) starts again whenever something is under way or nobody has anything for you, and when she has rung.
+## Once for each mission (the user, 25 Nov 2026: "Una vez por misión"): what she has told you of is kept in
+## G.stats "ocio_avisos" and never rung about again.
+var ocio_quiet := false          # (the self-test's full run jumps whole days about: she would ring in the middle of other checks)
+func _ocio(free: bool) -> void:
+	var now: float = G.llamadas.now()
+	if not G.stats.has("ocio_h"):
+		G.stats["ocio_h"] = now
+	var who = idle_giver() if free and (G.phase == "play" or G.phase == "free") and not G.chavisca else null
+	if who == null:
+		G.stats["ocio_h"] = now
+		return
+	if G.phone_call != null or G.llamadas.pending("paca") or now - float(G.stats["ocio_h"]) < OCIO_H:
+		return
+	G.stats["ocio_h"] = now
+	var paca = G.named.get("paca")
+	if paca == null:
+		return
+	var told: Array = G.stats.get("ocio_avisos", [])
+	told.append(mission_key(who))
+	G.stats["ocio_avisos"] = told
+	var lines: Array = []
+	var fem: bool = String(paca.voice).ends_with("_f")
+	for l in Loc.t("paca_ocio"):
+		lines.append(Loc.speaker(String(l).replace("%s", where(who.p)), fem))
+	G.llamadas.ring({"npc": "paca", "say": lines, "plain": true, "once": true,
+		"valid": func(): return G.side == null and not G.in_mission()})
+
+## somebody with a mission for you just now (the story's, an errand's: not a job's, not Paca's own) that Tía Paca
+## has not rung you about yet, or null
+func idle_giver():
+	if G.get("marcas") == null:
+		return null
+	var jobs: Array = G.trabajos.givers(true) if G.get("trabajos") != null else []
+	var told: Array = G.stats.get("ocio_avisos", [])
+	for n in G.marcas.givers():
+		if n == null or not is_instance_valid(n) or n.id in ["paca", "edmundo"] or n in jobs or told.has(mission_key(n)):
+			continue
+		return n
+	return null
+
+## which mission somebody has for you, as Tía Paca keeps count of it: theirs, and the story's step if it is the story's
+func mission_key(n) -> String:
+	var key: String = String(n.id)
+	if G.phase == "play" and G.si >= 0 and G.si < G.steps.size() and String(G.steps[G.si].get("npc", "")) == key:
+		key += ":" + String(G.steps[G.si].get("id", G.si))
+	return key
+
+## the street a spot is on, as Tía Paca says it: "la Calle del Arroyuelo Medio", "el Paseo del Cristo"... (somebody
+## inside a set out in the fields, far from any street: "el pueblo")
+static func where(p: Vector2) -> String:
+	var r: Dictionary = MapData.nearest_road(p, true)
+	var nm: String = String(r["seg"].road.get("n", "")) if r.get("seg") != null else ""
+	if nm == "" or (r["p"] as Vector2).distance_to(p) > 45.0:
+		return Loc.t("ocio_pueblo")
+	if Loc.lang != "es":
+		return nm
+	for art in [["Calle", "la"], ["Avenida", "la"], ["Plaza", "la"], ["Plazuela", "la"], ["Travesía", "la"], ["Carretera", "la"],
+			["Ronda", "la"], ["Glorieta", "la"], ["Paseo", "el"], ["Camino", "el"], ["Callejón", "el"], ["Pasaje", "el"]]:
+		if nm.begins_with(art[0] + " "):
+			return art[1] + " " + nm
+	return nm
+
 # ---------------- the tick ----------------
 func tick(dt: float) -> void:
 	_tour_tick()
@@ -115,6 +184,11 @@ func tick(dt: float) -> void:
 	_place_edmundo()
 	var d := data()
 	var free: bool = G.side == null and not G.in_mission()      # (a background line never rings in the middle of an errand or a mission)
+	if leaf() != _leaf_was and G.dlg == null and G.phone_call == null:      # (the stage changes inside a call or a talk: the leaf, after it)
+		_leaf_was = leaf()
+		G.leaf_refresh()
+	if not ocio_quiet:
+		_ocio(free)
 	if free and stage() == "" and not _rung and G.stats.has("puente_h") and G.llamadas.now() - float(G.stats["puente_h"]) >= CALL_AFTER_H:
 		_rung = true
 		G.llamadas.ring({"npc": "paca", "lines": "casa_paca_call", "plain": true, "valid": func(): return G.side == null and not G.in_mission(), "after": func():
@@ -193,6 +267,20 @@ func givers() -> Array:
 	return out
 
 # ---------------- talking ----------------
+## What the calendar leaf says once the story's steps are done, while this line is beginning: the bridge leads straight
+## on to the inheritance (the user, 25 Nov 2026: after the bridge "sigue saliendo lo de date una vuelta, cuando debería
+## pasar directamente a la herencia de la Eufrasia"). First the wait for her call, then the way to her; "" after that
+## (the debt is a background line: the leaf goes back to the town at large).
+func leaf() -> String:
+	if not G.stats.has("puente_h"):
+		return ""
+	match stage():
+		"":
+			return Loc.t("obj_casa_espera")
+		"paca":
+			return Loc.t("obj_casa_paca")
+	return ""
+
 func talk(n) -> bool:
 	if n == null:
 		return false

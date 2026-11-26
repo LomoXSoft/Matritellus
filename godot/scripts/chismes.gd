@@ -22,7 +22,10 @@ const CHARACTERS := ["bien", "mal", "igual"]
 const WEIGHTS := {"old": [0.3, 0.5, 0.2], "kid": [0.5, 0.15, 0.35], "adult": [0.4, 0.3, 0.3]}
 ## which mission a step of the story ends (missions.gd STEPS: the last step of each)
 const STEP_NEWS := {"deliver": "aceite", "wake": "velatorio", "josefa_back": "movil", "alberto_back": "firmas", "puente": "puente"}
-const NEWS := ["aceite", "velatorio", "movil", "firmas", "puente", "menu", "pintadas", "recress", "sabotaje", "ajedrez"]
+## (and not only missions: what you do with the dogs, perros.gd _count; those have one text for everyone,
+## chisme_<id>, the user's, 25 Nov 2026)
+const NEWS := ["aceite", "velatorio", "movil", "firmas", "puente", "menu", "pintadas", "recress", "sabotaje", "ajedrez",
+	"perros_atropello", "perros_caricias"]
 
 var G
 
@@ -83,6 +86,8 @@ func next_news(n) -> String:
 ## what `n` says about mission `id`, as they are: its dialogues ([[line, ...], ...])
 func said(id: String, n) -> Array:
 	var v = Loc.t("chisme_%s_%s" % [id, character(n)])
+	if not v is Array:
+		v = Loc.t("chisme_" + id)          # (one for everyone)
 	return v if v is Array else []
 
 ## What is muttered behind your back about the missions you have finished: one line each, from the moment it is over
@@ -94,6 +99,8 @@ func whispers() -> Array:
 		var w = Loc.t("murmullo_" + String(id))
 		if w is String and w != "murmullo_" + String(id):
 			out.append(w)
+	if int(G.stats.get("perros_galletas", 0)) > 0:          # (you have been feeding the dogs)
+		out.append(Loc.t("murmullo_galletas"))
 	return out
 
 ## For a generic talk: the dialogues to choose from. One piece of news, if one comes out now; if not, the usual ones
