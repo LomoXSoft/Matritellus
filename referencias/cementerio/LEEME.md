@@ -208,6 +208,9 @@ En el cementerio hay dos azafranes escondidos. Los propuse y Luis dijo «Bien, p
 - `godot/scripts/autovia.gd` (la A-4, `zonas.autovias`), `godot/scripts/lejanias.gd` (la foto del pueblo, `zonas.lejos`) y `godot/scripts/lejanias_foto.gd` (hace los dibujos).
 - Para rehacer los dibujos (si cambian los coches o el pueblo): `python tools/run_tests.py lejanias`, luego `python tools/cementerio/lejanias.py <la carpeta que dice el log>` y luego importar (`--headless --path godot --import`).
 - Líneas metidas en `game.gd` (con el visto bueno de Sistemas), `limite.gd`, `loc.gd`, `world.gd` y `selftest.gd`.
+- Sin ventana, como la prueba completa: `python tools/run_tests.py zonas sinfotos --headless` y `python tools/run_tests.py cementerio sinfotos --headless` (sin fotos, un minuto cada una).
+  - Sin ventana el motor devuelve cada instancia de un MultiMesh sin mover. Por eso las comprobaciones de las matas, de la planta solar y de las palabras de las lápidas leen el registro que guarda el script: meta `"ps"` en cada celda de matas (`zonas.gd`) y meta `"xf"` en los MultiMesh `tumbas_rip_*` / `tumbas_dep_*` (`cementerio.gd`).
+  - Con ventana se le pregunta además al motor.
 - `python tools/run_tests.py zonas`:
   - pasa `_zonas_checks()`. Comprueba:
     - ir y volver a pie y en coche;

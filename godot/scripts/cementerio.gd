@@ -831,6 +831,11 @@ func _grave_meshes() -> void:
 			var mi := MultiMeshInstance3D.new()
 			mi.name = "tumbas_%s_%d" % [kind, q]
 			mi.multimesh = mm
+			if word_mats.has(kind):                              # (how each word stands or lies, kept by the script: with no window the engine gives no instance back, and the self-test asks)
+				var stood: Array = []
+				for i in range(list.size()):
+					stood.append(list[i][0])
+				mi.set_meta("xf", stood)
 			mi.material_override = word_mats[kind] if word_mats.has(kind) else mat
 			mi.visibility_range_end = WORD_SEEN if word_mats.has(kind) else VISIBLE
 			mi.visibility_range_end_margin = 20.0

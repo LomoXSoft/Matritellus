@@ -497,6 +497,10 @@ func _ready() -> void:
 	get_viewport().disable_3d = false
 	if timing:
 		print("boot: all of it     %5d ms" % (Time.get_ticks_msec() - t_all))
+		if OS.get_cmdline_user_args().has("--mundo-huella"):
+			world.write_fingerprints(self)
+		var obra = load("res://scripts/obra.gd")
+		print("boot: the places built by hand gave the physics %d solids in %d ms" % [obra.n_solids, obra.t_solids / 1000])
 	var thinned := 0 if OS.get_cmdline_user_args().has("--todo") else Parts.thin(self)      # (--todo: everything drawn from any distance, as it was, to compare)
 	if timing:
 		print("boot: %d small pieces will not be drawn from far away" % thinned)

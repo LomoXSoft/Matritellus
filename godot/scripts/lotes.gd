@@ -32,6 +32,139 @@ var made := 0                     # meshes made (the self-test, --timing)
 var houses := 0                   # houses handed over
 var stats := {}                   # (--timing) kind of material -> [meshes, triangles]
 
+## Kept from one run to the next (the user, 26 Nov 2026: "El juego tarda muchísimo en cargar para lo que es"): the
+## meshes as the graphics card takes them, each packed on its own, in user://casas.cache, under a fingerprint of all
+## they are made from (the map, the scripts that draw houses, the textures chosen, the version). With a cache that
+## fits, `dry` is true: the houses still make their nodes, signs and cloth, and say which materials they use, but
+## draw no pieces (casas.gd), and each square's meshes are read when its last house is built. With none, the meshes
+## are made as ever and written as they are made. The self-test builds the real thing (world.gd) unless told
+## `--cache-casas`; phones keep none for now (some 300 MB of their storage: to be tried on one first).
+const CACHE := "user://casas.cache"
+const CACHE_MARK := "MATRITELLUS-CASAS-1"
+const CACHE_SCRIPTS := ["casas", "casas_calles", "lotes", "parts", "texturas", "tela", "map_data"]
+var dry := false                  # the meshes come from the cache
+var mat_keep := {}                # a house's material key -> its material, made once for the town (casas.gd _tool)
+var cache_state := "off"          # "off", "read", "writing", "written", or "broken: ..." (--timing, the self-test)
+var t_cache := 0                  # microseconds spent reading or writing it
+var cache_bytes := 0
+var _in: FileAccess
+var _index := {}                  # square -> [where each of its meshes is in the file]
+var _out: FileAccess
+var _out_index := {}
+var _read := {}                   # squares already read
+var _houses := {}                 # house id -> {"v": what its building left in its variables, "k": its materials' keys}: those that are
+var replayed := 0                 # nothing but their pieces (casas.gd build), and how many were not worked out this time
+
+func keeping() -> bool:
+	return _out != null
+
+func keep_house(id: String, vars: Dictionary, keys: Array) -> void:
+	_houses[id] = {"v": vars, "k": keys}
+
+## what was kept of a house that is nothing but its pieces (null: build it)
+func house(id: String):
+	var h = _houses.get(id)
+	if h != null:
+		replayed += 1
+	return h
+
+static func cache_key() -> String:
+	var parts: Array = [CACHE_MARK, str(ProjectSettings.get_setting("application/config/version", "")), str(Engine.get_version_info().get("string", "")),
+		RenderingServer.get_current_rendering_method(), FileAccess.get_md5("res://data/map.json"), str(CELL), str(CELL_BIG)]
+	for s in CACHE_SCRIPTS:                       # (an exported game has them compiled: .gdc)
+		var p := "res://scripts/%s.gd" % s
+		parts.append(FileAccess.get_md5(p) + FileAccess.get_md5(p + "c"))
+	Tex.pick("render")
+	parts.append(str(Tex._picks))
+	if not OS.has_feature("editor"):              # (and the game's own files: a rebuilt game is another game)
+		var exe := OS.get_executable_path()
+		parts.append("%d:%d" % [FileAccess.get_modified_time(exe), FileAccess.get_modified_time(exe.get_basename() + ".pck")])
+	return "|".join(parts)
+
+## before the houses are built: is there a cache for this town as it is? If not, one is begun
+func cache_begin(use: bool) -> void:
+	if not use:
+		return
+	var t0 := Time.get_ticks_usec()
+	var key := cache_key()
+	var f := FileAccess.open(CACHE, FileAccess.READ)
+	if f != null and f.get_length() > 32:
+		var head = f.get_var()
+		if head is Dictionary and String(head.get("key", "")) == key:
+			f.seek(f.get_length() - 8)
+			var at := f.get_64()
+			if at > 0 and at < f.get_length() - 8:
+				f.seek(at)
+				var idx = f.get_var()
+				if idx is Dictionary and String(idx.get("mark", "")) == CACHE_MARK and idx.get("cells") is Dictionary:
+					_in = f
+					_index = idx["cells"]
+					_houses = idx.get("houses", {})
+					cache_bytes = f.get_length()
+					dry = true
+					cache_state = "read"
+	if not dry:
+		_out = FileAccess.open(CACHE + ".tmp", FileAccess.WRITE)
+		if _out != null:
+			_out.store_var({"key": key})
+			cache_state = "writing"
+	t_cache += Time.get_ticks_usec() - t0
+
+## a mesh just made, into the cache as the graphics card has it
+func _keep(cell: String, mi: MeshInstance3D, gk, turn: float, tris: int) -> void:
+	var t0 := Time.get_ticks_usec()
+	var raw := var_to_bytes({"name": String(mi.name), "gk": gk, "turn": turn, "tris": tris, "s": mi.mesh.get("_surfaces")})
+	var z := raw.compress(FileAccess.COMPRESSION_ZSTD)
+	if not _out_index.has(cell):
+		_out_index[cell] = []
+	_out_index[cell].append(_out.get_position())
+	_out.store_32(z.size())
+	_out.store_32(raw.size())
+	_out.store_buffer(z)
+	t_cache += Time.get_ticks_usec() - t0
+
+## a square's meshes, out of the cache
+func _flush_cached(cell: String) -> void:
+	if _read.has(cell) or _in == null:
+		return
+	_read[cell] = true
+	var t0 := Time.get_ticks_usec()
+	for at in _index.get(cell, []):
+		_in.seek(int(at))
+		var zs := _in.get_32()
+		var rs := _in.get_32()
+		var rec = bytes_to_var(_in.get_buffer(zs).decompress(rs, FileAccess.COMPRESSION_ZSTD))
+		if not (rec is Dictionary) or not rec.has("s"):
+			cache_state = "broken: a mesh of %s could not be read" % cell
+			continue
+		var gk = rec["gk"]
+		if not (gk is String and (gk == "col" or gk == "colf")) and not _mats.has(gk):
+			cache_state = "broken: no house of %s gave the material of %s" % [cell, str(gk)]
+			continue
+		var am := ArrayMesh.new()
+		am.set("_surfaces", rec["s"])
+		var mi := MeshInstance3D.new()
+		mi.mesh = am
+		_place(cell, mi, gk, float(rec["turn"]), int(rec["tris"]))
+	t_cache += Time.get_ticks_usec() - t0
+
+## a square's mesh into the town: its material, how far it is drawn from, its name, the way it is turned
+func _place(cell: String, mi: MeshInstance3D, gk, turn: float, tris: int) -> void:
+	var colour: bool = gk is String and (gk == "col" or gk == "colf")
+	mi.material_override = _col_mat if colour else _mats[gk]
+	if gk is String and gk == "colf":
+		Parts._range(mi, FINE_FAR)                # (the draw distance option goes for it as for the town's other small things)
+	mi.name = "lote_%s_%s" % [cell.replace(":", "_"), str(gk).replace("@", "_")]
+	mi.rotation.y = turn
+	world.add_child(mi)
+	made += 1
+	var base_key: String = str(gk).get_slice("@", 0)
+	var kind: String = base_key if colour else (base_key.left(1) if base_key.substr(1).is_valid_int() else base_key)
+	if not stats.has(kind):
+		stats[kind] = [0, 0]
+	stats[kind][0] += 1
+	stats[kind][1] += tris
+
 const TURN_STEP := 0.002          # radians: houses turned the same way to within this share a mesh of photo-textured pieces (brick: two centimetres over ten metres)
 const PLASTER_STEP := 0.05        # ...and of painted plaster, which has no lines to be seen out of true: within 3 degrees
 const WOOD_STEP := 0.01          # ...and of wood (doors, shutters: a couple of metres; half a degree is two centimetres across one)
@@ -79,7 +212,7 @@ func takes(key) -> bool:
 ## `fine`: its thin and small pieces (casas.gd box: bars, rods, knobs), which go into a mesh drawn only near (FINE_FAR)
 const FINE_FAR := 120.0
 func add(casa: Node3D, key, m: Material, acc, fine := false) -> void:
-	if acc.v.is_empty():
+	if acc.v.is_empty() and not (dry and acc.used):
 		return
 	var plain: bool = key is int and m == Parts.mat(int(key))
 	var tinted := _tinted(key, m)                 # painted plaster or wood of any colour: one mesh, the colour in its corners
@@ -96,6 +229,10 @@ func add(casa: Node3D, key, m: Material, acc, fine := false) -> void:
 		var step: float = PLASTER_STEP if (tinted.size() > 0 and tinted[0] == "r") else (WOOD_STEP if tinted.size() > 0 else TURN_STEP)
 		turn = snappedf(casa.rotation.y, step)
 		gk = "%s@%d" % [str(key) if tinted.is_empty() else String(tinted[0]), roundi(turn / step)]
+	if dry:                                       # (its pieces are in the cache: only what they are drawn with is wanted of it)
+		if not plain and not _mats.has(gk):
+			_mats[gk] = m if tinted.is_empty() else _tint_mat(String(tinted[0]), m as StandardMaterial3D)
+		return
 	if not groups.has(gk):
 		groups[gk] = Group.new()
 		groups[gk].turn = turn
@@ -248,6 +385,9 @@ func _tint_mat(kind: String, m: StandardMaterial3D) -> ShaderMaterial:
 
 ## the square's meshes, made; what they were made from, gone
 func flush(cell: String) -> void:
+	if dry:
+		_flush_cached(cell)
+		return
 	if not _cells.has(cell):
 		return
 	var groups: Dictionary = _cells[cell]
@@ -274,21 +414,37 @@ func flush(cell: String) -> void:
 			var am := ArrayMesh.new()
 			am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 			mi.mesh = am
-		var colour: bool = gk is String and (gk == "col" or gk == "colf")
-		mi.material_override = _col_mat if colour else _mats[gk]
-		if gk is String and gk == "colf":
-			Parts._range(mi, FINE_FAR)                # (the draw distance option goes for it as for the town's other small things)
-		mi.name = "lote_%s_%s" % [cell.replace(":", "_"), str(gk).replace("@", "_")]
-		mi.rotation.y = g.turn
-		world.add_child(mi)
-		made += 1
-		var base_key: String = str(gk).get_slice("@", 0)
-		var kind: String = base_key if colour else (base_key.left(1) if base_key.substr(1).is_valid_int() else base_key)
-		if not stats.has(kind):
-			stats[kind] = [0, 0]
-		stats[kind][0] += 1
-		stats[kind][1] += g.v.size() / 3
+		_place(cell, mi, gk, g.turn, g.v.size() / 3)
+		if _out != null:
+			_keep(cell, mi, gk, g.turn, g.v.size() / 3)
 
 func flush_all() -> void:
 	for cell in _cells.keys():
 		flush(cell)
+	if dry:
+		for cell in _index:                       # (none should be left: every square is read when its last house is built)
+			_flush_cached(String(cell))
+		if _in != null:
+			_in.close()
+			_in = null
+		if cache_state.begins_with("broken"):     # (never again from this one: the next run builds the town and keeps it anew)
+			push_warning("The houses' cache is " + cache_state)
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(CACHE))
+	elif _out != null:
+		var t0 := Time.get_ticks_usec()
+		var at := _out.get_position()
+		_out.store_var({"mark": CACHE_MARK, "cells": _out_index, "made": made, "houses": _houses})
+		_out.store_64(at)
+		cache_bytes = _out.get_position()
+		var whole: bool = _out.get_error() == OK      # (a full disk: better none than half of one)
+		_out.close()
+		_out = null
+		var d := DirAccess.open("user://")
+		if d != null and not whole:
+			d.remove(CACHE.get_file() + ".tmp")
+			cache_state = "broken: could not be written whole"
+		elif d != null:
+			if d.file_exists(CACHE.get_file()):
+				d.remove(CACHE.get_file())
+			cache_state = "written" if d.rename(CACHE.get_file() + ".tmp", CACHE.get_file()) == OK else "broken: could not be put in its place"
+		t_cache += Time.get_ticks_usec() - t0

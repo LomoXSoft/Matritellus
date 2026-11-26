@@ -1457,10 +1457,40 @@ func _buildings() -> void:
 	_t_built = Time.get_ticks_msec()
 	_house_i = 0
 	CasasS.slow = OS.get_cmdline_user_args().has("--casas-lento")
+	CasasS.old_boxes = OS.get_cmdline_user_args().has("--cajas-viejas")
 	var args := OS.get_cmdline_user_args()
 	lotes = null if args.has("--casas-sueltas") or args.has("--casas-suma") or CasasS.slow else LotesS.new(self)
 	if lotes != null:                               # (the last house of each square: when it is built, its square is made)
 		lotes.plan(MapData.houses)
+		# kept from one run to the next (lotes.gd): not in the self-test, which builds the real thing, nor on a phone yet
+		lotes.cache_begin(not args.has("--sin-cache-casas") and (args.has("--cache-casas") or (not audit and not OS.has_feature("mobile"))))
+
+## (--timing --mundo-huella) Every mesh made in code in the whole game, by where it hangs in the scene, into
+## user://mundo_huella.txt: to tell whether a change to HOW things are built left them as they were (compare the
+## file of a run before with one after; what is placed by chance differs from run to run by itself: take two before).
+func write_fingerprints(root: Node) -> void:
+	var out := PackedStringArray()
+	_fingerprint(root, "", out)
+	var f := FileAccess.open("user://mundo_huella.txt", FileAccess.WRITE)
+	if f != null:
+		f.store_string("
+".join(out))
+	print("boot: %d meshes' fingerprints in %s" % [out.size(), ProjectSettings.globalize_path("user://mundo_huella.txt")])
+
+func _fingerprint(n: Node, path: String, out: PackedStringArray) -> void:
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh is ArrayMesh and not String(n.name).begins_with("lote_"):
+		var h := 0
+		for s in ((n as MeshInstance3D).mesh.get("_surfaces") as Array):
+			h = hash([h, s.get("vertex_count", 0), s.get("vertex_data"), s.get("attribute_data", 0), s.get("index_data", 0)])
+		out.append("%s %d" % [path, h])
+	var i := 0
+	for c in n.get_children():
+		var s2: Script = c.get_script()
+		_fingerprint(c, "%s/%d%s" % [path, i, ("(" + s2.resource_path.get_file().get_basename() + ")") if s2 != null else ""], out)
+		i += 1
+
+func args_has_huella() -> bool:
+	return OS.get_cmdline_user_args().has("--lotes-huella")
 
 ## The houses built by hand, one by one (casas.gd), a slice of about 30 ms at a time: true while there are more to
 ## come. Between one slice and the next the loading screen draws a frame and answers the keys (the user, 17 Nov 2026:
@@ -1484,7 +1514,24 @@ func _houses() -> bool:
 	if lotes != null:
 		lotes.flush_all()
 		if OS.get_cmdline_user_args().has("--timing"):
-			print("buildings: the houses' meshes merged square by square: %d meshes" % lotes.made)
+			print("buildings: the houses' meshes merged square by square: %d meshes; their cache: %s, %d MB, %d ms, %d houses not worked out (%d kept so)" % [lotes.made, lotes.cache_state, lotes.cache_bytes / 1000000, lotes.t_cache / 1000, lotes.replayed, lotes._houses.size()])
+			if args_has_huella():
+				var mix := 0                              # (the same meshes built and read back? their names, turns, materials and every byte)
+				var n_l := 0
+				for c in get_children():
+					if c is MeshInstance3D and String(c.name).begins_with("lote_"):
+						var mi := c as MeshInstance3D
+						var surf: Dictionary = (mi.mesh.get("_surfaces") as Array)[0]
+						var mo: Material = mi.material_override
+						var what := mo.get_class() + (str((mo as StandardMaterial3D).albedo_color) + str((mo as StandardMaterial3D).uv1_scale) if mo is StandardMaterial3D else "")
+						mix = hash([mix, String(mi.name), mi.rotation.y, mi.visibility_range_end, what, surf.get("format", 0), surf.get("vertex_count", 0), surf.get("vertex_data"), surf.get("attribute_data", 0)])
+						n_l += 1
+				print("buildings: the merged meshes' fingerprint: %d of them, %d" % [n_l, mix])
+				var own := 0                              # (...and the houses themselves: what each was left with, built or not)
+				for c in casas:
+					if c is Node and (c as Node).has_method("_state"):
+						own = hash([own, String(c.id), (c as Node).get_child_count(), var_to_bytes(c._state())])
+				print("buildings: the houses' own fingerprint: %d of them, %d; things left with the world: %d tags, %d outlines" % [casas.size(), own, hand_tags.size(), MapData.outlines.size()])
 			var ks: Array = lotes.stats.keys()
 			ks.sort_custom(func(a2, b2): return lotes.stats[a2][1] > lotes.stats[b2][1])
 			print("buildings: by material: " + ", ".join(ks.map(func(k): return "%s %d meshes %dk tris" % [k, lotes.stats[k][0], lotes.stats[k][1] / 1000])))
@@ -1502,6 +1549,7 @@ func _houses() -> bool:
 			var sum := Vector3.ZERO
 			var nuv := 0
 			var keys := {}
+			var mix := 0                              # (the sum cannot tell a triangle turned the other way round, nor a corner a hair off: this can)
 			for c in casas:
 				for mi in (c as Node).get_children():
 					if mi is MeshInstance3D and (mi as MeshInstance3D).mesh != null:
@@ -1518,7 +1566,9 @@ func _houses() -> bool:
 							if nn != null:
 								for q in (nn as PackedVector3Array):
 									sum += q * 0.001
-			print("buildings: geometry sum: %d vertices, %d with uv, sum %s" % [nv, nuv, str(sum)])
+							mix = hash([mix, vv.to_byte_array(), (nn as PackedVector3Array).to_byte_array() if nn != null else 0,
+								(arr[Mesh.ARRAY_TEX_UV] as PackedVector2Array).to_byte_array() if arr[Mesh.ARRAY_TEX_UV] != null else 0])
+			print("buildings: geometry sum: %d vertices, %d with uv, sum %s, fingerprint %d" % [nv, nuv, str(sum), mix])
 		print("buildings: bake's walls and roofs %d ms, bricks and looks %d ms, %d houses by hand %d ms (%.1f ms each; %d nodes in them, %d of them meshes; in them: pieces %d ms, meshes %d ms, of which materials %d ms)" % [t_casas - _t_buildings,
 			t_built - t_casas, MapData.houses.size(), Time.get_ticks_msec() - t_built, float(Time.get_ticks_msec() - t_built) / maxi(1, MapData.houses.size()), inside, meshes, CasasS.t_geom / 1000, CasasS.t_commit / 1000, CasasS.t_mats / 1000])
 	add_child(Tela.new())           # (it tells the cloth of the town -- curtains, flags -- where the player is)
@@ -1731,15 +1781,35 @@ func _multimesh(mesh: Mesh, material: Material, list: Array) -> MultiMesh:
 const TREE_COL := [0x6fb24c, 0x93a070, 0x3d7044, 0x3f6a3a]
 var _tree_mis: Array = []
 
+## The trunks are given to the trees' body while it is out of the scene, and it is put back where it was: in the
+## scene, the physics engine made the body's whole shape anew for every trunk added, each slower than the last (the
+## user, 26 Nov 2026, "El juego tarda muchísimo en cargar": 4786 trunks were 4.5 s of it).
+func _trees_body_out() -> int:
+	var at := tree_body.get_index()
+	remove_child(tree_body)
+	return at
+
+func _trees_body_back(at: int) -> void:
+	add_child(tree_body)
+	move_child(tree_body, at)
+
 func _trees() -> void:
+	var t0 := Time.get_ticks_msec()
+	var at := _trees_body_out()
 	for t in MapData.trees:
 		_tree_add(t[0], t[1], int(t[2]), randf_range(0.8, 1.25), randf() * TAU)
+	_trees_body_back(at)
+	var t1 := Time.get_ticks_msec()
 	_tree_meshes()
+	if OS.get_cmdline_user_args().has("--timing"):
+		print("trees: %d of the map's, standing in %d ms, their meshes %d ms" % [MapData.trees.size(), t1 - t0, Time.get_ticks_msec() - t1])
 
 ## the trees the bare ground grows (matojos.gd, once it has placed them): [x, z, kind, size, turn] each
 func add_trees(list: Array) -> void:
+	var at := _trees_body_out()
 	for t in list:
 		_tree_add(t[0], t[1], int(t[2]), t[3], t[4])
+	_trees_body_back(at)
 	_tree_meshes()
 
 ## how tall the trunk of a tree of that kind stands (props.gd's falling one too)

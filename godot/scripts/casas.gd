@@ -35,6 +35,7 @@ var pavement := 0           # how many lengths of pavement were laid in front of
 var _tools := {}            # material key -> Acc (or a SurfaceTool, for the cloth: tela.gd)
 var _fine := {}             # plain colour -> Acc of its thin and small pieces (bars, rods, knobs), when merged (lotes.gd): drawn only near
 var _fine_on := false
+var _dry := false           # its meshes are in the cache (lotes.gd): everything but its pieces is made
 const FINE_THIN := 0.05     # a piece no thicker than this across both its narrow sides...
 const FINE_SMALL := 0.35    # ...or no bigger than this every way is "fine"
 ## What a house's pieces of one material are gathered in before they become a mesh: plain lists of corners, normals and
@@ -44,12 +45,14 @@ class Acc:
 	var v := PackedVector3Array()
 	var n := PackedVector3Array()
 	var uv := PackedVector2Array()
+	var used := false           # (with the meshes in the cache, lotes.gd `dry`: something would have been drawn in it)
 	var first := true           # (as a SurfaceTool: whether there are texture places is settled by the first corner;
 	var has_uv := false         # a corner given none after that takes the last one given)
 	var last_uv := Vector2.ZERO
 static var t_geom := 0      # (--timing: microseconds the town's houses spent drawing their pieces, making their meshes, making their materials)
 static var t_commit := 0
 static var t_mats := 0
+static var old_boxes := false       # (--cajas-viejas: boxes face by face, as before 26 Nov 2026, to check the new way makes the same houses)
 static var slow := false    # (--casas-lento: the old way, a SurfaceTool a corner at a time, to check the new one makes the same houses)
 var _mats := {}             # material key -> Material
 var _xf := Transform3D.IDENTITY     # where what is being built stands in the house's own frame (a side front has its own)
@@ -73,9 +76,16 @@ const MASONRY := {
 	"brick_tostado": [Color(0.88, 0.84, 0.86), 1.15],   # salmon gone brown: the terraces of 1987 at the end of the Calle del Clavel
 }
 
+## RULE (26 Nov 2026, the houses' cache: lotes.gd). In the real game a house that is nothing but its pieces is not
+## worked out at all once its meshes are kept on disk: it is given back what its building left in its own variables.
+## So the building of a house may leave things ONLY in its own variables, in its children (add_child), in
+## world.hand_tags and in MapData.outlines. Make it leave anything anywhere else and that must be added to `left`
+## below, or the game would lose it with no test failing (the self-test builds every house: it reads no cache).
+## A house with a function of its own (_<id>) is always built. Checked by tools/cache_casas_check.py.
 func build(world, d: Dictionary) -> Node3D:
 	W = world
 	_fine_on = W != null and W.get("lotes") != null
+	_dry = _fine_on and W.lotes.dry
 	def = d
 	id = String(d["id"])
 	o = Vector2(d["o"][0], d["o"][1])
@@ -99,21 +109,41 @@ func build(world, d: Dictionary) -> Node3D:
 		boxes = 99                                    # built by hand elsewhere, walls and roof and all (farmacia.gd): nothing of it is drawn here
 		return self
 	var t0 := Time.get_ticks_usec()
-	if has_method("_" + id):
-		call("_" + id)
-	elif Short.ADOSADOS.has(id):
-		_adosado(String(Short.ADOSADOS[id]))
-	elif Short.ROSAS.has(id):
-		_rosa(Short.ROSAS[id] as Array)
-	elif Short.HILERA21.has(id):
-		_hilera21(String(Short.HILERA21[id]))
-	elif SPECS.has(id):
-		_from_spec(SPECS[id])
-	elif Short.HOUSES.has(id):
-		_from_spec(_unpack(Short.HOUSES[id]))
+	var lotes = W.get("lotes") if W != null else null
+	var own := has_method("_" + id)
+	var kept = lotes.house(id) if _dry else null
+	if kept != null:                              # (nothing but its pieces, and they are in the cache: as its building left it. lotes.gd)
+		replayed = true
+		for k in kept["v"]:
+			set(k, kept["v"][k])
+		for key in kept["k"]:
+			if String(key) == "acera":
+				_acera_tool()
+			else:
+				_tool(key)
+			_tools[key].used = true
+	else:
+		var watch: bool = lotes != null and lotes.keeping() and not own       # (those with a function of their own are always built: anything may be in it)
+		var was := _state() if watch else {}
+		var left := [W.hand_tags.size(), MapData.outlines.size()] if watch else []
+		if own:
+			call("_" + id)
+		elif Short.ADOSADOS.has(id):
+			_adosado(String(Short.ADOSADOS[id]))
+		elif Short.ROSAS.has(id):
+			_rosa(Short.ROSAS[id] as Array)
+		elif Short.HILERA21.has(id):
+			_hilera21(String(Short.HILERA21[id]))
+		elif SPECS.has(id):
+			_from_spec(SPECS[id])
+		elif Short.HOUSES.has(id):
+			_from_spec(_unpack(Short.HOUSES[id]))
+		if watch and get_child_count() == 0 and not _tools.has("tela") and left == [W.hand_tags.size(), MapData.outlines.size()]:
+			var now := _changed(was)
+			if not now.has("!"):
+				lotes.keep_house(id, now, _tools.keys().filter(func(k): return not (k is int) and _tools[k] is Acc and not _tools[k].v.is_empty()))
 	var t1 := Time.get_ticks_usec()
 	t_geom += t1 - t0
-	var lotes = W.get("lotes") if W != null else null
 	for key in _fine:
 		lotes.add(self, key, _mats[key], _fine[key], true)
 	_fine.clear()
@@ -151,6 +181,31 @@ func build(world, d: Dictionary) -> Node3D:
 	return self                                     # 3.7 GB between them, and a phone closed the game while loading -- 16 Nov 2026)
 
 ## a place on the map, in the house's frame: x along the front, y out into the street
+## What a house's building leaves in its own variables (not what it is given, nor what its meshes are made from):
+## kept with the meshes for the houses that are nothing but their pieces, so that those need not be worked out again.
+const STATE_SKIP := ["W", "def", "_tools", "_fine", "_mats", "pieces", "_dry", "_fine_on", "replayed"]
+var replayed := false       # not worked out this time: its meshes and what its building left came from the cache
+func _state() -> Dictionary:
+	var d := {}
+	for p in (get_script() as Script).get_script_property_list():
+		var n: String = p["name"]
+		if (int(p["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE) != 0 and not STATE_SKIP.has(n):
+			var v = get(n)
+			d[n] = v.duplicate(true) if (v is Array or v is Dictionary) else v
+	return d
+
+## ...and what of it is not as it was (with "!" if any of it cannot be written down: a node, say)
+func _changed(was: Dictionary) -> Dictionary:
+	var d := {}
+	for n in was:
+		var v = get(n)
+		if typeof(v) != typeof(was[n]) or v != was[n]:
+			var back = bytes_to_var(var_to_bytes(v))
+			if typeof(back) != typeof(v) or back != v:
+				d["!"] = n
+			d[n] = v
+	return d
+
 func _local(p: Vector2) -> Vector2:
 	return Vector2((p - o).dot(u), (p - o).dot(out))
 
@@ -168,66 +223,72 @@ func _tool(key):
 		else:
 			_tools[key] = Acc.new()
 		var tm0 := Time.get_ticks_usec()
-		var m: Material
-		var name := String(key) if key is String else ""
-		if name == "render" or (name.begins_with("r") and name.substr(1).is_valid_int()):       # painted render (white, or "r" + its colour)
-			var photo := Tex.pick("render")
-			var sm: StandardMaterial3D = W._tmat(0xffffff, "plaster", 4.0) if photo == "" else Tex.mat(photo)
-			var c: Color = Parts.col(int(name.substr(1))) if name != "render" else Color(1.0, 0.995, 0.975)
-			sm.albedo_color = Color(c.r * 1.1, c.g * 1.1, c.b * 1.1)
-			if photo != "":
-				sm.emission_texture = sm.albedo_texture       # (...and its stains and cracks with it)
-				sm.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
-			sm.emission_enabled = true          # (a painted wall keeps its colour in the shade, where the sky would turn white to blue-grey)
-			sm.emission = Color(c.r, c.g * 0.97, c.b * 0.9)
-			sm.emission_energy_multiplier = 0.2
-			m = sm
-		elif MASONRY.has(name):
-			if Tex.pick(name) != "":            # (a set made to be coloured takes this brick's own colour)
-				m = Tex.mat(Tex.pick(name), MASONRY[name][0] if Tex.info(Tex.pick(name).get_slice("@", 0))["tint"] else Color.WHITE)
-			else:
-				var bm: StandardMaterial3D = W._tmat(0xffffff, "brick", MASONRY[name][1])
-				bm.albedo_color = MASONRY[name][0]
-				m = bm
-		elif name == "stone":           # dressed stone, in blocks
-			m = W._tmat(0x9a8c78, "pavement", 0.9) if Tex.pick(name) == "" else Tex.mat(Tex.pick(name))
-		elif name.begins_with("w") and name.substr(1).is_valid_int():       # wood, painted or varnished this colour
-			if Tex.pick("wood") == "":
-				m = Parts.mat(int(name.substr(1)))
-			else:
-				var wm: StandardMaterial3D = Tex.mat(Tex.pick("wood"), Parts.col(int(name.substr(1))) * 1.15)
-				wm.rim_enabled = true           # (as the plain colours of the town have it)
-				wm.rim = 0.35
-				wm.rim_tint = 0.6
-				m = wm
-		elif name == "slab" and Tex.pick(name) != "":
-			var pl: StandardMaterial3D = Tex.mat(Tex.pick(name), Color(0.957, 0.918, 0.831) * 1.08)
-			pl.emission_enabled = true
-			pl.emission = Color(0.95, 0.9, 0.78)
-			pl.emission_texture = pl.albedo_texture
-			pl.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
-			pl.emission_energy_multiplier = 0.2
-			m = pl
-		elif name == "slab":            # sawn stone cladding
-			var lm: StandardMaterial3D = W._tmat(0xf4ead4, "pavement", 1.7)
-			lm.emission_enabled = true
-			lm.emission = Color(0.95, 0.9, 0.78)
-			lm.emission_energy_multiplier = 0.2
-			m = lm
-		elif name == "tiles" and Tex.pick(name) != "":
-			var pm: StandardMaterial3D = Tex.mat(Tex.pick(name), Color.WHITE, true, 1.6)       # (its UVs are in units of 1.6 m)
-			pm.cull_mode = BaseMaterial3D.CULL_DISABLED
-			m = pm
-		elif name == "tiles":           # the roof (this one has its own UVs: the tiles run down the slope)
-			var tm := StandardMaterial3D.new()
-			tm.albedo_color = Parts.col(0xe6a682)            # (what the town's other roofs come out as)
-			tm.albedo_texture = W._tex("tiles")
-			tm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-			tm.roughness = 1.0
-			tm.cull_mode = BaseMaterial3D.CULL_DISABLED
-			m = tm
+		var m: Material = null
+		var kept = W.lotes.mat_keep if _fine_on else null      # (merged, the town draws each kind with the first house's material: lotes.gd)
+		if kept != null and kept.has(key):
+			m = kept[key]
 		else:
-			m = Parts.mat(int(key))
+			var name := String(key) if key is String else ""
+			if name == "render" or (name.begins_with("r") and name.substr(1).is_valid_int()):       # painted render (white, or "r" + its colour)
+				var photo := Tex.pick("render")
+				var sm: StandardMaterial3D = W._tmat(0xffffff, "plaster", 4.0) if photo == "" else Tex.mat(photo)
+				var c: Color = Parts.col(int(name.substr(1))) if name != "render" else Color(1.0, 0.995, 0.975)
+				sm.albedo_color = Color(c.r * 1.1, c.g * 1.1, c.b * 1.1)
+				if photo != "":
+					sm.emission_texture = sm.albedo_texture       # (...and its stains and cracks with it)
+					sm.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
+				sm.emission_enabled = true          # (a painted wall keeps its colour in the shade, where the sky would turn white to blue-grey)
+				sm.emission = Color(c.r, c.g * 0.97, c.b * 0.9)
+				sm.emission_energy_multiplier = 0.2
+				m = sm
+			elif MASONRY.has(name):
+				if Tex.pick(name) != "":            # (a set made to be coloured takes this brick's own colour)
+					m = Tex.mat(Tex.pick(name), MASONRY[name][0] if Tex.info(Tex.pick(name).get_slice("@", 0))["tint"] else Color.WHITE)
+				else:
+					var bm: StandardMaterial3D = W._tmat(0xffffff, "brick", MASONRY[name][1])
+					bm.albedo_color = MASONRY[name][0]
+					m = bm
+			elif name == "stone":           # dressed stone, in blocks
+				m = W._tmat(0x9a8c78, "pavement", 0.9) if Tex.pick(name) == "" else Tex.mat(Tex.pick(name))
+			elif name.begins_with("w") and name.substr(1).is_valid_int():       # wood, painted or varnished this colour
+				if Tex.pick("wood") == "":
+					m = Parts.mat(int(name.substr(1)))
+				else:
+					var wm: StandardMaterial3D = Tex.mat(Tex.pick("wood"), Parts.col(int(name.substr(1))) * 1.15)
+					wm.rim_enabled = true           # (as the plain colours of the town have it)
+					wm.rim = 0.35
+					wm.rim_tint = 0.6
+					m = wm
+			elif name == "slab" and Tex.pick(name) != "":
+				var pl: StandardMaterial3D = Tex.mat(Tex.pick(name), Color(0.957, 0.918, 0.831) * 1.08)
+				pl.emission_enabled = true
+				pl.emission = Color(0.95, 0.9, 0.78)
+				pl.emission_texture = pl.albedo_texture
+				pl.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
+				pl.emission_energy_multiplier = 0.2
+				m = pl
+			elif name == "slab":            # sawn stone cladding
+				var lm: StandardMaterial3D = W._tmat(0xf4ead4, "pavement", 1.7)
+				lm.emission_enabled = true
+				lm.emission = Color(0.95, 0.9, 0.78)
+				lm.emission_energy_multiplier = 0.2
+				m = lm
+			elif name == "tiles" and Tex.pick(name) != "":
+				var pm: StandardMaterial3D = Tex.mat(Tex.pick(name), Color.WHITE, true, 1.6)       # (its UVs are in units of 1.6 m)
+				pm.cull_mode = BaseMaterial3D.CULL_DISABLED
+				m = pm
+			elif name == "tiles":           # the roof (this one has its own UVs: the tiles run down the slope)
+				var tm := StandardMaterial3D.new()
+				tm.albedo_color = Parts.col(0xe6a682)            # (what the town's other roofs come out as)
+				tm.albedo_texture = W._tex("tiles")
+				tm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+				tm.roughness = 1.0
+				tm.cull_mode = BaseMaterial3D.CULL_DISABLED
+				m = tm
+			else:
+				m = Parts.mat(int(key))
+			if kept != null:
+				kept[key] = m
 		_mats[key] = m
 		t_mats += Time.get_ticks_usec() - tm0
 	return _tools[key]
@@ -235,6 +296,9 @@ func _tool(key):
 func _tri(st, a: Vector3, b: Vector3, c: Vector3, n: Vector3, uvs = null) -> void:
 	if st is Acc:                                 # (the usual way: straight into the lists, no list made per triangle)
 		var acc: Acc = st
+		if _dry:
+			acc.used = true
+			return
 		var flip := (b - a).cross(c - a).dot(n) > 0.0          # Godot wants clockwise front faces
 		if acc.first:
 			acc.first = false
@@ -279,7 +343,12 @@ func _tri(st, a: Vector3, b: Vector3, c: Vector3, n: Vector3, uvs = null) -> voi
 
 ## a flat four-sided piece, facing `n`
 func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, key, n: Vector3, uvs = null) -> void:
+	if _dry and key is int:
+		return
 	var st = _tool(key)
+	if _dry and st is Acc:
+		st.used = true
+		return
 	n = (_xf.basis * n).normalized()
 	a = _xf * a; b = _xf * b; c = _xf * c; d = _xf * d
 	if uvs == null and st is Acc:
@@ -291,6 +360,9 @@ func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, key, n: Vector3, uvs =
 ## two triangles, a b c and a c d, already in the town's frame, straight into the lists: the same as two _tri()
 ## without texture places, without the calls and the lists in between (the loading, 17 Nov 2026)
 func _quad_acc(acc: Acc, a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3) -> void:
+	if _dry:
+		acc.used = true
+		return
 	if acc.first:
 		acc.first = false
 		acc.has_uv = false
@@ -314,11 +386,48 @@ func _quad_acc(acc: Acc, a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vect
 		for k in range(6):
 			acc.uv.append(acc.last_uv)
 
+## The 36 corners of a box out of its eight (0 p000, 1 p100, 2 p010, 3 p110, 4 p001, 5 p101, 6 p011, 7 p111), face by
+## face as six _quad_acc() lay them. Which way round each triangle goes hangs only on the frame the box stands in (_xf:
+## mirrored or not), never on its size, so it is settled once for each frame, with the six normals, and a box is its
+## eight corners and two lists added whole. (The user, 26 Nov 2026: "El juego tarda muchísimo en cargar". The town's
+## houses are some 900,000 boxes; each was 12 cross products and 72 corners and normals added one at a time.)
+const BOX_FACES := [[4, 5, 7, 6], [0, 1, 3, 2], [0, 4, 6, 2], [1, 5, 7, 3], [2, 3, 7, 6], [0, 1, 5, 4]]
+const BOX_NORMALS := [Vector3(0, 0, 1), Vector3(0, 0, -1), Vector3(-1, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, -1, 0)]
+const BOX_PLAIN := [4, 7, 5, 4, 6, 7, 0, 1, 3, 0, 3, 2, 0, 6, 4, 0, 2, 6, 1, 5, 7, 1, 7, 3, 2, 3, 7, 2, 7, 6, 0, 5, 1, 0, 4, 5]
+const BOX_MIRRORED := [4, 5, 7, 4, 7, 6, 0, 3, 1, 0, 2, 3, 0, 4, 6, 0, 6, 2, 1, 7, 5, 1, 3, 7, 2, 7, 3, 2, 6, 7, 0, 1, 5, 0, 5, 4]
+static var _box_basis := Basis()
+static var _box_way := -1                         # 0 plain, 1 mirrored, 2 neither (a frame out of square: face by face, as before); -1 not settled yet
+static var _box_n := PackedVector3Array()         # the 36 normals in that frame
+
+static func _box_frame(bs: Basis) -> void:
+	_box_basis = bs
+	var c: Array = []
+	for i in range(8):
+		c.append(bs * Vector3(i & 1, (i >> 1) & 1, (i >> 2) & 1))
+	var order: Array = []
+	_box_n = PackedVector3Array()
+	for f in range(6):
+		var q: Array = BOX_FACES[f]
+		var n: Vector3 = (bs * BOX_NORMALS[f]).normalized()
+		var a: Vector3 = c[q[0]]
+		var b: Vector3 = c[q[1]]
+		var cc: Vector3 = c[q[2]]
+		var d: Vector3 = c[q[3]]
+		order.append(q[0])
+		order.append_array([q[2], q[1]] if (b - a).cross(cc - a).dot(n) > 0.0 else [q[1], q[2]])
+		order.append(q[0])
+		order.append_array([q[3], q[2]] if (cc - a).cross(d - a).dot(n) > 0.0 else [q[2], q[3]])
+		for k in range(6):
+			_box_n.append(n)
+	_box_way = 0 if order == BOX_PLAIN else (1 if order == BOX_MIRRORED else 2)
+
 ## a box: its left, bottom, back corner, then how wide, high and deep (towards the street) it is
 func box(x: float, y: float, z: float, w: float, h: float, d: float, key) -> void:
 	if w <= 0.0 or h <= 0.0 or d <= 0.0:
 		return
 	boxes += 1
+	if _dry and key is int:                       # (a plain colour's pieces are in the cache, and its material is the town's one for them all)
+		return
 	var a := Vector3(x, y, z)
 	var b := Vector3(x + w, y + h, z + d)
 	var st = _tool(key)
@@ -328,6 +437,30 @@ func box(x: float, y: float, z: float, w: float, h: float, d: float, key) -> voi
 			if not _fine.has(key):
 				_fine[key] = Acc.new()
 			st = _fine[key]
+	if _dry and st is Acc:
+		st.used = true
+		return
+	if st is Acc and not old_boxes:
+		var acc: Acc = st
+		if _box_way < 0 or _xf.basis != _box_basis:
+			_box_frame(_xf.basis)
+		if _box_way < 2:
+			var p0 := _xf * Vector3(a.x, a.y, a.z); var p1 := _xf * Vector3(b.x, a.y, a.z)
+			var p2 := _xf * Vector3(a.x, b.y, a.z); var p3 := _xf * Vector3(b.x, b.y, a.z)
+			var p4 := _xf * Vector3(a.x, a.y, b.z); var p5 := _xf * Vector3(b.x, a.y, b.z)
+			var p6 := _xf * Vector3(a.x, b.y, b.z); var p7 := _xf * Vector3(b.x, b.y, b.z)
+			if acc.first:
+				acc.first = false
+				acc.has_uv = false
+			if _box_way == 0:
+				acc.v.append_array(PackedVector3Array([p4, p7, p5, p4, p6, p7, p0, p1, p3, p0, p3, p2, p0, p6, p4, p0, p2, p6, p1, p5, p7, p1, p7, p3, p2, p3, p7, p2, p7, p6, p0, p5, p1, p0, p4, p5]))
+			else:
+				acc.v.append_array(PackedVector3Array([p4, p5, p7, p4, p7, p6, p0, p3, p1, p0, p2, p3, p0, p4, p6, p0, p6, p2, p1, p7, p5, p1, p3, p7, p2, p7, p3, p2, p6, p7, p0, p1, p5, p0, p5, p4]))
+			acc.n.append_array(_box_n)
+			if acc.has_uv:
+				for k in range(36):
+					acc.uv.append(acc.last_uv)
+			return
 	if st is Acc:                                 # (its eight corners worked out once, not four times a face)
 		var p000 := _xf * Vector3(a.x, a.y, a.z); var p100 := _xf * Vector3(b.x, a.y, a.z)
 		var p010 := _xf * Vector3(a.x, b.y, a.z); var p110 := _xf * Vector3(b.x, b.y, a.z)
@@ -906,7 +1039,13 @@ func _dark(hex: int, by := 0.25) -> int:
 	return Parts.col(hex).darkened(by).to_rgba32() >> 8
 
 func tri(a: Vector3, b: Vector3, c: Vector3, key, n: Vector3, uvs = null) -> void:
-	_tri(_tool(key), _xf * a, _xf * b, _xf * c, (_xf.basis * n).normalized(), uvs)
+	if _dry and key is int:
+		return
+	var st = _tool(key)
+	if _dry and st is Acc:
+		st.used = true
+		return
+	_tri(st, _xf * a, _xf * b, _xf * c, (_xf.basis * n).normalized(), uvs)
 
 ## a band of another colour or material round an opening (a door's goes down to the floor)
 func surround(r: Rect2, face: float, key, band := 0.13, to_floor := false) -> void:
@@ -1545,7 +1684,7 @@ func _step(x0: float, x1: float, z: float, gh: float, spec: Dictionary) -> void:
 ## edge of the road, however far that is (the town's own pavements are a strip of fixed width along each street, and
 ## a wide street leaves bare earth between it and the houses), lying on the ground as it rises and falls, and a line
 ## of kerb stones where it meets the road.
-func _acera(L: float) -> void:
+func _acera_tool() -> void:
 	if not _mats.has("acera"):
 		if slow:
 			var old_st := SurfaceTool.new()
@@ -1554,6 +1693,9 @@ func _acera(L: float) -> void:
 		else:
 			_tools["acera"] = Acc.new()
 		_mats["acera"] = W._tmat(0xdcd5c8, "pavement", 2.0)
+
+func _acera(L: float) -> void:
+	_acera_tool()
 	var n := maxi(1, int(ceil(L / 2.0)))
 	var xs: Array = []
 	var deep: Array = []

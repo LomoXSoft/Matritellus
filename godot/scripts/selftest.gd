@@ -4209,6 +4209,11 @@ func _recoveco_checks() -> void:
 	var n_up: int = int(cm.words_upright)
 	var drawn := 0
 	var flat_ok := true
+	# (how each word stands or lies is asked of the script: with no window, as in the full run, the engine gives every
+	# instance of a MultiMesh back unturned, and this passed without looking. With a window the engine is asked too)
+	var lp_drawn: bool = DisplayServer.get_name() != "headless"
+	var lp_lost := 0
+	var lp_flat := 0
 	for mi in cm.get_children():
 		if not (mi is MultiMeshInstance3D):
 			continue
@@ -4217,14 +4222,26 @@ func _recoveco_checks() -> void:
 			continue
 		var wmm: MultiMesh = (mi as MultiMeshInstance3D).multimesh
 		drawn += wmm.instance_count
+		var lp_xf: Array = (mi as Node).get_meta("xf", [])
+		if lp_xf.size() != wmm.instance_count:
+			lp_lost += wmm.instance_count
+			continue
 		for i in range(wmm.instance_count):
-			var wb: Basis = wmm.get_instance_transform(i).basis
+			var lp_t: Transform3D = lp_xf[i]
+			var wb: Basis = lp_t.basis
 			if absf(wb.z.y) > 0.01 and absf(wb.z.y - 1.0) > 0.01:      # (each stands on a stone's face, or lies on a slab)
 				flat_ok = false
+			if absf(wb.z.y) > 0.5:
+				lp_flat += 1
+			if lp_drawn:
+				var lp_e: Transform3D = wmm.get_instance_transform(i)
+				if lp_e.origin.distance_to(lp_t.origin) > 0.01 or absf(lp_e.basis.z.y - wb.z.y) > 0.001:
+					lp_lost += 1
 	var share: float = float(n_w) / maxf(1.0, float(n_g))
-	_check(absf(share - 0.5) < 0.04 and drawn == n_w and flat_ok and float(n_rip) > float(n_w) * 0.4 and float(n_rip) < float(n_w) * 0.6 and n_up > 0 and n_up < n_w,
-		"«R.I.P.» or «D.E.P.» cut in %d of the %d graves (%.0f %%), %d the one and %d the other; %d in an upright stone and %d in the slab; all of them drawn (%d)" % [
-			n_w, n_g, share * 100.0, n_rip, n_w - n_rip, n_up, n_w - n_up, drawn])
+	_check(absf(share - 0.5) < 0.04 and drawn == n_w and flat_ok and lp_lost == 0 and lp_flat == n_w - n_up and float(n_rip) > float(n_w) * 0.4 and float(n_rip) < float(n_w) * 0.6 and n_up > 0 and n_up < n_w,
+		"«R.I.P.» or «D.E.P.» cut in %d of the %d graves (%.0f %%), %d the one and %d the other; %d in an upright stone and %d in the slab; all of them drawn (%d: %d lying and the rest upright, %d not as the script has them, %s)" % [
+			n_w, n_g, share * 100.0, n_rip, n_w - n_rip, n_up, n_w - n_up, drawn, lp_flat, lp_lost,
+			"the engine asked too" if lp_drawn else "the engine not asked, with no window"])
 	var gar = af.taller
 	var labels: Array = []
 	for l in (af as Node).find_children("*", "Label3D", true, false):
@@ -18824,6 +18841,8 @@ func _run() -> void:
 		return
 	if OS.get_cmdline_user_args().has("--cementerio"):     # just the cemetery: its checks, the views of Street View's cameras before it (2024), its inside, and at night
 		shots = true
+		if OS.get_cmdline_user_args().has("--sinfotos"):  # (no pictures and no waiting for them, as in the full run: run it --headless)
+			shots = false
 		g.menu.close()
 		g.phase = "free"
 		g.weekday = 1

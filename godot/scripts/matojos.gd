@@ -160,15 +160,19 @@ func step() -> bool:
 	if _phase == 0:
 		_t0 = Time.get_ticks_msec()
 		_index_places()
+		var t1 := Time.get_ticks_msec()
 		var cached := _load()
+		var t2 := Time.get_ticks_msec()
 		if not cached.is_empty():
 			_show(cached["bufs"])
+			var t3 := Time.get_ticks_msec()
 			trees = cached["trees"]
 			world.add_trees(trees)
 			_phase = 2
 			ready_done = true
 			if OS.get_cmdline_user_args().has("--timing"):
-				print("dry plants: %d and %d trees from the cache in %d ms" % [count, trees.size(), Time.get_ticks_msec() - _t0])
+				print("dry plants: %d and %d trees from the cache in %d ms (the places' outlines %d, reading %d, showing %d, the trees %d)" % [count, trees.size(), Time.get_ticks_msec() - _t0,
+					t1 - _t0, t2 - t1, t3 - t2, Time.get_ticks_msec() - t3])
 			return false
 		_index()
 		var near := {}
@@ -465,7 +469,10 @@ func _plant(kept: Array, rng: RandomNumberGenerator) -> Dictionary:
 	return bufs
 
 func _show(bufs: Dictionary) -> void:
+	var ts0 := Time.get_ticks_msec()
 	var meshes := [_tuft_mesh(), _bush_mesh(), _mata_mesh(), _alcorque_mesh()]
+	if OS.get_cmdline_user_args().has("--timing"):
+		print("dry plants: their four meshes in %d ms, %d squares to show" % [Time.get_ticks_msec() - ts0, bufs.size()])
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED

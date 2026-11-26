@@ -2152,8 +2152,23 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Sin ventana: `zonas sinfotos --headless`: ZONAS OK (0 failed), 11 ([log](logs/selftest_zonas_sinfotos_20261126_015914.log)); `cuevas sinfotos --headless`: CUEVAS OK (0 failed), 23 ([log](logs/selftest_cuevas_sinfotos_20261126_020044.log)).
   - Con ventana: `zonas`: ZONAS OK (0 failed), 11 ([log](logs/selftest_zonas_20261126_020235.log)); `cuevas`: CUEVAS OK (0 failed), 23 ([log](logs/selftest_cuevas_20261126_020635.log)).
   - La completa la repite Sistemas.
-- **Queda**: la comprobación de las lápidas «R.I.P.»/«D.E.P.» (`_cementerio_checks`, `wmm.get_instance_transform(i).basis`) pasa en vacío sin ventana; con ventana (`cementerio`) sí mira. Necesita un registro en `cementerio.gd`, que no estaba abierto durante la congelación.
+- **Queda**: la comprobación de las lápidas «R.I.P.»/«D.E.P.» (`_recoveco_checks`, `wmm.get_instance_transform(i).basis`) pasa en vacío sin ventana; con ventana (`zonas`) sí mira. Necesita un registro en `cementerio.gd`, que no estaba abierto durante la congelación.
 - **Archivos tocados**: míos, `zonas.gd` y `cuevas_dentro.gd`. De otros, `selftest.gd` (mis comprobaciones y mis dos modos). Sin commit.
+
+### 26/11 · Pretil: la comprobación de las palabras de las lápidas ya mira también sin ventana
+
+- **Por qué**: quedó pendiente al arreglar las otras dos (entrada anterior). Leía del motor cómo está girada cada palabra «R.I.P.»/«D.E.P.», y sin ventana el motor devuelve cada instancia de un MultiMesh sin girar: en la prueba completa pasaba sin mirar nada. No es una petición de Luis; me lo recordó Sistemas al publicar la 0.2.0.
+- **Corrección a la entrada anterior**: la comprobación está en `_recoveco_checks()`, que corre con el modo `zonas`, no en `_cementerio_checks()` como puse allí. Corregido también en aquella línea.
+- **Qué he hecho**:
+  - `cementerio.gd`, `_grave_meshes()`: meta `"xf"` en los MultiMesh `tumbas_rip_*` y `tumbas_dep_*`, con cómo puso el script cada palabra. Sin cambio en lo que se ve.
+  - `selftest.gd`, `_recoveco_checks()`: lee ese registro. Ahora cuenta además las tumbadas, que tienen que ser las que no van en lápida de pie (`words - words_upright`); antes solo miraba que ninguna estuviera torcida. Con ventana pregunta también al motor (variables `lp_*`).
+  - Mi modo `cementerio` acepta `sinfotos`, como `zonas` y `cuevas`.
+- **Pruebas**:
+  - Sin ventana: `zonas sinfotos --headless`: ZONAS OK (0 failed), 11 ([log](logs/selftest_zonas_sinfotos_20261126_025733.log)); `cementerio sinfotos --headless`: CEMENTERIO OK (0 failed) ([log](logs/selftest_cementerio_sinfotos_20261126_025857.log)).
+  - Con ventana: `zonas`: ZONAS OK (0 failed), 11 ([log](logs/selftest_zonas_20261126_030019.log)).
+  - Lo que dice la comprobación, igual con y sin ventana: 2240 palabras en 4532 tumbas, 833 tumbadas (las 833 que van en la losa) y 1407 de pie, ninguna distinta del registro.
+  - Sin pasada completa.
+- **Archivos tocados**: mío, `cementerio.gd`. De otros, `selftest.gd` (mi comprobación y mi modo). Después de la 0.2.0: sin publicar. Sin commit.
 
 ## Cómo mantener el registro
 
@@ -3392,6 +3407,49 @@ Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductori
 - **Dejadas.** `4791017` (San Cristóbal 1, 6 m atrás), `4692155` y `4693026` (no dan a la calle).
 - **Alineación.** alinea.py 0 salvo `jx_10` / `jx_10e` (2,3 m, del Catastro). Horneado: 13 nuevas, nada más cambia.
 - **Pruebas.** `jx_10e` sin huecos falló «too little» (`boxes < 12`); con la cancela, OK. APROBADA por el usuario («Visto bueno y siguiente»). Sin commit.
+
+### Versión 0.2.1 (26/11, Claude · Sistemas)
+
+- **Orden de Luis:** «Perfecto. Cuando lo tengas lanza release con los tres instaladores. Así puedo probar yo también directamente en android y steam machine».
+- **Qué lleva:** la carga (los tres pasos de abajo: cajas, caché de las casas, árboles y kit) y el arreglo de Pretil de la comprobación de las lápidas. Nada cambia a la vista: el pueblo es el mismo malla a malla.
+- **Pruebas:** completa 1141/1141 a la primera (661 s); `tools/cache_casas_check.py` CACHE CASAS OK; `--mundo-huella` 5253 mallas iguales.
+- **El juego exportado (Windows, `dist/Matritellus/Matritellus.exe -- --selftest --palabros --timing --cache-casas --lotes-huella`):** el primer arranque escribe la caché (59 s en total: también prepara lo demás tras actualizar) y el segundo la lee (26,1 s; casas 6,0 s), con las mismas huellas que en el editor (1039918072 y 490539104). Registros en `logs/exportado_1.log` y `_2.log`.
+- **Memoria con el renderizador de móvil:** 866 MB / 2374 MB de vídeo (0.2.0: 936 / 2353).
+- **Sin probar:** el teléfono (allí la caché de las casas sigue apagada: `OS.has_feature("mobile")` en `world.gd`; si Luis ve que carga bien, se puede encender y probar) y la Steam Machine (allí la caché sí va: Luis la prueba).
+- **Pendiente tras publicar:** Pretil quita la caja sin fondo de las baldas del MasAhorro (`masahorro.gd`, ~línea 443).
+
+### La carga, tercer paso: árboles y kit de los sitios a mano (26/11, Claude · Sistemas)
+
+- **Palabra de Luis:** «Vale, vamos con la carga en matas y árboles y tal».
+- **Árboles (4,5 → 0,1 s):** `world.gd` añadía 4786 `CollisionShape3D` de uno en uno a un `StaticBody3D` ya dentro de la escena; con Jolt cada alta rehace el cuerpo compuesto (crece con el cuadrado). Ahora `_trees_body_out()` saca el cuerpo de la escena y `_trees_body_back(at)` lo devuelve a su sitio al acabar, tanto en `_trees()` como en `add_trees()` (los árboles sueltos de `matojos.gd`). **Lección para cualquier cuerpo con muchas formas: añadirlas con el cuerpo fuera de la escena.**
+- **Kit `obra.gd` (es de Pretil; avisado):** `_tri` ya no hace listas (la normal se da una vez), `quad` no hace listas sin uvs, y `box()` calcula sus ocho esquinas una vez y pone las 36 en el orden en que las ponían los seis `quad`: hacia dónde gira cada triángulo depende solo de si el marco `_xf` está reflejado (signo del determinante). Una caja tan fina que dos esquinas caen en el mismo punto (el MasAhorro tiene una) va por el camino viejo, porque ahí los seis `quad` no saben hacia dónde girar y las dejan como vienen. `--cajas-viejas` manda todas por el camino viejo (casas y sitios). Contadores `obra.n_solids` y `obra.t_solids` (3976 sólidos, 264 ms: no merece tocarse).
+- **Comprobación `--mundo-huella`:** `--selftest --palabros --timing --mundo-huella` (vale sin ventana) escribe `user://mundo_huella.txt`: una línea por malla (`ArrayMesh`) con el camino de índices por donde cuelga y la huella de sus datos (`world.write_fingerprints`). Dos arranques dan las mismas 5253 mallas bajo el mundo; lo que cuelga fuera (gente, coches, kebab) cambia por azar y no se compara. Úsese antes y después de tocar `obra.gd` o cualquier pieza común.
+- **Medido y dejado como está:** matas 1,0 s desde su caché (`matojos.gd` desglosa con `--timing`: 0,9 s son enseñar 6044 MultiMesh); «actors» 3,5 s (Recress 832 ms, zonas 516, 68 coches aparcados 418, vecinos 329, kebab 207).
+- **Tiempos (ventana, renderizador de móvil, `--cache-casas`, `--timing`):** 33,1 → 27,3 (árboles) → 25,7 s (kit). 53,1 en la 0.2.0. El juego real unos 3,6 s menos (lee la caché del suelo).
+- **Pruebas:** batería completa 1141/1141 en 661 s (logs/selftest_full_20261126_042426.log); `tools/cache_casas_check.py`: CACHE CASAS OK (mallas 1039918072, casas 490539104, 22 pintadas, 1494 contornos en los tres arranques).
+- **Queda por si se quiere seguir:** casas 4,7 s (leer la caché 1,7; las 927 casas con cartel, tela o función propia 2,3), «actors» 3,5 s, ~10 s en 70 sitios a mano (el mayor, el parque del Paseo, 0,86). Sin probar todavía: la caché en un juego exportado, en la Steam Machine y en un teléfono (apagada en móvil).
+
+### La carga, segundo paso: caché de las casas (26/11, Claude · Sistemas)
+
+- **Palabra de Luis:** «Si claro. Si mejora la carga adelante. Ayudará al rendimiento también?» (respondido: la caché no cambia los fps, se dibuja lo mismo).
+- **Qué es:** `user://casas.cache` (93 MB): las 3003 mallas fundidas de `lotes.gd` en el formato de la gráfica (`ArrayMesh._surfaces`), cada una comprimida aparte (zstd) y leída cuando se construye la última casa de su cuadro; índice al final del archivo. Se escribe en `casas.cache.tmp` y se renombra al acabar.
+- **Huella (`lotes.cache_key()`):** versión del juego, del motor, renderizador, md5 de `map.json` y de los guiones `casas`, `casas_calles`, `lotes`, `parts`, `texturas`, `tela`, `map_data` (.gd o .gdc), texturas elegidas y, exportado, fecha del ejecutable y del .pck. Si algo cambia, se reconstruye y se reescribe sola.
+- **Con caché (`lotes.dry`):** las casas no dibujan piezas (`_dry` en `_tri`, `_quad_acc`, `quad`, `tri`, `box`); las que no son más que sus piezas (2479 de 3406: sin hijos, sin tela, sin pintadas ni contornos, sin función propia) no se calculan: `build` les repone las variables que su construcción cambió (`_state`, `_changed`, guardadas en el índice) y registra sus materiales.
+- **Materiales:** uno por clave para todo el pueblo (`lotes.mat_keep`, en `_tool`).
+- **Dónde no se usa:** en la autoprueba (salvo `--cache-casas`), con `--sin-cache-casas`, y en móvil (`OS.has_feature("mobile")`), hasta probarla en un teléfono.
+- **Comprobar:** `python tools/cache_casas_check.py` (tres arranques; las huellas de las mallas y de las casas han de ser iguales y el tercero ha de leer la caché). Hoy: mallas 1039918072, casas 490539104. Pasarlo antes de cada versión y tras tocar `casas.gd`, `casas_calles.gd` o `lotes.gd` en algo más que casas nuevas.
+- **Regla para quien escriba casas:** la construcción de una casa solo puede dejar cosas en sus variables, en sus hijos, en `world.hand_tags` y en `MapData.outlines`. Lo que deje en cualquier otro sitio hay que añadirlo a `left` en `casas.gd` `build`: la autoprueba no usa la caché y no lo vería.
+- **Tiempos (ventana, renderizador de móvil, `--timing`):** casas 14,1 → ~4,9 s; carga 43,1 → ~33,5 s (53,1 en la 0.2.0). El primer arranque tras instalar o actualizar tarda 3,8 s más (escribe la caché).
+- **Idea apuntada, sin hacer:** las mallas van sin índices (36 vértices por caja); indexarlas al escribir la caché bajaría un tercio la memoria de vídeo de las casas (1,2 GB) y algo el trabajo de la gráfica.
+
+### La carga, primer paso para la 0.2.1 (26/11, Claude · Sistemas)
+
+- **Petición de Luis:** «El juego tarda muchísimo en cargar para lo que es (un cozy low-poly). Porqué tarda tanto? Se puede agilizar?».
+- **Por qué tarda:** el pueblo se construye entero en cada arranque. En la prueba (renderizador de móvil, `--timing`) eran 53 s: 20,7 las 3406 casas a mano, 5,6 vecinos y coches, 4,8 el suelo, 3,9 las matas, 2,0 los árboles y ~13 entre 70 sitios a mano. Las casas son ~900.000 cajas, 44 millones de vértices (1,2 GB en la gráfica).
+- **Hecho, sin publicar:** `casas.gd` `box()` saca las ocho esquinas de la caja y añade de una vez sus 36 vértices y 36 normales; el orden de cada triángulo depende solo del marco `_xf` (espejado o no), así que se resuelve una vez por marco (`_box_frame`, listas `BOX_PLAIN` y `BOX_MIRRORED`; un marco raro cae al camino de antes). `--cajas-viejas` construye como antes.
+- **Comprobado:** `--selftest --palabros --timing --casas-suma` imprime ahora una huella de toda la geometría de las casas (la suma no distingue un triángulo vuelto del revés): 44144780 vértices y huella 977870393 antes y después. Quien toque la geometría de `casas.gd` puede repetirlo (`logs/casas_suma_ref.log` es la referencia de hoy; cambia en cuanto cambie una casa).
+- **Resultado:** casas 20,7 → 14,1 s; carga entera en la prueba 53,1 → 43,1 s (`logs/boot_movil_cajas.log`). Con `--selftest` el suelo se corta siempre de nuevo: el juego real tarda ~3,6 s menos que la prueba.
+- **Siguiente, por decidir con Luis:** caché en disco de las mallas fundidas (`lotes.gd`), que ahorraría casi todo lo de las casas en el segundo arranque pero pesa ~1 GB sin comprimir; y vecinos creados según te acercas.
 
 ### Versión 0.2.0 (26/11, Claude · Sistemas)
 

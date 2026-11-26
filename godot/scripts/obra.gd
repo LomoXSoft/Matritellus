@@ -25,6 +25,8 @@ var _mats := {}
 var _xf := Transform3D.IDENTITY     # where what is being built stands in the place's frame (each wall has its own)
 var _decks: Array = []
 var body: StaticBody3D              # this place's own solids
+static var t_solids := 0            # (--timing: microseconds the town's places spent handing their solids to the physics, and how many)
+static var n_solids := 0
 
 ## Where this place's solids go: a body of its own. (The world's own body is one compound shape for the physics, and a
 ## compound has room for only so many pieces: a place with hundreds of them -- every stretch of a planter's wall, of a
@@ -101,18 +103,22 @@ func _commit() -> void:
 		add_child(mi)
 	_tools.clear()
 
+## (26 Nov 2026, the loading: no lists made on the way. The normal given once holds for the three corners.)
 func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, n: Vector3, uvs = null) -> void:
-	var pts := [a, b, c]
-	var tex = uvs
+	st.set_normal(n)
 	if (b - a).cross(c - a).dot(n) > 0.0:         # Godot wants clockwise front faces
-		pts = [a, c, b]
-		if uvs != null:
-			tex = [uvs[0], uvs[2], uvs[1]]
-	for k in range(3):
-		st.set_normal(n)
-		if tex != null:
-			st.set_uv(tex[k])
-		st.add_vertex(pts[k])
+		if uvs == null:
+			st.add_vertex(a); st.add_vertex(c); st.add_vertex(b)
+		else:
+			st.set_uv(uvs[0]); st.add_vertex(a)
+			st.set_uv(uvs[2]); st.add_vertex(c)
+			st.set_uv(uvs[1]); st.add_vertex(b)
+	elif uvs == null:
+		st.add_vertex(a); st.add_vertex(b); st.add_vertex(c)
+	else:
+		st.set_uv(uvs[0]); st.add_vertex(a)
+		st.set_uv(uvs[1]); st.add_vertex(b)
+		st.set_uv(uvs[2]); st.add_vertex(c)
 
 ## a flat three-sided piece facing `n` (in the frame being built)
 func tri(a: Vector3, b: Vector3, c: Vector3, key, n: Vector3, uvs = null) -> void:
@@ -123,14 +129,66 @@ func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, key, n: Vector3, uvs =
 	var st := _tool(key)
 	n = (_xf.basis * n).normalized()
 	a = _xf * a; b = _xf * b; c = _xf * c; d = _xf * d
-	_tri(st, a, b, c, n, [uvs[0], uvs[1], uvs[2]] if uvs != null else null)
-	_tri(st, a, c, d, n, [uvs[0], uvs[2], uvs[3]] if uvs != null else null)
+	if uvs == null:
+		_tri(st, a, b, c, n)
+		_tri(st, a, c, d, n)
+	else:
+		_tri(st, a, b, c, n, [uvs[0], uvs[1], uvs[2]])
+		_tri(st, a, c, d, n, [uvs[0], uvs[2], uvs[3]])
 
 ## a box: its left, bottom, back corner, then how wide, high and deep (out of the wall) it is
+## (26 Nov 2026, the loading -- the user: "El juego tarda muchísimo en cargar". Its eight corners are worked out once
+## and its 36 laid straight down, face by face and corner by corner as the six quads below lay them: which way round
+## each triangle goes hangs only on whether the frame it stands in is mirrored -- the sign of its determinant --,
+## never on the box's size. `--cajas-viejas`: the six quads, to check that the places come out the same.)
+static var old_boxes := OS.get_cmdline_user_args().has("--cajas-viejas")
 func box(x: float, y: float, z: float, w: float, h: float, d: float, key) -> void:
 	if w <= 0.0 or h <= 0.0 or d <= 0.0:
 		return
 	pieces += 1
+	var bs := _xf.basis
+	var det := bs.determinant()
+	var lo := Vector3(x, y, z)
+	var hi := Vector3(x + w, y + h, z + d)
+	# (a box so thin that its two sides fall on the same spot -- the MasAhorro has one -- goes the old way: with faces
+	# of no size the six quads cannot tell which way round they go and leave them as given, and the meshes must come
+	# out the same to the last corner, since that is how this change was checked: `--mundo-huella`)
+	if det != 0.0 and not old_boxes and lo.x != hi.x and lo.y != hi.y and lo.z != hi.z:
+		var st := _tool(key)
+		var x1 := x + w
+		var y1 := y + h
+		var z1 := z + d
+		var p0 := _xf * Vector3(x, y, z); var p1 := _xf * Vector3(x1, y, z)
+		var p2 := _xf * Vector3(x, y1, z); var p3 := _xf * Vector3(x1, y1, z)
+		var p4 := _xf * Vector3(x, y, z1); var p5 := _xf * Vector3(x1, y, z1)
+		var p6 := _xf * Vector3(x, y1, z1); var p7 := _xf * Vector3(x1, y1, z1)
+		if det > 0.0:
+			st.set_normal((bs * Vector3(0, 0, 1)).normalized())
+			st.add_vertex(p4); st.add_vertex(p7); st.add_vertex(p5); st.add_vertex(p4); st.add_vertex(p6); st.add_vertex(p7)
+			st.set_normal((bs * Vector3(0, 0, -1)).normalized())
+			st.add_vertex(p0); st.add_vertex(p1); st.add_vertex(p3); st.add_vertex(p0); st.add_vertex(p3); st.add_vertex(p2)
+			st.set_normal((bs * Vector3(-1, 0, 0)).normalized())
+			st.add_vertex(p0); st.add_vertex(p6); st.add_vertex(p4); st.add_vertex(p0); st.add_vertex(p2); st.add_vertex(p6)
+			st.set_normal((bs * Vector3(1, 0, 0)).normalized())
+			st.add_vertex(p1); st.add_vertex(p5); st.add_vertex(p7); st.add_vertex(p1); st.add_vertex(p7); st.add_vertex(p3)
+			st.set_normal((bs * Vector3(0, 1, 0)).normalized())
+			st.add_vertex(p2); st.add_vertex(p3); st.add_vertex(p7); st.add_vertex(p2); st.add_vertex(p7); st.add_vertex(p6)
+			st.set_normal((bs * Vector3(0, -1, 0)).normalized())
+			st.add_vertex(p0); st.add_vertex(p5); st.add_vertex(p1); st.add_vertex(p0); st.add_vertex(p4); st.add_vertex(p5)
+		else:
+			st.set_normal((bs * Vector3(0, 0, 1)).normalized())
+			st.add_vertex(p4); st.add_vertex(p5); st.add_vertex(p7); st.add_vertex(p4); st.add_vertex(p7); st.add_vertex(p6)
+			st.set_normal((bs * Vector3(0, 0, -1)).normalized())
+			st.add_vertex(p0); st.add_vertex(p3); st.add_vertex(p1); st.add_vertex(p0); st.add_vertex(p2); st.add_vertex(p3)
+			st.set_normal((bs * Vector3(-1, 0, 0)).normalized())
+			st.add_vertex(p0); st.add_vertex(p4); st.add_vertex(p6); st.add_vertex(p0); st.add_vertex(p6); st.add_vertex(p2)
+			st.set_normal((bs * Vector3(1, 0, 0)).normalized())
+			st.add_vertex(p1); st.add_vertex(p7); st.add_vertex(p5); st.add_vertex(p1); st.add_vertex(p3); st.add_vertex(p7)
+			st.set_normal((bs * Vector3(0, 1, 0)).normalized())
+			st.add_vertex(p2); st.add_vertex(p7); st.add_vertex(p3); st.add_vertex(p2); st.add_vertex(p6); st.add_vertex(p7)
+			st.set_normal((bs * Vector3(0, -1, 0)).normalized())
+			st.add_vertex(p0); st.add_vertex(p1); st.add_vertex(p5); st.add_vertex(p0); st.add_vertex(p5); st.add_vertex(p4)
+		return
 	var a := Vector3(x, y, z)
 	var b := Vector3(x + w, y + h, z + d)
 	quad(Vector3(a.x, a.y, b.z), Vector3(b.x, a.y, b.z), Vector3(b.x, b.y, b.z), Vector3(a.x, b.y, b.z), key, Vector3(0, 0, 1))
@@ -372,7 +430,10 @@ func solid(mid: Vector3, size: Vector3, turn := 0.0) -> void:
 	b.size = size
 	cs.shape = b
 	cs.transform = transform * Transform3D(Basis(Vector3.UP, turn), mid)
+	var t0 := Time.get_ticks_usec()
 	_solids().add_child(cs)
+	t_solids += Time.get_ticks_usec() - t0
+	n_solids += 1
 
 ## a flat piece of floor with this outline (x, z), at height y
 func flat(pts: PackedVector2Array, y: float, key) -> void:
@@ -485,7 +546,10 @@ func _hull(points: Array) -> void:
 	var cs := CollisionShape3D.new()
 	cs.shape = shape
 	cs.transform = transform
+	var t0 := Time.get_ticks_usec()
 	_solids().add_child(cs)
+	t_solids += Time.get_ticks_usec() - t0
+	n_solids += 1
 
 ## a level floor of this outline, for whoever walks on it (MapData.foot)
 func _poly_deck(pts: PackedVector2Array, top: float) -> Dictionary:

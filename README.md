@@ -51,7 +51,8 @@ Repositorio privado: https://github.com/LomoXSoft/Matritellus
 ## Cómo se publica una versión
 
 1. **Prueba completa en verde.** Si hay otras sesiones trabajando en la carpeta, avísalas antes: no se lanzan dos pruebas completas a la vez.
-2. **Los tres instaladores**, construidos desde ese mismo estado. El de Android, con el número de la versión: `python tools/make_apk.py X.Y.Z`.
+   - **Y la caché de las casas:** `python tools/cache_casas_check.py` (unos 4 minutos). El juego real lee de disco las mallas de las casas (`user://casas.cache`, `godot/scripts/lotes.gd`) y la prueba completa no: construye el pueblo de verdad. Esta comprobación arranca tres veces (sin caché, escribiéndola y leyéndola) y exige que el pueblo quede idéntico.
+2. **Los tres instaladores**, construidos desde ese mismo estado. El de Android, con el número de la versión: `python tools/make_apk.py X.Y.Z`. **Primero el de Android**: es el que escribe la versión en `project.godot`, y los otros dos la llevan dentro (el aviso de versión nueva y la caché de las casas la leen).
 3. **Commit y etiqueta.** La versión se numera `X.Y.Z` y la etiqueta es `vX.Y.Z`.
 
    ```bash
@@ -119,6 +120,7 @@ Versiones:
 | 0.1.2 | 24/11/2026 | Rotonda de la entrada norte con su azafrán en la tinaja, ~1500 árboles sueltos y matas en la tierra vacía, y calles del Cristo del Humilladero, Silos de la Magdalena y Valdespino. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.1.2 |
 | 0.1.3 | 25/11/2026 | Nuevo vehículo **Renol 4L** (exterior en Blender e interior 1.ª persona con palanca «paraguas», retrovisor cromado de pie y figuritas Chibi de las 5 cofradías de Semana Santa de Madridejos); salpicaderos e interiores propios con retrovisores funcionales en 1.ª persona para **todos los vehículos** (Z15 con rosario y 4 ITV, Súper Hebro 555 con sombrerete, Omega Julietta con GPS real y turbo, Seta Panda con cabezones/casetes/lazo/ITV, Edison Model Y con pantalla de 15" y GPS real, y tractor Yondir con oso, dos retrovisores de cabina, estampita de San Isidro y lazo); 5 perros callejeros de 3 razas (galgo, mastín y chucho) acariciables y «Galletas para Perros» en los veterinarios; árboles en alcorques a lo largo de la Carretera Antigua de Madrid a Cádiz; y ocultado automático del HUD tras 5 s parado en un vehículo con tarjeta de controles en PC y mando (solo oculta HUD en Android). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.1.3 |
 | 0.2.0 | 26/11/2026 | Aviso de versión nueva al abrir el juego (Actualizar / Jugar versión actual); el cementerio y las afueras con cambio de zona (A-4, planta agrosolar, taller «Recoveco»); la Sala Cavernas KAE con su noche, su azotea y «La Kueva» (Ángelus Apátrida y sus parroquianos, dos azafranes); la plaza de toros arreglada y visitable; Foski y El Pochi por la calle del Florido; La Pili, los carros de la compra, la llamada de la tía Paca si andas ocioso, toquillas y mandiles; Modo Golismeo; charlas con los dos a la vista y etiqueta de nombre; fachadas dobles corregidas; y calles nuevas (Vázquez de Mella, la Plata, los Remedios, San Cristóbal, Juan XXIII…). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.0 |
+| 0.2.1 | 26/11/2026 | La carga, a la mitad (de 53 a unos 26 s en la prueba): las casas se guardan en disco tras la primera carga (`user://casas.cache`; en móvil aún no), cajas y árboles más rápidos de levantar, y el kit de los sitios a mano algo más ligero. El pueblo es el mismo, malla a malla. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.1 |
 
 ## Varias sesiones en la misma carpeta
 
