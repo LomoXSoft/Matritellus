@@ -22,6 +22,7 @@ LOGOS = {
     3: ((125, 63, 196), [('Onda', 50), ('Azafrán', 46)], 'saffron'),
     4: ((122, 84, 50), [('Radio', 46), ('Parroquia', 40)], 'bell'),
     5: ((190, 52, 46), [('Rap-A', 54), ('Polvo', 58)], 'mic'),
+    7: ((29, 120, 166), [('Radio', 50), ('Patio', 58)], 'pot'),
 }
 
 def font(size):
@@ -106,6 +107,28 @@ def picture(d, kind):
         b.rectangle([cx - 3 * S, cy - 62 * S, cx + 3 * S, cy - 40 * S], fill=INK)
         b.rectangle([cx - 11 * S, cy - 56 * S, cx + 11 * S, cy - 50 * S], fill=INK)
         return bell.rotate(-14, resample=Image.BICUBIC, center=(cx, cy - 40 * S))
+    elif kind == 'pot':                    # a terracotta patio flowerpot with red geraniums (añil y geranio manchego)
+        pot = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+        b = ImageDraw.Draw(pot)
+        # leafy greenery behind the flowers
+        for dx, dy, rx, ry in ((-22, -16, 15, 11), (22, -16, 15, 11), (0, -24, 18, 13), (-14, -28, 13, 10), (14, -28, 13, 10)):
+            b.ellipse([cx + (dx - rx) * S, cy + (dy - ry) * S, cx + (dx + rx) * S, cy + (dy + ry) * S],
+                      fill=(56, 148, 72, 255), outline=INK, width=3 * S)
+        # terracotta pot body & lip
+        body = [(cx - 24 * S, cy - 4 * S), (cx + 24 * S, cy - 4 * S), (cx + 16 * S, cy + 36 * S), (cx - 16 * S, cy + 36 * S)]
+        b.polygon(body, fill=(214, 104, 54, 255), outline=INK, width=4 * S)
+        b.rounded_rectangle([cx - 30 * S, cy - 12 * S, cx + 30 * S, cy + 1 * S], radius=5 * S,
+                            fill=(232, 122, 68, 255), outline=INK, width=4 * S)
+        # red geranium blooms
+        for fx, fy, r in ((-14, -24, 9), (14, -22, 9), (0, -34, 10)):
+            for k in range(5):
+                a = k * math.tau / 5 - math.pi / 2
+                px, py = cx + (fx + math.cos(a) * r * 0.55) * S, cy + (fy + math.sin(a) * r * 0.55) * S
+                pr = r * 0.55 * S
+                b.ellipse([px - pr, py - pr, px + pr, py + pr], fill=(228, 56, 52, 255), outline=INK, width=2 * S)
+            b.ellipse([cx + (fx - 3) * S, cy + (fy - 3) * S, cx + (fx + 3) * S, cy + (fy + 3) * S],
+                      fill=(255, 224, 96, 255), outline=INK, width=2 * S)
+        return pot.rotate(-8, resample=Image.BICUBIC, center=(cx, cy))
     return None
 
 def draw(n):

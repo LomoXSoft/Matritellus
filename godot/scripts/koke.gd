@@ -29,7 +29,7 @@ const CarS = preload("res://scripts/car.gd")
 const FerialS = preload("res://scripts/ferial.gd")
 
 const LOOK := {
-	"top": 23, "shirt": 0xef7f1a, "shirt2": 0x2a9d8f, "skin": 0xe9b58c, "hair": 0x2a1c14, "hair_style": 3, "brows": 2,
+	"top": 23, "shirt": 0xef7f1a, "shirt2": 0x2a9d8f, "skin": 0xe9b58c, "hair": 0x2a1c14, "hair_style": 36, "brows": 2,
 	"eyes": 3, "eye_color": 0x3a2a20, "face": 2, "barba3": 1, "glasses": 6, "pendant": 1, "earrings": 1,
 	"shoe_type": 0, "shoes": 0xf8f8f8, "build": 1.08, "scale": 1.0, "hat": "",
 }

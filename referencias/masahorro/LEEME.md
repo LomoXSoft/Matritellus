@@ -79,6 +79,9 @@ el callejón del sur.
 - Dentro: hecho a juego con lo poco que se ve por el cristal.
 - Los carros, los contenedores y las señales, de Street View y sin marcas.
 
+## Trampas
+- Una pieza recortada a «lo que queda» puede quedarse sin tamaño: los productos de las baldas se recortan al final de la balda y el último podía salir con fondo casi cero. Desde el 26/11/2026 no se pone si mide menos de 2 cm.
+
 ## Pruebas
 `python tools/run_tests.py masahorro`: fotos y comprobaciones (está hecho; sus paredes paran y el mapa la conoce, nada pisa
 una calzada; da a la Calle de la Noria; el paseo se pisa; sus horas y sus luces; los focos son del pueblo).

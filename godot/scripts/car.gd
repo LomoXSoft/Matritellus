@@ -268,20 +268,41 @@ func seat(o: Dictionary, place := 0) -> void:
 ## Shows or hides only the driver's head (keeps shoulders, hands on wheel, and steering wheel visible for 1st-person POV).
 func set_driver_head_visible(on: bool) -> void:
 	_fp_hide_head = not on
+	_sync_fp_cockpit()
+	var rn: Node3D = _rider_nodes[0]
+	if rn == null or not is_instance_valid(rn):
+		return
+	var head := rn.find_child("head", true, false)
+	if head is Node3D:
+		(head as Node3D).visible = on
+
+## Mirrors, ITV stickers, rosary and closed-cab 1st-person interiors are ONLY shown in 1st-person POV
+## (open-top vehicles — Hebro tractor & Julietta convertible — keep their dash visible in 3rd person, but still hide
+## the 1st-person rearview/side mirror overlays outside 1st person).
+func _sync_fp_cockpit() -> void:
+	var fp := _fp_hide_head
+	var open_top := kind == "tractor" or kind == "julietta"
+	if _rosary_root != null and is_instance_valid(_rosary_root):
+		_rosary_root.visible = fp
+	var show_dash: bool = _dash_root != null and is_instance_valid(_dash_root) and (fp or open_top)
+	if _dash_root != null and is_instance_valid(_dash_root):
+		_dash_root.visible = show_dash
 	for pc in _fp_only:
 		if pc != null and is_instance_valid(pc):
-			(pc as Node3D).visible = _fp_hide_head
-	var m_mode := SubViewport.UPDATE_ALWAYS if _fp_hide_head else SubViewport.UPDATE_DISABLED
+			(pc as Node3D).visible = fp
+	var m_mode := SubViewport.UPDATE_ALWAYS if fp else SubViewport.UPDATE_DISABLED
 	if _mirror_vp != null and is_instance_valid(_mirror_vp):
 		_mirror_vp.render_target_update_mode = m_mode
 	if _side_mirror_vp != null and is_instance_valid(_side_mirror_vp):
 		_side_mirror_vp.render_target_update_mode = m_mode
 	if _gps_vp != null and is_instance_valid(_gps_vp):
 		_gps_vp.render_target_update_mode = m_mode
-	# On Edison, Yondir & Renol 4L, only swap the stock cab glass out while in 1st-person; keep exterior glass intact in 3rd-person!
-	if (kind == "edison" or kind == "yondir" or kind == "cuatrolatas") and _dash_root != null and is_instance_valid(_dash_root):
-		if _fp_hide_head:
-			if kind == "edison":
+	# On closed-cab vehicles, only strip/swap stock cab glass & baked wheel while in 1st-person; keep exterior intact in 3rd-person
+	if (kind == "z15" or kind == "kokas" or kind == "edison" or kind == "yondir" or kind == "cuatrolatas") and _dash_root != null and is_instance_valid(_dash_root):
+		if fp:
+			if kind == "z15" or kind == "kokas":
+				_set_z15_cab_stripped(true)
+			elif kind == "edison":
 				_set_edison_cab_stripped()
 			elif kind == "yondir":
 				_set_yondir_cab_stripped()
@@ -290,11 +311,12 @@ func set_driver_head_visible(on: bool) -> void:
 		else:
 			_set_z15_cab_stripped(false)
 	var rn: Node3D = _rider_nodes[0]
-	if rn == null or not is_instance_valid(rn):
-		return
-	var head := rn.find_child("head", true, false)
-	if head is Node3D:
-		(head as Node3D).visible = on
+	if rn != null and is_instance_valid(rn):
+		var hide_stock := show_dash
+		for cname in ["rider_wheel", "hand_l", "hand_r"]:
+			var cn := rn.find_child(cname, true, false)
+			if cn is Node3D:
+				(cn as Node3D).visible = not hide_stock
 
 ## World-space transform for first-person driving POV, right above the driver's shoulders looking forward out the windscreen.
 func driver_pov() -> Transform3D:
@@ -345,6 +367,7 @@ func set_rosary(on: bool) -> void:
 	if _hebro_flap_root != null and is_instance_valid(_hebro_flap_root):
 		_hebro_flap_root.queue_free()
 	_rosary_root = null
+	_fp_only.clear()
 	_rosary_piv = null
 	_rosary_drop = null
 	_dash_root = null
@@ -417,58 +440,28 @@ func set_rosary(on: bool) -> void:
 	if kind == "tractor":
 		_set_hebro_cab_stripped()
 		_build_hebro_dash(eye_x, eye_y, eye_z)
-		if rn != null and is_instance_valid(rn):
-			for cname in ["rider_wheel", "hand_l", "hand_r"]:
-				var cn := rn.find_child(cname, true, false)
-				if cn is Node3D:
-					(cn as Node3D).visible = false
+		_sync_fp_cockpit()
 		return
 	if kind == "yondir":
-		if _fp_hide_head:
-			_set_yondir_cab_stripped()
 		_build_yondir_dash(eye_x, eye_y - 0.14, eye_z - 0.12)
-		if rn != null and is_instance_valid(rn):
-			for cname in ["rider_wheel", "hand_l", "hand_r"]:
-				var cn := rn.find_child(cname, true, false)
-				if cn is Node3D:
-					(cn as Node3D).visible = false
+		_sync_fp_cockpit()
 		return
 	if kind == "cuatrolatas":
-		if _fp_hide_head:
-			_set_r4_cab_stripped()
 		_build_r4_dash(eye_x, eye_y - 0.08, eye_z - 0.14)
-		if rn != null and is_instance_valid(rn):
-			for cname in ["rider_wheel", "hand_l", "hand_r"]:
-				var cn := rn.find_child(cname, true, false)
-				if cn is Node3D:
-					(cn as Node3D).visible = false
+		_sync_fp_cockpit()
 		return
 	if kind == "julietta":
 		_set_julietta_cab_stripped()
 		_build_julietta_dash(eye_x, eye_y - 0.25, eye_z + 0.05)
-		if rn != null and is_instance_valid(rn):
-			for cname in ["rider_wheel", "hand_l", "hand_r"]:
-				var cn := rn.find_child(cname, true, false)
-				if cn is Node3D:
-					(cn as Node3D).visible = false
+		_sync_fp_cockpit()
 		return
 	if kind == "panda" or kind == "pitufo":
 		_build_panda_dash(eye_x, eye_y, eye_z)
-		if rn != null and is_instance_valid(rn):
-			for cname in ["rider_wheel", "hand_l", "hand_r"]:
-				var cn := rn.find_child(cname, true, false)
-				if cn is Node3D:
-					(cn as Node3D).visible = false
+		_sync_fp_cockpit()
 		return
 	if kind == "edison":
-		if _fp_hide_head:
-			_set_edison_cab_stripped()
 		_build_edison_dash(eye_x, eye_y + 0.10, eye_z + 0.14)
-		if rn != null and is_instance_valid(rn):
-			for cname in ["rider_wheel", "hand_l", "hand_r"]:
-				var cn := rn.find_child(cname, true, false)
-				if cn is Node3D:
-					(cn as Node3D).visible = false
+		_sync_fp_cockpit()
 		return
 	if _ros_silver == null:
 		_ros_silver = StandardMaterial3D.new()
@@ -616,15 +609,9 @@ func set_rosary(on: bool) -> void:
 		st.position = Vector3(-0.34 - col_i * 0.056, 0.020 - row_i * 0.038, 0.025 + row_i * 0.014)
 		st.rotation = Vector3(deg_to_rad(18.0), PI, deg_to_rad([-2.0, 1.5, 1.2, -1.8][ii]))
 		_rosary_root.add_child(st)
-	# Strip the Sketchfab Z15's baked low-poly steering wheel, old dash & mirror while driving so our animated C15 cab never clips
-	_set_z15_cab_stripped(true)
 	# Build the iconic 80s Citroën C15 grey dashboard, working speedometer, and single-spoke steering wheel
 	_build_z15_dash(eye_x, eye_y, eye_z)
-	if rn != null and is_instance_valid(rn):
-		for cname in ["rider_wheel", "hand_l", "hand_r"]:
-			var cn := rn.find_child(cname, true, false)
-			if cn is Node3D:
-				(cn as Node3D).visible = false
+	_sync_fp_cockpit()
 
 ## Swaps the Z15's `body` mesh (while the player is driving) to a cached copy with the Sketchfab model's
 ## baked beige steering wheel, old dash cowl, and stock interior mirror removed — keeping the seats, doors,
@@ -645,6 +632,8 @@ func _set_z15_cab_stripped(on: bool) -> void:
 		return
 	var bmi := model.find_child("body", true, false) as MeshInstance3D
 	if bmi == null or bmi.mesh == null:
+		return
+	if _dash_orig_mesh != null and bmi.mesh != _dash_orig_mesh:
 		return
 	_dash_body_mi = bmi
 	_dash_orig_mesh = bmi.mesh
@@ -697,6 +686,8 @@ func _set_hebro_cab_stripped() -> void:
 		return
 	var bmi := model.find_child("body", true, false) as MeshInstance3D
 	if bmi == null or bmi.mesh == null:
+		return
+	if _dash_orig_mesh != null and bmi.mesh != _dash_orig_mesh:
 		return
 	_dash_body_mi = bmi
 	_dash_orig_mesh = bmi.mesh
@@ -1104,6 +1095,8 @@ func _set_julietta_cab_stripped() -> void:
 		return
 	var bmi := model.find_child("body", true, false) as MeshInstance3D
 	if bmi == null or bmi.mesh == null:
+		return
+	if _dash_orig_mesh != null and bmi.mesh != _dash_orig_mesh:
 		return
 	_dash_body_mi = bmi
 	_dash_orig_mesh = bmi.mesh
@@ -1716,6 +1709,8 @@ void fragment() {
 		smq.position = _dash_root.to_local(inner.to_global(Vector3(0.749, 1.121, 0.176)))
 		smq.rotation.y = PI + deg_to_rad(9.5)
 		smq.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		smq.visible = _fp_hide_head
+		_fp_only.append(smq)
 		_dash_root.add_child(smq)
 
 ## Procedural 256x128 iconic boxy SEAT/Seta Panda instrument cluster (0-160 km/h square-cut dial, 06725 odometer, 0-4/4 fuel & warning grid)
@@ -2929,6 +2924,8 @@ func _set_yondir_cab_stripped() -> void:
 	var bmi := model.find_child("body", true, false) as MeshInstance3D
 	if bmi == null or bmi.mesh == null:
 		return
+	if _dash_orig_mesh != null and bmi.mesh != _dash_orig_mesh:
+		return
 	_dash_body_mi = bmi
 	_dash_orig_mesh = bmi.mesh
 	if _yondir_glass == null:
@@ -3709,6 +3706,8 @@ func _set_r4_cab_stripped() -> void:
 		return
 	var bmi := model.find_child("body", true, false) as MeshInstance3D
 	if bmi == null or bmi.mesh == null:
+		return
+	if _dash_orig_mesh != null and bmi.mesh != _dash_orig_mesh:
 		return
 	_dash_body_mi = bmi
 	_dash_orig_mesh = bmi.mesh

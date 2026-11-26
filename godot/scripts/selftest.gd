@@ -10265,7 +10265,8 @@ func _rosario_checks(pictures := false) -> void:
 	z.set_speed(Vector2.ZERO)
 	_check(peak_ang > 0.08 and peak_drop > 0.03 and peak_needle > 0.12 and peak_wheel > 0.2,
 		"the rosary swings (%.2f/%.2f rad), speedometer needle rises (+%.2f rad), and single-spoke wheel turns (%.2f rad)" % [peak_ang, peak_drop, peak_needle, peak_wheel])
-	# From outside (3rd person) the cab's headliner and header bar are not drawn: they poked out through the roof (the user, 25 Nov 2026)
+	# From outside (3rd person) the cab's mirror, ITV stickers, rosary, headliner and closed-cab dash are not drawn
+	var fp_roots_ok: bool = z._rosary_root != null and z._rosary_root.visible and z._dash_root != null and z._dash_root.visible
 	var shown_fp := 0
 	for pc in z._fp_only:
 		if is_instance_valid(pc) and (pc as Node3D).visible:
@@ -10276,7 +10277,9 @@ func _rosario_checks(pictures := false) -> void:
 	for pc in z._fp_only:
 		if is_instance_valid(pc) and (pc as Node3D).visible:
 			shown_out += 1
-	_check(z._fp_only.size() == 2 and shown_fp == 2 and shown_out == 0, "the Z15's headliner shows only in 1st person (%d of %d inside, %d from outside)" % [shown_fp, z._fp_only.size(), shown_out])
+	var out_roots_hidden: bool = z._rosary_root != null and not z._rosary_root.visible and z._dash_root != null and not z._dash_root.visible
+	_check(z._fp_only.size() == 2 and shown_fp == 2 and shown_out == 0 and fp_roots_ok and out_roots_hidden,
+		"the Z15's mirror, ITV stickers, headliner and interior dash show only in 1st person (%d/%d inside, %d outside, fp=%s, out_hidden=%s)" % [shown_fp, z._fp_only.size(), shown_out, fp_roots_ok, out_roots_hidden])
 	if pictures:
 		await _shot("rosario_fuera")
 		for v in [["frente", PI, 0.45], ["lado_izq", PI * 0.5, 0.55], ["lado_der", -PI * 0.5, 0.55], ["arriba", PI * 0.75, 1.15]]:      # (the camera turned round the van, as the player can: from the front, each side and above)
@@ -10683,10 +10686,47 @@ func _yondir_checks(pictures := false) -> void:
 	_check(yo != null and yo._dash_root == null and yo._hebro_flap_root == null, "parked Yondir has no custom cockpit or exhaust rain-cap until climbed into")
 	if yo == null:
 		return
+	# Verify all 4 wheels of the Yondir are complete & symmetric (every tyre lug & rim ring detached from body onto its wheel)
+	var y_body := yo.model.find_child("body", true, false) as MeshInstance3D
+	var body_has_tyre := false
+	if y_body != null and y_body.mesh != null:
+		for s in range(y_body.mesh.get_surface_count()):
+			var m = y_body.mesh.surface_get_material(s)
+			if m != null and (String(m.resource_name).begins_with("Part51Mtl") or String(m.resource_name).begins_with("Part42Mtl")):
+				body_has_tyre = true
+	var y_wh := {}
+	for wn in ["wheel_fl", "wheel_fr", "wheel_bl", "wheel_br"]:
+		var wmi := yo.find_child(wn, true, false) as MeshInstance3D
+		var tc := 0
+		if wmi != null and wmi.mesh != null:
+			for s in range(wmi.mesh.get_surface_count()):
+				var arr := wmi.mesh.surface_get_arrays(s)
+				tc += ((arr[Mesh.ARRAY_INDEX] as PackedInt32Array).size() if arr[Mesh.ARRAY_INDEX] != null else (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()) / 3
+		y_wh[wn] = tc
+	_check(not body_has_tyre and int(y_wh["wheel_fl"]) >= 500 and int(y_wh["wheel_fl"]) == int(y_wh["wheel_fr"]) and int(y_wh["wheel_bl"]) >= 500 and int(y_wh["wheel_bl"]) == int(y_wh["wheel_br"]),
+		"all 4 Yondir wheels are complete and symmetric with zero tyre geometry left in body (tris fl=%d fr=%d bl=%d br=%d)" % [y_wh["wheel_fl"], y_wh["wheel_fr"], y_wh["wheel_bl"], y_wh["wheel_br"]])
 	var was_cam: int = g.car_cam
 	var was_clock: float = g.clock
 	g.set_time(12.0)
 	g.raining = false
+	if pictures:
+		var ec := Camera3D.new()
+		g.add_child(ec)
+		ec.current = true
+		ec.fov = 42.0
+		var o: Vector3 = yo.global_position
+		var fwd: Vector3 = yo.global_transform.basis.z
+		var right: Vector3 = -yo.global_transform.basis.x
+		ec.global_position = o - right * 5.6 + fwd * 1.4 + Vector3(0.0, 1.4, 0.0)
+		ec.look_at(o + Vector3(0.0, 1.0, 0.0), Vector3.UP)
+		await _frames(6)
+		await _shot("yondir_ruedas_izq")
+		ec.global_position = o + right * 5.6 + fwd * 1.4 + Vector3(0.0, 1.4, 0.0)
+		ec.look_at(o + Vector3(0.0, 1.0, 0.0), Vector3.UP)
+		await _frames(6)
+		await _shot("yondir_ruedas_der")
+		ec.queue_free()
+		g.cam.current = true
 	g.car_cam = 1
 	yo._yondir_seed = 0
 	g._enter_car(yo)

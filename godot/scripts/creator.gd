@@ -16,7 +16,7 @@ const OPTIONS := [
 	{"key": "brows", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8]},                  # (4-5: from free models, chara.gd CEJAS; 6-8: expressive curved brows)
 	{"key": "face", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]},       # beards (see chara.gd; 9 on: from free models, BARBAS)
 	{"key": "gender", "values": [0, 1]},          # 0 man, 1 woman: only changes how people talk to you
-	{"key": "hair_style", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]},     # (13 on: from free models, chara.gd PELOS; 17 buzz cut in hair colour; 31 curlers; 32 bald; 33 shaved grey; 34 four hairs; 35 mop of curls)
+	{"key": "hair_style", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45]},     # (13 on: from free models, chara.gd PELOS; 17 buzz cut in hair colour; 31 curlers; 32 bald; 33 shaved grey; 34 four hairs; 35 mop of curls; 36-45 custom short/men's styles, PELOS_CORTOS)
 	{"key": "pena", "values": [0, 1, 2, 3, 4, 5]},      # your peña (crew): see PENAS
 	{"key": "glasses", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]},
 	{"key": "earrings", "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]},
@@ -30,7 +30,7 @@ const OPTIONS := [
 	{"key": "shirt2", "values": [-1, 0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f, 0x8a6a48, 0x8d99ae]},      # clothes with more parts: the second one's colour (-1 as it comes)
 	{"key": "shirt3", "values": [-1, 0xe8553d, 0x3b5fa8, 0xf8f8f8, 0x7fb069, 0xe6c229, 0x26262b, 0xef8fa9, 0x9d4edd, 0xef7f1a, 0x2a9d8f, 0x8a6a48, 0x8d99ae]},      # ...and the third's
 	{"key": "barba3", "values": [0, 1]},                # three days' beard, yes or no, in the beard's colour, with any beard or none
-	{"key": "canas", "values": [0, 1, 2, 3]},           # grey hairs: none, streaks, salt and pepper, mostly grey (La Pili's, 25 Nov 2026)
+	{"key": "canas", "values": [0, 1, 2, 3, 4]},           # grey hairs: none, streaks, salt and pepper, mostly grey, grey temples/fade (26 Nov 2026)
 	{"key": "brow_color", "values": [-1, 0x2a1c14, 0x5a3a22, 0x9a9aa0, 0xd9d9de, 0xd9a441, 0xb5451b]},      # the eyebrows' colour (-1: the hair's)
 	{"key": "nose", "values": [0, 1, 2]},               # none, a pink button, a button
 	{"key": "estampado", "values": [0, 1, 2, 3]},       # the print on a dress: plain, little flowers, polka dots, checks

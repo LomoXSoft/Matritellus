@@ -605,6 +605,64 @@ def tunero_kit():
 if NAME == 'tunero' and len(wheel_objs) == 4:
     tunero_kit()
 
+def yondir_mend_wheels():
+    """The Sketchfab Yondir's tyre lugs (Part51Mtl) and rear rim rings (Part42Mtl) are loose sub-pieces that the generic
+    radius cut left partly inside `body` (all 288 of bl, 120 of br, 36 of fr + 24 rim-ring faces). Move every remaining
+    Part51Mtl/Part42Mtl face from `body` to its matching corner wheel and re-centre each wheel on its full tyre axle."""
+    mid_x = sum(w.location.x for w in wheel_objs) / 4.0
+    mid_y = sum(w.location.y for w in wheel_objs) / 4.0
+    by_corner = {'fl': [], 'fr': [], 'bl': [], 'br': []}
+    me = body.data
+    for p in me.polygons:
+        m = me.materials[p.material_index] if p.material_index < len(me.materials) else None
+        if m is None or not (m.name.startswith('Part51Mtl') or m.name.startswith('Part42Mtl')):
+            continue
+        c = body.matrix_world @ p.center
+        corner = ('f' if c.y < mid_y else 'b') + ('l' if c.x > mid_x else 'r')
+        by_corner[corner].append(p.index)
+    moved_all = []
+    for corner, faces in by_corner.items():
+        if not faces:
+            continue
+        moved_all.extend(faces)
+        extra_me = me.copy()
+        extra = bpy.data.objects.new('tmp_yondir_' + corner, extra_me)
+        scene.collection.objects.link(extra)
+        keep = set(faces)
+        delete_faces(extra, [p.index for p in extra_me.polygons if p.index not in keep])
+        w = made[corner]
+        # Join in world space so coordinates stay exact, then re-centre on the full tyre bbox
+        bpy.ops.object.select_all(action='DESELECT')
+        w.select_set(True)
+        extra.select_set(True)
+        bpy.context.view_layer.objects.active = w
+        bpy.ops.object.join()
+    if moved_all:
+        delete_faces(body, moved_all)
+        bpy.ops.object.select_all(action='DESELECT')
+        body.select_set(True)
+        bpy.context.view_layer.objects.active = body
+        bpy.ops.object.material_slot_remove_unused()
+    for corner in ('fl', 'fr', 'bl', 'br'):
+        w = made[corner]
+        w.data.transform(Matrix.Translation(w.location))
+        w.location = Vector((0, 0, 0))
+        pts = [w.data.vertices[vi].co for p in w.data.polygons
+               if p.material_index < len(w.data.materials) and w.data.materials[p.material_index]
+               and w.data.materials[p.material_index].name.startswith('Part51Mtl')
+               for vi in p.vertices]
+        if pts:
+            c = Vector(((min(v.x for v in pts) + max(v.x for v in pts)) / 2.0,
+                        (min(v.y for v in pts) + max(v.y for v in pts)) / 2.0,
+                        (min(v.z for v in pts) + max(v.z for v in pts)) / 2.0))
+            w.data.transform(Matrix.Translation(-c))
+            w.location = c
+        w.data.update()
+    log('yondir wheels mended: moved %d faces from body (%s)' % (len(moved_all), {k: len(v) for k, v in by_corner.items()}))
+
+if NAME == 'yondir' and len(wheel_objs) == 4:
+    yondir_mend_wheels()
+
 # ---------------------------------------------------------------- lighter
 def tris(o):
     return sum(len(p.vertices) - 2 for p in o.data.polygons)

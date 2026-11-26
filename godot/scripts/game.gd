@@ -1027,6 +1027,9 @@ func _park_near(pos: Vector2, shift: float, kind: String, hex: int):
 ## the standard kinds of anonymous neighbour: index into Loc "generic_names" -> voice profile
 const NEIGHBOURS := 96          # anonymous neighbours in all; the ones out walking keep turning up wherever you are
 const NEIGHBOUR_VOICES := ["adult_m", "adult_m", "old_m", "old_f", "adult_m", "old_m", "adult_f", "adult_f", "old_f", "kid"]
+## Weighted street mix (indices into NEIGHBOUR_VOICES, 24 slots dividing 96 evenly): 50 % elderly (25 % old_m, 25 % old_f),
+## 25 % adult_m, 16.7 % adult_f, 8.3 % kid (the user, 26 Nov 2026: more elderly folks in town).
+const NEIGHBOUR_MIX := [0, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 5, 6, 7, 8, 8, 9]
 
 ## Picks the next stretch of pavement for a strolling neighbour: on to a neighbouring junction along one side of
 ## the street. They cut the corner 4-5 m short of each junction, which is where the zebra crossings are painted,
@@ -1073,8 +1076,8 @@ func _walker_plan(n) -> void:
 ## a look that matches a standard voice: grey hair for the old, buns and long hair for the women, small for kids
 func _neighbour_look(voice: String) -> Dictionary:
 	var shirts := [0xd9643a, 0x3b5fa8, 0x7fb069, 0xe6c229, 0xef8fa9, 0x2a9d8f, 0x9d4edd, 0xf4f1e8, 0xef7f1a, 0x8a6a48, 0x8d99ae, 0x26262b, 0xb23a3a, 0x4f7d8f]
-	# (the user, 23 Nov 2026: too many with dark skin for the town; dark or black skin, one in twenty)
-	var skin: int = ([0xc98e5f, 0x8d5a3b, 0x5e3a26] if randf() < 0.05 else [0xf6c9a0, 0xe9b58c, 0xd49a6a, 0xfbd7b5]).pick_random()
+	# (the user, 23 Nov 2026: dark or black skin, one in twenty; 26 Nov 2026: less ultra-pale skin 0xfbd7b5 -> ~10.6 %)
+	var skin: int = ([0xc98e5f, 0x8d5a3b, 0x5e3a26] if randf() < 0.05 else [0xf6c9a0, 0xf6c9a0, 0xf6c9a0, 0xe9b58c, 0xe9b58c, 0xe9b58c, 0xd49a6a, 0xd49a6a, 0xfbd7b5]).pick_random()
 	var o := {"shirt": shirts.pick_random(), "skin": skin, "hat_color": shirts.pick_random()}
 	var old := voice.begins_with("old")
 	o["hair"] = [0xd9d9de, 0xe8e8ea, 0xb9b3a8, 0xb4b4ba, 0x9a9aa0, 0x7d7d84].pick_random() if old else [0x2a1c14, 0x2a1c14, 0x5a3a22, 0x5a3a22, 0xb5651d, 0x111111, 0xd9a441, 0xb5451b].pick_random()
@@ -1100,13 +1103,13 @@ func _neighbour_look(voice: String) -> Dictionary:
 		"kid":
 			o["scale"] = randf_range(0.6, 0.74)
 			o["hat"] = ["", "", "", "cap", "beisbol", "beisbol_atras"].pick_random()
-			o["hair_style"] = [0, 0, 3, 5, 6, 7, 7, 11].pick_random()
+			o["hair_style"] = [0, 0, 3, 5, 6, 7, 7, 11, 36, 36, 37, 38, 38, 39, 39, 41, 42, 42, 43, 44, 45].pick_random()
 			o["top"] = [0, 19, 4, 4, 5, 12, 18].pick_random()
 			o["shoe_type"] = [0, 0, 5, 5].pick_random()
 			o["shoes"] = [0x1b1b1f, 0xf8f8f8, 0xb23a3a, 0x3b5fa8, 0x3f7d4a].pick_random()
 			o["brows"] = [0, 3].pick_random()
 		"adult_f":
-			o["hair_style"] = [2, 2, 1, 5, 5, 9, 9, 11, 12, 4, 7].pick_random()
+			o["hair_style"] = [2, 2, 1, 5, 5, 9, 9, 11, 12, 4, 7, 39, 42, 44].pick_random()
 			o["top"] = [0, 0, 1, 3, 4, 8, 12, 16, 19, 22, 22].pick_random()
 			o["hat"] = ["", "", "", "", "straw", "pamela", "diadema"].pick_random()
 			o["shoe_type"] = [0, 2, 5, 8, 9, 9, 12].pick_random()
@@ -1132,21 +1135,17 @@ func _neighbour_look(voice: String) -> Dictionary:
 				o["earrings"] = [1, 5, 5].pick_random()
 			if randf() < 0.55:
 				o["pendant"] = [2, 3, 3, 4, 9].pick_random()
-			# La Pili's pieces, now and then (the user, 25 Nov 2026: "Sí, alguna"): the mop of curls; dark hair going grey;
-			# a cardigan over a dress with a print
+			# La Pili's pieces, now and then (the user, 25 Nov 2026: "Sí, alguna"): the mop of curls;
+			# a cardigan over a dress with a print (random canas removed from NPC pool: the user, 26 Nov 2026)
 			if randf() < 0.14:
 				o["hair_style"] = Chara.MATA
-			if randf() < 0.18:
-				o["hair"] = [0x2a2626, 0x3a2a22, 0x4a4040].pick_random()
-				o["canas"] = [1, 2, 2, 3].pick_random()
-				o["brow_color"] = 0x9a9aa0
 			if randf() < 0.16:
 				o["top"] = Chara.REBECA_VESTIDO
 				o["shirt2"] = [0x2b3352, 0x2b3352, 0x1b1b1f, 0x3a2a40, 0x24402e].pick_random()
 				o["estampado"] = [1, 1, 2, 0].pick_random()
 		"old_m":
 			o["hat"] = ["beret", "beret", "parpusa", "straw", "", "cap"].pick_random()
-			o["hair_style"] = [0, 10, 10, 3].pick_random()
+			o["hair_style"] = [0, 10, 10, 3, 37, 40, 40, 43, 44].pick_random()
 			o["face"] = [0, 1, 1, 2, 4, 4, 5, 6, 7].pick_random()
 			o["brows"] = 1
 			o["top"] = [1, 1, 3, 6, 6, 13, 15, 0].pick_random()
@@ -1154,9 +1153,12 @@ func _neighbour_look(voice: String) -> Dictionary:
 			o["shoes"] = [0x4a3424, 0x1b1b1f].pick_random()
 			if randf() < 0.2:
 				o["pendant"] = [2, 3, 9].pick_random()
+			if randf() < 0.22:                           # grey temples / grey fade with dark top hair (like Don Luis: 26 Nov 2026)
+				o["hair"] = [0x2a1c14, 0x3a2a22, 0x5a3a22].pick_random()
+				o["canas"] = 4
 		_:
 			o["hat"] = ["", "", "", "cap", "cap", "beisbol", "straw"].pick_random()
-			o["hair_style"] = [0, 0, 3, 3, 8, 8, 4, 6, 5, 10, 11].pick_random()
+			o["hair_style"] = [0, 0, 3, 3, 8, 8, 4, 6, 5, 10, 11, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45].pick_random()
 			o["face"] = [0, 0, 0, 1, 2, 3, 5, 5, 7, 8].pick_random()
 			o["brows"] = [0, 1, 1, 2].pick_random()
 			o["top"] = [0, 0, 1, 2, 3, 4, 5, 12, 14, 18, 23].pick_random()
@@ -1168,6 +1170,8 @@ func _neighbour_look(voice: String) -> Dictionary:
 				o["pendant"] = [1, 1, 3, 5, 5].pick_random()
 			if randf() < 0.07:
 				o["hair"] = null
+			elif randf() < 0.10:                         # occasional mature man with grey temples / grey fade
+				o["canas"] = 4
 	if o.get("hat", "") == "cap" and randf() < 0.55:     # the cap the bank gives away: half the province has one
 		o["hat_color"] = 0x1f8a55
 		o["emblem"] = 0xf2c230
@@ -1223,7 +1227,7 @@ func officer_look(kind: String) -> Dictionary:
 
 ## (with `look`: that very person -- the driver of a car, getting out of it)
 func spawn_neighbour(p: Vector2, still := false, look: Dictionary = {}):
-	var kind: int = int(look["voice_i"]) if look.has("voice_i") else randi() % NEIGHBOUR_VOICES.size()
+	var kind: int = int(look["voice_i"]) if look.has("voice_i") else int(NEIGHBOUR_MIX.pick_random())
 	var n = _make_npc("", look if not look.is_empty() else _neighbour_look(NEIGHBOUR_VOICES[kind]), NEIGHBOUR_VOICES[kind], p)
 	n.lines_key = "generic"
 	n.line_i = randi() % 10
@@ -1277,11 +1281,9 @@ func _add_nino_negro() -> void:
 func whisper_pool(n) -> Array:
 	return padron.whispers(Loc.t("whisper_old" if n.voice.begins_with("old") and randf() < 0.6 else "whisper")) + chismes.whispers()
 
-## Don Luis's own: the grey at his temples, his red apron with its bib and its strings (on him, and on his figure out
-## of a gumball machine: gacha.gd)
+## Don Luis's own: his red apron with its bib and its strings (on him, and on his figure out of a gumball machine:
+## gacha.gd; the grey at his temples now comes from his grey fade in look["fade_color"])
 func dress_luis(c) -> void:
-	for sx in [-1.0, 1.0]:
-		c._acc("ball", 0x9a968f, Vector3(sx * 0.46, 1.5, -0.12), Vector3(0.07, 0.17, 0.2))
 	c._acc("box", 0xb5202a, Vector3(0.0, 0.5, c._r(0.5) + 0.03), Vector3(0.62, 0.66, 0.04))
 	c._acc("box", 0xb5202a, Vector3(0.0, 0.88, c._r(0.88) + 0.03), Vector3(0.36, 0.22, 0.04))
 	for sx in [-1.0, 1.0]:
@@ -1750,9 +1752,9 @@ func _setup_places_and_actors() -> void:
 	add_child(kebab)
 	kebab.build(world, self)
 	places["kebab"] = MapData.nearest_road(kebab.spot((kebab.GATE.x + kebab.GATE.y) / 2.0, 1.0))
-	# Don Luis, after a friend of the user's: stout ("hermoso"), dark wavy hair going grey at the sides, a full beard,
+	# Don Luis, after a friend of the user's: stout ("hermoso"), dark hair pulled into a man bun going grey at the sides, a full beard,
 	# black rectangular glasses, a black T-shirt under the red apron
-	var luis = _make_npc("luis", {"shirt": 0x1c1b1f, "hair": 0x3a2c22, "hair_style": 8, "face": 2, "brows": 2, "beard": 2, "glasses": 7, "top": 0, "build": 1.3, "skin": 0xf0c4a0}, "adult_m", kebab.keeper)
+	var luis = _make_npc("luis", {"shirt": 0x1c1b1f, "hair": 0x3a2c22, "canas": 4, "hair_style": 41, "face": 2, "brows": 2, "beard": 2, "glasses": 7, "top": 0, "build": 1.3, "skin": 0xf0c4a0}, "adult_m", kebab.keeper)
 	luis.still = true
 	luis.h = kebab.facing
 	dress_luis(luis)
@@ -1878,7 +1880,7 @@ func _setup_places_and_actors() -> void:
 	# anonymous neighbours, each with one of the standard voices and a look to match
 	var walk := MapData.segs.filter(func(s): return (s.road["h"] == "residential" or s.road["h"] == "tertiary") and (s.a + Vector2(50, 0)).length() < 850.0)
 	for i in range(NEIGHBOURS):
-		var kind := i % NEIGHBOUR_VOICES.size()
+		var kind: int = NEIGHBOUR_MIX[i % NEIGHBOUR_MIX.size()]
 		var n = _add_npc("", _neighbour_look(NEIGHBOUR_VOICES[kind]), NEIGHBOUR_VOICES[kind], walk.pick_random().a, randf_range(-4.0, 4.0))
 		n.lines_key = "generic"
 		n.line_i = randi() % 10

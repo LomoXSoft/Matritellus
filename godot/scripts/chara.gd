@@ -362,11 +362,14 @@ func set_look(o: Dictionary) -> void:
 	inner.add_child(_phone)
 	var hat: String = o.get("hat", "")
 	if hair != null:
+		var style_id: int = int(o.get("hair_style", 0))
 		var n0 := neck.get_child_count()
 		var i0 := inner.get_child_count()
-		_hair(int(o.get("hair_style", 0)), hair, skin, hat_cut(hat))
-		if int(o.get("canas", 0)) > 0:
-			_canas(int(hair), int(o.get("canas", 0)), neck.get_children().slice(n0) + inner.get_children().slice(i0))
+		_hair(style_id, hair, skin, hat_cut(hat))
+		var canas_lvl: int = int(o.get("canas", 0))
+		var has_fade: bool = style_id == 8 or (PELOS_CORTOS.has(style_id) and bool((PELOS_CORTOS[style_id] as Array)[1]))
+		if canas_lvl > 0 and not (canas_lvl == 4 and has_fade):
+			_canas(int(hair), canas_lvl, neck.get_children().slice(n0) + inner.get_children().slice(i0))
 	var hatc: int = o.get("hat_color", 0xd9643a)
 	match hat:
 		"beret":
@@ -1077,6 +1080,48 @@ void fragment() {
 		_canas_mats[key] = m
 	return _canas_mats[key]
 
+static var _sienes_shader: Shader
+static var _sienes_mats := {}
+static func _sienes_mat(hex: int, vc: bool, head_off: Vector3) -> ShaderMaterial:
+	var key := "%x_%s_%d_%d_%d" % [hex, vc, int(round(head_off.x * 100.0)), int(round(head_off.y * 100.0)), int(round(head_off.z * 100.0))]
+	if not _sienes_mats.has(key):
+		if _sienes_shader == null:
+			_sienes_shader = Shader.new()
+			_sienes_shader.code = """shader_type spatial;
+render_mode cull_disabled;
+uniform vec4 base;
+uniform vec4 grey;
+uniform float use_vc;
+uniform vec3 head_off;
+varying vec3 hp;
+varying vec4 vcol;
+void vertex() {
+	vec3 sc = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz));
+	hp = VERTEX * sc + head_off;
+	vcol = COLOR;
+}
+void fragment() {
+	float side = smoothstep(0.27, 0.44, abs(hp.x));
+	float temple = side * (1.0 - smoothstep(1.56, 1.72, hp.y));
+	float nape = (1.0 - smoothstep(1.36, 1.56, hp.y)) * smoothstep(0.05, -0.18, hp.z);
+	float g = clamp(max(temple, nape * 0.85), 0.0, 1.0);
+	vec3 c = mix(base.rgb, grey.rgb, g);
+	c *= mix(vec3(1.0), vcol.rgb, use_vc);
+	ALBEDO = c;
+	ROUGHNESS = 1.0;
+	RIM = 0.35;
+	RIM_TINT = 0.6;
+}
+"""
+		var m := ShaderMaterial.new()
+		m.shader = _sienes_shader
+		m.set_shader_parameter("base", Parts.col(hex).srgb_to_linear())
+		m.set_shader_parameter("grey", Parts.col(0x9a968f).srgb_to_linear())
+		m.set_shader_parameter("use_vc", 1.0 if vc else 0.0)
+		m.set_shader_parameter("head_off", head_off)
+		_sienes_mats[key] = m
+	return _sienes_mats[key]
+
 func _canas(hex: int, level: int, nodes: Array) -> void:
 	var want := Parts.col(hex)
 	var todo: Array = nodes.duplicate()
@@ -1087,7 +1132,12 @@ func _canas(hex: int, level: int, nodes: Array) -> void:
 			continue
 		var mat = n.material_override
 		if mat is StandardMaterial3D and (mat as StandardMaterial3D).albedo_color.is_equal_approx(want):
-			n.material_override = _canas_mat(hex, level, (mat as StandardMaterial3D).vertex_color_use_as_albedo)
+			var use_vc: bool = (mat as StandardMaterial3D).vertex_color_use_as_albedo
+			if level == 4:
+				var off: Vector3 = (n as Node3D).position if n.get_parent() == neck else Vector3.ZERO
+				n.material_override = _sienes_mat(hex, use_vc, off)
+			else:
+				n.material_override = _canas_mat(hex, level, use_vc)
 
 ## a nose: 1 a little pink button (as the cheeks), 2 a button of the skin, a shade darker
 func _nose(kind: int, skin: int) -> void:
@@ -1612,6 +1662,21 @@ func _degradado(hex: int) -> void:
 	neck.add_child(mi)
 
 # ---------------- hair ----------------
+## Custom short/men's hairstyles (tools/creador/pelos_cortos.py): [asset_name, has_degradado_sides].
+## Faded styles draw _degradado(hair) on the sides and hide the top mesh under any hat; full-cap styles swap to gorro/gorro_alto.
+const PELOS_CORTOS := {
+	36: ["pelo_pincho", true],
+	37: ["pelo_patras", false],
+	38: ["pelo_brocoli", true],
+	39: ["pelo_alborotao", false],
+	40: ["pelo_entradas", false],
+	41: ["pelo_monito", true],
+	42: ["pelo_flequillo_lao", false],
+	43: ["pelo_cepillo", true],
+	44: ["pelo_raya_medio", false],
+	45: ["pelo_rastas_cortas", true],
+}
+
 func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 	if cut >= 3:                            # under a headscarf: none of it shows
 		return
@@ -1633,6 +1698,15 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 	if style == MATA:
 		_mata(hair, cut)
 		return
+	var default_fade: int = 0x9a968f if int(look.get("canas", 0)) == 4 else hair
+	var fade_hex: int = int(look.get("fade_color", default_fade))
+	if PELOS_CORTOS.has(style):
+		var spec: Array = PELOS_CORTOS[style]
+		if bool(spec[1]):
+			_degradado(fade_hex)
+		if not bool(spec[1]) or not hatted:
+			_pieza_on(String(spec[0]), hair, cut)
+		return
 	if style >= FIRST_PELO:
 		if style - FIRST_PELO < PELOS.size():
 			_pieza_on(PELOS[style - FIRST_PELO], hair, cut)
@@ -1644,7 +1718,7 @@ func _hair(style: int, hair: int, skin: int, cut: int) -> void:
 	elif style == 10:
 		_add("ball", hair, Vector3(0, 1.34, -0.1), Vector3(0.515, 0.22, 0.48))             # only round the back and sides
 	elif style == 8:                        # quiff: the top combed up from the forehead and back, the sides faded (it was a ball over the forehead
-		_degradado(hair)                    # till the user, 17 Nov 2026, showed a photo: "debería ser algo como la foto"; tools/creador/tupe.py)
+		_degradado(fade_hex)                # till the user, 17 Nov 2026, showed a photo: "debería ser algo como la foto"; tools/creador/tupe.py)
 		if not hatted:
 			_pieza_on("pelo_tupe", hair)
 	elif style != 4 or hatted:

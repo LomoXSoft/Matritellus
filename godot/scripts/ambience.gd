@@ -67,45 +67,63 @@ func radio_root() -> String:
 func _load_stations() -> void:
 	stations.clear()
 	var root := radio_root()
-	var n := 1
-	while DirAccess.dir_exists_absolute(root.path_join("radio%d" % n)):
-		var dir := root.path_join("radio%d" % n)
+	var entries: Array = []
+	var manifest_path := root.path_join("index.json")
+	if FileAccess.file_exists(manifest_path):
+		var manifest = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+		if manifest is Dictionary and manifest.get("stations") is Array:
+			for item in manifest["stations"]:
+				if item is Dictionary and String(item.get("dir", "")) != "":
+					entries.append({"dir": root.path_join(String(item["dir"])), "files": Array(item.get("files", []))})
+	if entries.is_empty():
+		var n := 1
+		while DirAccess.dir_exists_absolute(root.path_join("radio%d" % n)):
+			var dir := root.path_join("radio%d" % n)
+			var files := Array(DirAccess.get_files_at(dir))
+			files.sort()
+			entries.append({"dir": dir, "files": files})
+			n += 1
+	for idx in range(entries.size()):
+		var n := idx + 1
+		var dir := String(entries[idx]["dir"])
 		var st := {"name": "Radio %d" % n, "about": "", "logo": null, "tracks": [], "i": 0, "dir": dir}
 		if FileAccess.file_exists(dir.path_join("emisora.json")):
 			var card = JSON.parse_string(FileAccess.get_file_as_string(dir.path_join("emisora.json")))
 			if card is Dictionary:
 				st["name"] = String(card.get("nombre", card.get("name", st["name"])))
 				st["about"] = String(card.get("descripcion", card.get("descripción", card.get("description", ""))))
-		if FileAccess.file_exists(dir.path_join("logo.png")):
-			var img := Image.load_from_file(dir.path_join("logo.png"))
-			if img != null:
+		var logo_path := dir.path_join("logo.png")
+		if FileAccess.file_exists(logo_path):
+			var logo_bytes := FileAccess.get_file_as_bytes(logo_path)
+			var img := Image.new()
+			if not logo_bytes.is_empty() and img.load_png_from_buffer(logo_bytes) == OK:
 				img.generate_mipmaps()
 				st["logo"] = ImageTexture.create_from_image(img)
-		var files := Array(DirAccess.get_files_at(dir))
-		files.sort()
+		var files: Array = entries[idx]["files"]
 		for f in files:
 			if String(f).get_extension().to_lower() in ["ogg", "mp3", "wav"]:
-				st["tracks"].append(dir.path_join(f))
+				st["tracks"].append(dir.path_join(String(f)))
 		if st["tracks"].size() > 1:               # (a different one to start with every time you play)
 			st["i"] = randi() % st["tracks"].size()
 		st["since"] = _now() - randf_range(15.0, 170.0)      # (and on the air already: you catch it half way through)
 		stations.append(st)
-		n += 1
 	station = mini(station, stations.size())
 
-## a tune from a file on disk, as it is (nothing imported)
+## a tune from a file on disk or inside the Android APK, as it is (nothing imported)
 func _file_stream(path: String, loop: bool) -> AudioStream:
 	if not _cache.has(path):
 		var made: AudioStream = null
-		match path.get_extension().to_lower():
-			"wav":
-				made = AudioStreamWAV.load_from_file(path)
-			"ogg":
-				made = AudioStreamOggVorbis.load_from_file(path)
-			"mp3":
-				var mp3 := AudioStreamMP3.new()
-				mp3.data = FileAccess.get_file_as_bytes(path)
-				made = mp3
+		var bytes := FileAccess.get_file_as_bytes(path)
+		if not bytes.is_empty():
+			match path.get_extension().to_lower():
+				"wav":
+					made = AudioStreamWAV.load_from_buffer(bytes)
+				"ogg":
+					made = AudioStreamOggVorbis.load_from_buffer(bytes)
+				"mp3":
+					var mp3 := AudioStreamMP3.new()
+					mp3.data = bytes
+					made = mp3
 		_cache[path] = made
 	var s: AudioStream = _cache[path]
 	if s is AudioStreamWAV:
@@ -199,8 +217,7 @@ func entry_tune() -> String:
 		var wanted: Array = []
 		var list := radio_root().path_join("entrada.txt")
 		if FileAccess.file_exists(list):
-			for line in FileAccess.get_file_as_string(list).split("
-"):
+			for line in FileAccess.get_file_as_string(list).split("\n"):
 				var name := String(line).strip_edges()
 				if name != "" and not name.begins_with("#"):
 					wanted.append(name)

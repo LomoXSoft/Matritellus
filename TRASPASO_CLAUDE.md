@@ -2170,6 +2170,15 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
   - Sin pasada completa.
 - **Archivos tocados**: mío, `cementerio.gd`. De otros, `selftest.gd` (mi comprobación y mi modo). Después de la 0.2.0: sin publicar. Sin commit.
 
+### 26/11 · Pretil: una caja sin fondo en las estanterías del MasAhorro
+
+- **Quién lo encontró**: Sistemas, al comparar las mallas de `obra.gd` (una caja de 0,04 × 0,3 × ~0 en (22,61; 1,05; −7,9), color 0xEEEEEA). No es una petición de Luis.
+- **Qué era**: en `masahorro.gd`, los productos de las baldas se recortan a lo que queda de balda (`minf(ln, back + 5.1 - z)`); al final de una balda ese resto puede ser casi cero y salía una caja sin fondo. No se veía. Era una sola de 388 (quinta estantería, tercera fila; fondo 9e-16 m), contada repitiendo el bucle fuera del juego.
+- **Arreglo**: no se pone el producto si su fondo es menor de 2 cm. La secuencia de colores y largos de los demás no cambia.
+- **Prueba**: `masahorro`: MASAHORRO OK (0 failed), 5 comprobaciones, 1546 piezas ([log](logs/selftest_masahorro_20261126_044601.log)). La prueba no mira esa caja: que ya no sale lo sé por el bucle repetido fuera (387 productos, ninguno de menos de 2 cm). Sin pasada completa.
+- **Sin comprobar**: no he corrido `--mundo-huella` antes y después; no he tocado `obra.gd` ni piezas comunes, solo esa línea de `masahorro.gd`, así que la huella del MasAhorro cambia en esas cajas y en nada más.
+- **Archivos tocados**: mío, `masahorro.gd`. Después de la 0.2.1: sin publicar. Sin commit.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
@@ -3704,3 +3713,36 @@ Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductori
 - **Trucos.** Parcela con frente a dos calles: la entrada nueva con `only`/`reach` va ANTES en calles.json (`vm_11` antes de `sce_v11`, `vm_12` antes de `stana_97`). El aviso «a deep recess ... left alone» del horneado con un frente liso en la foto: `fill` a mano. Una obra sin huecos no pasa de 12 cajas: la entrada abierta es `gar ... k=void`, no un parche.
 - **Vecinas tocadas.** `stana_101` (aprobada) gana dos filas `lado`; `stana_97`, `stana_99`, `stana_103`, `stana_105` y `sce_v11` pierden piezas de atrás; vistas en el juego, sus fachadas igual.
 - **Pruebas.** `casas` OK. APROBADA ("Visto bueno y paramos"). Sin commit.
+
+### 26/11 — Antigravity: 10 nuevos peinados cortos / masculinos (`36..45`)
+
+- **Qué.** Añadidos 10 peinados cortos estilizados esculpidos en Blender (`tools/creador/pelos_cortos.py`) e importados en `godot/assets/creador/pelo/`: `pelo_pincho.glb` (`36 · De pincho`, degradado), `pelo_patras.glb` (`37 · Peinao pa' trás`, completo), `pelo_brocoli.glb` (`38 · De brócoli`, degradado), `pelo_alborotao.glb` (`39 · Alborotao`, completo), `pelo_entradas.glb` (`40 · Con entradas`, completo), `pelo_monito.glb` (`41 · Moñito`, degradado), `pelo_flequillo_lao.glb` (`42 · Flequillo de lao`, completo), `pelo_cepillo.glb` (`43 · De cepillo`, degradado), `pelo_raya_medio.glb` (`44 · Raya al medio`, completo) y `pelo_rastas_cortas.glb` (`45 · Rastas cortas`, degradado).
+- **Integración y gorros.** Añadidos al final de `OPTIONS[10]` en `creator.gd` y `loc.gd` (es/en, sin desplazar índices de partidas guardadas) y cableados en `chara.gd` mediante `PELOS_CORTOS`. Los 5 degradados pintan `_degradado(hair)` y ocultan el volumen superior bajo cualquier sombrero (`cut > 0`). Los 5 completos incluyen `gorro` (recorte bajo gorra) y `gorro_alto` (coronilla comprimida al ras del cráneo a `R + 0.009` sin agujerear el cuero cabelludo, evitando calvas incluso bajo la boina inclinada o el sombrero de paja). Compatibles con el shader de `canas`.
+- **Canas «En las sienes» (`canas = 4`) y vecinos (`game.gd`, `koke.gd`, `chara.gd`).** Se quitan las `canas` moteadas aleatorias (`1..3`) del pool de vecinos (`old_f` y `old_m`, incluidos los del cementerio) y se añade `canas = 4` («En las sienes» / *Grey temples*) en `creator.gd`, `loc.gd` y `chara.gd`: en peinados con degradado pinta `_degradado(0x9a968f)` manteniendo el pelo de color arriba, y en peinados completos aplica `_sienes_mat` (degradado suave gris en sienes y nuca sin manchas). Reparto de vecinos: `kid` recibe todos los nuevos menos `40 · Con entradas` (`36..39, 41..45`, con doble peso en `36, 38, 39, 42`), `adult_m` recibe todos (`36..45`, + 10 % `canas = 4`), `adult_f` suma `39, 42, 44` y `old_m` incorpora `37, 40 (x2), 43, 44` (+ 22 % pelo oscuro con `canas = 4`). Don Luis (`luis` en `game.gd`) cambia a `41 · Moñito` + `canas: 4` (sustituyendo las bolas grises laterales de `dress_luis`), y Koke el Kokas (`koke.gd`) a `36 · De pincho`. En `game.gd` también se baja la probabilidad de piel ultra blanca (`0xfbd7b5`) del ~23,8 % al ~10,6 % (manteniendo el 5 % de pieles oscuras) y se añade `NEIGHBOUR_MIX` para subir la proporción callejera de ancianos/as del 40 % al 50 % (sin tocar los índices `0..9` de `NEIGHBOUR_VOICES` ni `generic_names`).
+- **Pruebas.** `criba_pelo` (`solo=36..45`) OK, `palabros` 3 ok, `creador` 21 ok, `ropa` 2 ok. APROBADO por el usuario («Perfecto»). Sin commit.
+
+### 26/11 — Antigravity: arreglo de la radio en Android
+
+- **Causa.** En Godot 4.7.2, Android exporta un paquete índice disperso (`assets/assets.sparsepck`, PCK v4 `PACK_SPARSE_BUNDLE`) que controla la vista de `res://`. Como `godot/radio/.gdignore` oculta `radio/` al exportador y `tools/make_apk.py` añadía los archivos de `assets/radio/...` al ZIP sin registrarlos en `assets/assets.sparsepck`, `Ambience._load_stations()` no encontraba ninguna carpeta `radio1..6` en el móvil (`stations = []`, `station = 0`). Además, `ambience.gd` usaba `load_from_file()` sobre rutas `res://` para logos `.png` y pistas `.ogg`/`.wav`.
+- **Arreglo.**
+  - `tools/make_apk.py`: genera `assets/radio/index.json` (listado de `radio1..N` y sus pistas), registra los 44 archivos de `radio/*` dentro de `assets/assets.sparsepck` (con padding de 4 bytes, tamaño y MD5 reales) y verifica tras firmar que todas las emisoras y pistas están tanto en el ZIP del APK como indexadas en `assets/assets.sparsepck`.
+  - `godot/scripts/ambience.gd`: `_load_stations()` lee `radio/index.json` cuando existe (Android, sin depender de `DirAccess`) y conserva el escaneo por carpetas `DirAccess` cuando no existe (PC/Linux/editor); los logos `.png` y las pistas `.ogg`/`.wav` se cargan ahora vía `FileAccess.get_file_as_bytes()` + `load_png_from_buffer` / `AudioStreamOggVorbis.load_from_buffer` / `AudioStreamWAV.load_from_buffer`, igual que `.mp3`.
+- **Archivos.** `tools/make_apk.py`, `godot/scripts/ambience.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`. Sin commit.
+- **Pruebas.** `python tools/make_apk.py` (`dist/Matritellus.apk`: 44 archivos de radio, 6 emisoras, `sparsepck=1987`, firmado y verificado), carga real de `assets.sparsepck` en Godot 4.7.2 (`LOAD_SPARSEPCK=true`, `DIR_RADIO1=true`, `INDEX_EXISTS=true`, 6 emisoras / 6 logos / 30 pistas `.ogg` decodificadas), `emisoras --headless` (3/3 ok) y `llegada --window` (2/2 ok).
+
+### 26/11 — Antigravity: retrovisores, pegatinas ITV e interiores cerrados solo en 1.ª persona
+
+- **Causa.** Al entrar en cualquier coche (`game.gd:_enter_car`), `set_rosary(true)` creaba `_rosary_root` y `_dash_root` visibles aunque la cámara estuviese en 3.ª persona o cinemática, haciendo que los retrovisores, las pegatinas ITV y los cristales de espejo lateral saliesen siempre.
+- **Arreglo (`godot/scripts/car.gd`).** Nuevo `_sync_fp_cockpit()` llamado desde `set_driver_head_visible()` y al final de todas las ramas de `set_rosary()`:
+  - `_rosary_root.visible = _fp_hide_head` en todos los vehículos (retrovisor central/de pie, rosario, pegatinas ITV de Z15/Panda, retrovisores superiores y lazo del Yondir).
+  - `_dash_root.visible = _fp_hide_head or (kind == "tractor" or kind == "julietta")` (en cabinas cerradas oculta también salpicadero, pegatinas ITV del Renol 4L y espejos laterales, restaurando la carrocería exterior y las manos/volante del conductor en 3.ª persona; en el descapotable Julietta añade `LeftSideMirrorGlass` a `_fp_only`).
+  - Guarda de idempotencia (`if _dash_orig_mesh != null and bmi.mesh != _dash_orig_mesh: return`) en todos los `_set_*_cab_stripped()`.
+- **Archivos.** `godot/scripts/car.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`. Sin commit.
+- **Pruebas.** `rosario --window` (5/5 ok + `rosario_fuera*.png` y `rosario_itv.png`), `seta --headless` (4/4), `cuatrolatas --headless` (6/6), `yondir --headless` (4/4), `edison --headless` (4/4) y `julietta --headless` (4/4).
+
+### 26/11 — Antigravity: ruedas completas del tractor Yondir
+
+- **Causa.** El corte automático de `tools/blender/limpiar.py` dejó 444 caras de goma (`Part51Mtl`: 288 de `wheel_bl`, 120 de `wheel_br`, 36 de `wheel_fr`) y 24 de los aros amarillos traseros (`Part42Mtl`) pegadas dentro de `body`, con los ejes traseros 6 cm bajos; además `"wheel_copy": {"wheel_bl": "wheel_br"}` en `modelos.gd` copiaba la `wheel_br` ya incompleta.
+- **Arreglo.** Añadida `yondir_mend_wheels()` en `tools/blender/limpiar.py` y regenerado `godot/assets/vehiculos/sk/yondir.glb` desde el original en `tools/descargas/sketchfab/yondir/yondir.glb`: las 468 caras pasan a sus ruedas correspondientes, cada rueda queda con 12/12 sectores (288 caras de goma cada una; `wheel_fl == wheel_fr` y `wheel_bl == wheel_br` en triángulos) y sus orígenes re-centrados en el eje geométrico real; eliminado `wheel_copy` en `modelos.gd`.
+- **Archivos.** `tools/blender/limpiar.py`, `godot/assets/vehiculos/sk/yondir.glb`, `godot/scripts/modelos.gd`, `godot/scripts/selftest.gd`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`. Sin commit.
+- **Pruebas.** `yondir --window` + `yondir --headless` (5/5 ok + `godot/shots/yondir_ruedas_izq.png` y `yondir_ruedas_der.png`). APROBADO por el usuario («Visto bueno»). Sin commit.

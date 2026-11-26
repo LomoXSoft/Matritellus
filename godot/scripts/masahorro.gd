@@ -440,7 +440,9 @@ func _inside() -> void:
 				while z < back + 5.1:
 					seed_ = (seed_ * 1103515245 + 12345) % 2147483648
 					var ln: float = 0.25 + float(seed_ % 5) * 0.1
-					box(side - 0.02, 0.15 + row * 0.45, z, 0.04, 0.3, minf(ln, back + 5.1 - z), colours[seed_ % colours.size()])
+					var deep: float = minf(ln, back + 5.1 - z)
+					if deep > 0.02:                                # (the last of a shelf may have no room left: nothing there, rather than a box with no depth)
+						box(side - 0.02, 0.15 + row * 0.45, z, 0.04, 0.3, deep, colours[seed_ % colours.size()])
 					z += ln + 0.04
 	box(GL0, 0.0, back + 0.5, 1.8, 1.0, 1.0, 0x2c7a3a)                                  # the fruit by the door
 	for i in range(6):
