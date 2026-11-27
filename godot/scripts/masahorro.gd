@@ -396,7 +396,7 @@ func _shopfront() -> void:
 		box(x + 0.05, 1.75, SHOP - 0.055, 0.7, 0.22, 0.01, 0xd8243a)
 		box(x + 0.1, 1.05, SHOP - 0.055, 0.6, 0.5, 0.01, 0xf2c230)
 	# the canopy: a box of cream with a pale lip, its ceiling with the lights in it
-	box(CAN0, CAN_Y0, -0.3, CAN1 - CAN0, CAN_Y1 - CAN_Y0, CAN_OUT + 0.3, "crema")
+	box(CAN0, CAN_Y0 - 0.02, -0.26, CAN1 - CAN0, CAN_Y1 - CAN_Y0 + 0.02, CAN_OUT + 0.26, "crema")
 	box(CAN0 - 0.02, CAN_Y0 - 0.16, CAN_OUT - 0.1, CAN1 - CAN0 + 0.04, 0.16, 0.12, "crema")          # its fascia, hanging a little
 	box(CAN0 - 0.03, CAN_Y0 - 0.17, CAN_OUT + 0.01, CAN1 - CAN0 + 0.06, 0.04, 0.02, 0xf4f0e6)
 	box(CAN0 - 0.02, CAN_Y1, -0.3, CAN1 - CAN0 + 0.04, 0.05, CAN_OUT + 0.32, 0xc9c3b6)
@@ -450,7 +450,7 @@ func _inside() -> void:
 
 ## The side on the Noria: grey sheet over a black band, panels of a paler grey, the service door, vents, lamps.
 func _noria_side() -> void:
-	var a := Vector2(0.0, -LONG)
+	var a := Vector2(0.0, -LONG + 0.3)
 	var b := Vector2(0.0, -WRAP)
 	var g: float = _low(a, Vector2(0.0, 0.0))
 	var ln: float = face(a, b)
@@ -576,7 +576,7 @@ func _annex() -> void:
 			box(s, h + 0.08, -0.12, 0.05, 0.92, 0.05, 0xc9b184)
 			s += 0.15
 	home()
-	flat(_rect(x0, -LONG, x1, z1), h, 0x9fa3a6)
+	flat(_rect(x0 + 0.25, -LONG, x1 - 0.25, z1 + 0.25), h, 0x9fa3a6)
 	# the fans along its east edge, leaning out, and the long ducts over it
 	for k in range(7):
 		var c := Vector3(x0 + 0.7, h + 0.9, -LONG - 0.6 - k * (out - 1.0) / 6.0)
@@ -637,7 +637,7 @@ func _walk() -> void:
 	home()
 	var x0: float = -PROUD - 0.6
 	_ramp_low = minf(0.0, maxf(ground(x0, 1.0), ground(x0, WALK - 0.5)) + 0.03)
-	flat(_rect(RAMP, 0.0, WIDE, WALK), 0.0, "acera")
+	flat(_rect(RAMP, 0.0, WIDE, WALK - 0.15), 0.0, "acera")
 	quad(Vector3(x0, _ramp_low, 0.0), Vector3(RAMP, 0.0, 0.0), Vector3(RAMP, 0.0, WALK), Vector3(x0, _ramp_low, WALK), "acera", Vector3.UP)
 	var kerb_low: float = _low(Vector2(x0, WALK), Vector2(WIDE, WALK))
 	box(RAMP, kerb_low - 0.3, WALK - 0.15, WIDE - RAMP, -kerb_low + 0.3, 0.15, 0xb8b4aa)
@@ -723,21 +723,21 @@ func _park() -> void:
 				z += BAYS_W
 				continue
 			if x0 == 27.8 and z < 19.4:
-				_lay(_rect(x0, z + 0.05, x1, z + BAYS_W - 0.05), 0.032, 0x5fae5a)
-			_strip(Vector2(x0, z), Vector2(x1, z), 0.1, 0.045, PAINT)
+				_lay(_rect(x0, z + 0.05, x1, z + BAYS_W - 0.05), 0.038, 0x5fae5a)
+			_strip(Vector2(x0, z), Vector2(x1, z), 0.1, 0.052, PAINT)
 			var dir := Vector2(-1.0 if x0 == 13.3 else 1.0, 0.0)
 			var nose := Vector2(x0 if x0 == 13.3 else x1, z + BAYS_W / 2.0)
 			if x0 != -3.3 and _bay_clear(nose, dir):                                  # (cars park nose in; not along the Noria, where the lane passes their tails)
 				bay_spots.append([nose, dir, x0 == 27.8 and z < 19.4])
 			bays += 1
 			z += BAYS_W
-		_strip(Vector2(x0, z), Vector2(x1, z), 0.1, 0.045, PAINT)
-	_strip(Vector2(13.3, 14.0), Vector2(13.3, north[4] - 4.0), 0.1, 0.045, PAINT)      # the middle row's spine
+		_strip(Vector2(x0, z), Vector2(x1, z), 0.1, 0.052, PAINT)
+	_strip(Vector2(13.3, 14.0), Vector2(13.3, north[4] - 4.0), 0.1, 0.052, PAINT)      # the middle row's spine
 	# the blue bays before the doors, the crossing to them
 	for x0 in [5.0, 8.55, 12.1, 18.6]:
-		_lay(_rect(x0, WALK, x0 + 3.45, WALK + 5.0), 0.032, 0x3a64b4)
+		_lay(_rect(x0, WALK, x0 + 3.45, WALK + 5.0), 0.038, 0x3a64b4)
 		for xl in [x0, x0 + 3.45]:
-			_strip(Vector2(xl, WALK), Vector2(xl, WALK + 5.0), 0.1, 0.045, PAINT)
+			_strip(Vector2(xl, WALK), Vector2(xl, WALK + 5.0), 0.1, 0.052, PAINT)
 		var c := Vector2(x0 + 1.72, WALK + 2.6)
 		var cy: float = ground(c.x, c.y) + 0.055
 		quad(Vector3(c.x - 0.75, cy, c.y + 0.75), Vector3(c.x + 0.75, cy, c.y + 0.75), Vector3(c.x + 0.75, cy, c.y - 0.75), Vector3(c.x - 0.75, cy, c.y - 0.75),
@@ -745,7 +745,7 @@ func _park() -> void:
 		bays += 1
 	var zx := 15.75
 	while zx < 18.4:
-		_strip(Vector2(zx, WALK + 0.2), Vector2(zx, 13.6), 0.4, 0.045, PAINT)
+		_strip(Vector2(zx, WALK + 0.2), Vector2(zx, 13.6), 0.4, 0.052, PAINT)
 		zx += 0.75
 	# the lanes' arrows: in down the lane by the houses, along the front, out up the lane by the Noria
 	for ar in [[Vector2(23.0, 50.0), Vector2(0, -1)], [Vector2(23.0, 25.0), Vector2(0, -1)], [Vector2(20.0, 11.5), Vector2(-1, 0)], [Vector2(3.0, 11.5), Vector2(-1, 0)], [Vector2(4.5, 28.0), Vector2(0, 1)], [Vector2(4.5, 55.0), Vector2(0, 1)]]:
@@ -753,8 +753,8 @@ func _park() -> void:
 
 func _arrow(at: Vector2, d: Vector2) -> void:
 	var n := Vector2(-d.y, d.x)
-	_lay(PackedVector2Array([at - d * 1.2 - n * 0.12, at + d * 0.3 - n * 0.12, at + d * 0.3 + n * 0.12, at - d * 1.2 + n * 0.12]), 0.045, PAINT)
-	_lay(PackedVector2Array([at + d * 0.3 - n * 0.45, at + d * 1.1, at + d * 0.3 + n * 0.45]), 0.045, PAINT)
+	_lay(PackedVector2Array([at - d * 1.2 - n * 0.12, at + d * 0.3 - n * 0.12, at + d * 0.3 + n * 0.12, at - d * 1.2 + n * 0.12]), 0.052, PAINT)
+	_lay(PackedVector2Array([at + d * 0.3 - n * 0.45, at + d * 1.1, at + d * 0.3 + n * 0.45]), 0.052, PAINT)
 
 ## The trolleys' shelter on its island in the middle row: clear sides, a roof with a yellow edge, our name on its
 ## side, the trolleys in two rows; a bin by it, a yellow post at the island's tip.

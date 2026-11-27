@@ -308,17 +308,17 @@ func _shoe_wall(side: float, z0: float, z1: float) -> void:
 	var ln := z1 - z0
 	_put(Vector3(side * HALF, 0.0, (z0 + z1) / 2.0), -side * PI / 2.0)
 	var h := 2.35
-	box(-ln / 2.0, 0.0, 0.0, ln, h, 0.02, 0xf4f4f0)                                   # its back
-	box(-ln / 2.0, 0.0, 0.02, ln, 0.12, SHELF_D, 0xe4e4e0)                            # its foot
+	box(-ln / 2.0, 0.0, 0.012, ln, h, 0.02, 0xf4f4f0)                                 # its back
+	box(-ln / 2.0, 0.0, 0.032, ln, 0.10, SHELF_D, 0xe4e4e0)                           # its foot
 	var bays := maxi(1, int(round(ln / 1.0)))
 	for i in range(bays + 1):
-		box(-ln / 2.0 + i * ln / bays - (0.025 if i == bays else 0.0), 0.0, 0.02, 0.025, h, SHELF_D, 0xf4f4f0)
-	box(-ln / 2.0, h, 0.0, ln, 0.06, SHELF_D + 0.04, 0xf4f4f0)                       # its top
+		box(-ln / 2.0 + i * ln / bays - (0.025 if i == bays else 0.0), 0.0, 0.032, 0.025, h, SHELF_D, 0xf4f4f0)
+	box(-ln / 2.0, h, 0.012, ln, 0.06, SHELF_D + 0.04, 0xf4f4f0)                      # its top
 	var ys := [0.12, 0.48, 0.84, 1.2, 1.56, 1.92]
 	for j in range(ys.size()):
 		var y: float = ys[j]
-		box(-ln / 2.0, y - 0.02, 0.02, ln, 0.02, SHELF_D, 0xf8f8f6)
-		box(-ln / 2.0, y - 0.02, SHELF_D, ln, 0.035, 0.015, 0xd8d8d4)                # (its lip)
+		box(-ln / 2.0, y - 0.02, 0.032, ln, 0.02, SHELF_D, 0xf8f8f6)
+		box(-ln / 2.0, y - 0.02, 0.032 + SHELF_D, ln, 0.035, 0.015, 0xd8d8d4)         # (its lip)
 		var n := int((ln - 0.2) / 0.34)
 		for i in range(n):
 			var px := -ln / 2.0 + 0.2 + i * (ln - 0.4) / maxf(1.0, n - 1.0)

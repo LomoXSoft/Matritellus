@@ -171,8 +171,14 @@ func _wall_piece(p: Vector2, q: Vector2, thick: float, low: float, top: float, k
 	quad(Vector3(a[0].x, low, a[0].y), Vector3(a[3].x, low, a[3].y), Vector3(a[3].x, top, a[3].y), Vector3(a[0].x, top, a[0].y), key, Vector3(-d.x, 0, -d.y))
 	quad(Vector3(a[1].x, low, a[1].y), Vector3(a[2].x, low, a[2].y), Vector3(a[2].x, top, a[2].y), Vector3(a[1].x, top, a[1].y), key, Vector3(d.x, 0, d.y))
 
-## the walls of an outline no street sees from in front: every side but those in `skip`, seen from both sides
+## the walls of an outline no street sees from in front: every side but those in `skip`, inset inside its plot
 func _ring_walls(ring: Array, low: float, top: float, key, skip: Array = []) -> void:
+	var area := 0.0
+	for i in range(ring.size()):
+		var p: Vector2 = ring[i]
+		var q: Vector2 = ring[(i + 1) % ring.size()]
+		area += p.x * q.y - q.x * p.y
+	var in_s := 1.0 if area >= 0.0 else -1.0
 	for i in range(ring.size()):
 		if skip.has(i):
 			continue
@@ -180,8 +186,10 @@ func _ring_walls(ring: Array, low: float, top: float, key, skip: Array = []) -> 
 		var b: Vector2 = ring[(i + 1) % ring.size()]
 		if a.distance_to(b) < 0.05:
 			continue
-		_plain(a, b, low, top, key)
-		_plain(b, a, low, top, key)
+		var d: Vector2 = (b - a).normalized()
+		var inset := Vector2(-d.y, d.x) * (in_s * 0.025)
+		_plain(a + inset, b + inset, low, top, key)
+		_plain(b + inset, a + inset, low, top, key)
 
 ## what fills a window's hole: glass, a white frame of two leaves under a fixed light, a sill of brick
 func _win(r: Rect2) -> void:
@@ -285,7 +293,7 @@ func _porch() -> void:
 	var tan := 0xd9b48c                             # its beams: over the board, and from each pillar back to the house
 	box(P0, 3.9, zf - 0.5, P1 - P0, 0.4, 0.4, tan)
 	for x in [P0 + 0.12, P1 - 0.52]:
-		box(x, 3.9, 0.0, 0.4, 0.4, zf - PILLAR, tan)
+		box(x, 3.9, 0.015, 0.4, 0.385, zf - PILLAR - 0.015, tan)
 	quad(Vector3(P0, 4.3, 0.0), Vector3(P1, 4.3, 0.0), Vector3(P1, 4.3, zf), Vector3(P0, 4.3, zf), 0xe6dccb, Vector3.DOWN)
 	quad(Vector3(P0, 0.03, 0.0), Vector3(P1, 0.03, 0.0), Vector3(P1, 0.03, zf), Vector3(P0, 0.03, zf), 0xb8a58c, Vector3.UP)
 	# the board with its name: white, red letters, its badge (a ring) at the left

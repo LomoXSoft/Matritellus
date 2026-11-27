@@ -304,8 +304,8 @@ func _shop() -> void:
 		slab(pts, z + 0.05, 0.05, RED)
 	# the board and the lime strip under it
 	box(BOARD[0] - 0.03, BOARD[2] - 0.22, 0.0, BOARD[1] - BOARD[0] + 0.06, BOARD[3] - BOARD[2] + 0.25, 0.1, RED)
-	_picture(BOARD[0], BOARD[1], BOARD[2], BOARD[3], 0.105, "rotulo")
-	_picture(BOARD[0], BOARD[1], BOARD[2] - 0.19, BOARD[2], 0.105, "mercado")
+	_picture(BOARD[0], BOARD[1], BOARD[2], BOARD[3], 0.112, "rotulo")
+	_picture(BOARD[0], BOARD[1], BOARD[2] - 0.19, BOARD[2], 0.112, "mercado")
 	# the doorway: its sides of lime, its ceiling, the floor of the step
 	for x in [DOOR[0], DOOR[1]]:
 		var s: float = 1.0 if x == DOOR[0] else -1.0
@@ -340,9 +340,9 @@ func _shop() -> void:
 	var keep := _xf
 	_xf = _xf * Transform3D(Basis(Vector3.UP, -PI / 2.0), Vector3(sx + 0.05, 0.0, 0.12))     # (its faces look along the street)
 	box(0.0, 2.85, -0.06, 0.6, 0.6, 0.12, RED)
-	_picture(0.0, 0.6, 2.85, 3.45, 0.061, "banderola")
+	_picture(0.0, 0.6, 2.85, 3.45, 0.072, "banderola")
 	_xf = _xf * Transform3D(Basis(Vector3.UP, PI), Vector3(0.6, 0.0, 0.0))
-	_picture(0.0, 0.6, 2.85, 3.45, 0.061, "banderola")
+	_picture(0.0, 0.6, 2.85, 3.45, 0.072, "banderola")
 	_xf = keep
 	_solid(SHOP0, g, -0.7, DOOR[0], BAND_TOP, 0.0)
 	_solid(DOOR[1], g, -0.7, SHOP1, BAND_TOP, 0.0)
@@ -360,13 +360,13 @@ func _balconies() -> void:
 		var x1 := 5.5
 		var y0: float = y + 0.45
 		var yt: float = y0 + 2.3
-		box(x0, y0, -0.25, x1 - x0, 2.3, 0.02, "visillo")
+		box(x0, y0, -0.23, x1 - x0, 2.3, 0.02, "visillo")
 		for k in range(5):
 			box(x0 + k * (x1 - x0) / 4.0 - 0.04, y0, -0.22, 0.08, 2.3, 0.07, WOOD)
 		box(x0, y0 + 1.1, -0.22, x1 - x0, 0.06, 0.07, WOOD)
-		box(x0, yt - 0.9, -0.2, x1 - x0, 0.9, 0.05, 0x7a5236)                             # the blind, half down
+		box(x0, yt - 0.9, -0.185, x1 - x0, 0.9, 0.05, 0x7a5236)                             # the blind, half down
 		for k in range(8):
-			box(x0, yt - 0.9 + k * 0.11, -0.15, x1 - x0, 0.015, 0.01, 0x5a3c28)
+			box(x0, yt - 0.9 + k * 0.11, -0.135, x1 - x0, 0.015, 0.01, 0x5a3c28)
 		box(x0 - 0.1, yt, -0.05, x1 - x0 + 0.2, 0.3, 0.2, 0x7a5236)                       # its box
 		box(x0 - 0.12, y0 - 0.02, 0.0, 0.12, 2.6, 0.06, "ladrillo")                         # its jambs of brick
 		box(x1, y0 - 0.02, 0.0, 0.12, 2.6, 0.06, "ladrillo")
@@ -439,7 +439,7 @@ func _body() -> void:
 	for p: Vector2 in RING1:
 		f1.append(_fr(p))
 	flat(PackedVector2Array(f3), TOP + 0.15, "terrado")
-	flat(PackedVector2Array(f1), 4.3, "terrado")
+	flat(PackedVector2Array(f1), 4.32, "terrado")
 	_prism(f3, DOWN, TOP)
 	_prism(f1, DOWN, 4.3)
 	var st: Vector2 = _fr(Vector2(-13.3, 110.0))                                         # the box of the stairs on the roof

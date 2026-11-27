@@ -222,29 +222,29 @@ func _floor() -> void:
 	_lay(_grown(outline, 3.5), 0.006, "asfalto")
 	_lay(outline, KERB, "bordillo")
 	var flags := _grown(outline, -0.16)
-	_lay(flags, KERB + 0.004, "losas")
+	_lay(flags, KERB + 0.014, "losas")
 	var band_out := _grown(outline, -1.15)
 	var band_in := _grown(outline, -1.45)
 	if band_in.size() >= 3:
-		_lay(band_out, KERB + 0.008, PALE)
-		_lay(band_in, KERB + 0.012, "losas")
+		_lay(band_out, KERB + 0.028, PALE)
+		_lay(band_in, KERB + 0.042, "losas")
 		var across := Vector2(-_along.y, _along.x)
 		for k in range(-4, 5):                       # bands across it, 4.4 m apart, through the pencil's bed
 			for piece in _inside(_strip(PENCIL + _along * (k * 4.4), across, 40.0, 0.28), band_in):
-				_lay(piece, KERB + 0.016, PALE)
+				_lay(piece, KERB + 0.056, PALE)
 		for piece in _inside(_strip(PENCIL, _along, 60.0, 0.28), band_in):      # and one along it
-			_lay(piece, KERB + 0.016, PALE)
+			_lay(piece, KERB + 0.056, PALE)
 	var beds: Array = [[PENCIL, 1.7], [BIG_TREE, 1.6], [SAPLING, 1.3]]
 	for at: Vector2 in CYPRESSES:
 		beds.append([at, 1.6])
 	for bed in beds:
 		for piece in _inside(_strip(bed[0], _along, bed[1], bed[1]), flags):
-			_lay(piece, KERB + 0.02, RED)
+			_lay(piece, KERB + 0.070, RED)
 	var round_bed := PackedVector2Array()
 	for i in range(16):
 		round_bed.append(PINE + Vector2(cos(TAU * i / 16.0), sin(TAU * i / 16.0)) * 1.0)
 	for piece in _inside(round_bed, flags):
-		_lay(piece, KERB + 0.02, RED)
+		_lay(piece, KERB + 0.070, RED)
 
 ## The kerb's face all round, following the ground; and what stops a car: a slab with a chamfered edge, so it bumps
 ## up on to it rather than into it.

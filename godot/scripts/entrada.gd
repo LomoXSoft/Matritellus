@@ -241,7 +241,7 @@ func _tiles() -> void:
 	for t in [[LUGAR, "lugar"], [NOMBRE, "nombre"]]:
 		var r: Rect2 = t[0]
 		box(r.position.x, r.position.y, 0.0, r.size.x, r.size.y, 0.022, "azulejo")
-		var z := 0.0225
+		var z := 0.034
 		quad(Vector3(r.position.x, r.position.y, z), Vector3(r.end.x, r.position.y, z), Vector3(r.end.x, r.end.y, z), Vector3(r.position.x, r.end.y, z),
 			t[1], Vector3(0, 0, 1), [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 
@@ -303,7 +303,7 @@ func _sign(world) -> void:
 	for y in [PLATE_LOW + 0.14, top - 0.14]:
 		box(-POSTS - 0.06, y - 0.02, -0.035, POSTS * 2.0 + 0.12, 0.04, 0.012, "dorso")
 	box(-PLATE.x / 2.0, PLATE_LOW, -0.023, PLATE.x, PLATE.y, 0.014, "dorso")
-	var z := -0.0085
+	var z := 0.003
 	quad(Vector3(-PLATE.x / 2.0, PLATE_LOW, z), Vector3(PLATE.x / 2.0, PLATE_LOW, z), Vector3(PLATE.x / 2.0, top, z), Vector3(-PLATE.x / 2.0, top, z),
 		"hermanado", Vector3(0, 0, 1), [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 	home()

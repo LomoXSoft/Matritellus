@@ -223,11 +223,11 @@ func _mill() -> void:
 		_on_tower(out, R0 - 0.04)
 		arched(0.0, 0.0, 1.95, 0.66, 0.05, 0xd9d2c2)
 		box(-0.66, 0.0, 0.0, 1.32, 1.95, 0.05, 0xd9d2c2)
-		box(-0.5, 0.0, 0.0, 1.0, 2.0, 0.09, "wood")
+		box(-0.5, 0.0, 0.05, 1.0, 2.0, 0.04, "wood")
 		for k in range(1, 4):
-			box(-0.5 + k * 0.25 - 0.012, 0.0, 0.0, 0.024, 2.0, 0.1, 0x2c2019)
-		box(-0.62, 0.0, 0.0, 1.24, 0.07, 0.3, "stone")
-		box(0.3, 0.95, 0.0, 0.05, 0.16, 0.13, IRON)
+			box(-0.5 + k * 0.25 - 0.012, 0.0, 0.09, 0.024, 2.0, 0.015, 0x2c2019)
+		box(-0.62, 0.0, 0.05, 1.24, 0.07, 0.25, "stone")
+		box(0.3, 0.95, 0.09, 0.05, 0.16, 0.04, IRON)
 	door = spot(-0.42 * (R0 + 1.3), -0.91 * (R0 + 1.3))
 	# its little windows: twelve under the eaves, one half-way up over the door
 	for k in range(12):
@@ -317,7 +317,7 @@ func _street_wall() -> void:
 		for j in range(2):
 			tbox(Transform3D(Basis(Vector3(0, 0, 1), PI / 4.0).scaled_local(Vector3(0.7, 0.7, 0.05)), Vector3(lx, 0.85 + j * 1.48, -0.1)), 0x33231a)
 	box(dm - 0.04, 0.0, -0.11, 0.08, 3.15, 0.06, 0x2a1d15)
-	box(dm - dw / 2.0 - 0.06, 3.15, -0.2, dw + 0.12, 0.16, 0.24, 0x33271f)                    # the beam over them
+	box(dm - dw / 2.0 - 0.06, 3.13, -0.2, dw + 0.12, 0.18, 0.24, 0x33271f)                    # the beam over them
 	for j in range(7):                                                                         # the brackets, and the tiles on them
 		var bx: float = lerpf(g0 + 0.15, g1 - 0.15, j / 6.0)
 		box(bx - 0.05, gh - 0.16, 0.0, 0.1, 0.12, 0.42, 0x33271f)
@@ -339,10 +339,10 @@ func _street_wall() -> void:
 	_wall_solid(d0, d1, WALL_H - 2.15, THICK, 2.15)
 	var red := 0xa3302b
 	tbox(Transform3D(Basis(Vector3.UP, deg_to_rad(100.0)).scaled_local(Vector3(1.0, 2.1, 0.05)), Vector3(d0 + 0.04, 1.05, -THICK - 0.5)), red)
-	box(d0 - 0.07, 0.0, -THICK - 0.02, 0.07, 2.2, THICK + 0.05, red)
-	box(d1, 0.0, -THICK - 0.02, 0.07, 2.2, THICK + 0.05, red)
-	box(d0 - 0.07, 2.15, -THICK - 0.02, d1 - d0 + 0.14, 0.07, THICK + 0.05, red)
-	box(d0, 0.0, -THICK, d1 - d0, 0.05, THICK + 0.1, "stone")
+	box(d0 - 0.07, 0.0, -THICK - 0.02, 0.09, 2.13, THICK + 0.07, red)
+	box(d1 - 0.02, 0.0, -THICK - 0.02, 0.09, 2.13, THICK + 0.07, red)
+	box(d0 - 0.07, 2.13, -THICK - 0.02, d1 - d0 + 0.14, 0.09, THICK + 0.07, red)
+	box(d0 + 0.02, 0.0, -THICK, d1 - d0 - 0.04, 0.05, THICK + 0.1, "stone")
 	# on to the taller piece of wall in front of the mill, and to the corner of the corral
 	var h0: float = at.call(3.4)
 	var h1: float = at.call(7.6)
@@ -504,7 +504,7 @@ func _corral() -> void:
 	box(0.0, 3.21, 0.0, ln, 0.05, out, 0x6b4a36)
 	for j in range(9):
 		var gx: float = lerpf(0.12, ln - 0.12, j / 8.0)
-		box(gx - 0.09, 0.0, out - 0.18, 0.18, 3.05, 0.18, red)                 # the posts below, each on its stone
+		box(gx - 0.09, 0.3, out - 0.18, 0.18, 2.75, 0.18, red)                 # the posts below, each on its stone
 		box(gx - 0.16, 0.0, out - 0.25, 0.32, 0.3, 0.32, "stone")
 		box(gx - 0.2, 2.85, out - 0.22, 0.4, 0.2, 0.26, red)                   # (the shoe under the beam)
 		box(gx - 0.07, 3.26, out - 0.14, 0.14, C_H - 3.5, 0.14, red)           # the posts above

@@ -352,9 +352,12 @@ func _junk() -> void:
 				for k in range(n):
 					var t := Transform3D(Basis(Vector3.UP, turn + rng.randf_range(-0.12, 0.12)).scaled_local(Vector3(1.2, 0.13, 0.8)), o + Vector3(0, 0.2 + 0.07 + k * 0.145, 0))
 					tbox(t, 0xa58b63 if rng.randf() < 0.6 else 0x8f8068)
-			2:                  # drums, one or two fallen
-				for k in range(rng.randi_range(2, 5)):
-					var at := o + Vector3(rng.randf_range(-0.9, 0.9), 0.2, rng.randf_range(-0.9, 0.9))
+			2:                  # drums, arranged round a ring so their tops never intersect
+				var nd := rng.randi_range(2, 5)
+				for k in range(nd):
+					var ang := turn + k * TAU / float(nd)
+					var r_off := 0.62 if nd > 1 else 0.0
+					var at := o + Vector3(cos(ang) * r_off, 0.2 + k * 0.004, sin(ang) * r_off)
 					var hex: int = [0x3b5e8c, 0x8a4a2a, 0x2f6b4a, 0x7c7f83][rng.randi() % 4]
 					drum(at, 0.29, 0.29, 0.88, hex, 10)
 			3:                  # big bags and a sheet leaning on them

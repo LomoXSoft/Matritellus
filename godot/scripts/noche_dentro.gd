@@ -173,7 +173,7 @@ func _shell() -> void:
 		quad(Vector3(q[0], q[2], 0), Vector3(q[1], q[2], 0), Vector3(q[1], q[3], 0), Vector3(q[0], q[3], 0), "pared", Vector3(0, 0, 1))
 	quad(Vector3(-dw, 0, -0.1), Vector3(dw, 0, -0.1), Vector3(dw, 2.6, -0.1), Vector3(-dw, 2.6, -0.1), "calle", Vector3(0, 0, 1))
 	for x in [-dw - 0.35, dw]:
-		box(x, 0.0, 0.0, 0.35, 2.6, 0.04, LIME)
+		box(x, 0.0, 0.0, 0.35, 2.4, 0.04, LIME)
 	for x in [-dw, -0.03, dw - 0.06]:
 		box(x, 0.0, -0.06, 0.06, 2.6, 0.06, 0x3b3e42)
 	box(-dw, 2.55, -0.06, 2.0 * dw, 0.08, 0.08, 0x3b3e42)
@@ -243,7 +243,8 @@ func _runs() -> void:
 			for side in [0, 1]:
 				var x: float = x0 - 0.02 if side == 0 else x0 + 0.9
 				box(x, y - 0.03, z0, 0.02, 0.03, z1 - z0, 0xb9bcbf)
-				box(x - 0.005, y - 0.03, z0, 0.03, 0.06, z1 - z0, 0xf4f4f0)            # the price strip
+				var px: float = x - 0.015 if side == 0 else x + 0.02
+				box(px, y - 0.035, z0, 0.015, 0.06, z1 - z0, 0xf4f4f0)            # the price strip
 				_goods(Vector3(x + 0.34 if side == 1 else x, y, z0 + 0.05), Vector3(0, 0, 1), z1 - z0 - 0.1, 0.32, 0.38)      # (they stand out from its face: across is -x)
 		box(x0 - 0.1, 0.0, z0 - 0.6, 1.1, 1.4, 0.6, 0xf4f4f0)                            # the end of offers
 		box(x0 - 0.12, 1.4, z0 - 0.62, 1.14, 0.3, 0.64, RED)
@@ -261,7 +262,7 @@ func _cold() -> void:
 	box(x0 + 0.05, 0.25, z0 + 0.05, 0.7, 1.7, z1 - z0 - 0.1, "frio")
 	for j in range(4):
 		var y := 0.3 + j * 0.42
-		box(x0 + 0.1, y - 0.02, z0 + 0.05, 0.6, 0.02, z1 - z0 - 0.1, 0xc9ccd0)
+		box(x0 + 0.1, y - 0.02, z0 + 0.065, 0.6, 0.02, z1 - z0 - 0.13, 0xc9ccd0)
 		_goods(Vector3(x0 + 0.45, y, z0 + 0.1), Vector3(0, 0, 1), z1 - z0 - 0.2, 0.3, 0.36)
 	var z := z0
 	while z < z1 - 0.1:                                  # the glass doors, their frames
@@ -285,7 +286,7 @@ func _drinks() -> void:
 			var z := z0 + 0.1
 			while z < z1 - 0.5:                          # packs of water
 				box(x0 + 0.05, y, z, 0.38, 0.3, 0.45, 0xa8d0e8)
-				box(x0 + 0.04, y + 0.12, z, 0.4, 0.08, 0.45, 0x2a82d8)
+				box(x0 + 0.04, y + 0.12, z - 0.006, 0.4, 0.08, 0.462, 0x2a82d8)
 				z += 0.5
 		else:
 			_goods(Vector3(x0 + 0.44, y, z0 + 0.05), Vector3(0, 0, 1), z1 - z0 - 0.1, 0.32, 0.36)
@@ -299,7 +300,7 @@ func _back() -> void:
 	box(-HALF + 1.05, 0.3, z + 0.02, 2.0 * HALF - 2.1, 1.4, 0.75, "frio")
 	for j in range(3):
 		var y := 0.35 + j * 0.44
-		box(-HALF + 1.05, y - 0.02, z + 0.02, 2.0 * HALF - 2.1, 0.02, 0.7, 0xc9ccd0)
+		box(-HALF + 1.05, y - 0.02, z + 0.035, 2.0 * HALF - 2.1, 0.02, 0.68, 0xc9ccd0)
 		_goods(Vector3(-HALF + 1.1, y, z + 0.2), Vector3(1, 0, 0), 2.0 * HALF - 2.2, 0.35, 0.38)
 	box(-HALF + 1.0, 1.9, z, 2.0 * HALF - 2.0, 0.12, 0.9, RED)
 	solid(Vector3(0, 0.95, z + 0.45), Vector3(2.0 * HALF - 2.0, 1.9, 0.9))

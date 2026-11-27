@@ -140,12 +140,15 @@ func _bay(look: Dictionary) -> void:
 	var inside: int = look["inside"]
 	var hw := w / 2.0
 	var side := hw - door_w / 2.0                 # how much front there is either side of the doorway
+	var sh := tall - 0.2
+	var sd := d - 2.0 * THICK + 0.02
+	var sz := -(d + 0.02) / 2.0
 	for sx in [-1.0, 1.0]:
-		_solid(inside, Vector3(sx * (hw - THICK / 2.0), tall / 2.0, -d / 2.0), Vector3(THICK, tall, d))          # the sides
+		_solid(inside, Vector3(sx * (hw - THICK / 2.0), sh / 2.0, sz), Vector3(THICK, sh, sd))          # the sides
 		_solid(wall, Vector3(sx * (hw - side / 2.0), tall / 2.0, -THICK / 2.0 + 0.02), Vector3(side, tall, THICK))     # the front, either side
-	_solid(inside, Vector3(0, tall / 2.0, -d + THICK / 2.0), Vector3(w, tall, THICK))                              # the back
+	_solid(inside, Vector3(0, sh / 2.0, -d + THICK / 2.0), Vector3(w, sh, THICK))                              # the back
 	_solid(wall, Vector3(0, (door_h + tall) / 2.0, -THICK / 2.0 + 0.02), Vector3(door_w, tall - door_h, THICK))        # over the doorway
-	_solid(look.get("roof", 0x6c7178), Vector3(0, tall - 0.1, -d / 2.0), Vector3(w, 0.2, d))                       # the roof
+	_solid(look.get("roof", 0x6c7178), Vector3(0, tall - 0.1, -(d + THICK - 0.02) / 2.0), Vector3(w, 0.2, d - THICK + 0.02))     # the roof
 	if top < tall:                                                                                                 # the floor of upstairs
 		_box(_f, 0x6c7178, Vector3(0, top + 0.1, -d / 2.0), Vector3(w - THICK, 0.2, d - THICK))
 	# the floor: smooth concrete, an oil stain or two, yellow lines where the car goes

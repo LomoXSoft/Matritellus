@@ -8,6 +8,13 @@ extends Node3D
 ## A place `extends "res://scripts/obra.gd"`, says what its material keys are in _material() (a whole number is a
 ## plain colour) and calls _commit() when it has built everything.
 ## (The Petril, petril.gd, was the first place built this way and keeps its own copy of these, as released.)
+##
+## Anti-Z-fighting rules for all places:
+##   1. Frames/surrounds: >= 1.5-2 cm proud or wrap 2 cm into reveal (use door_frame() / stone_frame(); never overlap jambs with lintel).
+##   2. Signs/plaques on backing boxes: lift textured quad >= 1.2-1.5 cm proud (use sign_board()).
+##   3. Stacked ground layers (_lay/flat): step >= 1.2-1.5 cm apart and cut with the same terrain grid (MapData.rg).
+##   4. Party walls & adjacent blocks: inset Catastro party walls 2.5 cm (ring_walls(..., 0.025)) and tuck attached
+##      annexes 4-6 cm (or skip buried faces); watch CULL_DISABLED materials (roof sheets/tiles) whose back faces also render.
 
 const Parts = preload("res://scripts/parts.gd")
 const Tex = preload("res://scripts/texturas.gd")
@@ -382,7 +389,7 @@ func cornice(x0: float, x1: float, y: float, teeth := true, key = "brick", k := 
 		for i in range(n):
 			var t := Transform3D(Basis(Vector3.UP, PI / 4.0).scaled_local(Vector3(0.11, 0.09, 0.11) * k), Vector3(x0 + (i + 0.5) * (x1 - x0) / n, at + 0.045 * k, out + 0.02 * k))
 			tbox(t, key)
-		box(x0 - out, at, 0.0, x1 - x0 + 2.0 * out, 0.09 * k, out - 0.03 * k, 0x8a6a4c)
+		box(x0 - out, at + 0.006 * k, 0.0, x1 - x0 + 2.0 * out, 0.078 * k, out - 0.03 * k, 0x8a6a4c)
 	else:
 		box(x0 - out, at, 0.0, x1 - x0 + 2.0 * out, 0.09 * k, out, key)
 	at += 0.09 * k
@@ -398,12 +405,12 @@ func window(r: Rect2, frame = 0x3a2a1e, glass := 0x1f2a33, bars := 2) -> void:
 	var z := -DEEP + 0.06
 	var a := r.position
 	var b := r.end
-	box(a.x, a.y, z - 0.05, r.size.x, r.size.y, 0.03, glass)
+	box(a.x + 0.02, a.y + 0.02, z - 0.05, maxf(0.02, r.size.x - 0.04), maxf(0.02, r.size.y - 0.04), 0.03, glass)
 	for q in [[a.x, a.y, 0.07, r.size.y], [b.x - 0.07, a.y, 0.07, r.size.y], [a.x, a.y, r.size.x, 0.07], [a.x, b.y - 0.07, r.size.x, 0.07]]:
 		box(q[0], q[1], z - 0.02, q[2], q[3], 0.06, frame)
 	box((a.x + b.x) / 2.0 - 0.035, a.y, z - 0.02, 0.07, r.size.y, 0.065, frame)
 	for k in range(1, bars + 1):
-		box(a.x, a.y + r.size.y * k / (bars + 1.0) - 0.015, z - 0.015, r.size.x, 0.03, 0.05, frame)
+		box(a.x + 0.06, a.y + r.size.y * k / (bars + 1.0) - 0.015, z - 0.015, maxf(0.02, r.size.x - 0.12), 0.03, 0.05, frame)
 
 ## An iron grille standing out in front of a window (a "reja"): square bars upright, flat ones across, in a cage
 ## that comes `out` from the wall.
@@ -621,3 +628,46 @@ func _finial(at: Vector3, tall := 1.0) -> void:
 	cbox(at + Vector3(0, tall * 0.55 + 0.75, 0), Vector3(0.035, 1.2, 0.035), IRON)
 	cbox(at + Vector3(0, tall * 0.55 + 1.05, 0), Vector3(0.5, 0.035, 0.035), IRON)
 	cbox(at + Vector3(0.12, tall * 0.55 + 1.28, 0), Vector3(0.34, 0.16, 0.02), IRON)
+
+## Anti-Z-fighting door/window surround: wraps `proud_in` into the reveal and stops jambs cleanly under the lintel.
+func door_frame(r: Rect2, jamb_w := 0.14, proud_out := 0.04, key = STONE, proud_in := 0.02, z_back := 0.0) -> void:
+	var z0 := z_back - proud_in
+	var d := proud_out + proud_in
+	box(r.position.x - jamb_w, r.position.y, z0, jamb_w + proud_in, r.size.y, d, key)
+	box(r.end.x - proud_in, r.position.y, z0, jamb_w + proud_in, r.size.y, d, key)
+	box(r.position.x - jamb_w, r.end.y, z0, r.size.x + 2.0 * jamb_w, jamb_w, d, key)
+
+## Textured sign or plaque mounted on a backing box, lifted >= 1.2 cm proud so it never Z-fights.
+func sign_board(x0: float, y0: float, w: float, h: float, z_wall: float, depth: float, back_key, tex_key, pad := 0.03, lift := 0.014) -> void:
+	box(x0, y0, z_wall, w, h, depth, back_key)
+	var z := z_wall + depth + maxf(lift, 0.012)
+	pieces += 1
+	quad(Vector3(x0 + pad, y0 + pad, z), Vector3(x0 + w - pad, y0 + pad, z), Vector3(x0 + w - pad, y0 + h - pad, z), Vector3(x0 + pad, y0 + h - pad, z), tex_key, Vector3(0, 0, 1),
+		[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
+
+## Outward perimeter walls around a 2D polygon in the current frame, inset by `inset` (2.5 cm default) so adjacent plots never coplane.
+func ring_walls(pts: Array, y0: float, y1: float, key, skip: Array = [], inset := 0.025) -> void:
+	var area2 := 0.0
+	for i in range(pts.size()):
+		var p: Vector2 = pts[i]
+		var q: Vector2 = pts[(i + 1) % pts.size()]
+		area2 += p.x * q.y - q.x * p.y
+	var out_as_given := area2 < 0.0
+	for i in range(pts.size()):
+		if i in skip:
+			continue
+		var p: Vector2 = pts[i]
+		var q: Vector2 = pts[(i + 1) % pts.size()]
+		var a: Vector2 = p if out_as_given else q
+		var b: Vector2 = q if out_as_given else p
+		if a.distance_to(b) < 0.001:
+			continue
+		if inset > 0.0:
+			var d := (b - a).normalized()
+			var inward := Vector2(d.y, -d.x)
+			a += inward * inset
+			b += inward * inset
+		var ln := face(a, b)
+		pieces += 1
+		quad(Vector3(0, y0, 0), Vector3(ln, y0, 0), Vector3(ln, y1, 0), Vector3(0, y1, 0), key, Vector3(0, 0, 1))
+	home()

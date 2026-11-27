@@ -264,8 +264,8 @@ func _front(a: Vector2, b: Vector2, top: float, cols: Array, look := {}) -> floa
 			_rack(r)
 	if look.get("dress", true):
 		for y in LINES:
-			box(0.0, float(y) - 0.012, 0.0, ln, 0.024, 0.004, 0xb9b5a8)
-			box(0.0, float(y) + 0.72, 0.0, ln, 0.02, 0.004, 0xc6c2b6)
+			box(0.0, float(y) - 0.012, 0.0, ln, 0.024, 0.012, 0xb9b5a8)
+			box(0.0, float(y) + 0.72, 0.0, ln, 0.02, 0.012, 0xc6c2b6)
 		if look.get("foot", true):
 			box(0.0, DOWN, 0.0, ln, FLOOR + 0.25 - DOWN, 0.03, "blanco")                # its foot
 		box(-0.1, top - 0.64, 0.0, ln + 0.2, 0.12, 0.1, "blanco")                       # its cornice
@@ -278,6 +278,8 @@ func _front(a: Vector2, b: Vector2, top: float, cols: Array, look := {}) -> floa
 func _block(ring: Array, top: float, fronts: Dictionary) -> void:
 	for i in range(ring.size()):
 		var spec: Dictionary = fronts.get(i, {})
+		if spec.get("skip", false):
+			continue
 		var ln: float = _front(ring[i], ring[(i + 1) % ring.size()], top, spec.get("cols", []), spec)
 		if spec.has("then"):
 			(spec["then"] as Callable).call(ln)
@@ -353,13 +355,13 @@ func _blocks() -> void:
 	# south-west: its body on the avenue, the side of it, its strip, the yard, the court, its side on the recess
 	_block(SW, TOP, {0: {"cols": inner, "then": _x_sw_body}, 3: {"cols": [2.6, 6.8, 11.0], "then": _x_sw_south}, 4: {"cols": [3.2, 8.0, 12.6], "bars": false}})
 	# the link between them: the way in is in its front (_entrance draws it)
-	_block(LINK, TOP - 0.3, {0: {"dress": false, "holes": [Rect2(0.45, DOWN, 3.0, FLOOR + 2.75 - DOWN)]}, 1: plain, 2: plain, 3: plain})
+	_block(LINK, TOP - 0.3, {0: {"dress": false, "holes": [Rect2(0.45, DOWN, 3.0, FLOOR + 2.75 - DOWN)]}, 1: {"skip": true}, 2: plain, 3: {"skip": true}})
 	# north-east: the court, its inner side, its end against the neighbour, the Calle de Víctor Pradera
 	_block(NE, TOP, {0: {"cols": [3.0, 7.0, 10.6], "bars": false}, 2: plain,
 		3: {"cols": [1.84, 5.54, 8.34, 13.24, 16.04, 20.69, 23.54], "racks": true, "then": _x_ne_north}})
 	# south-east: the court, the yard with its two garages, the neighbour, its inner side
 	_block(SE, TOP, {0: {"cols": [3.2, 8.0, 12.2], "bars": false}, 1: {"cols": [3.6, 10.6, 14.3], "floors": [1, 2], "holes": GARAGES, "foot": false, "then": _x_se_south}, 2: plain})
-	_block(ELINK, TOP - 0.3, {0: plain, 1: plain, 2: plain, 3: plain})
+	_block(ELINK, TOP - 0.3, {0: plain, 1: {"skip": true}, 2: plain, 3: {"skip": true}})
 
 # ---------------- the way in ----------------
 ## In the front of the link: the glass doors in their white frame, the black plaque over them, the flag-striped sign
@@ -402,7 +404,7 @@ func _entrance() -> void:
 func _badge(x: float, y: float) -> void:
 	box(x, y, 0.0, 0.5, 0.5, 0.025, 0x1c1c1e)
 	if Parts.texture(LOGO) != null:
-		quad(Vector3(x, y, 0.027), Vector3(x + 0.5, y, 0.027), Vector3(x + 0.5, y + 0.5, 0.027), Vector3(x, y + 0.5, 0.027), "logo", Vector3(0, 0, 1), [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
+		quad(Vector3(x, y, 0.038), Vector3(x + 0.5, y, 0.038), Vector3(x + 0.5, y + 0.5, 0.038), Vector3(x, y + 0.5, 0.038), "logo", Vector3(0, 0, 1), [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 	else:                                           # (its picture is missing: the hat drawn here -- its back turned up square, its low crown, its brim)
 		var cx: float = x + 0.25
 		var cy: float = y + 0.17
@@ -419,8 +421,8 @@ func _steps() -> void:
 	var x1 := 19.9                                  # where the ramp begins
 	var xe := 32.0                                  # ...and where it comes down to the ground
 	var wide := 1.3
-	box(R0, DOWN, RD, R1 - R0, FLOOR - DOWN, -RD, STEP)                                 # the landing: in the recess...
-	box(x0, DOWN, 0.0, x1 - x0, FLOOR - DOWN, wide, STEP)                               # ...and before it
+	box(R0 + 0.015, DOWN, RD + 0.015, R1 - R0 - 0.03, FLOOR - DOWN, -RD - 0.015, STEP)                                 # the landing: in the recess...
+	box(x0, DOWN, 0.015, x1 - x0, FLOOR - DOWN, wide - 0.015, STEP)                               # ...and before it
 	box(x0 - 0.3, DOWN, wide, 6.4, 0.154 - DOWN, 1.5, STEP)                             # the long bottom step
 	for k in range(4):                              # the steps, up from the avenue
 		box(x0, DOWN, wide + 0.3 * k, 2.4, FLOOR * (4 - k) / 5.0 - DOWN, 0.3, STEP)

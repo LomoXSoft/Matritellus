@@ -312,15 +312,15 @@ func _vitrina(r: Rect2, kind: String) -> void:
 	quad(Vector3(a.x, a.y, z), Vector3(b.x, a.y, z), Vector3(b.x, b.y, z), Vector3(a.x, b.y, z), "vidrio", Vector3(0, 0, 1))
 	for q in [[a.x, a.y, 0.06, r.size.y], [b.x - 0.06, a.y, 0.06, r.size.y], [a.x, a.y, r.size.x, 0.07], [a.x, b.y - 0.06, r.size.x, 0.06]]:
 		box(q[0], q[1], z - 0.03, q[2], q[3], 0.05, ALU)
-	box(a.x - 0.03, a.y - 0.06, -0.04, r.size.x + 0.06, 0.06, 0.1, "piedra")
+	box(a.x - 0.03, a.y - 0.075, -0.04, r.size.x + 0.06, 0.06, 0.1, "piedra")
 	var zb := -1.35
 	var zf := z - 0.04
 	pieces += 1
 	quad(Vector3(a.x, a.y, zb), Vector3(b.x, a.y, zb), Vector3(b.x, b.y, zb), Vector3(a.x, b.y, zb), "interior", Vector3(0, 0, 1))
 	quad(Vector3(a.x, a.y, zb), Vector3(a.x, a.y, zf), Vector3(a.x, b.y, zf), Vector3(a.x, b.y, zb), "interior", Vector3(1, 0, 0))
 	quad(Vector3(b.x, a.y, zb), Vector3(b.x, a.y, zf), Vector3(b.x, b.y, zf), Vector3(b.x, b.y, zb), "interior", Vector3(-1, 0, 0))
-	quad(Vector3(a.x, a.y, zb), Vector3(b.x, a.y, zb), Vector3(b.x, a.y, zf), Vector3(a.x, a.y, zf), 0xcfc4b8, Vector3.UP)
-	quad(Vector3(a.x, b.y, zb), Vector3(b.x, b.y, zb), Vector3(b.x, b.y, zf), Vector3(a.x, b.y, zf), "interior", Vector3.DOWN)
+	quad(Vector3(a.x, a.y + 0.015, zb), Vector3(b.x, a.y + 0.015, zb), Vector3(b.x, a.y + 0.015, zf), Vector3(a.x, a.y + 0.015, zf), 0xcfc4b8, Vector3.UP)
+	quad(Vector3(a.x, b.y - 0.015, zb), Vector3(b.x, b.y - 0.015, zb), Vector3(b.x, b.y - 0.015, zf), Vector3(a.x, b.y - 0.015, zf), "interior", Vector3.DOWN)
 	box(a.x + 0.1, b.y - 0.04, zb + 0.5, r.size.x - 0.2, 0.03, 0.1, "luz")          # (its strip light)
 	match kind:
 		"ropa":
@@ -457,7 +457,7 @@ func _santa_ana() -> void:
 	box(1.0, 0.8, zc - 0.002, 0.22, 0.3, 0.004, 0xf4f2ee)          # (and a notice by it)
 	# the board over the first window: "Complementos" (the game's own), in a thin dark frame
 	box(0.02, 2.88, 0.0, 2.4, 0.58, 0.05, 0x3a3438)
-	_picture(0.03, 2.41, 2.89, 3.45, 0.051, "rotulo")
+	_picture(0.03, 2.41, 2.89, 3.45, 0.062, "rotulo")
 	# the air conditioner over the pier before the doorway, the alarm's box by it, its pipe
 	box(4.86, 2.86, 0.0, 0.8, 0.54, 0.27, 0xe9e9e5)
 	box(4.93, 2.94, 0.27, 0.42, 0.38, 0.01, 0x9a9c9e)
@@ -533,7 +533,7 @@ func _cristo() -> void:
 	for r: Rect2 in CR_WIN:
 		_vents(r.position.x, r.end.x)
 	box(BOX.position.x, BOX.position.y, 0.0, BOX.size.x, BOX.size.y, 0.14, 0xf2f2ee)                  # the light box with the name...
-	_picture(BOX.position.x + 0.04, BOX.end.x - 0.04, BOX.position.y + 0.04, BOX.end.y - 0.04, 0.141, "caja")
+	_picture(BOX.position.x + 0.04, BOX.end.x - 0.04, BOX.position.y + 0.04, BOX.end.y - 0.04, 0.152, "caja")
 	for q in [[BOX.position.x - 0.03, BOX.position.y - 0.03, BOX.size.x + 0.06, 0.05], [BOX.position.x - 0.03, BOX.end.y - 0.02, BOX.size.x + 0.06, 0.05],
 			[BOX.position.x - 0.03, BOX.position.y, 0.05, BOX.size.y], [BOX.end.x - 0.02, BOX.position.y, 0.05, BOX.size.y]]:
 		box(q[0], q[1], 0.0, q[2], q[3], 0.16, 0x2f6a46)                                              # ...in its green frame
@@ -622,7 +622,7 @@ func _balcony(r: Rect2) -> void:
 	var x0 := r.position.x - 0.18
 	var x1 := r.end.x + 0.18
 	var y := r.position.y
-	box(x0, y - 0.12, 0.0, x1 - x0, 0.12, BALC, "losa")
+	box(x0, y - 0.135, 0.026, x1 - x0, 0.12, BALC - 0.026, "losa")
 	box(x0 - 0.01, y - 0.15, BALC - 0.03, x1 - x0 + 0.02, 0.03, 0.04, "ladrillo")
 	var z := BALC - 0.04
 	var n := maxi(4, int(round((x1 - x0) / 0.11)))

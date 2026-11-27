@@ -286,13 +286,17 @@ func _earth() -> void:
 			pts.append(Vector2(ap[i], ap[i + 1]))
 		for at in STRIPS_AT:
 			if Geometry2D.is_point_in_polygon(at, pts):
-				_lay(pts, -0.035, "tierra")
+				_lay(pts, -0.072, "tierra")
 				break
 	for s in _fair_segs():
 		var d: Vector2 = (s.b - s.a).normalized()
-		var n := Vector2(-d.y, d.x) * (MapData.fitted_hw(s) + 2.2)
+		var hw: float = MapData.fitted_hw(s)
+		var u_n := Vector2(-d.y, d.x)
 		var e := d * 0.6
-		_lay(PackedVector2Array([s.a - e - n, s.b + e - n, s.b + e + n, s.a - e + n]), -0.035, "tierra")
+		for sg: float in [-1.0, 1.0]:
+			var n0: Vector2 = u_n * (sg * hw)
+			var n1: Vector2 = u_n * (sg * (hw + 2.2))
+			_lay(PackedVector2Array([s.a - e + n0, s.b + e + n0, s.b + e + n1, s.a - e + n1]), -0.072, "tierra")
 
 ## The asphalt of its roads closed to traffic (the bake's "paved" 4: the user, 17 Nov 2026, "El recinto ferial sin líneas
 ## de tráfico. Y tampoco deben circular coches por ahí"): the map lays them as footpaths; this lays their asphalt, with no
@@ -310,13 +314,13 @@ func _asphalt() -> void:
 				continue
 			var d := (b - a).normalized()
 			var n := Vector2(-d.y, d.x) * hw
-			_lay(PackedVector2Array([a - n, b - n, b + n, a + n]), -0.012, "asfalto")
+			_lay(PackedVector2Array([a - n, b - n, b + n, a + n]), -0.002, "asfalto")
 		for i in range(p.size()):
 			var c: Vector2 = MapData.nodes[p[i]]
 			var disc := PackedVector2Array()
 			for k in range(14):
 				disc.append(c + Vector2(cos(TAU * k / 14.0), sin(TAU * k / 14.0)) * hw)
-			_lay(disc, -0.013, "asfalto")
+			_lay(disc, -0.004, "asfalto")
 
 ## the kerbs along both edges of its paths
 func _kerbs() -> void:
@@ -501,7 +505,7 @@ func _pergola_rows(inner: Array, outer: Array, gaps: Array, arches := true) -> v
 		var b: Vector2 = inner[i + 1]
 		var c: Vector2 = outer[i + 1]
 		var d: Vector2 = outer[i]
-		_lay(PackedVector2Array([a, b, c, d]), -0.025, "losa")                 # its walk
+		_lay(PackedVector2Array([a, b, c, d]), -0.044, "losa")                 # its walk
 		if i in gaps:
 			continue
 		_ivy_beam(a, b, tall, i)                                                # along both rows
@@ -552,7 +556,7 @@ func _ivy_block(k0: int, k1: int) -> void:
 		for k in range(k0, k1):
 			_ivy_beam(_north(_col_s(k), rows[j]), _north(_col_s(k + 1), rows[j]), tall, k + j * 2)
 	_lay(PackedVector2Array([_north(_col_s(k0) - 0.6, PERGOLA_OUT[1]), _north(_col_s(k1) + 0.6, PERGOLA_OUT[1]),
-		_north(_col_s(k1) + 0.6, 15.6), _north(_col_s(k0) - 0.6, 15.6)]), -0.025, "losa")
+		_north(_col_s(k1) + 0.6, 15.6), _north(_col_s(k0) - 0.6, 15.6)]), -0.044, "losa")
 	var mid := _north((_col_s(k0) + _col_s(k1)) / 2.0, 12.0)              # the terrace: tables and chairs (props.gd lays them out)
 	W.extra_terrazas.append([mid, (NORTH_B - NORTH_A).normalized()])
 	terraces.append(mid)
@@ -610,7 +614,7 @@ func _park() -> void:
 	var sq := PackedVector2Array()
 	for k in range(25):
 		sq.append(_round(PI * k / 24.0, ROUND_R[0] - 0.3))
-	_lay(sq, -0.025, "pavimento")
+	_lay(sq, -0.044, "pavimento")
 	var inner: Array = []
 	var outer: Array = []
 	var n := 20
@@ -636,7 +640,7 @@ func _park() -> void:
 	# behind the fairground's walk: a paved square with the little fountain
 	var sw: float = _col_s(BLOCK_W[1]) + 0.6                                   # (between the two blocks of ivy)
 	var se: float = _col_s(BLOCK_E[0]) - 0.6
-	_lay(PackedVector2Array([_north(sw, 9.6), _north(se, 9.6), _north(se, 19.0), _north(sw, 19.0)]), -0.025, "pavimento")
+	_lay(PackedVector2Array([_north(sw, 9.6), _north(se, 9.6), _north(se, 19.0), _north(sw, 19.0)]), -0.044, "pavimento")
 	_little_fountain(_axis(AXIS_X + 14.5))
 	_walk_tunnel()
 	# lawns' hedges, low and clipped: along the north of the little fountain's square (a way through on the main walk)
@@ -647,9 +651,9 @@ func _park() -> void:
 	for p in PARK_TREES:
 		_tree(p, 8.5 + fmod(p.x * 0.37 + p.y * 0.11, 2.5))
 	# the pavements of the Paseo and of the Calle de la Huerta along the park: chequered tiles, red and white, and a kerb
-	_lay(PackedVector2Array([_paseo(21.0, 3.9), _paseo(80.0, 3.9), _paseo(80.0, PAVEMENT + 0.05), _paseo(21.0, PAVEMENT + 0.05)]), -0.03, "baldosa")
+	_lay(PackedVector2Array([_paseo(21.0, 3.9), _paseo(80.0, 3.9), _paseo(80.0, PAVEMENT + 0.05), _paseo(21.0, PAVEMENT + 0.05)]), -0.058, "baldosa")
 	_kerb_line(_paseo(21.0, 3.83), _paseo(80.0, 3.83))
-	_lay(PackedVector2Array([_huerta(4.0, 3.9), _huerta(64.0, 3.9), _huerta(64.0, PAVEMENT + 0.05), _huerta(4.0, PAVEMENT + 0.05)]), -0.03, "baldosa")
+	_lay(PackedVector2Array([_huerta(4.0, 3.9), _huerta(64.0, 3.9), _huerta(64.0, PAVEMENT + 0.05), _huerta(4.0, PAVEMENT + 0.05)]), -0.058, "baldosa")
 	_kerb_line(_huerta(4.0, 3.83), _huerta(64.0, 3.83))
 	for s2 in [30.0, 40.0, 56.0, 66.0]:                                        # the trees in their pits on the Paseo's pavement
 		_tree(_paseo(s2, 4.6), 9.0, true)
@@ -667,12 +671,12 @@ func _main_walk() -> void:
 	var n := Vector2(-AXIS_D.y, AXIS_D.x) * (AXIS_WALK / 2.0)
 	var a := _axis(t0)
 	var b := _axis(t1)
-	_lay(PackedVector2Array([a - n, b - n, b + n, a + n]), -0.02, "empedrado")
+	_lay(PackedVector2Array([a - n, b - n, b + n, a + n]), -0.016, "empedrado")
 	var lf := _axis(AXIS_X + 14.5)
 	var disc := PackedVector2Array()
 	for k in range(24):
 		disc.append(lf + Vector2(cos(TAU * k / 24.0), sin(TAU * k / 24.0)) * 3.6)
-	_lay(disc, -0.02, "empedrado")
+	_lay(disc, -0.016, "empedrado")
 	walk_ends = [a, b]
 
 ## a low clipped hedge from a to b, with gaps (fractions of its length) for the ways through
@@ -823,7 +827,7 @@ func _square() -> void:
 			break
 	if plaza.size() < 3:
 		return
-	_lay(plaza, -0.03, "baldosa")
+	_lay(plaza, -0.058, "baldosa")
 	for i in range(plaza.size()):
 		_kerb_line(plaza[i], plaza[(i + 1) % plaza.size()])
 
@@ -1020,7 +1024,7 @@ func _auditorio() -> void:
 	for i in range(1, 15):
 		bend.append(_aud_bend(i / 14.0))
 	aud_outline = PackedVector2Array([AUD_C0, AUD_NE, AUD_SE] + bend + AUD_SW)
-	_lay(aud_outline, -0.022, "hormigon")
+	_lay(aud_outline, -0.03, "hormigon")
 	_stage()
 	# the wall, and its way in
 	var gap0: Vector2 = AUD_C0 + AUD_E * AUD_GAP[0]
@@ -1175,7 +1179,7 @@ func _aud_pavement(pts: Array) -> void:
 		var ob: Vector2 = -(mit[i + 1] as Vector2).normalized()
 		var fa: Vector2 = (pts[i] as Vector2) - (mit[i] as Vector2) * 0.125
 		var fb: Vector2 = (pts[i + 1] as Vector2) - (mit[i + 1] as Vector2) * 0.125
-		_lay(PackedVector2Array([fa, fb, fb + ob * wb, fa + oa * wa]), -0.03, "baldosa")
+		_lay(PackedVector2Array([fa, fb, fb + ob * wb, fa + oa * wa]), -0.058, "baldosa")
 		if wa < 2.95 and wb < 2.95:
 			_kerb_line(fa + oa * (wa - 0.075), fb + ob * (wb - 0.075))
 

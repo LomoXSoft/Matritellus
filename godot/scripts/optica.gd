@@ -309,7 +309,7 @@ func _ground_floor(a: Vector2, b: Vector2) -> void:
 	_portal(portal)
 	# the board: "ÓPTICA CORSA" (the game's own), on a thin pale frame
 	box(SIGN.position.x - 0.02, SIGN.position.y - 0.02, 0.0, SIGN.size.x + 0.04, SIGN.size.y + 0.04, 0.05, 0xc8d6d0)
-	_picture(SIGN.position.x, SIGN.end.x, SIGN.position.y, SIGN.end.y, 0.051, "rotulo")
+	_picture(SIGN.position.x, SIGN.end.x, SIGN.position.y, SIGN.end.y, 0.062, "rotulo")
 	# the glasses standing out at the west end, on their black bracket (Street View 2013: two thick green rings)
 	var hx := 0.1
 	box(hx - 0.02, 2.7, 0.0, 0.04, 0.55, 0.03, 0x1a1a1c)                                            # its plate on the wall...

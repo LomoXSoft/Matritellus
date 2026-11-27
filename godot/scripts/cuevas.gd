@@ -1325,7 +1325,7 @@ func _north(fine: bool) -> void:
 		var p0 := px - 2.15
 		var fy := g((px + p0) / 2.0, 0.3)
 		var down_it: bool = not fine and k == 3                         # (one panel has come out and lies broken)
-		box(px - 0.09, DOWN, -0.2, 0.18, fy + 2.3 - DOWN, 0.2, 0xa9a9a4)
+		box(px - 0.09, DOWN, -0.185, 0.18, fy + 2.3 - DOWN, 0.2, 0xa9a9a4)
 		if down_it:
 			tbox(Transform3D(Basis(Vector3.RIGHT, 1.35).scaled_local(Vector3(1.9, 1.0, 0.07)), Vector3((px + p0) / 2.0, fy + 0.25, 0.55)), "panel")
 			box(p0 + 0.09, DOWN, -0.13, 1.97, fy + 0.55 - DOWN, 0.07, "panel")
@@ -1335,7 +1335,7 @@ func _north(fine: bool) -> void:
 				_pic((px + p0) / 2.0 - 0.85, (px + p0) / 2.0 + 0.85, fy + 0.5, fy + 1.9, -0.05, "tag_%s" % TAGS[(k / 2 + 1) % TAGS.size()])
 		px = p0
 		k += 1
-	box(px - 0.09, DOWN, -0.2, 0.18, g(px, 0.3) + 2.3 - DOWN, 0.2, 0xa9a9a4)
+	box(px - 0.09, DOWN, -0.185, 0.18, g(px, 0.3) + 2.3 - DOWN, 0.2, 0xa9a9a4)
 	if not fine:
 		_pic(0.2, 2.1, 0.75, 2.05, 0.012, "tag_%s" % TAGS[0])
 		_planks(2.25, 3.65, [gy + 1.2], 0.03, 21)
@@ -1364,10 +1364,10 @@ func _bar(fine: bool) -> void:
 	var d0 := 39.7
 	var d1 := 41.1
 	var gy := g(40.4, BAR_Z + 0.4)
-	box(d0 - 0.08, DOWN, BAR_Z, d1 - d0 + 0.16, 2.3 - DOWN, 0.04, 0xe9e4d6 if fine else 0xa9a493)
-	box(d0, gy + 0.02, BAR_Z + 0.03, d1 - d0, 2.2 - gy, 0.04, blue)
-	box(d0 + 0.1, 1.2, BAR_Z + 0.07, d1 - d0 - 0.2, 0.75, 0.01, 0x1d2f5c if fine else 0x56627e)
-	box(d1 - 0.2, 0.95, BAR_Z + 0.07, 0.05, 0.16, 0.05, 0x8d9196)
+	box(d0 - 0.08, gy, BAR_Z + 0.032, d1 - d0 + 0.16, 2.3 - gy, 0.04, 0xe9e4d6 if fine else 0xa9a493)
+	box(d0, gy + 0.02, BAR_Z + 0.045, d1 - d0, 2.2 - gy, 0.04, blue)
+	box(d0 + 0.1, 1.2, BAR_Z + 0.085, d1 - d0 - 0.2, 0.75, 0.01, 0x1d2f5c if fine else 0x56627e)
+	box(d1 - 0.2, 0.95, BAR_Z + 0.085, 0.05, 0.16, 0.05, 0x8d9196)
 	box(41.5, 1.25, BAR_Z + 0.01, 1.3, 0.95, 0.03, "cristal")           # the window beside it
 	for q in [[41.45, 1.2, 1.4, 0.06], [41.45, 2.18, 1.4, 0.06], [41.45, 1.2, 0.06, 1.04], [42.79, 1.2, 0.06, 1.04]]:
 		box(q[0], q[1], BAR_Z + 0.01, q[2], q[3], 0.06, 0xe9e4d6 if fine else 0xa9a493)
@@ -1630,7 +1630,7 @@ func _yard(fine: bool) -> void:
 	box(-3.2, gy + 1.2, 4.0, 1.6, 1.0, 0.03, "cristal")
 	_xf = keep
 	var hy := g(88.0, -3.5)
-	box(86.6, DOWN, -4.8, 2.8, hy + 2.3 - DOWN, 2.6, wk)
+	box(86.6, DOWN, -4.8, 2.8, hy + 2.32 - DOWN, 2.6, wk)
 	box(86.5, hy + 2.3, -4.9, 3.0, 0.08, 2.8, "chapa" if fine else "chapa_vieja")
 	# the pines that show over it all, on the verge and behind the house
 	for q in [Vector3(79.0, 4.6, 5.2), Vector3(85.5, 5.6, 6.0), Vector3(91.5, 3.2, 5.4), Vector3(101.0, 6.2, 5.6), Vector3(85.0, -21.0, 5.6), Vector3(89.5, -24.5, 4.8)]:
@@ -1651,7 +1651,7 @@ func _back(fine: bool) -> void:
 	for q: Vector2 in ring:
 		pts.append(q)
 	flat(pts, 3.2, rk)
-	box(51.0, DOWN, -33.0, 7.2, g(54.0, -30.0) + 2.4 - DOWN, 33.0 + TER_E, wk)        # the little store against the terrace
+	box(51.0, DOWN, -33.0, 7.2, g(54.0, -30.0) + 2.42 - DOWN, 33.0 + TER_E, wk)        # the little store against the terrace
 	box(50.9, g(54.0, -30.0) + 2.4, -33.1, 7.4, 0.07, 33.2 + TER_E, rk)
 
 # ---------------- the pavement along the front, and what lies on it ----------------

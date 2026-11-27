@@ -598,9 +598,9 @@ func _states() -> void:
 		_xf = _xf * lean
 		box(-0.32, 0.0, -0.015, 0.64, 0.98, 0.03, 0x6a4a30)
 		if s > 0.0:
-			_picture(-0.28, 0.28, 0.08, 0.93, 0.02, "pizarra")
+			_picture(-0.28, 0.28, 0.08, 0.93, 0.032, "pizarra")
 		else:
-			quad(Vector3(0.28, 0.08, -0.02), Vector3(-0.28, 0.08, -0.02), Vector3(-0.28, 0.93, -0.02), Vector3(0.28, 0.93, -0.02), "pizarra", Vector3(0, 0, -1),
+			quad(Vector3(0.28, 0.08, -0.032), Vector3(-0.28, 0.08, -0.032), Vector3(-0.28, 0.93, -0.032), Vector3(0.28, 0.93, -0.032), "pizarra", Vector3(0, 0, -1),
 				[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 		_xf = k2
 	_xf = keep

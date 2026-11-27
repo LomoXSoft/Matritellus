@@ -262,15 +262,20 @@ func _lay_map(wpoly: PackedVector2Array, lift: float, key) -> void:
 		box = box.expand(q)
 	var g: float = MapData.rg
 	for i in range(int(floor((box.position.x - MapData.rx0) / g)), int(floor((box.end.x - MapData.rx0) / g)) + 1):
-		var xa: float = MapData.rx0 + i * g
-		var strip := PackedVector2Array([Vector2(xa, box.position.y - 1.0), Vector2(xa + g, box.position.y - 1.0), Vector2(xa + g, box.end.y + 1.0), Vector2(xa, box.end.y + 1.0)])
-		for piece in Geometry2D.intersect_polygons(wpoly, strip):
-			var idx := Geometry2D.triangulate_polygon(piece)
-			for t in range(0, idx.size(), 3):
-				var a: Vector2 = piece[idx[t]]
-				var b: Vector2 = piece[idx[t + 1]]
-				var c: Vector2 = piece[idx[t + 2]]
-				tri(_on(a, lift), _on(b, lift), _on(c, lift), key, Vector3.UP)
+		for j in range(int(floor((box.position.y - MapData.rz0) / g)), int(floor((box.end.y - MapData.rz0) / g)) + 1):
+			var cell := Vector2(MapData.rx0 + i * g, MapData.rz0 + j * g)
+			for facet in [PackedVector2Array([cell, cell + Vector2(g, 0), cell + Vector2(g, g)]), PackedVector2Array([cell, cell + Vector2(g, g), cell + Vector2(0, g)])]:
+				if Geometry2D.is_polygon_clockwise(facet):
+					facet.reverse()
+				for piece in Geometry2D.intersect_polygons(wpoly, facet):
+					if piece.size() < 3 or Geometry2D.is_polygon_clockwise(piece):
+						continue
+					var idx := Geometry2D.triangulate_polygon(piece)
+					for t in range(0, idx.size(), 3):
+						var a: Vector2 = piece[idx[t]]
+						var b: Vector2 = piece[idx[t + 1]]
+						var c: Vector2 = piece[idx[t + 2]]
+						tri(_on(a, lift), _on(b, lift), _on(c, lift), key, Vector3.UP)
 
 ## a spot on the map as a point of the frame, `lift` over the ground there
 func _on(w: Vector2, lift: float) -> Vector3:
@@ -286,9 +291,9 @@ func _rect(u0: float, u1: float, v0: float, v1: float) -> Array:
 func _floors() -> void:
 	var t := WALL_T
 	_lay([Vector2(t, t), Vector2(L_N - t, t), Vector2(L_N - t, L_W - t), Vector2(t, L_W - t)], 0.0, "grava")
-	_lay(_rect(HALL_D, AVENUE[0], CROSS_WALK[0], CROSS_WALK[1]), 0.02, "losetas")
-	_lay(_rect(AVENUE[1], L_N - t - 0.5, CROSS_WALK[0], CROSS_WALK[1]), 0.02, "losetas")
-	_lay(_rect(HALL_D, 16.0, CROSS_WALK[1], HALL_N + MID + ARCH + 1.0), 0.02, "losetas")      # (from the way in, round to the walk)
+	_lay(_rect(HALL_D, AVENUE[0], CROSS_WALK[0], CROSS_WALK[1]), 0.03, "losetas")
+	_lay(_rect(AVENUE[1], L_N - t - 0.5, CROSS_WALK[0], CROSS_WALK[1]), 0.03, "losetas")
+	_lay(_rect(HALL_D, 16.0, CROSS_WALK[1], HALL_N + MID + ARCH + 1.0), 0.03, "losetas")      # (from the way in, round to the walk)
 
 # ---------------- the wall ----------------
 ## Its four sides, plain and whitewashed, a grey coping on top and a dirty foot; in pieces of a few metres, each standing

@@ -385,7 +385,7 @@ func _santa_ana() -> void:
 	_banded(ln, [[DOWN, 3.5, "azul"], [3.5, SA_BOARD[0], "blanco"], [SA_BOARD[0], SA_BOARD[1], "azul"], [SA_BOARD[1], TOP_SA, "azul"]], holes, 0.3)
 	# the board: the name, the strip, the badges, a little proud, with the blue round it
 	box(0.0, SA_BOARD[0] - 0.02, 0.0, ln, SA_BOARD[1] - SA_BOARD[0] + 0.04, 0.1, "azul")
-	_picture(0.3, ln - 0.3, SA_BOARD[0], SA_BOARD[1], 0.105, "rotulo")
+	_picture(0.3, ln - 0.3, SA_BOARD[0], SA_BOARD[1], 0.114, "rotulo")
 	box(0.0, SA_BOARD[1], 0.0, ln, TOP_SA - SA_BOARD[1], 0.16, "azul")                      # the blue band at the top
 	box(-0.02, TOP_SA - 0.04, -0.02, ln + 0.04, 0.05, 0.2, 0xdfe3e8)
 	_railing(ln, TOP_SA, 0.7)
@@ -401,7 +401,7 @@ func _santa_ana() -> void:
 		_picture(x0, x1, 1.4, 3.42, -0.12, "cristal")
 		for e in [[x0, 1.4, 0.07, 2.02], [x1 - 0.07, 1.4, 0.07, 2.02], [x0, 1.4, x1 - x0, 0.07], [x0, 3.35, x1 - x0, 0.07]]:
 			box(e[0], e[1], -0.14, e[2], e[3], 0.06, 0xf4f4f0)
-		box(x0 - 0.04, 1.32, -0.3, x1 - x0 + 0.08, 0.08, 0.36, 0xe6e6e2)                  # the sill
+		box(x0 - 0.04, 1.305, -0.3, x1 - x0 + 0.08, 0.08, 0.36, 0xe6e6e2)                  # the sill
 	# the glass doors: a frame of aluminium, two fixed panes and two leaves, the red band, the transom, notices
 	var d0: float = SA_DOOR[0]
 	var d1: float = SA_DOOR[1]
@@ -610,10 +610,10 @@ func _back_door() -> void:
 	for x in [1.0, 2.29, 3.58]:
 		box(x, pg - 0.1, -0.24, 0.06, 2.7, 0.08, 0x9a9da0)
 	_picture(1.06, 3.58, pg + 1.3, pg + 1.5, -0.19, "entrada")
-	_roster(0.5, pg + 1.7, 0.004, 0.05)                                                 # the Roster poster on the white beside the door
+	_roster(0.5, pg + 1.7, 0.014, 0.05)                                                 # the Roster poster on the white beside the door
 	box(1.0, pg - 3.0, -0.6, 2.64, 3.0, 0.4, 0x5a5a5e)                                  # the shop's floor, seen through it
 	# the room behind, lit while it is open
-	box(0.6, pg - 0.02, -4.0, 3.4, 0.02, 3.8, 0xd8d6d0)
+	box(0.6, pg - 0.02, -4.0, 3.4, 0.02, 3.4, 0xd8d6d0)
 	box(0.6, pg + 2.9, -4.0, 3.4, 0.04, 3.8, "sala")
 	box(0.6, pg, -4.05, 3.4, 2.9, 0.05, "sala")
 	box(1.4, pg + 2.86, -2.2, 1.8, 0.04, 0.3, "luz")

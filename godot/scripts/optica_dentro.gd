@@ -325,7 +325,7 @@ func _counter() -> void:
 # ---------------- the new frames along the wall at your left ----------------
 ## A white wall lit from behind, seven rows of thin glass shelves, a pair on each place, "Novedades" over it.
 func _novedades() -> void:
-	var x := HALF
+	var x := HALF - 0.015
 	var z0 := 0.8
 	var z1 := 4.4
 	box(x - 0.06, 0.0, z0 - 0.05, 0.06, 0.6, z1 - z0 + 0.1, 0xf4f4f0)                         # (its foot, a cupboard)
@@ -353,7 +353,7 @@ func _novedades() -> void:
 ## A dark wooden cabinet: four shelves of green baize trays with round frames of tortoiseshell, gold and horn, a little
 ## brass lamp on top, "Vintage" over it.
 func _vintage() -> void:
-	var x := HALF
+	var x := HALF - 0.015
 	var z0 := 4.7
 	var z1 := 6.2
 	var dd := 0.45
@@ -468,9 +468,9 @@ func _partition() -> void:
 		box(q[0], 0.0, z, q[1] - q[0], TALL, 0.1, "pared")
 		solid(Vector3((q[0] + q[1]) / 2.0, TALL / 2.0, z + 0.05), Vector3(q[1] - q[0], TALL, 0.1))
 	box(DOORWAY.x, 2.2, z, DOORWAY.y - DOORWAY.x, TALL - 2.2, 0.1, "pared")
-	for x in [DOORWAY.x - 0.06, DOORWAY.y]:
-		box(x, 0.0, z - 0.02, 0.06, 2.26, 0.14, 0xd8d0c0)
-	box(DOORWAY.x - 0.06, 2.2, z - 0.02, DOORWAY.y - DOORWAY.x + 0.12, 0.06, 0.14, 0xd8d0c0)
+	for x in [DOORWAY.x - 0.045, DOORWAY.y - 0.015]:
+		box(x, 0.0, z - 0.02, 0.06, 2.245, 0.14, 0xd8d0c0)
+	box(DOORWAY.x - 0.045, 2.185, z - 0.02, DOORWAY.y - DOORWAY.x + 0.09, 0.06, 0.14, 0xd8d0c0)
 	box(DOORWAY.x - 0.04, 0.0, z + 0.12, 0.04, 2.15, 0.8, 0xe8e4dc)                                  # (its door, open against the wall inside)
 	pieces += 1                                                                                       # the shop's name, facing the room
 	quad(Vector3(0.5, 2.25, z - 0.005), Vector3(-2.7, 2.25, z - 0.005), Vector3(-2.7, 0.65, z - 0.005), Vector3(0.5, 0.65, z - 0.005), "mural", Vector3(0, 0, -1),
@@ -518,7 +518,7 @@ func _eyes_room() -> void:
 	var ez := c.z
 	var gap := 0.2
 	box(HALF - gap - 0.08, 0.95, ez - 0.45, 0.08, 1.3, 0.9, 0xf4f4f0)
-	quad(Vector3(HALF - gap - 0.081, 1.0, ez - 0.4), Vector3(HALF - gap - 0.081, 1.0, ez + 0.4), Vector3(HALF - gap - 0.081, 2.2, ez + 0.4), Vector3(HALF - gap - 0.081, 2.2, ez - 0.4), "optotipo", Vector3(-1, 0, 0),
+	quad(Vector3(HALF - gap - 0.092, 1.0, ez - 0.4), Vector3(HALF - gap - 0.092, 1.0, ez + 0.4), Vector3(HALF - gap - 0.092, 2.2, ez + 0.4), Vector3(HALF - gap - 0.092, 2.2, ez - 0.4), "optotipo", Vector3(-1, 0, 0),
 		[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 	pieces += 1
 	box(HALF - gap, 1.05, ez - 0.43, gap, 0.04, 0.86, 0x9a9a9e)                         # its brackets
@@ -530,7 +530,7 @@ func _eyes_room() -> void:
 	bar(Vector3(c.x + 0.9, 0.04, c.z + 0.55), Vector3(c.x + 0.9, 0.5, c.z + 0.55), 0.04, 0.04, 0x9a9a9e)
 	drum(Vector3(c.x + 0.9, 0.5, c.z + 0.55), 0.18, 0.18, 0.06, "cuero", 12)
 	# the desk at the back: the box of trial lenses, the machine that reads your eyes, a screen
-	var dz := D - 0.55
+	var dz := D - 0.565
 	box(0.3, 0.0, dz, 2.2, 0.75, 0.55, 0xf4f4f0)
 	box(0.28, 0.75, dz - 0.02, 2.24, 0.03, 0.59, 0xe8e4dc)
 	var tl := Vector3(0.55, 0.78, dz + 0.08)                                            # the box of trial lenses: open, its lid up

@@ -277,16 +277,17 @@ func _shell() -> void:
 ## From near the door to near the back: white cubes five high, a handbag, a pair of shoes, a hat box or folded scarves
 ## in each.
 func _cube_shelves() -> void:
-	var x_wall := HALF
-	var x_in := HALF - SHELF_D
+	var x_wall := HALF - 0.015
+	var dd := SHELF_D - 0.01
+	var x_in := x_wall - 0.01 - dd
 	var z0 := 0.9
 	var cols := 15
 	var rows := 5
 	for i in range(cols + 1):
-		box(x_in, 0.0, z0 + i * CUBE - 0.012, SHELF_D, rows * CUBE + 0.1, 0.024, 0xf4f4f0)
+		box(x_in, 0.0, z0 + i * CUBE - 0.012, dd, rows * CUBE + 0.1, 0.024, 0xf4f4f0)
 	for j in range(rows + 1):
-		box(x_in, 0.1 + j * CUBE - (0.024 if j > 0 else 0.0), z0, SHELF_D, 0.024, cols * CUBE, 0xf4f4f0)
-	box(x_in, 0.0, z0, SHELF_D, 0.1, cols * CUBE, 0xe4e4e0)                                                         # its foot
+		box(x_in, 0.1 + j * CUBE - (0.024 if j > 0 else 0.0), z0, dd, 0.024, cols * CUBE, 0xf4f4f0)
+	box(x_in, 0.0, z0, dd, 0.1, cols * CUBE, 0xe4e4e0)                                                         # its foot
 	box(x_wall - 0.01, 0.1, z0, 0.01, rows * CUBE, cols * CUBE, 0xe8e6e2)                                           # its back
 	props += 1
 	for i in range(cols):

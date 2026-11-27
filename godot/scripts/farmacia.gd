@@ -86,6 +86,14 @@ func _two_sided(a: Vector2, b: Vector2, y0: float, y1: float, key) -> void:
 	_plain(a, b, y0, y1, key)
 	_plain(b, a, y0, y1, key)
 
+func _inward_sign(ring: PackedVector2Array) -> float:
+	var area := 0.0
+	for i in range(ring.size()):
+		var a := ring[i]
+		var b := ring[(i + 1) % ring.size()]
+		area += a.x * b.y - b.x * a.y
+	return 1.0 if area >= 0.0 else -1.0
+
 func _is_front(a: Vector2, b: Vector2) -> bool:
 	if absf(a.y) < 0.3 and absf(b.y) < 0.3:
 		return true
@@ -108,15 +116,23 @@ func _bodies() -> void:
 			for i in range(0, raw.size(), 2):
 				var q: Vector3 = inv * Vector3(float(raw[i]), level, float(raw[i + 1]))
 				ring.append(Vector2(q.x, q.z))
+			var in_s := _inward_sign(ring)
 			for i in range(ring.size()):
 				var a := ring[i]
 				var b := ring[(i + 1) % ring.size()]
 				if not _is_front(a, b):
-					_two_sided(a, b, -3.0, top, IDS[id][1])
+					var dir := (b - a).normalized()
+					var inset := Vector2(-dir.y, dir.x) * (in_s * 0.025)
+					_two_sided(a + inset, b + inset, -3.0, top, IDS[id][1])
 			flat(ring, top, 0xa8674a if id != "real_26" else 0x9a958c)
 	var nb := PackedVector2Array([Vector2(X_PH, 0), Vector2(13.51, 0), Vector2(13.51, -11.4), Vector2(9.4, -11.4), Vector2(9.4, -4.15), Vector2(X_PH + 0.1, -4.15)])
+	var nb_s := _inward_sign(nb)
 	for i in range(1, nb.size()):
-		_two_sided(nb[i], nb[(i + 1) % nb.size()], -3.0, PH_TOP, "crema")
+		var a := nb[i]
+		var b := nb[(i + 1) % nb.size()]
+		var dir := (b - a).normalized()
+		var inset := Vector2(-dir.y, dir.x) * (nb_s * 0.025)
+		_two_sided(a + inset, b + inset, -3.0, PH_TOP, "crema")
 	flat(nb, PH_TOP, 0x9a958c)
 	solid(Vector3(9.42, 4.0, -2.1), Vector3(8.18, 12.0, 4.1))
 	solid(Vector3(11.45, 4.0, -7.75), Vector3(4.1, 12.0, 7.3))
@@ -232,9 +248,9 @@ func _scissor(r: Rect2) -> void:
 
 ## a painted board with a word on it (what the shop sells), on the wall being built
 func _sign(x: float, y: float, w: float, h: float, words: String, pixel := 0.0062) -> void:
-	box(x, y, 0.0, w, h, 0.07, YELLOW)
-	box(x - 0.02, y - 0.02, 0.0, w + 0.04, h + 0.04, 0.05, 0xf4f2ec)
-	_text(words, Vector3(x + w / 2.0, y + h / 2.0, 0.085), 64, 0x1c1c1e, pixel)
+	box(x - 0.02, y - 0.02, 0.015, w + 0.04, h + 0.04, 0.04, 0xf4f2ec)
+	box(x, y, 0.055, w, h, 0.025, YELLOW)
+	_text(words, Vector3(x + w / 2.0, y + h / 2.0, 0.092), 64, 0x1c1c1e, pixel)
 
 ## a window framed in terracotta with its cane blind down and its little iron balcony (the chemist's upper floor)
 func _framed(r: Rect2) -> void:
@@ -314,8 +330,9 @@ func _pharmacy() -> void:
 	box(studded.end.x + 0.12, -1.2, 0.0, clad - studded.end.x - 0.12, 1.7, 0.03, 0xd9c9a6)
 	# the door to the flats: dark wood, studded, a cross on it
 	box(studded.position.x, 0.0, -DEEP, studded.size.x, studded.size.y, 0.06, 0x4a2c1c)
-	for q in [[studded.position.x - 0.1, 0.0, 0.1, studded.size.y + 0.1], [studded.end.x, 0.0, 0.1, studded.size.y + 0.1], [studded.position.x - 0.1, studded.size.y, studded.size.x + 0.2, 0.1]]:
+	for q in [[studded.position.x - 0.1, 0.0, 0.1, studded.size.y + 0.1], [studded.end.x, 0.0, 0.1, studded.size.y + 0.1]]:
 		box(q[0], q[1], -0.2, q[2], q[3], 0.22, 0x3a2216)
+	box(studded.position.x - 0.1, studded.size.y + 0.015, -0.2, studded.size.x + 0.2, 0.085, 0.22, 0x3a2216)
 	for s in [0, 1]:
 		var x0: float = studded.position.x + 0.06 + s * (studded.size.x / 2.0)
 		for j in range(3):

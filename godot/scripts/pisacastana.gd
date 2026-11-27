@@ -357,7 +357,7 @@ func _frosted(r: Rect2, key: String, frame: int) -> void:
 	var b := r.end
 	for q in [[a.x, a.y, 0.05, r.size.y], [b.x - 0.05, a.y, 0.05, r.size.y], [a.x, a.y, r.size.x, 0.05], [a.x, b.y - 0.05, r.size.x, 0.05]]:
 		box(q[0], q[1], z - 0.02, q[2], q[3], 0.05, frame)
-	box(a.x - 0.03, a.y - 0.05, -0.04, r.size.x + 0.06, 0.05, 0.1, ALU)
+	box(a.x - 0.03, a.y - 0.038, -0.04, r.size.x + 0.06, 0.05, 0.1, ALU)
 
 ## A shop window in its hole: white aluminium round the glass, a white sill, and behind the glass a little lit room of
 ## shoes (`kind`: "estantes" white shelves on a white back, a row of pairs on each; "cubos" white cube shelves, a pair or
@@ -371,15 +371,15 @@ func _vitrina(r: Rect2, kind: String) -> void:
 	quad(Vector3(a.x, a.y, z), Vector3(b.x, a.y, z), Vector3(b.x, b.y, z), Vector3(a.x, b.y, z), "vidrio", Vector3(0, 0, 1))
 	for q in [[a.x, a.y, 0.06, r.size.y], [b.x - 0.06, a.y, 0.06, r.size.y], [a.x, a.y, r.size.x, 0.07], [a.x, b.y - 0.06, r.size.x, 0.06]]:
 		box(q[0], q[1], z - 0.03, q[2], q[3], 0.05, ALU)
-	box(a.x - 0.03, a.y - 0.05, -0.04, r.size.x + 0.06, 0.05, 0.1, ALU)
+	box(a.x - 0.03, a.y - 0.038, -0.04, r.size.x + 0.06, 0.05, 0.1, ALU)
 	var zb := -1.2
 	var zf := z - 0.04
 	pieces += 1
 	quad(Vector3(a.x, a.y, zb), Vector3(b.x, a.y, zb), Vector3(b.x, b.y, zb), Vector3(a.x, b.y, zb), "interior", Vector3(0, 0, 1))
 	quad(Vector3(a.x, a.y, zb), Vector3(a.x, a.y, zf), Vector3(a.x, b.y, zf), Vector3(a.x, b.y, zb), "interior", Vector3(1, 0, 0))
 	quad(Vector3(b.x, a.y, zb), Vector3(b.x, a.y, zf), Vector3(b.x, b.y, zf), Vector3(b.x, b.y, zb), "interior", Vector3(-1, 0, 0))
-	quad(Vector3(a.x, a.y, zb), Vector3(b.x, a.y, zb), Vector3(b.x, a.y, zf), Vector3(a.x, a.y, zf), 0xe2ded8, Vector3.UP)
-	quad(Vector3(a.x, b.y, zb), Vector3(b.x, b.y, zb), Vector3(b.x, b.y, zf), Vector3(a.x, b.y, zf), "interior", Vector3.DOWN)
+	quad(Vector3(a.x, a.y + 0.012, zb), Vector3(b.x, a.y + 0.012, zb), Vector3(b.x, a.y + 0.012, zf), Vector3(a.x, a.y + 0.012, zf), 0xe2ded8, Vector3.UP)
+	quad(Vector3(a.x, b.y - 0.012, zb), Vector3(b.x, b.y - 0.012, zb), Vector3(b.x, b.y - 0.012, zf), Vector3(a.x, b.y - 0.012, zf), "interior", Vector3.DOWN)
 	box(a.x + 0.1, b.y - 0.04, zb + 0.45, r.size.x - 0.2, 0.03, 0.1, "luz")          # (its strip light)
 	match kind:
 		"estantes":                                                 # (Street View 2024, the Argentina's first: five white shelves)
@@ -493,7 +493,7 @@ func _argentina() -> void:
 	_ac(11.82, 2.62, 0.72)                                                            # the flats' two air conditioners
 	_ac(14.3, 2.9, 0.82)
 	box(SIGN.position.x - 0.03, SIGN.position.y - 0.03, 0.0, SIGN.size.x + 0.06, SIGN.size.y + 0.06, 0.04, 0x343438)
-	_picture(SIGN.position.x, SIGN.end.x, SIGN.position.y, SIGN.end.y, 0.041, "rotulo")
+	_picture(SIGN.position.x, SIGN.end.x, SIGN.position.y, SIGN.end.y, 0.052, "rotulo")
 	for r: Rect2 in AR_WIN:
 		_awning(r.position.x - 0.06, r.end.x + 0.06, AWNING)
 	_canopy(AR_FROST.position.x - 0.12, DOOR.end.x + 0.12, 2.74)
@@ -510,9 +510,9 @@ func _doorway() -> void:
 	quad(Vector3(a.x, 0, zr), Vector3(a.x, 0, -DEEP), Vector3(a.x, b.y, -DEEP), Vector3(a.x, b.y, zr), "blanco", Vector3(1, 0, 0))
 	quad(Vector3(b.x, 0, zr), Vector3(b.x, 0, -DEEP), Vector3(b.x, b.y, -DEEP), Vector3(b.x, b.y, zr), "blanco", Vector3(-1, 0, 0))
 	quad(Vector3(a.x, b.y, zr), Vector3(b.x, b.y, zr), Vector3(b.x, b.y, -DEEP), Vector3(a.x, b.y, -DEEP), "blanco", Vector3.DOWN)
-	box(a.x, -0.3, zr, DOOR.size.x, 0.315, RECESS, 0xeeeeea)                           # its floor of white tiles
+	box(a.x + 0.005, -0.3, zr, DOOR.size.x - 0.01, 0.315, RECESS, 0xeeeeea)                           # its floor of white tiles
 	for k in range(1, 4):
-		box(a.x, 0.0151, zr + k * RECESS / 4.0, DOOR.size.x, 0.001, 0.008, 0xc8c8c4)
+		box(a.x + 0.005, 0.0151, zr + k * RECESS / 4.0, DOOR.size.x - 0.01, 0.001, 0.008, 0xc8c8c4)
 	var z := zr + 0.04
 	for x in [a.x, b.x - 0.06]:                                                      # the glass door: white aluminium
 		box(x, 0.0, z - 0.03, 0.06, b.y - 0.05, 0.06, ALU)
@@ -544,7 +544,7 @@ func _grille_window(r: Rect2) -> void:
 	box(r.position.x + 0.06, r.position.y + 0.06, z, r.size.x - 0.12, r.size.y - 0.12, 0.02, 0xc9a77a)
 	for i in range(1, int((r.size.y - 0.12) / 0.06)):
 		box(r.position.x + 0.06, r.position.y + 0.06 + i * 0.06, z + 0.02, r.size.x - 0.12, 0.008, 0.004, 0xa88a60)
-	box(r.position.x - 0.05, r.position.y - 0.04, -DEEP, r.size.x + 0.1, 0.04, DEEP + 0.07, 0xa8583a)
+	box(r.position.x - 0.05, r.position.y - 0.028, -DEEP, r.size.x + 0.1, 0.04, DEEP + 0.07, 0xa8583a)
 	var zg := 0.07
 	var n := 9
 	for k in range(n + 1):
@@ -596,7 +596,7 @@ func _arcos() -> void:
 	_vitrina(AC_WIN, "escalera")
 	_awning(AC_WIN.position.x - 0.06, AC_WIN.end.x + 0.06, AWNING)
 	box(FRISO.position.x - 0.03, FRISO.position.y - 0.03, 0.0, FRISO.size.x + 0.06, FRISO.size.y + 0.06, 0.03, 0x343438)
-	_picture(FRISO.position.x, FRISO.end.x, FRISO.position.y, FRISO.end.y, 0.031, "friso")
+	_picture(FRISO.position.x, FRISO.end.x, FRISO.position.y, FRISO.end.y, 0.042, "friso")
 	_meter(9.3, 1.2)
 	_ac(9.15, 2.95, 0.66)                                                             # (the shop's, over its awning by the doorway)
 	_portal(portal)
@@ -639,7 +639,7 @@ func _portal(r: Rect2) -> void:
 ## dark inside, a "se vende" card in the first.
 func _appliances(door_r: Rect2, wins: Array) -> void:
 	box(0.36, 2.92, 0.0, EL_END - 0.72, 0.56, 0.05, 0x2a2c2a)
-	_picture(0.4, EL_END - 0.4, 2.95, 3.45, 0.051, "electro")
+	_picture(0.4, EL_END - 0.4, 2.95, 3.45, 0.062, "electro")
 	box(0.15, AWNING - 0.12, 0.0, EL_END - 0.3, 0.12, 0.14, 0xe6e4de)
 	_awning(0.15, EL_END - 0.15, AWNING - 0.12, 1.1, 0.4)
 	box(0.15, AWNING - 0.12 - 0.4 - 0.22, 1.1 + 0.005, EL_END - 0.3, 0.06, 0.004, 0x2e9646)       # (the green stripe along its valance)
@@ -769,7 +769,7 @@ func _ventana(r: Rect2, down: float) -> void:
 		box(r.position.x + 0.02, r.end.y - 0.15 - drop, z + 0.05, r.size.x - 0.04, drop, 0.02, BLIND)
 		for i in range(1, int(drop / 0.06)):
 			box(r.position.x + 0.02, r.end.y - 0.15 - i * 0.06, z + 0.07, r.size.x - 0.04, 0.008, 0.004, 0xcfcfca)
-	box(r.position.x - 0.06, r.position.y - 0.07, -DEEP + 0.1, r.size.x + 0.12, 0.07, DEEP - 0.04, "sardinel")
+	box(r.position.x - 0.06, r.position.y - 0.058, -DEEP + 0.1, r.size.x + 0.12, 0.07, DEEP - 0.04, "sardinel")
 	box(r.position.x - 0.05, r.end.y, 0.0, r.size.x + 0.1, 0.13, 0.012, "sardinel")
 
 ## A loggia of the Arcos: its back wall, its sides past the wall's own depth, its ceiling, its slab standing out over

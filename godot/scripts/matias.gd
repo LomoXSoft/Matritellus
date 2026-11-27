@@ -214,7 +214,7 @@ func _sardinel(x0: float, x1: float, y: float, tall: float, proud := 0.02) -> vo
 	for i in range(n):
 		var a := lerpf(x0, x1, float(i) / n)
 		var b := lerpf(x0, x1, float(i + 1) / n)
-		box(a + 0.006, y + 0.006, 0.0, b - a - 0.012, tall - 0.012, proud, cols[(i * 7) % 3])
+		box(a + 0.006, y + 0.006, proud * 0.5, b - a - 0.012, tall - 0.012, proud * 0.5, cols[(i * 7) % 3])
 
 ## a curtain in folds hanging in an opening at depth z: a few panels set at angles
 func _curtain(r: Rect2, z: float, key) -> void:
@@ -237,7 +237,7 @@ func _blind(r: Rect2, col: int) -> void:
 	var slat: int = Color.hex((col << 8) | 0xff).darkened(0.14).to_rgba32() >> 8
 	for i in range(1, int((b.y - a.y) / 0.06)):                     # (its slats)
 		box(a.x, b.y - i * 0.06, z + 0.02, b.x - a.x, 0.01, 0.004, slat)
-	box(a.x, a.y, z, b.x - a.x, 0.035, 0.035, slat)                 # (its bottom slat, a little proud)
+	box(a.x, a.y, z + 0.02, b.x - a.x, 0.035, 0.015, slat)                 # (its bottom slat, a little proud)
 	for x in [r.position.x, r.end.x - 0.035]:                       # (its guides up the sides)
 		box(x, r.position.y, z - 0.01, 0.035, r.size.y, 0.035, 0x6a5040)
 

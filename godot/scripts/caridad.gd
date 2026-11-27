@@ -325,8 +325,8 @@ func _square() -> void:
 	var x1 := 54.3
 	_floor([Vector2(-2.0, 0.0), Vector2(xe, 0.0), Vector2(xe, wall_z(xe)), Vector2(-2.0, wall_z(-2.0))], "tierra")
 	_floor([Vector2(xe, 1.5), Vector2(x1, 1.5), Vector2(x1 + 1.5, wall_z(x1 + 1.5)), Vector2(xe, wall_z(xe))], "tierra")
-	quad(Vector3(-2.0, sq(-2.0) + 0.012, 0.0), Vector3(xe, sq(xe) + 0.012, 0.0), Vector3(xe, sq(xe) + 0.012, 1.3), Vector3(-2.0, sq(-2.0) + 0.012, 1.3), "losa", Vector3.UP)
-	quad(Vector3(xe, sq(xe) + 0.012, 1.5), Vector3(x1, sq(x1) + 0.012, 1.5), Vector3(x1, sq(x1) + 0.012, 2.4), Vector3(xe, sq(xe) + 0.012, 2.4), "losa", Vector3.UP)
+	quad(Vector3(-2.0, sq(-2.0) + 0.015, 0.0), Vector3(xe, sq(xe) + 0.015, 0.0), Vector3(xe, sq(xe) + 0.015, 1.3), Vector3(-2.0, sq(-2.0) + 0.015, 1.3), "losa", Vector3.UP)
+	quad(Vector3(xe, sq(xe) + 0.015, 1.5), Vector3(x1, sq(x1) + 0.015, 1.5), Vector3(x1, sq(x1) + 0.015, 2.4), Vector3(xe, sq(xe) + 0.015, 2.4), "losa", Vector3.UP)
 	# the walk: red and cream tiles in a chequer
 	var w0 := 4.6
 	var w1 := 7.8
@@ -335,7 +335,7 @@ func _square() -> void:
 	for i in range(nx):
 		for j in range(8):
 			var xa: float = -2.0 + i * t
-			quad(Vector3(xa, sq(xa) + 0.014, w0 + j * t), Vector3(xa + t, sq(xa + t) + 0.014, w0 + j * t), Vector3(xa + t, sq(xa + t) + 0.014, w0 + (j + 1) * t), Vector3(xa, sq(xa) + 0.014, w0 + (j + 1) * t),
+			quad(Vector3(xa, sq(xa) + 0.028, w0 + j * t), Vector3(xa + t, sq(xa + t) + 0.028, w0 + j * t), Vector3(xa + t, sq(xa + t) + 0.028, w0 + (j + 1) * t), Vector3(xa, sq(xa) + 0.028, w0 + (j + 1) * t),
 				0xb0705a if (i % 4 == 0 and j % 4 == 0) or (i % 4 == 2 and j % 4 == 2) else (0xd6cfc2 if (i + j) % 2 == 0 else 0xc2bbae), Vector3.UP)
 	# the lawn, and the low green rail that keeps people off it
 	var lz := w1 + 0.25
@@ -344,14 +344,14 @@ func _square() -> void:
 		var xb: float = minf(x0 + 7.0, x1 + 0.6)
 		if x0 < 0.0:
 			xb = 8.4                              # (the cross and its cypresses stand on a floor of their own)
-		quad(Vector3(xa, sq(xa) + 0.016, lz), Vector3(xb, sq(xb) + 0.016, lz), Vector3(xb, sq(xb) + 0.016, wall_z(xb) - 0.6), Vector3(xa, sq(xa) + 0.016, wall_z(xa) - 0.6), "cesped", Vector3.UP)
+		quad(Vector3(xa, sq(xa) + 0.032, lz), Vector3(xb, sq(xb) + 0.032, lz), Vector3(xb, sq(xb) + 0.032, wall_z(xb) - 0.6), Vector3(xa, sq(xa) + 0.032, wall_z(xa) - 0.6), "cesped", Vector3.UP)
 		var n := maxi(2, int(round((xb - xa) / 1.5)))
 		for i in range(n + 1):
 			var xp: float = xa + (xb - xa) * i / n
 			cbox(Vector3(xp, sq(xp) + 0.24, lz), Vector3(0.035, 0.48, 0.035), 0x2f6a3a)
 		bar(Vector3(xa, sq(xa) + 0.46, lz), Vector3(xb, sq(xb) + 0.46, lz), 0.035, 0.035, 0x2f6a3a)
 		bar(Vector3(xa, sq(xa) + 0.24, lz), Vector3(xb, sq(xb) + 0.24, lz), 0.03, 0.03, 0x2f6a3a)
-	quad(Vector3(8.4, sq(8.4) + 0.016, lz), Vector3(17.0, sq(17.0) + 0.016, lz), Vector3(17.0, sq(17.0) + 0.016, wall_z(17.0) - 0.6), Vector3(8.4, sq(8.4) + 0.016, wall_z(8.4) - 0.6), "losa", Vector3.UP)
+	quad(Vector3(8.4, sq(8.4) + 0.032, lz), Vector3(17.0, sq(17.0) + 0.032, lz), Vector3(17.0, sq(17.0) + 0.032, wall_z(17.0) - 0.6), Vector3(8.4, sq(8.4) + 0.032, wall_z(8.4) - 0.6), "losa", Vector3.UP)
 	# the wall over the avenue: rubble, a brick pier every few metres, railings between
 	var marks: Array = [-2.0, 5.2, 12.4, 19.6, 26.8, 34.0, 41.2, 48.4, x1 + 1.5]
 	for i in range(marks.size() - 1):
@@ -481,7 +481,7 @@ func _hermitage() -> void:
 	# --- the paved way along the front, and beyond it the row of old columns of granite on their low wall ---
 	var zz := -21.0
 	while zz < -0.5:
-		quad(Vector3(-3.5, ground(-3.5, zz) + 0.05, zz), Vector3(-0.08, ground(-0.08, zz) + 0.05, zz), Vector3(-0.08, ground(-0.08, zz + 3.0) + 0.05, zz + 3.0), Vector3(-3.5, ground(-3.5, zz + 3.0) + 0.05, zz + 3.0), "losa", Vector3.UP)
+		quad(Vector3(-3.5, ground(-3.5, zz) + 0.075, zz), Vector3(-0.08, ground(-0.08, zz) + 0.075, zz), Vector3(-0.08, ground(-0.08, zz + 3.0) + 0.075, zz + 3.0), Vector3(-3.5, ground(-3.5, zz + 3.0) + 0.075, zz + 3.0), "losa", Vector3.UP)
 		zz += 3.0
 	var cx := -4.3
 	var places: Array = [-18.6, -14.5, -10.4, -6.3, -2.2]
@@ -526,7 +526,7 @@ func _tower() -> void:
 		var ln: float = face(sides[k][0], sides[k][1], FE)
 		var win := Rect2(ln / 2.0 - 0.4, 1.1, 0.8, 1.3)
 		masonry(0.0, ln, -2.0, HT, [win] if k == 0 else [], [Rect2(0.55, -2.0, ln - 1.1, 4.6)], "brick", "rubble", [Rect2(win.position.x - 0.25, win.position.y - 0.25, win.size.x + 0.5, win.size.y + 0.5)] if k == 0 else [])
-		box(0.0, 2.6, 0.0, ln, HT - 2.6, 0.03, "crema")
+		box(0.0, 2.6, 0.015, ln, HT - 2.6, 0.02, "crema")
 		if k == 0:
 			window(win, 0x4a3324, 0x2a3640, 0)
 		home()
@@ -536,7 +536,7 @@ func _tower() -> void:
 # ---------------- the cross ----------------
 ## The cross of granite on its steps, south of the walk, among its cypresses.
 func _cross() -> void:
-	var y: float = sq(CROSS.x) + 0.016
+	var y: float = sq(CROSS.x) + 0.032
 	for k in range(3):
 		var s: float = 3.0 - k * 0.7
 		cbox(Vector3(CROSS.x, y + 0.11 + k * 0.22, CROSS.y), Vector3(s, 0.22, s), "granito")

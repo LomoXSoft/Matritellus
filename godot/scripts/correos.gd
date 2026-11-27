@@ -215,9 +215,9 @@ func _way_in() -> void:
 	var w1: float = WAY[1]
 	var dz := 3.0
 	_brick_arch(w0, w1, 2.9, 0.55, dz)
-	box(w0, 3.45, -dz, w1 - w0, 0.4, dz, "crema")                                         # over its vault
-	box(w0 - 0.02, -0.05, -dz, 0.02, 3.5, dz, "crema")                                     # its sides
-	box(w1, -0.05, -dz, 0.02, 3.5, dz, "crema")
+	box(w0, 3.45, -dz, w1 - w0, 0.4, dz - DEEP - 0.01, "crema")                            # over its vault
+	box(w0 - 0.02, -0.05, -dz, 0.02, 3.5, dz - DEEP - 0.01, "crema")                       # its sides
+	box(w1, -0.05, -dz, 0.02, 3.5, dz - DEEP - 0.01, "crema")
 	quad(Vector3(w0, 0.02, 0.0), Vector3(w1, 0.02, 0.0), Vector3(w1, 0.45, -dz), Vector3(w0, 0.45, -dz), 0xc8beb0, Vector3(0, 1, 0.15))      # the ramp up
 	for y in [0.9, 0.5]:                                                                   # the rail, along its north side
 		bar(Vector3(w1 - 0.12, y, -0.1), Vector3(w1 - 0.12, y + 0.45, -dz + 0.3), 0.04, 0.04, 0xb8bcc0)

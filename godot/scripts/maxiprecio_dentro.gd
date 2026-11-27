@@ -242,13 +242,13 @@ func _wall_shelves() -> void:
 		solid(Vector3(sx * (HALF - SHELF_D / 2.0), 1.2, (z0 + z0 + bays * 1.2) / 2.0), Vector3(SHELF_D, 2.4, bays * 1.2))
 
 func _shelf_bay(sx: float, zb: float) -> void:
-	var x_wall: float = sx * HALF
-	var x_in: float = sx * (HALF - SHELF_D)
+	var x_wall: float = sx * (HALF - 0.015)
+	var x_in: float = sx * (HALF - 0.015 - SHELF_D)
 	var xm := (x_wall + x_in) / 2.0
 	props += 1
 	for z in [zb, zb + 1.17]:                                                     # its sides
 		box(minf(x_wall, x_in), 0.0, z, SHELF_D, 2.4, 0.03, 0xf2f2ee)
-	box(minf(x_wall, x_in), 0.0, zb, SHELF_D, 0.12, 1.2, 0xd8d8d4)              # its foot
+	box(minf(x_wall, x_in), 0.0, zb + 0.03, SHELF_D, 0.12, 1.14, 0xd8d8d4)         # its foot
 	for k in range(5):
 		var y := 0.12 + k * 0.46
 		box(minf(x_wall, x_in), y, zb + 0.03, SHELF_D, 0.025, 1.14, 0xf2f2ee)

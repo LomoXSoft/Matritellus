@@ -178,7 +178,7 @@ func _pane(r: Rect2, z: float, cols: int, rows: int, frame := 0.07) -> void:
 
 func _shopfront() -> void:
 	var g := GLASS
-	box(0.25, -0.3, g - 0.05, 4.95, FLOOR + 0.3, 0.3, 0x8a8680)                     # the step, its black nosing
+	box(0.25, -0.3, g - 0.05, 4.95, FLOOR + 0.285, 0.3, 0x8a8680)                     # the step, its black nosing
 	box(0.25, FLOOR - 0.02, g + 0.2, 4.95, 0.025, 0.06, BLACK)
 	box(0.25, SHOP - 0.12, g - 0.04, 4.95, 0.12, 0.1, WHITE)                          # the head of the frame
 	for x in [0.25, 1.17, 3.0, 5.12]:                                                # its posts
@@ -226,7 +226,7 @@ func _boards() -> void:
 	var x0 := 0.15
 	var x1 := len_front - 0.25
 	box(x0, SHOP, 0.0, x1 - x0, BOARD - SHOP, 0.14, BLACK)
-	quad(Vector3(x0 + 0.04, SHOP + 0.04, 0.142), Vector3(x1 - 0.04, SHOP + 0.04, 0.142), Vector3(x1 - 0.04, BOARD - 0.04, 0.142), Vector3(x0 + 0.04, BOARD - 0.04, 0.142), "rotulo", Vector3(0, 0, 1),
+	quad(Vector3(x0 + 0.04, SHOP + 0.04, 0.152), Vector3(x1 - 0.04, SHOP + 0.04, 0.152), Vector3(x1 - 0.04, BOARD - 0.04, 0.152), Vector3(x0 + 0.04, BOARD - 0.04, 0.152), "rotulo", Vector3(0, 0, 1),
 		[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 	sign_at = transform * Vector3((x0 + x1) / 2.0, (SHOP + BOARD) / 2.0, 0.14)
 	# the sign hanging out over the pavement at the right, lit on both faces, on its bracket
@@ -238,8 +238,8 @@ func _boards() -> void:
 	box(x - 0.04, y0 - 0.02, z0 - 0.02, 0.08, y1 - y0 + 0.04, z1 - z0 + 0.04, BLACK)
 	box(x - 0.02, y1 + 0.02, 0.0, 0.04, 0.04, z1 - 0.05, BLACK)
 	var uv := [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)]
-	quad(Vector3(x + 0.041, y0, z1), Vector3(x + 0.041, y0, z0), Vector3(x + 0.041, y1, z0), Vector3(x + 0.041, y1, z1), "bandera", Vector3(1, 0, 0), uv)
-	quad(Vector3(x - 0.041, y0, z0), Vector3(x - 0.041, y0, z1), Vector3(x - 0.041, y1, z1), Vector3(x - 0.041, y1, z0), "bandera", Vector3(-1, 0, 0), uv)
+	quad(Vector3(x + 0.052, y0, z1), Vector3(x + 0.052, y0, z0), Vector3(x + 0.052, y1, z0), Vector3(x + 0.052, y1, z1), "bandera", Vector3(1, 0, 0), uv)
+	quad(Vector3(x - 0.052, y0, z0), Vector3(x - 0.052, y0, z1), Vector3(x - 0.052, y1, z1), Vector3(x - 0.052, y1, z0), "bandera", Vector3(-1, 0, 0), uv)
 	# the floodlight over the board at the left, and the bundle of cables along its top, as dirty as it is
 	box(0.35, BOARD + 0.12, 0.0, 0.05, 0.05, 0.3, BLACK)
 	cbox(Vector3(0.38, BOARD + 0.1, 0.32), Vector3(0.2, 0.14, 0.08), 0x2a2a2c)
@@ -267,7 +267,7 @@ func _window() -> void:
 	box(CX - R - 0.05, SILL - 0.06, 0.0, 2.0 * R + 0.1, 0.06, 0.1, 0x1c2230)             # its sill
 	# what is behind it: the room upstairs, lit a little
 	box(CX - R, SILL - 0.4, -2.4, 2.0 * R, SPRING + R - SILL + 0.4, 0.02, "sala")
-	box(CX - R, SILL - 0.05, -2.4, 2.0 * R, 0.05, 2.4 - DEEP, "tarima")
+	box(CX - R, SILL - 0.05, -2.385, 2.0 * R, 0.05, 2.385 - DEEP, "tarima")
 
 ## the roof: the terrace behind a steel rail along the front and the right, and the box of the stairs at the left
 func _roof(ring: Array) -> void:
@@ -316,7 +316,7 @@ func _inside() -> void:
 		var z: float = -1.3 - k * 1.65
 		for side in [-1.0, 1.0]:
 			var bz: float = z + side * 0.55
-			box(x1 - 1.3, FLOOR, bz - 0.22, 1.3, 0.45, 0.44, "rojo")
+			box(x1 - 1.3, FLOOR + 0.12, bz - 0.22, 1.3, 0.33, 0.44, "rojo")
 			box(x1 - 1.3, FLOOR + 0.45, bz + side * 0.2 - 0.06, 1.3, 0.6, 0.12, "rojo")
 			box(x1 - 1.3, FLOOR, bz - 0.22, 1.3, 0.12, 0.44, 0x6a4a3a)
 		box(x1 - 1.2, FLOOR + 0.72, z - 0.33, 1.1, 0.04, 0.66, 0x3a3030)

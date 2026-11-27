@@ -268,7 +268,7 @@ func _wall(ln: float, top: float, holes: Array, gaps: Array = []) -> void:
 ## a frieze on the wall being built, its top at y: a course of brick, a row of bricks set cornerwise, another course
 func _frieze(x0: float, x1: float, y: float) -> void:
 	box(x0, y - 0.34, 0.0, x1 - x0, 0.07, 0.05, "ladrillo")
-	box(x0, y - 0.27, 0.0, x1 - x0, 0.2, 0.012, 0x8a6a4c)
+	box(x0, y - 0.27, 0.008, x1 - x0, 0.2, 0.012, 0x8a6a4c)
 	var n := int((x1 - x0) / 0.17)
 	for i in range(n):
 		tbox(Transform3D(Basis(Vector3.UP, PI / 4.0).scaled_local(Vector3(0.1, 0.18, 0.1)), Vector3(x0 + (i + 0.5) * (x1 - x0) / n, y - 0.17, 0.035)), "ladrillo")
@@ -277,7 +277,7 @@ func _frieze(x0: float, x1: float, y: float) -> void:
 ## what fills a window's hole: glass, its frame, two leaves of small panes, and its sill of brick
 func _win(r: Rect2, frame := MAROON) -> void:
 	var z: float = -DEEP + 0.08
-	box(r.position.x, r.position.y, z - 0.04, r.size.x, r.size.y, 0.03, GLASS)
+	box(r.position.x + 0.06, r.position.y + 0.06, z - 0.04, r.size.x - 0.12, r.size.y - 0.12, 0.025, GLASS)
 	for q in [[r.position.x, r.position.y, 0.08, r.size.y], [r.end.x - 0.08, r.position.y, 0.08, r.size.y], [r.position.x, r.position.y, r.size.x, 0.08], [r.position.x, r.end.y - 0.08, r.size.x, 0.08],
 			[r.position.x + r.size.x / 2.0 - 0.04, r.position.y, 0.08, r.size.y]]:
 		box(q[0], q[1], z - 0.02, q[2], q[3], 0.06, frame)
@@ -304,7 +304,7 @@ func _reja(r: Rect2, out := 0.17) -> void:
 func _lattice(r: Rect2, step := 0.15) -> void:
 	if r.size.x < 0.1 or r.size.y < 0.1:
 		return
-	box(r.position.x, r.position.y, 0.0, r.size.x, r.size.y, 0.03, 0x4a2e22)
+	box(r.position.x, r.position.y, 0.01, r.size.x, r.size.y, 0.025, 0x4a2e22)
 	var z := 0.045
 	var k0: int = int(floor((r.position.x - r.end.y) / step))
 	var k1: int = int(ceil((r.end.x - r.position.y) / step))
@@ -398,14 +398,14 @@ func _front() -> void:
 	var pw := 2.07
 	var ph := 0.49
 	var py := 4.59
-	box(mid - pw / 2.0 - 0.05, py - 0.05, 0.0, pw + 0.1, ph + 0.1, 0.075, 0xb9774c)
+	box(mid - pw / 2.0 - 0.05, py - 0.05, 0.035, pw + 0.1, ph + 0.1, 0.045, 0xb9774c)
 	if Parts.texture(PLATE) != null:
 		plate = true
-		quad(Vector3(mid - pw / 2.0, py, 0.08), Vector3(mid + pw / 2.0, py, 0.08), Vector3(mid + pw / 2.0, py + ph, 0.08), Vector3(mid - pw / 2.0, py + ph, 0.08), "placa", Vector3(0, 0, 1),
+		quad(Vector3(mid - pw / 2.0, py, 0.092), Vector3(mid + pw / 2.0, py, 0.092), Vector3(mid + pw / 2.0, py + ph, 0.092), Vector3(mid - pw / 2.0, py + ph, 0.092), "placa", Vector3(0, 0, 1),
 			[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 	else:
-		box(mid - pw / 2.0, py, 0.075, pw, ph, 0.006, 0xf4f1e6)
-		_text(NAME, Vector3(mid, py + ph / 2.0, 0.085), 48, 0x1c286e, 0.0024)
+		box(mid - pw / 2.0, py, 0.085, pw, ph, 0.006, 0xf4f1e6)
+		_text(NAME, Vector3(mid, py + ph / 2.0, 0.095), 48, 0x1c286e, 0.0024)
 	box(mid - 1.3, -0.1, 0.0, 2.6, 0.22, 0.5, "piedra")                                 # its step
 	# the balcony over it: a slab of stone on its brackets, an iron rail, three bare flagpoles
 	var by := 6.2

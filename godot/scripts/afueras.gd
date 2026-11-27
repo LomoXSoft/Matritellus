@@ -242,8 +242,8 @@ func _nave() -> void:
 ## a blue board on its front, white words on it (in the front's frame: from x0 to x1, its foot at y, h tall)
 func _name_board(x0: float, x1: float, y: float, h: float, words: String, px: int) -> void:
 	box(x0, y, 0.0, x1 - x0, h, 0.05, 0xf2f2ee)
-	box(x0 + 0.04, y + 0.04, 0.05, x1 - x0 - 0.08, h - 0.08, 0.006, NAME_BLUE)
-	_text(words, Vector3((x0 + x1) / 2.0, y + h / 2.0, 0.062), px, 0xffffff).shaded = true
+	box(x0 + 0.04, y + 0.04, 0.05, x1 - x0 - 0.08, h - 0.08, 0.014, NAME_BLUE)
+	_text(words, Vector3((x0 + x1) / 2.0, y + h / 2.0, 0.072), px, 0xffffff).shaded = true
 	name_boards += 1
 
 ## Its garage: garage.gd's bay, shutter and clutter in the hole left for it in the north block (as game.gd makes the
@@ -386,13 +386,13 @@ func _board(a: Vector2, b: Vector2, solid_posts: bool) -> void:
 			_solid_xf(Vector3(float(x), 1.5, -0.1), Vector3(0.3, 4.0, 0.3))
 	box(0.0, y0, -0.04, w, h, 0.04, 0x9a9da1)                              # (its back, of grey steel)
 	box(0.0, y0, 0.0, w, h, 0.012, 0xf2f2ee)                               # (its white edge...)
-	box(0.06, y0 + 0.06, 0.012, w - 0.12, h - 0.12, 0.006, BLUE)           # (...and its blue)
+	box(0.06, y0 + 0.06, 0.012, w - 0.12, h - 0.12, 0.014, BLUE)           # (...and its blue)
 	var rows := [["up", "Madrid"], ["right", "Córdoba"]]
 	for i in range(rows.size()):
 		var cy: float = y0 + h - 0.68 - i * 1.12
-		_arrow(Vector3(0.52, cy, 0.03), String(rows[i][0]))
-		_shield(Vector3(1.5, cy, 0.018), 1.0, 0.5, 88)
-		_text(String(rows[i][1]), Vector3(3.08, cy, 0.024), 112, 0xffffff).shaded = true
+		_arrow(Vector3(0.52, cy, 0.038), String(rows[i][0]))
+		_shield(Vector3(1.5, cy, 0.026), 1.0, 0.5, 88)
+		_text(String(rows[i][1]), Vector3(3.08, cy, 0.034), 112, 0xffffff).shaded = true
 	if solid_posts:
 		var e := (b - a).normalized() * 0.3
 		var s := Vector2(-e.y, e.x) * 2.0
@@ -402,9 +402,9 @@ func _board(a: Vector2, b: Vector2, solid_posts: bool) -> void:
 
 ## the road's own name in its little white-edged box
 func _shield(at: Vector3, w: float, h: float, px: int) -> void:
-	box(at.x - w / 2.0, at.y - h / 2.0, at.z, w, h, 0.004, 0xf2f2ee)
-	box(at.x - w / 2.0 + 0.03, at.y - h / 2.0 + 0.03, at.z + 0.004, w - 0.06, h - 0.06, 0.003, BLUE)
-	_text("A-4", Vector3(at.x, at.y, at.z + 0.009), px, 0xffffff).shaded = true
+	box(at.x - w / 2.0, at.y - h / 2.0, at.z, w, h, 0.012, 0xf2f2ee)
+	box(at.x - w / 2.0 + 0.03, at.y - h / 2.0 + 0.03, at.z + 0.012, w - 0.06, h - 0.06, 0.012, BLUE)
+	_text("A-4", Vector3(at.x, at.y, at.z + 0.03), px, 0xffffff).shaded = true
 
 ## a white arrow painted on a board, its middle at `at`: "up" or "right"
 func _arrow(at: Vector3, way: String) -> void:
@@ -436,13 +436,13 @@ func _km_sign(autovia) -> void:
 			box(float(x) - 0.09, -0.4, -0.22, 0.18, y0 + h + 0.4, 0.18, 0x8d9296)
 		box(0.0, y0, -0.05, w, h, 0.05, 0x9a9da1)
 		box(0.0, y0, 0.0, w, h, 0.012, 0xf2f2ee)
-		box(0.07, y0 + 0.07, 0.012, w - 0.14, h - 0.14, 0.006, BLUE)
-		_shield(Vector3(w / 2.0, y0 + h - 0.55, 0.018), 1.1, 0.5, 96)
+		box(0.07, y0 + 0.07, 0.012, w - 0.14, h - 0.14, 0.014, BLUE)
+		_shield(Vector3(w / 2.0, y0 + h - 0.55, 0.026), 1.1, 0.5, 96)
 		var rows := [["Puerto Lápice", "18"], ["Manzanares", "57"], ["Córdoba", "283"]]
 		for i2 in range(rows.size()):
 			var cy: float = y0 + h - 1.3 - i2 * 0.7
-			_text(String(rows[i2][0]), Vector3(w * 0.4, cy, 0.024), 84, 0xffffff).shaded = true
-			_text(String(rows[i2][1]), Vector3(w - 0.6, cy, 0.024), 84, 0xffffff).shaded = true
+			_text(String(rows[i2][0]), Vector3(w * 0.4, cy, 0.034), 84, 0xffffff).shaded = true
+			_text(String(rows[i2][1]), Vector3(w - 0.6, cy, 0.034), 84, 0xffffff).shaded = true
 		home()
 		signs += 1
 		return

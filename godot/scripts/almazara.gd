@@ -288,10 +288,10 @@ func _barred(r: Rect2, blind := 0.7) -> void:
 
 ## a roller door of ribbed sheet on the wall being built
 func _roller(x0: float, x1: float, y0: float, y1: float, key = "chapa_gris") -> void:
-	box(x0, y0, 0.0, x1 - x0, y1 - y0, 0.06, key)
-	box(x0 - 0.12, y0, 0.0, 0.12, y1 - y0 + 0.3, 0.1, STEEL)
-	box(x1, y0, 0.0, 0.12, y1 - y0 + 0.3, 0.1, STEEL)
-	box(x0 - 0.12, y1, 0.0, x1 - x0 + 0.24, 0.3, 0.14, STEEL)
+	box(x0, y0, 0.015, x1 - x0, y1 - y0, 0.06, key)
+	box(x0 - 0.135, y0, 0.015, 0.12, y1 - y0, 0.1, STEEL)
+	box(x1 + 0.015, y0, 0.015, 0.12, y1 - y0, 0.1, STEEL)
+	box(x0 - 0.135, y1 + 0.015, 0.015, x1 - x0 + 0.27, 0.3, 0.14, STEEL)
 
 # ---------------- the ground ----------------
 func _floors() -> void:
@@ -349,7 +349,7 @@ func _old_nave() -> void:
 		box(r.position.x - 0.05, gy - 0.3, -0.05, r.size.x + 0.1, 0.34, 0.3, 0xb8b6ae)
 	box(big.position.x, gy, -DEEP + 0.04, big.size.x, 4.3, 0.06, "chapa_verde")
 	box(big.position.x - 0.1, gy + 4.3, 0.0, big.size.x + 0.2, 0.18, 0.1, STEEL)
-	_picture(1.3, 2.5, gy + 1.15, gy + 2.15, 0.03, "tienda")
+	_picture(1.3, 2.5, gy + 1.15, gy + 2.15, 0.038, "tienda")
 	box(1.26, gy + 1.11, 0.0, 1.28, 1.08, 0.025, 0xe8e6e0)
 	_picture(5.3, 6.2, gy + 0.5, gy + 4.0, 0.035, "cartel")
 	# the band of ribbed sheet along its top, from past the corner to the offices
@@ -479,8 +479,8 @@ func _reception() -> void:
 	# the band of white sheet over the open front, the badge on it, the beam under it and the three posts
 	_sloped(0.0, ln, band, top, top, "chapa_bl")
 	box(0.0, band - 0.3, -0.3, ln, 0.3, 0.3, STEEL)
-	for x in [0.0, ln / 2.0 - 0.15, ln - 0.3]:
-		box(x, DOWN, -0.3, 0.3, band - DOWN, 0.3, STEEL)
+	for x in [0.015, ln / 2.0 - 0.15, ln - 0.315]:
+		box(x, DOWN, -0.3, 0.3, band - 0.315 - DOWN, 0.3, STEEL)
 	_picture(2.0, 4.6, band + 0.3, band + 2.9, 0.03, "emblema")
 	# inside (x along the front, -z into it): the cabin on its platform by the open side, the stair up to it from
 	# the front, the striped post by the corner
@@ -488,8 +488,8 @@ func _reception() -> void:
 	for q in [[0.9, -7.9], [5.0, -7.9], [0.9, -4.2], [5.0, -4.2]]:
 		box(q[0], g, q[1], 0.12, 1.2, 0.12, STEEL)
 	box(1.2, g + 1.35, -7.8, 3.8, 2.5, 3.2, 0xeeeeea)
-	box(1.4, g + 2.3, -4.59, 3.4, 1.0, 0.02, "cristal")
-	box(1.19, g + 2.3, -7.5, 0.02, 1.0, 2.6, "cristal")
+	box(1.4, g + 2.3, -4.58, 3.4, 1.0, 0.02, "cristal")
+	box(1.18, g + 2.3, -7.5, 0.02, 1.0, 2.6, "cristal")
 	for k in range(6):
 		box(1.0, g + 0.2 * k, -2.2 - 0.3 * (k + 1), 1.0, 0.2, 0.3, 0x8a8e92)
 	bar(Vector3(2.02, g + 1.0, -2.2), Vector3(2.02, g + 2.2, -4.0), 0.04, 0.04, 0xd8b020)
@@ -546,7 +546,7 @@ func _reception() -> void:
 	_sloped(0.0, ls, band, top, top, "chapa_bl", -0.2)
 	box(0.0, band - 0.3, -0.3, ls, 0.3, 0.3, STEEL)
 	for k in range(4):
-		box(ls * k / 4.0, DOWN, -0.3, 0.3, band - DOWN, 0.3, STEEL)
+		box(ls * k / 4.0 + (0.015 if k == 0 else 0.0), DOWN, -0.3, 0.3, band - 0.315 - DOWN, 0.3, STEEL)
 	home()
 	for k in range(4):
 		var pp := OB.lerp(RS, k / 4.0) + (RS - OB).normalized() * 0.15 + Vector2(0.5895, -0.8078) * 0.15
@@ -609,7 +609,7 @@ func _back_naves() -> void:
 	lamps.append(lamp)
 	_eave(ln, eave)
 	# the long raised light of the roof, behind the eave
-	box(17.0, eave + 1.5, -7.2, 13.0, 1.1, 2.6, "chapa_gris")
+	box(17.0, eave + 1.5, -7.2, 13.0, 1.12, 2.6, "chapa_gris")
 	box(17.0, eave + 2.6, -7.4, 13.0, 1.0, 3.0, "chapa_osc")
 	box(17.2, eave + 2.75, -4.38, 12.6, 0.7, 0.02, 0x4a5a6a)
 	# the wall beyond the bend, to the mill's last corner
@@ -631,7 +631,7 @@ func _back_naves() -> void:
 	_sloped(0.0, ln, DOWN, top, top, "white")
 	_roller(6.0, 10.5, g, g + 4.6)
 	_roller(20.0, 24.5, g, g + 4.6)
-	box(14.0, g, 0.0, 1.0, 2.1, 0.05, STEEL)
+	box(14.0, g, 0.015, 1.0, 2.1, 0.05, STEEL)
 	home()
 	# the roofs: a slope up from each eave on the street, and the flat of sheet behind
 	var in1 := Vector2(0.803, 0.596) * 4.0

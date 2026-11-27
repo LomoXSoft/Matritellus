@@ -337,23 +337,23 @@ func _shell() -> void:
 
 func _furniture() -> void:
 	# the bed, its head against the back wall
-	var bed := _prop("mueble_bedDouble", Vector3(BED.x, 0.0, BED.z - BED_L / 2.0), 0.0, 0.0, BED_L)      # (the kit's bed has its head to +z)
+	var bed := _prop("mueble_bedDouble", Vector3(BED.x, 0.0, BED.z - BED_L / 2.0 - 0.02), 0.0, 0.0, BED_L)      # (the kit's bed has its head to +z)
 	if bed == Vector2.ZERO:                          # (no model: a plain bed of boxes, so that there is something to sleep in)
-		box(BED.x - BED_W / 2.0, 0.0, BED.z - BED_L, BED_W, 0.42, BED_L, 0x8a6a48)
-		box(BED.x - BED_W / 2.0 + 0.04, 0.42, BED.z - BED_L + 0.04, BED_W - 0.08, 0.12, BED_L - 0.08, 0xf4f4f4)
+		box(BED.x - BED_W / 2.0, 0.0, BED.z - BED_L - 0.02, BED_W, 0.42, BED_L, 0x8a6a48)
+		box(BED.x - BED_W / 2.0 + 0.04, 0.42, BED.z - BED_L + 0.02, BED_W - 0.08, 0.12, BED_L - 0.08, 0xf4f4f4)
 	solid(Vector3(BED.x, 0.3, BED.z - BED_L / 2.0), Vector3(BED_W, 0.6, BED_L))
 	# a bedside table by its head, a rug beside it
-	_prop("mueble_cabinetBedDrawerTable", Vector3(BED.x + BED_W / 2.0 + 0.4, 0.0, D - 0.3), 0.55, PI)
+	_prop("mueble_cabinetBedDrawerTable", Vector3(BED.x + BED_W / 2.0 + 0.4, 0.0, D - 0.32), 0.55, PI)
 	solid(Vector3(BED.x + BED_W / 2.0 + 0.4, 0.3, D - 0.3), Vector3(0.5, 0.6, 0.5))
-	_prop("mueble_lampRoundTable", Vector3(BED.x + BED_W / 2.0 + 0.4, 0.55, D - 0.3), 0.42, PI)
+	_prop("mueble_lampRoundTable", Vector3(BED.x + BED_W / 2.0 + 0.4, 0.55, D - 0.32), 0.42, PI)
 	_prop("mueble_rugRounded", Vector3(BED.x + BED_W / 2.0 + 0.62, 0.004, D - 1.55), 0.0, PI / 2.0, 1.6)
 	# the wardrobe, on the left as you come in, its doors to the room: two of the kit's tall cupboards side by side
 	var wr := Vector2.ZERO
 	for sz in [-1.0, 1.0]:
-		wr = _prop("mueble_bookcaseClosedDoors", Vector3(WARDROBE.x + 0.31, 0.0, WARDROBE.z + sz * WARDROBE_W / 4.0), 2.05, PI / 2.0)
+		wr = _prop("mueble_bookcaseClosedDoors", Vector3(WARDROBE.x + 0.33, 0.0, WARDROBE.z + sz * WARDROBE_W / 4.0), 2.05, PI / 2.0)
 	if wr == Vector2.ZERO:
-		box(WARDROBE.x, 0.0, WARDROBE.z - WARDROBE_W / 2.0, 0.6, 2.05, WARDROBE_W, 0x8a6a48)
-	box(WARDROBE.x, 2.05, WARDROBE.z - WARDROBE_W / 2.0 - 0.02, 0.66, 0.06, WARDROBE_W + 0.04, 0x8a7a5e)        # a board along the top, joining them
+		box(WARDROBE.x + 0.02, 0.0, WARDROBE.z - WARDROBE_W / 2.0, 0.6, 2.05, WARDROBE_W, 0x8a6a48)
+	box(WARDROBE.x + 0.015, 2.065, WARDROBE.z - WARDROBE_W / 2.0 - 0.02, 0.66, 0.06, WARDROBE_W + 0.04, 0x8a7a5e)        # a board along the top, joining them
 	solid(Vector3(WARDROBE.x + 0.31, 1.0, WARDROBE.z), Vector3(0.62, 2.0, WARDROBE_W))
 
 ## the bare bulb in the middle of the ceiling, and the light it gives

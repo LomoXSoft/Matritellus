@@ -244,7 +244,7 @@ func _zaguan(r: Rect2) -> void:
 	var deep := -2.2
 	for x in [x0, x1]:
 		quad(Vector3(x, g, deep), Vector3(x, g, -DEEP), Vector3(x, fy1, -DEEP), Vector3(x, fy1, deep), "ladrillo", Vector3(1, 0, 0) if x == x0 else Vector3(-1, 0, 0))
-	box(x0, g - 0.1, deep, x1 - x0, 0.1, -deep, 0xb8b0a2)
+	box(x0, g - 0.085, deep, x1 - x0, 0.1, -deep, 0xb8b0a2)
 	box(x0, fy1, deep, x1 - x0, 0.05, -deep - DEEP, 0x4a443c)
 	box(x0, g, deep, x1 - x0, fy1 - g, 0.03, 0x3a332c)
 	openings += 1
@@ -346,7 +346,7 @@ func _entrada(cx: float, f: float, at: Vector2) -> void:
 	var pts := PackedVector2Array([Vector2(cx - r, spring), Vector2(cx + r, spring)])
 	for i in range(17):
 		pts.append(Vector2(cx + r * cos(PI * i / 16.0), spring + r * sin(PI * i / 16.0)))
-	box(cx - r, f + 3.42, 0.0, 2.0 * r, spring - f - 3.42, 0.03, 0x3a3a3c)
+	box(cx - r, f + 3.42, 0.014, 2.0 * r, spring - f - 3.42, 0.03, 0x3a3a3c)
 	slab(pts, 0.02, 0.0, "cristal")
 	ring(cx, spring, r - 0.12, r, 0.06, 0.1, 0x3a3a3c, 16)
 	for i in range(1, 8):                                                 # (its spokes)
@@ -366,7 +366,7 @@ func _entrada(cx: float, f: float, at: Vector2) -> void:
 		bar(Vector3(cx + s * 1.7, f + 0.95, zt + 0.6), Vector3(cx + s * 1.7, g + 0.95, zt + steps * 0.32), 0.04, 0.04, IRON)
 		var pe: Vector3 = _xf * Vector3(cx + s * 1.75, 0.0, zt + steps * 0.32)  # (the steps' foot: the self-test keeps it off the asphalt)
 		yard.append(spot(pe.x, pe.z))
-	box(cx - 1.8, f - 0.1, -3.45, 3.6, 0.1, 0.2, 0xb8b0a2)                  # (the porch's floor, by the doors)
+	box(cx - 1.8, f - 0.085, -3.45, 3.6, 0.1, 0.2, 0xb8b0a2)                  # (the porch's floor, by the doors)
 	var ax: Vector2 = (SOUTH[3] - SOUTH[2]).normalized()
 	var outn := Vector2(ax.y, -ax.x)
 	_decks.append({"o": spot(at.x, at.y) + outn * (zt + steps * 0.16), "ax": -outn, "half": steps * 0.16 + 0.3, "wide": 1.75, "top": level + f, "ramp": steps * 0.32, "low": level + g})
@@ -631,7 +631,7 @@ func _porche(f: float) -> void:
 		quad(Vector3(x, f - 0.1, bk), Vector3(x, f - 0.1, 0.04), Vector3(x, f + 1.0, 0.04), Vector3(x, f + 1.0, bk), "granito", nn)
 		quad(Vector3(x, f + 1.0, bk), Vector3(x, f + 1.0, 0.0), Vector3(x, f + ph, 0.0), Vector3(x, f + ph, bk), "ladrillo", nn)
 	box(p0, f - 1.2, bk, p1 - p0, 1.2, -bk + 0.02, "losa")                   # (its floor, down into the ground)
-	box(p0, f + ph, bk, p1 - p0, 0.04, -bk, 0xe8e4dc)                        # (the white ceiling, its beams)
+	box(p0, f + ph + 0.015, bk, p1 - p0, 0.04, -bk, 0xe8e4dc)                # (the white ceiling, its beams)
 	for k in range(int((p1 - p0) / 0.55)):
 		box(p0 + 0.25 + k * 0.55, f + ph - 0.13, bk, 0.1, 0.13, -bk, "wood")
 	box(p0 - 0.12, f + ph, -0.16, p1 - p0 + 0.24, 0.23, 0.3, "wood")         # (the beam over the gates)

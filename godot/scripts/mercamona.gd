@@ -208,9 +208,9 @@ func _shop() -> void:
 				box(0.0, 0.0, 0.0, e, 3.5, 0.06, 0x2c3a40)                              # dark glass under it
 				for k in range(12):
 					box(k * e / 11.0 - 0.04, 0.0, 0.06, 0.08, 3.5, 0.05, 0x55595c)
-				box(0.0, 3.25, 0.0, e, 0.25, 2.2, 0xe9e9e6)                             # the canopy
-				box(9.4, 0.0, 0.07, 4.4, 2.7, 0.04, 0x9fc0c8)                           # the doors, sliding glass
-				box(11.56, 0.0, 0.11, 0.08, 2.7, 0.03, 0x55595c)
+				box(0.0, 3.23, 0.07, e, 0.25, 2.13, 0xe9e9e6)                             # the canopy
+				box(9.4, 0.0, 0.08, 4.4, 2.7, 0.045, 0x9fc0c8)                          # the doors, sliding glass
+				box(11.56, 0.0, 0.125, 0.08, 2.7, 0.03, 0x55595c)
 				_text("MERCAMONA", Vector3(9.3, 2.98, 2.22), 32, GREEN, 0.012)
 				_badge(4.0, 6.5, 1.25, 0.52)
 				_text("MERCAMONA", Vector3(13.6, 6.5, 0.54), 64, GREEN, 0.0235)
@@ -270,7 +270,7 @@ func _under() -> void:
 	for w in [[Vector2(79, BACK), Vector2(un, BACK)], [Vector2(un, BACK), Vector2(un, -39)], [Vector2(79, -39), Vector2(79, BACK)]]:
 		var l2: float = face(w[0], w[1])
 		quad(Vector3(0, yl - 0.5, 0), Vector3(l2, yl - 0.5, 0), Vector3(l2, -0.45, 0), Vector3(0, -0.45, 0), "sombra", Vector3(0, 0, 1))
-		box(0.0, yl + 1.0, 0.0, l2, 0.25, 0.012, GREEN)
+		box(0.0, yl + 1.0, 0.01, l2, 0.25, 0.012, GREEN)
 		home()
 	quad(Vector3(un, -0.5, -39), Vector3(79, -0.5, -39), Vector3(79, -0.5, BACK), Vector3(un, -0.5, BACK), "sombra", Vector3(0, -1, 0))
 	var lx: float = un + 4.0

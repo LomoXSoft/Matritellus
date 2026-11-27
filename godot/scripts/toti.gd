@@ -266,7 +266,7 @@ func _shopfront() -> void:
 	box(-0.12, -0.12, 0.003, 0.24, 0.24, 0.002, 0xb33a3a)
 	home()
 	_pane(Rect2(2.15, 0.3, 4.2, 2.15), g, 3)                                       # the big window
-	box(2.15, 0.0, -0.02, 4.2, 0.3, 0.02, 0x7c7c80)                                  # (its dark granite sill)
+	box(2.15, 0.0, -0.02, 4.2, 0.3, 0.035, 0x7c7c80)                                 # (its dark granite sill)
 	var gg := _g(8.1)                                                                 # behind the gate: a glazed door, a panel
 	_pane(Rect2(6.95, gg, 2.25, 2.45 - gg), g - 0.12, 2)
 	var n := 13                                                                       # the scissor gate: crossed bars, a rail at top and foot
@@ -326,15 +326,15 @@ func _upper() -> void:
 			var r := Rect2(float(c[0]), f, float(c[1]) - float(c[0]), WIN_H)
 			var dark: bool = String(c[2]) == "visillo"
 			window(r, ALU if dark else 0xece8de, 0x1f2a33, 1)
-			box(r.position.x, r.position.y, -DEEP + 0.045, r.size.x, r.size.y, 0.01, "ventana")
+			box(r.position.x + 0.06, r.position.y + 0.06, -DEEP + 0.055, r.size.x - 0.12, r.size.y - 0.12, 0.01, "ventana")
 			if String(c[2]) == "persiana" or (dark and fi == 1):                  # the blind's box over it, the blind nearly down
 				var down: float = 0.85 if not dark else 0.25
 				box(r.position.x, r.end.y - r.size.y * down, -DEEP + 0.13, r.size.x, r.size.y * down, 0.02, "persiana")
 				for k in range(int(r.size.y * down / 0.06)):
 					box(r.position.x, r.end.y - r.size.y * down + k * 0.06, -DEEP + 0.15, r.size.x, 0.006, 0.004, 0xc9c5ba)
 			if dark and fi == 0:                                                     # net curtains behind the glass
-				box(r.position.x + 0.08, r.position.y + 0.05, -DEEP + 0.03, r.size.x - 0.16, r.size.y - 0.1, 0.01, 0xd9d6cc)
-			box(r.position.x - 0.06, r.position.y - 0.05, -0.02, r.size.x + 0.12, 0.05, 0.1, 0xd8d2c4)      # the sill
+				box(r.position.x + 0.08, r.position.y + 0.05, -DEEP + 0.072, r.size.x - 0.16, r.size.y - 0.1, 0.01, 0xd9d6cc)
+			box(r.position.x - 0.06, r.position.y - 0.065, -0.02, r.size.x + 0.12, 0.05, 0.1, 0xd8d2c4)      # the sill
 	box(11.7, 6.95, 0.0, 0.78, 0.52, 0.28, 0xe9e9e6)                                    # an air conditioner on the brick, between floors
 	box(11.74, 7.0, 0.281, 0.7, 0.42, 0.002, 0x9a9c9e)
 	home()

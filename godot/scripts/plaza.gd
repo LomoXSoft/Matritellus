@@ -370,12 +370,12 @@ func _hall() -> void:
 			x0 = -HALF                          # (the two at the ends are wide: they are the corners of the building)
 		if i == BAYS:
 			x1 = HALF
-		box(x0, 0.0, -PIER, x1 - x0, SPRING + ARCH, PIER, "brick")
+		box(maxf(x0, -HALF + 0.015), 0.0, -PIER, minf(x1, HALF - 0.015) - maxf(x0, -HALF + 0.015), SPRING + ARCH, PIER, "brick")
 		box(x0 - 0.07, 0.0, -PIER - 0.07, x1 - x0 + 0.14, 0.5, PIER + 0.14, "caliza")
 		box(x0 - 0.06, SPRING - 0.16, -PIER - 0.06, x1 - x0 + 0.12, 0.16, PIER + 0.12, "caliza")
 		solid(Vector3((x0 + x1) / 2.0, 2.2, -PIER / 2.0), Vector3(x1 - x0, 4.4, PIER))
 		yard.append(spot((x0 + x1) / 2.0, -PIER / 2.0))
-	box(-HALF, SPRING + ARCH, -PIER, 2.0 * HALF, H1 - SPRING - ARCH, PIER, "brick")          # the wall over the arches
+	box(-HALF + 0.015, SPRING + ARCH, -PIER, 2.0 * HALF - 0.03, H1 - SPRING - ARCH, PIER, "brick")          # the wall over the arches
 	for i in range(BAYS):
 		var cx: float = _bay_x(i)
 		spandrels(cx, SPRING, ARCH, 0.0, "brick")
@@ -453,7 +453,7 @@ func _hall() -> void:
 		var r: Rect2 = holes[i]
 		var z: float = -DEEP + 0.06
 		box(r.position.x, r.position.y, z - 0.05, r.size.x, r.size.y, 0.03, 0x1c2630)
-		box(r.position.x, r.end.y - r.size.y * 0.42, z, r.size.x, r.size.y * 0.42, 0.04, 0x7a4a2c)      # the blind, half way down
+		box(r.position.x + 0.02, r.end.y - r.size.y * 0.42, z - 0.015, r.size.x - 0.04, r.size.y * 0.42, 0.035, 0x7a4a2c)      # the blind, half way down
 		for q in [[r.position.x, 0.07], [r.end.x - 0.07, 0.07], [r.position.x + r.size.x / 2.0 - 0.03, 0.06]]:
 			box(q[0], r.position.y, z - 0.02, q[1], r.size.y, 0.06, 0x4a2f1f)
 		stone_frame(r, 0.24, 0.045, "caliza")
@@ -618,21 +618,21 @@ func _mural(x0: float, x1: float) -> void:
 	var w: float = x1 - x0
 	var z := 0.012
 	box(x0, 0.55, 0.0, w, 3.2, z, 0xefe6cf)
-	slab(PackedVector2Array([Vector2(x0, 0.55), Vector2(x1, 0.55), Vector2(x1, 1.25), Vector2(x0 + w * 0.6, 1.7), Vector2(x0 + w * 0.25, 1.35), Vector2(x0, 1.5)]), z + 0.004, 0.0, 0xc9a45a)      # the hill
+	slab(PackedVector2Array([Vector2(x0, 0.55), Vector2(x1, 0.55), Vector2(x1, 1.25), Vector2(x0 + w * 0.6, 1.7), Vector2(x0 + w * 0.25, 1.35), Vector2(x0, 1.5)]), z + 0.01, 0.0, 0xc9a45a)      # the hill
 	var mx: float = x0 + w * 0.62
-	slab(PackedVector2Array([Vector2(mx - 0.34, 1.6), Vector2(mx + 0.34, 1.6), Vector2(mx + 0.26, 2.75), Vector2(mx - 0.26, 2.75)]), z + 0.008, 0.0, 0xf6f3ea)      # the mill
-	slab(PackedVector2Array([Vector2(mx - 0.34, 2.75), Vector2(mx + 0.34, 2.75), Vector2(mx, 3.2)]), z + 0.008, 0.0, 0x4a3324)
+	slab(PackedVector2Array([Vector2(mx - 0.34, 1.6), Vector2(mx + 0.34, 1.6), Vector2(mx + 0.26, 2.75), Vector2(mx - 0.26, 2.75)]), z + 0.02, 0.0, 0xf6f3ea)      # the mill
+	slab(PackedVector2Array([Vector2(mx - 0.34, 2.75), Vector2(mx + 0.34, 2.75), Vector2(mx, 3.2)]), z + 0.02, 0.0, 0x4a3324)
 	for k in range(4):
 		var ang: float = 0.5 + k * PI / 2.0
-		tbox(Transform3D(Basis(Vector3(0, 0, 1), ang).scaled_local(Vector3(0.09, 1.0, 0.004)), Vector3(mx + cos(ang + PI / 2.0) * 0.5, 2.78 + sin(ang + PI / 2.0) * 0.5, z + 0.014)), 0x3a2a1e)
-	slab(oval(x0 + w * 0.2, 3.15, 0.3, 0.3, 14), z + 0.008, 0.0, 0xe2a03a)                                              # the sun
+		tbox(Transform3D(Basis(Vector3(0, 0, 1), ang).scaled_local(Vector3(0.09, 1.0, 0.01)), Vector3(mx + cos(ang + PI / 2.0) * 0.5, 2.78 + sin(ang + PI / 2.0) * 0.5, z + 0.032)), 0x3a2a1e)
+	slab(oval(x0 + w * 0.2, 3.15, 0.3, 0.3, 14), z + 0.02, 0.0, 0xe2a03a)                                              # the sun
 	var hx: float = x0 + w * 0.27                                                                                      # the rider
-	slab(PackedVector2Array([Vector2(hx - 0.4, 1.85), Vector2(hx + 0.38, 1.85), Vector2(hx + 0.5, 2.15), Vector2(hx + 0.42, 2.38), Vector2(hx + 0.28, 2.12), Vector2(hx - 0.36, 2.1)]), z + 0.01, 0.0, 0x2a2420)
+	slab(PackedVector2Array([Vector2(hx - 0.4, 1.85), Vector2(hx + 0.38, 1.85), Vector2(hx + 0.5, 2.15), Vector2(hx + 0.42, 2.38), Vector2(hx + 0.28, 2.12), Vector2(hx - 0.36, 2.1)]), z + 0.022, 0.0, 0x2a2420)
 	for q in [-0.3, -0.2, 0.24, 0.32]:
-		box(hx + q - 0.025, 1.4, z + 0.006, 0.05, 0.5, 0.004, 0x2a2420)
-	slab(PackedVector2Array([Vector2(hx - 0.1, 2.1), Vector2(hx + 0.08, 2.1), Vector2(hx + 0.05, 2.62), Vector2(hx - 0.07, 2.62)]), z + 0.012, 0.0, 0x2a2420)
-	slab(oval(hx - 0.01, 2.72, 0.09, 0.1, 10), z + 0.012, 0.0, 0x2a2420)
-	bar(Vector3(hx + 0.1, 2.2, z + 0.016), Vector3(hx + 0.55, 3.3, z + 0.016), 0.03, 0.005, 0x2a2420)
+		box(hx + q - 0.025, 1.4, z + 0.018, 0.05, 0.5, 0.01, 0x2a2420)
+	slab(PackedVector2Array([Vector2(hx - 0.1, 2.1), Vector2(hx + 0.08, 2.1), Vector2(hx + 0.05, 2.62), Vector2(hx - 0.07, 2.62)]), z + 0.032, 0.0, 0x2a2420)
+	slab(oval(hx - 0.01, 2.72, 0.09, 0.1, 10), z + 0.032, 0.0, 0x2a2420)
+	bar(Vector3(hx + 0.1, 2.2, z + 0.04), Vector3(hx + 0.55, 3.3, z + 0.04), 0.03, 0.01, 0x2a2420)
 
 ## What hides what (the occlusion culling of game.gd takes its occluders from the map's generic walls, and the town
 ## hall has none there): its own long walls, a hand's breadth inside themselves.
@@ -696,34 +696,34 @@ func _strip(a: Vector2, b: Vector2, wide: float, y: float, key) -> void:
 	flat(PackedVector2Array([a - s, b - s, b + s, a + s]), y, key)
 
 func _floors() -> void:
-	var y := 0.03
+	var y := 0.02
 	flat(_outline(), y, "paver")
 	# the open floor in front of the town hall: grey pavers crossed by bands of red ones; two giant chessboards
 	for n in [2.2, 17.6]:
-		_strip(Vector2(EDGE + 0.4, n), Vector2(HALF + 0.6, n), 0.55, y + 0.006, "band")
+		_strip(Vector2(EDGE + 0.4, n), Vector2(HALF + 0.6, n), 0.55, y + 0.012, "band")
 	for u in [-27.0, -9.6, 11.0, 26.2]:
-		_strip(Vector2(u, 2.2), Vector2(u, 20.4), 0.55, y + 0.006, "band")
+		_strip(Vector2(u, 2.2), Vector2(u, 20.4), 0.55, y + 0.012, "band")
 	for c in [Vector2(-17.0, 9.6), Vector2(18.4, 9.6)]:
-		_checker(c, 10.0, y + 0.01)
+		_checker(c, 10.0, y + 0.024)
 	# the town's crest laid into the paving in front of the main doors, inside a ring
-	_floor_crest(Vector2(0.6, 9.3), 8.2, y + 0.02)
+	_floor_crest(Vector2(0.6, 9.3), 8.2, y + 0.028)
 	for k in range(40):
 		var a0: float = TAU * k / 40.0
 		var a1: float = TAU * (k + 1) / 40.0
 		var o := Vector2(0.6, 9.3)
-		flat(PackedVector2Array([o + Vector2(cos(a0), sin(a0)) * 4.7, o + Vector2(cos(a1), sin(a1)) * 4.7, o + Vector2(cos(a1), sin(a1)) * 5.15, o + Vector2(cos(a0), sin(a0)) * 5.15]), y + 0.012, "band")
+		flat(PackedVector2Array([o + Vector2(cos(a0), sin(a0)) * 4.7, o + Vector2(cos(a1), sin(a1)) * 4.7, o + Vector2(cos(a1), sin(a1)) * 5.15, o + Vector2(cos(a0), sin(a0)) * 5.15]), y + 0.016, "band")
 	# the south-west of the square was repaved in pavers of four colours, and round the fountain they go in rings
 	flat(PackedVector2Array([Vector2(EDGE, 36.0), Vector2(-9.0, 36.0), Vector2(6.5, 40.0), Vector2(12.6, 47.0), Vector2(13.0, 53.0), Vector2(10.6, 60.0), Vector2(4.0, 63.6),
-		Vector2(-3.5, 63.6), Vector2(-3.5, 76.9), Vector2(EDGE, SW_END)]), y + 0.008, "multi")
-	_strip(Vector2(-20.0, 45.1), Vector2(2.2, 42.6), 0.22, y + 0.02, 0x3a3a3c)              # (the drain that crosses them)
-	_rings(FOUNTAIN, BASIN - 0.08, RINGS, y + 0.016, (RINGS - BASIN + 0.08) / 12.0)
+		Vector2(-3.5, 63.6), Vector2(-3.5, 76.9), Vector2(EDGE, SW_END)]), y + 0.014, "multi")
+	_strip(Vector2(-20.0, 45.1), Vector2(2.2, 42.6), 0.22, y + 0.026, 0x3a3a3c)              # (the drain that crosses them)
+	_rings(FOUNTAIN, BASIN - 0.08, RINGS, y + 0.028, (RINGS - BASIN + 0.08) / 12.0)
 
 func _checker(centre: Vector2, side: float, y: float) -> void:
 	var cells := 8
 	var sq: float = side / cells
 	var x0: float = centre.x - side / 2.0
 	var z0: float = centre.y - side / 2.0
-	flat(PackedVector2Array([Vector2(x0 - 0.35, z0 - 0.35), Vector2(x0 + side + 0.35, z0 - 0.35), Vector2(x0 + side + 0.35, z0 + side + 0.35), Vector2(x0 - 0.35, z0 + side + 0.35)]), y - 0.004, 0x6f6c6c)
+	flat(PackedVector2Array([Vector2(x0 - 0.35, z0 - 0.35), Vector2(x0 + side + 0.35, z0 - 0.35), Vector2(x0 + side + 0.35, z0 + side + 0.35), Vector2(x0 - 0.35, z0 + side + 0.35)]), y - 0.012, 0x6f6c6c)
 	for i in range(cells):
 		for k in range(cells):
 			flat(PackedVector2Array([Vector2(x0 + i * sq, z0 + k * sq), Vector2(x0 + (i + 1) * sq, z0 + k * sq), Vector2(x0 + (i + 1) * sq, z0 + (k + 1) * sq), Vector2(x0 + i * sq, z0 + (k + 1) * sq)]),
@@ -835,7 +835,9 @@ func _south_n(u: float) -> float:               # ...and its Calle de la Plaza s
 func _garden() -> void:
 	# --- the two big planters under the plane trees, between the open floor and the fountain: a stone seat all round,
 	# a low iron rail behind it, bushes ---
-	for q in [[Vector2(2.8, 26.8), 4.7, 11], [Vector2(15.3, 24.7), 4.6, 23]]:
+	var big_qs := [[Vector2(2.8, 26.8), 4.7, 11], [Vector2(15.3, 24.7), 4.6, 23]]
+	for qi in big_qs.size():
+		var q: Array = big_qs[qi]
 		var pc: Vector2 = q[0]
 		var pr: float = q[1]
 		_planter(_circle(pc, pr, 28), "", 0.44, 0.52)                               # the seat
@@ -867,15 +869,17 @@ func _garden() -> void:
 		var bed := _circle(pc, back - 0.26, 28)
 		flat(bed, 0.3, "soil")
 		_bushes(bed, 20, q[2], 0.3)
-		_rings(pc, pr - 0.05, pr + 2.5, 0.046, 0.5, 0.72)
+		_rings(pc, pr - 0.05, pr + 2.5, 0.062 if qi % 2 == 0 else 0.076, 0.5, 0.72)
 		_broad(pc, 6.6, 4.6, 0.3)
 	# --- along the Calle de Zaragoza: little round planters, each with its tree inside iron hoops and rings of coloured
 	# paving round it, and white stone benches between them ---
 	var last := Vector2.ZERO
-	for n in [23.0, 30.0, 37.0, 44.0, 51.0]:
+	var row_ns := [23.0, 30.0, 37.0, 44.0, 51.0]
+	for ni in row_ns.size():
+		var n: float = row_ns[ni]
 		var c := Vector2(_edge_u(n) - 2.2, n)
 		_round_planter(c, 1.45)
-		_rings(c, 1.5, 3.1, 0.046, 0.4, 0.8)
+		_rings(c, 1.5, 3.1, 0.062 if ni % 2 == 0 else 0.076, 0.4, 0.8)
 		_ball_tree(c, 0.3)
 		if last != Vector2.ZERO:
 			_bench((c + last) / 2.0 - Vector2(0.3, 0.0), -PI / 2.0)
@@ -1546,7 +1550,7 @@ func _bandstand() -> void:
 			var half := PackedVector2Array()
 			for j in range(13):
 				half.append(Vector2(cx + cos(PI * j / 12.0) * r, top + tall - r + sin(PI * j / 12.0) * r))
-			slab(half, z + 0.305, 0.0, 0x2c2f36)
+			slab(half, z + 0.315, 0.0, 0x2c2f36)
 			_xf = keep
 		for j in range(1, 5):
 			box(cx - r + j * 2.0 * r / 5.0 - 0.015, top, z - 0.02, 0.03, tall - 0.2, 0.03, IRON)

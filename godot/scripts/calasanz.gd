@@ -238,12 +238,12 @@ func _scroll(cx: float, cy: float) -> void:
 func _porch(cx: float, r: float, spring: float) -> void:
 	var deep := 2.2
 	var top: float = spring + r
-	box(cx - r, top, -deep, 2.0 * r, 0.06, deep, 0xf1eee6)                      # its ceiling
+	box(cx - r, top - 0.015, -deep, 2.0 * r, 0.075, deep, 0xf1eee6)                      # its ceiling
 	quad(Vector3(cx - r, 0, -deep), Vector3(cx + r, 0, -deep), Vector3(cx + r, top, -deep), Vector3(cx - r, top, -deep), 0x2a4f9a, Vector3(0, 0, 1))
-	quad(Vector3(cx - r, 0, -deep), Vector3(cx - r, 0, 0), Vector3(cx - r, top, 0), Vector3(cx - r, top, -deep), 0x2a4f9a, Vector3(1, 0, 0))
-	quad(Vector3(cx + r, 0, -deep), Vector3(cx + r, 0, 0), Vector3(cx + r, top, 0), Vector3(cx + r, top, -deep), 0x2a4f9a, Vector3(-1, 0, 0))
+	quad(Vector3(cx - r + 0.015, 0, -deep), Vector3(cx - r + 0.015, 0, 0), Vector3(cx - r + 0.015, top, 0), Vector3(cx - r + 0.015, top, -deep), 0x2a4f9a, Vector3(1, 0, 0))
+	quad(Vector3(cx + r - 0.015, 0, -deep), Vector3(cx + r - 0.015, 0, 0), Vector3(cx + r - 0.015, top, 0), Vector3(cx + r - 0.015, top, -deep), 0x2a4f9a, Vector3(-1, 0, 0))
 	# on the back wall: the door, and round it what was painted
-	var z := -deep + 0.012
+	var z := -deep + 0.016
 	var warm := [0xd8382c, 0xf07a22, 0xf2c230, 0xe85a8a]
 	var k := 0
 	for q in [[-1.15, 2.55, 0.62, 0.34], [-0.35, 2.85, 0.7, 0.3], [0.55, 2.7, 0.66, 0.36], [1.2, 2.3, 0.4, 0.5], [-1.3, 1.5, 0.3, 0.52], [1.32, 1.2, 0.26, 0.5], [-1.25, 0.55, 0.34, 0.34], [1.25, 0.5, 0.3, 0.3]]:
@@ -262,7 +262,7 @@ func _porch(cx: float, r: float, spring: float) -> void:
 	# on the side walls: a flame of colour up each
 	for s in [-1.0, 1.0]:
 		var keep := _xf
-		_xf = _xf * Transform3D(Basis(Vector3(0, 0, -s), Vector3.UP, Vector3(s, 0, 0)), Vector3(cx - s * (r - 0.012), 0, 0.0 if s > 0.0 else -deep))      # (the wall seen from inside the porch: its own x runs along it)
+		_xf = _xf * Transform3D(Basis(Vector3(0, 0, -s), Vector3.UP, Vector3(s, 0, 0)), Vector3(cx - s * (r - 0.029), 0, 0.0 if s > 0.0 else -deep))      # (the wall seen from inside the porch: its own x runs along it)
 		var j := 0
 		for q in [[0.5, 0.7, 0.34, 0.55], [1.1, 1.5, 0.4, 0.6], [1.6, 0.8, 0.3, 0.5], [0.8, 2.4, 0.5, 0.36], [1.7, 2.3, 0.3, 0.44]]:
 			slab(oval(q[0], q[1], q[2], q[3], 12), 0.004 * (j % 3), 0.0, warm[(j + 1) % warm.size()])
@@ -374,11 +374,11 @@ func _gate(gap: Vector2) -> void:
 		box(x + 0.02, low + 1.99, -0.27, w / 2.0 - 0.04, 0.05, 0.06, green)
 		for i in range(1, 9):
 			box(x + (w / 2.0) * i / 9.0 - 0.012, low + 1.09, -0.25, 0.024, 0.9, 0.024, green)
-	box(gap.y + 0.52, 0.3, 0.0, 1.0, 0.9, 0.05, 0xf4f1e8)                       # the noticeboard: the children's drawings pinned on it
-	box(gap.y + 0.5, 0.28, 0.0, 1.04, 0.94, 0.03, 0x8a8f96)
+	box(gap.y + 0.52, 0.3, 0.044, 1.0, 0.9, 0.02, 0xf4f1e8)                       # the noticeboard: the children's drawings pinned on it
+	box(gap.y + 0.5, 0.28, 0.014, 1.04, 0.94, 0.03, 0x8a8f96)
 	var sheets := [0xe85a3a, 0xf2c230, 0x4f9ad8, 0x58b452, 0xfdfcf8, 0xe85a8a]
 	for i in range(6):
-		box(gap.y + 0.58 + (i % 3) * 0.31, 0.36 + (i / 3) * 0.42, 0.05, 0.26, 0.36, 0.006, sheets[i])
+		box(gap.y + 0.58 + (i % 3) * 0.31, 0.36 + (i / 3) * 0.42, 0.064, 0.26, 0.36, 0.006, sheets[i])
 	# the little barrier inside, half yellow and half blue, that keeps the smallest from the gate
 	for s in [0, 1]:
 		var x: float = gap.x + s * w / 2.0

@@ -321,7 +321,7 @@ func _fascia(x0: float, x1: float) -> void:
 
 ## the name on the fascia, centred on cx
 func _name(cx: float, wide := 2.5) -> void:
-	_picture(cx - wide / 2.0, cx + wide / 2.0, (FASCIA0 + FASCIA1) / 2.0 - wide / 8.0, (FASCIA0 + FASCIA1) / 2.0 + wide / 8.0, FASCIA_OUT + 0.004, "rotulo")
+	_picture(cx - wide / 2.0, cx + wide / 2.0, (FASCIA0 + FASCIA1) / 2.0 - wide / 8.0, (FASCIA0 + FASCIA1) / 2.0 + wide / 8.0, FASCIA_OUT + 0.014, "rotulo")
 
 ## A balcony's door in its hole: brown frame, dark glass, its brown blind down `blind` of it (1: all of it). `bars`:
 ## white glazing bars across the glass (the wide one over the Salvador).
@@ -353,8 +353,8 @@ func _door_up(r: Rect2, blind: float, bars := false) -> void:
 func _balcony(x0: float, x1: float, y: float) -> void:
 	balconies += 1
 	var out := BALC_OUT
-	box(x0, y - 0.07, 0.0, x1 - x0, 0.07, out, 0x3c3a38)
-	box(x0 + 0.03, y - 0.1, 0.0, x1 - x0 - 0.06, 0.03, out - 0.03, 0x8a5a3a)
+	box(x0, y - 0.055, 0.0, x1 - x0, 0.07, out, 0x3c3a38)
+	box(x0 + 0.03, y - 0.085, 0.0, x1 - x0 - 0.06, 0.03, out - 0.03, 0x8a5a3a)
 	var z := out - 0.035
 	var n := maxi(4, int((x1 - x0) / 0.115))
 	for k in range(n + 1):
@@ -432,7 +432,7 @@ func _east() -> void:
 	_shop_window(win, "cartel_coche", 0.52)
 	# the white panel on the pier between the window and the door
 	box(win.end.x + 0.06, PLINTH, 0.0, bay.position.x - win.end.x - 0.12, HEAD - PLINTH, 0.03, 0xecece8)
-	_picture(win.end.x + 0.06, bay.position.x - 0.06, PLINTH + 0.05, PLINTH + 0.05 + (bay.position.x - win.end.x - 0.12) * 2.5, 0.034, "mutua")
+	_picture(win.end.x + 0.06, bay.position.x - 0.06, PLINTH + 0.05, PLINTH + 0.05 + (bay.position.x - win.end.x - 0.12) * 2.5, 0.044, "mutua")
 	_entrance(bay)
 	# the street's tile, an alarm's sticker under it
 	_picture(bay.end.x + 0.14, bay.end.x + 0.72, 2.5, 2.95, 0.012, "placa_avenida")
@@ -490,7 +490,7 @@ func _entrance(bay: Rect2) -> void:
 		box(hx, FLOOR + 0.95, z + 0.04, 0.025, 0.45, 0.025, 0xb8b8b4)
 		box(hx, FLOOR + 0.98, z + 0.0, 0.025, 0.025, 0.05, 0xb8b8b4)
 		box(hx, FLOOR + 1.34, z + 0.0, 0.025, 0.025, 0.05, 0xb8b8b4)
-	_picture(d1 + 0.2, d1 + 0.2 + 0.72, FLOOR + 0.75, FLOOR + 0.75 + 0.72 * 1.6, z + 0.006, "lista")
+	_picture(d1 + 0.2, d1 + 0.2 + 0.72, FLOOR + 0.75, FLOOR + 0.75 + 0.72 * 1.6, z + 0.014, "lista")
 	# the card hanging in the left leaf
 	box(mid - 0.62, FLOOR + 1.42, z + 0.012, 0.44, 0.2, 0.006, 0xf4f2ea)
 	sign_open = _text("ABIERTO", Vector3(mid - 0.4, FLOOR + 1.52, z + 0.022), 44, 0x1f7a3a, 0.0019)
@@ -643,7 +643,7 @@ func _roof_things() -> void:
 	var x1 := 7.7
 	var foot := ridge_top + 0.35
 	box(x0, foot, zb - 0.03, x1 - x0, 1.25, 0.06, 0x8a8f96)
-	_picture(x0, x1, foot, foot + 1.25, zb + 0.034, "valla")
+	_picture(x0, x1, foot, foot + 1.25, zb + 0.044, "valla")
 	for k in range(4):
 		var x := lerpf(x0 + 0.15, x1 - 0.15, k / 3.0)
 		var p := _along(SE, NE, x) + oe * (zb - 0.1)
@@ -686,7 +686,7 @@ func _office() -> void:
 				if not Geometry2D.is_point_in_polygon(_rm(a + q.x, b + q.y), room):
 					ok = false
 			if ok:
-				box(a - 0.6, CEIL - 0.035, b - 0.3, 1.2, 0.035, 0.6, "i_luz")
+				box(a - 0.6, CEIL - 0.04, b - 0.3, 1.2, 0.025, 0.6, "i_luz")
 				box(a - 0.63, CEIL - 0.03, b - 0.33, 1.26, 0.03, 0.66, "i:d8d8d4")
 	home()
 
@@ -697,9 +697,9 @@ func _furniture() -> void:
 	var f := FLOOR
 	# the partition with the name, behind the counter
 	box(12.3, f, 1.3, 0.12, 2.35, 3.4, "i:f4f2ec")
-	box(12.3, f, 1.3, 0.13, 0.12, 3.4, "i:cc1c70")
+	box(12.29, f + 0.01, 1.29, 0.14, 0.12, 3.42, "i:cc1c70")
 	pieces += 1
-	quad(Vector3(12.426, f + 1.25, 4.2), Vector3(12.426, f + 1.25, 1.8), Vector3(12.426, f + 2.05, 1.8), Vector3(12.426, f + 2.05, 4.2), "logo_pared", Vector3(1, 0, 0),
+	quad(Vector3(12.434, f + 1.25, 4.2), Vector3(12.434, f + 1.25, 1.8), Vector3(12.434, f + 2.05, 1.8), Vector3(12.434, f + 2.05, 4.2), "logo_pared", Vector3(1, 0, 0),
 		[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 	# the counter: white, its front magenta, a grey top; a screen, a tray of leaflets
 	box(13.9, f, 1.8, 0.55, 1.02, 2.4, "i:f4f2ec")

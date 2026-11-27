@@ -136,7 +136,7 @@ func _face(a: Vector2, b: Vector2, ya: float, yb: float, out: Vector2) -> void:
 	var gb: float = MapData.height(b + out * 0.3) - 0.3
 	quad(Vector3(a.x, ga, a.y), Vector3(b.x, gb, b.y), Vector3(b.x, yb, b.y), Vector3(a.x, ya, a.y), "rubble", Vector3(out.x, 0, out.y))
 	var inn: Vector2 = -out * 0.1
-	bar(Vector3(a.x + inn.x, ya - 0.03, a.y + inn.y), Vector3(b.x + inn.x, yb - 0.03, b.y + inn.y), 0.3, 0.08, "hormigon")
+	bar(Vector3(a.x + inn.x, ya - 0.025, a.y + inn.y), Vector3(b.x + inn.x, yb - 0.025, b.y + inn.y), 0.3, 0.08, "hormigon")
 
 ## A flight of steps coming down from `edge` (the middle of its top edge, at height y) towards `down`: `n` risers to
 ## drop `drop`, `wide` across (as by the old bridge, puente.gd)

@@ -5,6 +5,7 @@ extends Node
 const Creator = preload("res://scripts/creator.gd")
 const CarS = preload("res://scripts/car.gd")
 const PartsS = preload("res://scripts/parts.gd")
+const ObraS = preload("res://scripts/obra.gd")
 
 var g
 var fails := 0
@@ -23249,6 +23250,87 @@ func _run() -> void:
 		print("TOUCH_UI %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
 		get_tree().quit(1 if fails > fails0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--zfight"):
+		var t_zf0 := Time.get_ticks_msec()
+		var fails0 := fails
+		await _frames(2)
+		var solo := ""
+		var max_exact := -1.0
+		for a in OS.get_cmdline_user_args():
+			var sa := String(a)
+			if sa.begins_with("--solo="):
+				solo = sa.substr(7).to_lower()
+			elif sa.begins_with("--max="):
+				max_exact = float(sa.substr(6))
+		var obras: Array = []
+		_zfight_collect_obras(g, obras)
+		var reports: Array = []
+		var scanned := 0
+		var with_exact := 0
+		var with_any := 0
+		var total_exact_area := 0.0
+		var total_near_area := 0.0
+		var total_exact_pairs := 0
+		var total_near_pairs := 0
+		for ob in obras:
+			var scr: Script = ob.get_script()
+			var sname: String = scr.resource_path.get_file() if scr != null else String(ob.name)
+			if solo != "" and not sname.to_lower().contains(solo) and not String(ob.name).to_lower().contains(solo):
+				continue
+			scanned += 1
+			var res: Dictionary = _zfight_scan_obra(ob)
+			res["name"] = sname
+			if float(res["exact_area"]) > 0.0 or float(res["near_area"]) > 0.0:
+				with_any += 1
+				if float(res["exact_area"]) > 0.0:
+					with_exact += 1
+				total_exact_area += float(res["exact_area"])
+				total_near_area += float(res["near_area"])
+				total_exact_pairs += int(res["exact_pairs"])
+				total_near_pairs += int(res["near_pairs"])
+				reports.append(res)
+		reports.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var ea: float = float(a["exact_area"])
+			var eb: float = float(b["exact_area"])
+			if not is_equal_approx(ea, eb):
+				return ea > eb
+			return float(a["near_area"]) > float(b["near_area"])
+		)
+		print("=== ZFIGHT OBRA AUDIT: %d scanned, %d with exact, %d with any | exact %.2f m2 (%d pairs), near %.2f m2 (%d pairs) | %d ms ===" % [
+			scanned, with_exact, with_any, total_exact_area, total_exact_pairs, total_near_area, total_near_pairs, Time.get_ticks_msec() - t_zf0])
+		for idx_r in range(reports.size()):
+			var r: Dictionary = reports[idx_r]
+			print("  #%02d %-22s | exact %7.3f m2 (%4d) | near %7.3f m2 (%4d) | tris %d" % [
+				idx_r + 1, String(r["name"]), float(r["exact_area"]), int(r["exact_pairs"]), float(r["near_area"]), int(r["near_pairs"]), int(r["tris"])])
+		print("--- CLUSTERS (top 25 or exact>=0.02 / near>=0.05) ---")
+		for idx_r in range(reports.size()):
+			var r: Dictionary = reports[idx_r]
+			if idx_r >= 25 and float(r["exact_area"]) < 0.02 and float(r["near_area"]) < 0.05:
+				continue
+			var clusters: Array = (r["clusters"] as Dictionary).values()
+			clusters.sort_custom(func(a: Array, b: Array) -> bool:
+				if bool(a[9]) != bool(b[9]):
+					return bool(a[9])
+				return float(a[0]) > float(b[0])
+			)
+			print("[%s] (#%d, exact %.3f m2, near %.3f m2)" % [String(r["name"]), idx_r + 1, float(r["exact_area"]), float(r["near_area"])])
+			for c_i in range(mini(8, clusters.size())):
+				var cl: Array = clusters[c_i]
+				var cnt: int = int(cl[5])
+				var pos: Vector3 = (cl[4] as Vector3) / float(maxi(1, cnt))
+				var nrm: Vector3 = cl[6]
+				var tag: String = "EXACT" if bool(cl[9]) else "NEAR "
+				print("    %s gap %.1f..%.1f mm | area %6.3f m2 | pairs %3d | %s vs %s | n=(%.2f,%.2f,%.2f) | local=(%.2f, %.2f, %.2f)" % [
+					tag, float(cl[3]) * 1000.0, float(cl[2]) * 1000.0, float(cl[0]), int(cl[1]), String(cl[7]), String(cl[8]), nrm.x, nrm.y, nrm.z, pos.x, pos.y, pos.z])
+		if max_exact >= 0.0:
+			_check(total_exact_area <= max_exact, "zfight exact area %.3f m2 <= %.3f m2 (%d scanned)" % [total_exact_area, max_exact, scanned])
+			print("ZFIGHT %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+			get_tree().quit(1 if fails > fails0 else 0)
+		else:
+			_check(true, "zfight scan completed (%d obra buildings, %d with exact)" % [scanned, with_exact])
+			print("ZFIGHT OK (0 failed)")
+			get_tree().quit(0)
+		return
 	if OS.get_cmdline_user_args().has("--creator"):       # the character creator: its two tabs, and the newer choices on a face
 		shots = true
 		g.menu.close()
@@ -24978,3 +25060,250 @@ func _run() -> void:
 	_check(Loc.t("obj_paca") != "obj_paca" and Loc.lang == "en", "English translation loads")
 	print("SELFTEST %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 	get_tree().quit(1 if fails > 0 else 0)
+
+
+func _zfight_collect_obras(root: Node, out: Array) -> void:
+	for c in root.get_children():
+		if is_instance_of(c, ObraS):
+			if (c as Node3D).is_visible_in_tree():
+				out.append(c)
+		else:
+			_zfight_collect_obras(c, out)
+
+
+func _zfight_collect_meshes(root: Node, out: Array) -> void:
+	for c in root.get_children():
+		if is_instance_of(c, ObraS):
+			continue
+		if c is Node3D and not (c as Node3D).visible:
+			continue
+		if c is MeshInstance3D:
+			var mi := c as MeshInstance3D
+			if mi.is_visible_in_tree() and mi.mesh != null:
+				out.append(mi)
+		_zfight_collect_meshes(c, out)
+
+
+func _zfight_mat_sig(mat: Material) -> String:
+	if mat == null:
+		return "null"
+	if mat is BaseMaterial3D:
+		var bm := mat as BaseMaterial3D
+		var hex: String = bm.albedo_color.to_html(false)
+		if bm.albedo_texture != null:
+			var rp: String = bm.albedo_texture.resource_path
+			var tname: String = rp.get_file() if rp != "" else ("tex#%d" % bm.albedo_texture.get_rid().get_id())
+			return "#%s@%s" % [hex, tname]
+		return "#%s" % hex
+	if mat is ShaderMaterial:
+		var sm := mat as ShaderMaterial
+		var sh_name: String = sm.shader.resource_path.get_file() if (sm.shader != null and sm.shader.resource_path != "") else "shader"
+		return "%s#%d" % [sh_name, sm.get_rid().get_id()]
+	return "mat#%d" % mat.get_rid().get_id()
+
+
+func _zfight_tri_overlap(a0: Vector2, a1: Vector2, a2: Vector2, b0: Vector2, b1: Vector2, b2: Vector2) -> Array:
+	var p1 := a1
+	var p2 := a2
+	if (p1 - a0).cross(p2 - a0) < 0.0:
+		var tmp := p1
+		p1 = p2
+		p2 = tmp
+	var poly: Array[Vector2] = [b0, b1, b2]
+	var edges: Array = [[a0, p1], [p1, p2], [p2, a0]]
+	for ed in edges:
+		if poly.size() < 3:
+			return [0.0, Vector2.ZERO]
+		var e0: Vector2 = ed[0]
+		var e1: Vector2 = ed[1]
+		var edge: Vector2 = e1 - e0
+		var next: Array[Vector2] = []
+		var s: Vector2 = poly[poly.size() - 1]
+		var ds: float = edge.cross(s - e0)
+		for idx_p in range(poly.size()):
+			var p: Vector2 = poly[idx_p]
+			var dp: float = edge.cross(p - e0)
+			if dp >= -1e-6:
+				if ds < -1e-6:
+					var denom: float = ds - dp
+					if absf(denom) > 1e-10:
+						next.append(s.lerp(p, ds / denom))
+				next.append(p)
+			elif ds >= -1e-6:
+				var denom2: float = ds - dp
+				if absf(denom2) > 1e-10:
+					next.append(s.lerp(p, ds / denom2))
+			s = p
+			ds = dp
+		poly = next
+	if poly.size() < 3:
+		return [0.0, Vector2.ZERO]
+	var area2 := 0.0
+	var c2d := Vector2.ZERO
+	for i in range(poly.size()):
+		area2 += poly[i].cross(poly[(i + 1) % poly.size()])
+		c2d += poly[i]
+	return [absf(area2) * 0.5, c2d / float(poly.size())]
+
+
+func _zfight_scan_obra(ob: Node3D) -> Dictionary:
+	var meshes: Array = []
+	_zfight_collect_meshes(ob, meshes)
+	var inv_ob := ob.global_transform.affine_inverse()
+	var buckets := {}
+	var tri_count := 0
+	for mi in meshes:
+		var mesh_inst := mi as MeshInstance3D
+		var mesh := mesh_inst.mesh
+		var xf := inv_ob * mesh_inst.global_transform
+		var flip_winding := xf.basis.determinant() < 0.0
+		for s in range(mesh.get_surface_count()):
+			if mesh is ArrayMesh and (mesh as ArrayMesh).surface_get_primitive_type(s) != Mesh.PRIMITIVE_TRIANGLES:
+				continue
+			var mat: Material = mesh_inst.material_override if mesh_inst.material_override != null else mesh.surface_get_material(s)
+			if mat is BaseMaterial3D and (mat as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+				continue
+			var sig := _zfight_mat_sig(mat)
+			var cull_disabled: bool = (mat is BaseMaterial3D and (mat as BaseMaterial3D).cull_mode == BaseMaterial3D.CULL_DISABLED)
+			var arrays := mesh.surface_get_arrays(s)
+			if arrays.size() <= Mesh.ARRAY_VERTEX:
+				continue
+			var verts = arrays[Mesh.ARRAY_VERTEX]
+			if not (verts is PackedVector3Array) or (verts as PackedVector3Array).is_empty():
+				continue
+			var v_arr: PackedVector3Array = verts
+			var idx = arrays[Mesh.ARRAY_INDEX] if arrays.size() > Mesh.ARRAY_INDEX else null
+			var has_idx := (idx is PackedInt32Array) and not (idx as PackedInt32Array).is_empty()
+			var n_tris: int = ((idx as PackedInt32Array).size() if has_idx else v_arr.size()) / 3
+			for t in range(n_tris):
+				var i0: int = (idx as PackedInt32Array)[t * 3] if has_idx else (t * 3)
+				var i1: int = (idx as PackedInt32Array)[t * 3 + 1] if has_idx else (t * 3 + 1)
+				var i2: int = (idx as PackedInt32Array)[t * 3 + 2] if has_idx else (t * 3 + 2)
+				var a: Vector3 = xf * v_arr[i0]
+				var b: Vector3 = xf * v_arr[i1]
+				var c: Vector3 = xf * v_arr[i2]
+				var cross: Vector3 = (c - a).cross(b - a)
+				if flip_winding:
+					cross = -cross
+				var area2 := cross.length()
+				if area2 < 1e-5:
+					continue
+				var n: Vector3 = cross / area2
+				tri_count += 1
+				var nk := Vector3i(roundi(n.x * 16.0), roundi(n.y * 16.0), roundi(n.z * 16.0))
+				if not buckets.has(nk):
+					buckets[nk] = []
+				(buckets[nk] as Array).append([a, b, c, n, sig])
+				if cull_disabled:
+					var n_back: Vector3 = -n
+					var nk2 := Vector3i(roundi(n_back.x * 16.0), roundi(n_back.y * 16.0), roundi(n_back.z * 16.0))
+					if not buckets.has(nk2):
+						buckets[nk2] = []
+					(buckets[nk2] as Array).append([a, c, b, n_back, sig])
+	var exact_area := 0.0
+	var near_area := 0.0
+	var exact_pairs := 0
+	var near_pairs := 0
+	var clusters := {}
+	for nk in buckets:
+		var list: Array = buckets[nk]
+		if list.size() < 2:
+			continue
+		var bn: Vector3 = list[0][3]
+		var ref: Vector3 = Vector3.UP if absf(bn.y) < 0.9 else Vector3.RIGHT
+		var u: Vector3 = ref.cross(bn).normalized()
+		var v: Vector3 = bn.cross(u)
+		var nk_str := "%d,%d,%d" % [nk.x, nk.y, nk.z]
+		var items: Array = []
+		items.resize(list.size())
+		for i in range(list.size()):
+			var entry: Array = list[i]
+			var a: Vector3 = entry[0]
+			var b: Vector3 = entry[1]
+			var c: Vector3 = entry[2]
+			var p0 := Vector2(u.dot(a), v.dot(a))
+			var p1 := Vector2(u.dot(b), v.dot(b))
+			var p2 := Vector2(u.dot(c), v.dot(c))
+			var minu := minf(p0.x, minf(p1.x, p2.x))
+			var maxu := maxf(p0.x, maxf(p1.x, p2.x))
+			var minv := minf(p0.y, minf(p1.y, p2.y))
+			var maxv := maxf(p0.y, maxf(p1.y, p2.y))
+			var da: float = bn.dot(a)
+			var db: float = bn.dot(b)
+			var dc: float = bn.dot(c)
+			var min_d := minf(da, minf(db, dc))
+			var max_d := maxf(da, maxf(db, dc))
+			var plane_d: float = (entry[3] as Vector3).dot(a)
+			var mid: Vector3 = (a + b + c) / 3.0
+			items[i] = [min_d, max_d, plane_d, entry[3], entry[4], p0, p1, p2, minu, maxu, minv, maxv, mid]
+		items.sort_custom(func(x: Array, y: Array) -> bool: return float(x[0]) < float(y[0]))
+		var cnt := items.size()
+		for i in range(cnt):
+			var it_i: Array = items[i]
+			var max_d_i: float = float(it_i[1])
+			var ni: Vector3 = it_i[3]
+			var sig_i: String = String(it_i[4])
+			var minu_i: float = float(it_i[8])
+			var maxu_i: float = float(it_i[9])
+			var minv_i: float = float(it_i[10])
+			var maxv_i: float = float(it_i[11])
+			for j in range(i + 1, cnt):
+				var it_j: Array = items[j]
+				if float(it_j[0]) > max_d_i + 0.008:
+					break
+				var sig_j: String = String(it_j[4])
+				if sig_i == sig_j:
+					continue
+				var nj: Vector3 = it_j[3]
+				if ni.dot(nj) < 0.995:
+					continue
+				if minf(maxu_i, float(it_j[9])) - maxf(minu_i, float(it_j[8])) <= 0.002:
+					continue
+				if minf(maxv_i, float(it_j[11])) - maxf(minv_i, float(it_j[10])) <= 0.002:
+					continue
+				var ov_res: Array = _zfight_tri_overlap(it_i[5], it_i[6], it_i[7], it_j[5], it_j[6], it_j[7])
+				var ov: float = float(ov_res[0])
+				if ov <= 0.001:
+					continue
+				var c2d: Vector2 = ov_res[1]
+				var denom_i: float = ni.dot(bn)
+				var denom_j: float = nj.dot(bn)
+				if absf(denom_i) < 0.5 or absf(denom_j) < 0.5:
+					continue
+				var ti: float = (float(it_i[2]) - ni.dot(u) * c2d.x - ni.dot(v) * c2d.y) / denom_i
+				var tj: float = (float(it_j[2]) - nj.dot(u) * c2d.x - nj.dot(v) * c2d.y) / denom_j
+				var gap: float = absf(tj - ti) * absf(denom_i)
+				if gap > 0.008:
+					continue
+				var mpos := ((it_i[12] as Vector3) + (it_j[12] as Vector3)) * 0.5
+				if ni.y < -0.95 and mpos.y <= 0.02:
+					continue
+				var is_exact := gap <= 0.001
+				if is_exact:
+					exact_pairs += 1
+					exact_area += ov
+				else:
+					near_pairs += 1
+					near_area += ov
+				var ma := sig_i if sig_i < sig_j else sig_j
+				var mb := sig_j if sig_i < sig_j else sig_i
+				var d_avg := (ti + tj) * 0.5
+				var ck := "%s|%s|%s|%s|%.2f" % ["E" if is_exact else "N", ma, mb, nk_str, snappedf(d_avg, 0.02)]
+				if not clusters.has(ck):
+					clusters[ck] = [ov, 1, gap, gap, mpos, 1, ni, ma, mb, is_exact]
+				else:
+					var cl: Array = clusters[ck]
+					cl[0] = float(cl[0]) + ov
+					cl[1] = int(cl[1]) + 1
+					cl[2] = maxf(float(cl[2]), gap)
+					cl[3] = minf(float(cl[3]), gap)
+					cl[4] = (cl[4] as Vector3) + mpos
+					cl[5] = int(cl[5]) + 1
+	return {
+		"tris": tri_count,
+		"exact_area": exact_area,
+		"near_area": near_area,
+		"exact_pairs": exact_pairs,
+		"near_pairs": near_pairs,
+		"clusters": clusters,
+	}

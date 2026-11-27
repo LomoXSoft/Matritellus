@@ -228,8 +228,8 @@ func _upper_ti() -> void:
 	var b := Vector2(LONG + 0.01, FLY)
 	var ln: float = face(a, b)
 	box(0.0, GF, -0.25, ln, TOP - GF, 0.25, "crema")
-	box(-0.02, GF - 0.05, 0.0, ln + 0.04, 0.35, 0.1, WHITE)                                # the band under it, moulded
-	box(-0.02, GF - 0.05, -FLY, ln + 0.04, 0.05, FLY + 0.1, 0xd9d4c8)                    # its underside
+	box(-0.02, GF, 0.0, ln + 0.04, 0.3, 0.1, WHITE)                                        # the band under it, moulded
+	box(-0.02, GF - 0.05, -FLY, ln + 0.04, 0.05, FLY, 0xd9d4c8)                           # its underside
 	box(-0.02, F2 - 0.04, 0.0, ln + 0.04, 0.08, 0.05, 0xdcd2c0)
 	box(-0.03, TOP, -0.3, ln + 0.06, 0.25, 0.4, WHITE)                                    # the cornice and its parapet
 	box(0.0, TOP + 0.25, -0.25, ln, 0.5, 0.25, "crema")
@@ -247,8 +247,8 @@ func _upper_sf() -> void:
 	var b := Vector2(-0.93, 0.13)
 	var ln: float = face(a, b)
 	box(0.0, GF, -0.25, ln, TOP - GF, 0.25, "crema")
-	box(-0.02, GF - 0.05, 0.0, ln + 0.04, 0.35, 0.1, WHITE)
-	box(-0.02, GF - 0.05, -0.9, ln + 0.04, 0.05, 1.0, 0xd9d4c8)
+	box(-0.02, GF, 0.0, ln + 0.04, 0.3, 0.1, WHITE)
+	box(-0.02, GF - 0.05, -0.9, ln + 0.04, 0.05, 0.9, 0xd9d4c8)
 	box(-0.02, F2 - 0.04, 0.0, ln + 0.04, 0.08, 0.05, 0xdcd2c0)
 	box(-0.03, TOP, -0.3, ln + 0.06, 0.25, 0.4, WHITE)
 	box(0.0, TOP + 0.25, -0.25, ln, 0.5, 0.25, "crema")
@@ -332,12 +332,12 @@ func _bank() -> void:
 	masonry(0.0, BANK_END, g - 0.5, GF, holes, [], "granito")
 	box(0.0, g - 0.5, -0.4, 0.01, GF - g + 0.5, 0.4, "granito")
 	# the red band, the name on it facing the street, the box at its end
-	box(-0.02, 2.62, 0.0, BAND_END + 0.02, 0.63, 0.14, RED)
-	_picture(1.0, 1.0 + 3.9, 2.66, 2.66 + 0.585, 0.141, "banco")
-	_picture(8.8, 8.8 + 3.9, 2.66, 2.66 + 0.585, 0.141, "banco")
-	box(BAND_END - 0.5, 2.5, 0.0, 0.5, 0.8, 0.5, RED)
+	box(-0.02, 2.62, 0.0, BAND_END + 0.02, 0.58, 0.14, RED)
+	_picture(1.0, 1.0 + 3.9, 2.66, 2.66 + 0.585, 0.154, "banco")
+	_picture(8.8, 8.8 + 3.9, 2.66, 2.66 + 0.585, 0.154, "banco")
+	box(BAND_END - 0.5, 2.5, 0.0, 0.5, 0.69, 0.5, RED)
 	var keep := _xf
-	_xf = _xf * Transform3D(Basis(Vector3.UP, PI / 2.0), Vector3(BAND_END + 0.001, 0.0, 0.0))     # (on its side facing west, along the street)
+	_xf = _xf * Transform3D(Basis(Vector3.UP, PI / 2.0), Vector3(BAND_END + 0.014, 0.0, 0.0))     # (on its side facing west, along the street)
 	_picture(-0.47, -0.05, 2.6, 3.2, 0.0, "banco_cubo")
 	_xf = keep
 	# its windows: glass, a poster behind each
@@ -412,8 +412,8 @@ func _brick() -> void:
 	var w0: float = WOOD_DOOR[0]
 	var w1: float = WOOD_DOOR[1]
 	box(w0, g, wz - 0.05, w1 - w0, 2.5 - g, 0.05, WOOD)
-	box(w0 - 0.06, g, wz, 0.06, 2.5 - g, 0.2, 0x4a3020)
-	box(w1, g, wz, 0.06, 2.5 - g, 0.2, 0x4a3020)
+	box(w0 - 0.04, g, wz, 0.06, 2.5 - g, 0.2, 0x4a3020)
+	box(w1 - 0.02, g, wz, 0.06, 2.5 - g, 0.2, 0x4a3020)
 	for leaf in [[w0 + 0.06, (w0 + w1) / 2.0 - 0.03], [(w0 + w1) / 2.0 + 0.03, w1 - 0.06]]:
 		box(leaf[0], 2.0, wz + 0.005, leaf[1] - leaf[0], 0.4, 0.01, 0x1c1c1e)
 		for k in range(3):
@@ -454,7 +454,7 @@ func _electrician() -> void:
 	var holes: Array = [Rect2(win1[0], 0.45, win1[1] - win1[0], 1.9), Rect2(win2[0], 0.3, win2[1] - win2[0], 2.05), Rect2(door2[0], DOWN, door2[1] - door2[0], 2.35 - DOWN)]
 	masonry(BRICK_END, LONG, DOWN, GF, holes, [], "blanco")
 	box(BRICK_END, g - 0.4, 0.0, LONG - BRICK_END, 0.55 - g, 0.04, 0xb9b4aa)
-	_picture(24.6, 26.7, 2.4, 2.4 + 0.84, 0.03, "electricidad")
+	_picture(24.6, 26.7, 2.4, 2.4 + 0.84, 0.045, "electricidad")
 	box(24.6, 2.4, 0.0, 2.1, 0.84, 0.03, 0x1e2a6e)
 	box(26.9, 2.42, 0.0, 3.7, 0.12, 0.25, 0xd9d6cc)                                       # the little canopy over the big window
 	_picture(26.9, 30.6, 2.56, 2.56 + 0.925, 0.03, "energia")

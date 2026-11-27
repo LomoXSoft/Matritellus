@@ -271,7 +271,7 @@ func _signs() -> void:
 	var b0 := SHOP.position.x - 0.25
 	var b1 := minf(len_front - 0.1, b0 + 2.7)
 	box(b0 - 0.03, 2.74, 0.0, b1 - b0 + 0.06, 0.74, 0.06, 0x3a3a3c)
-	_picture(b0, b1, 2.76, 3.46, 0.065, "rotulo")
+	_picture(b0, b1, 2.76, 3.46, 0.072, "rotulo")
 	# the tall sign between the balconies: it stands out from the wall, a face to each end of the street
 	var x := 3.72
 	var y0 := 3.66
@@ -279,9 +279,9 @@ func _signs() -> void:
 	var z0 := 0.1
 	var z1 := 0.6
 	box(x + 0.005, y0, z0, 0.09, y1 - y0, z1 - z0, 0x2a1a16)
-	quad(Vector3(x, y0, z0), Vector3(x, y0, z1), Vector3(x, y1, z1), Vector3(x, y1, z0), "banderola", Vector3(-1, 0, 0),
+	quad(Vector3(x - 0.007, y0, z0), Vector3(x - 0.007, y0, z1), Vector3(x - 0.007, y1, z1), Vector3(x - 0.007, y1, z0), "banderola", Vector3(-1, 0, 0),
 		[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
-	quad(Vector3(x + 0.1, y0, z1), Vector3(x + 0.1, y0, z0), Vector3(x + 0.1, y1, z0), Vector3(x + 0.1, y1, z1), "banderola", Vector3(1, 0, 0),
+	quad(Vector3(x + 0.107, y0, z1), Vector3(x + 0.107, y0, z0), Vector3(x + 0.107, y1, z0), Vector3(x + 0.107, y1, z1), "banderola", Vector3(1, 0, 0),
 		[Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)])
 	for y in [y0 + 0.3, y1 - 0.3]:
 		box(x + 0.03, y, 0.0, 0.04, 0.04, z0, 0x3a3a3c)

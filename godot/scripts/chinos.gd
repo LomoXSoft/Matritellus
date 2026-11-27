@@ -235,7 +235,7 @@ func _foot(x0: float, x1: float) -> void:
 ## what fills a window's hole: glass, its white frame, its uprights; `blind`: how much of it the blind covers, from the top
 func _win(r: Rect2, panes := 2, blind := 0.0, frame := WHITE) -> void:
 	var z: float = -DEEP + 0.08
-	box(r.position.x, r.position.y, z - 0.04, r.size.x, r.size.y, 0.03, GLASS)
+	box(r.position.x + 0.05, r.position.y + 0.05, z - 0.04, r.size.x - 0.1, r.size.y - 0.1, 0.025, GLASS)
 	for q in [[r.position.x, r.position.y, 0.06, r.size.y], [r.end.x - 0.06, r.position.y, 0.06, r.size.y], [r.position.x, r.position.y, r.size.x, 0.06], [r.position.x, r.end.y - 0.06, r.size.x, 0.06]]:
 		box(q[0], q[1], z - 0.02, q[2], q[3], 0.06, frame)
 	for i in range(1, panes):
@@ -410,8 +410,8 @@ func _north() -> void:
 	_soldier(gate1.position.x - 0.15, minf(ln, gate2.end.x + 0.15), gates, gates + 0.3)
 	_lattice(gate1.position.x, gate1.end.x, ground(gate1.position.x + 1.0, 0.3), gates)
 	_lattice(gate2.position.x, gate2.end.x, ground(gate2.position.x + 1.0, 0.3), gates)
-	box(gate1.end.x, DOWN, 0.0, gate2.position.x - gate1.end.x, gates - DOWN, 0.03, "piedra")
-	box(gate1.position.x - 0.1, DOWN, 0.0, 0.1, gates - DOWN, 0.02, "piedra")
+	box(gate1.end.x, DOWN, 0.014, gate2.position.x - gate1.end.x, gates - DOWN, 0.03, "piedra")
+	box(gate1.position.x - 0.1, DOWN, 0.014, 0.1, gates - DOWN, 0.02, "piedra")
 	# upstairs
 	_upper(u1, 2, 0.75)
 	_upper(u2, 2, 0.85)
@@ -460,7 +460,7 @@ func _south() -> void:
 	var g0: float = _gs(1.2, 0.3)
 	_lattice(gate.position.x, gate.end.x, g0, low)
 	for q in [[gate.position.x - 0.16, gate.position.x], [gate.end.x, iron.position.x], [iron.end.x, iron.end.x + 0.16]]:
-		box(q[0], DOWN, 0.0, q[1] - q[0], low - DOWN, 0.03, "piedra")
+		box(q[0], DOWN, 0.014, q[1] - q[0], low - DOWN, 0.03, "piedra")
 	box(iron.position.x, g0, -0.12, iron.size.x, low - g0, 0.03, 0x1a1a1c)               # the iron door: a frame, uprights, a plate at its foot
 	for i in range(6):
 		box(iron.position.x + 0.04 + i * (iron.size.x - 0.1) / 5.0, g0, -0.08, 0.02, low - g0, 0.02, 0x3a3d40)
@@ -551,7 +551,7 @@ func _point() -> void:
 	masonry(0.0, ln, DOWN, 0.0, [front], [], "ladrillo")
 	# the pier of posters: tiles at its foot, then a board of what is sold
 	var foot: float = minf(g + 0.95, head - 1.95)
-	box(x1, DOWN, 0.0, ln - x1, foot - DOWN, 0.04, "piedra")
+	box(x1, DOWN, 0.014, ln - x1, foot - DOWN, 0.04, "piedra")
 	box(x1 + 0.02, foot, 0.0, ln - x1 - 0.04, head - foot, 0.03, 0x2f6a3a)
 	var px: float = (x1 + ln) / 2.0
 	var yellow := 0xf4d23a
@@ -854,7 +854,7 @@ func _roof() -> void:
 	for n in [1.0, -1.0]:
 		quad(Vector3(-0.3, 2.1, 0.5), Vector3(w + 0.3, 2.1, 0.5), Vector3(w + 0.3, 2.7, -2.6), Vector3(-0.3, 2.7, -2.6), 0x8a8d90, Vector3(0, n, n * 0.19))
 	for i in range(int((w + 0.6) / 0.19)):
-		bar(Vector3(-0.3 + 0.1 + i * 0.19, 2.115, 0.5), Vector3(-0.3 + 0.1 + i * 0.19, 2.715, -2.6), 0.06, 0.03, 0x9a9da0)
+		bar(Vector3(-0.3 + 0.1 + i * 0.19, 2.135, 0.5), Vector3(-0.3 + 0.1 + i * 0.19, 2.735, -2.6), 0.06, 0.03, 0x9a9da0)
 	home()
 	# the cage at the point: four posts, rails round them, a wire or two
 	var iron := 0x3a3d40

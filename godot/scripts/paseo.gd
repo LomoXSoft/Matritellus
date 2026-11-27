@@ -415,7 +415,7 @@ func _floors() -> void:
 		var iz := int(ceil(lo / t))
 		while (iz + 1) * t <= vk(x0 + t / 2.0) - 0.02:
 			if (ix + iz) % 2 == 0:
-				_lay([Vector2(x0, iz * t), Vector2(x0 + t, iz * t), Vector2(x0 + t, (iz + 1) * t), Vector2(x0, (iz + 1) * t)], 0xac5e48, LIFT_ACERA + 0.004, true)
+				_lay([Vector2(x0, iz * t), Vector2(x0 + t, iz * t), Vector2(x0 + t, (iz + 1) * t), Vector2(x0, (iz + 1) * t)], 0xac5e48, LIFT_ACERA + 0.015, true)
 			iz += 1
 		ix += 1
 	# the red squares on the walk
@@ -429,7 +429,7 @@ func _motif(s: float) -> void:
 	var c := vc(s)
 	var r := 1.2
 	var w := 0.4
-	var y := LIFT_WALK + 0.006
+	var y := LIFT_WALK + 0.015
 	for side in [[Vector2(s - r, c - r), Vector2(s + r, c - r + w)], [Vector2(s - r, c + r - w), Vector2(s + r, c + r)],
 			[Vector2(s - r, c - r + w), Vector2(s - r + w, c + r - w)], [Vector2(s + r - w, c - r + w), Vector2(s + r, c + r - w)]]:
 		var a: Vector2 = side[0]
@@ -440,7 +440,7 @@ func _motif(s: float) -> void:
 ## a red band across the walk (where it meets the square of the crossing path)
 func _motif_bar(s: float) -> void:
 	var c := vc(s)
-	_lay([Vector2(s, c - WALK_HALF + 0.4), Vector2(s + 0.4, c - WALK_HALF + 0.4), Vector2(s + 0.4, c + WALK_HALF - 0.4), Vector2(s, c + WALK_HALF - 0.4)], 0x9a5a4e, LIFT_WALK + 0.006, true)
+	_lay([Vector2(s, c - WALK_HALF + 0.4), Vector2(s + 0.4, c - WALK_HALF + 0.4), Vector2(s + 0.4, c + WALK_HALF - 0.4), Vector2(s, c + WALK_HALF - 0.4)], 0x9a5a4e, LIFT_WALK + 0.015, true)
 
 # ---------------- kerbs ----------------
 ## a kerb along the line a -> b of the frame: its top `w` wide at `top` over the ground, its face to `side` (+1: +z)
@@ -652,7 +652,7 @@ func _trees() -> void:
 ## the square of earth round a tree in a paved ground, edged
 func _pit(at: Vector2) -> void:
 	var r := 0.6
-	_lay([at + Vector2(-r, -r), at + Vector2(r, -r), at + Vector2(r, r), at + Vector2(-r, r)], "tierra", LIFT_PLAZA + 0.004, true)
+	_lay([at + Vector2(-r, -r), at + Vector2(r, -r), at + Vector2(r, r), at + Vector2(-r, r)], "tierra", LIFT_BAND + 0.016, true)
 	for e in [[Vector2(-r, -r), Vector2(r, -r)], [Vector2(r, -r), Vector2(r, r)], [Vector2(r, r), Vector2(-r, r)], [Vector2(-r, r), Vector2(-r, -r)]]:
 		_kerb(at + e[0], at + e[1], LIFT_PLAZA + 0.03, -1.0, 0.08)
 

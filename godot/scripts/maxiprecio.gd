@@ -443,9 +443,9 @@ func _arcos() -> void:
 	var ln := face(NW, SW)
 	len_arcos = ln
 	# the ground floor: brick piers, the two windows, the shop's front between them; a cream band over them all
-	masonry(0.0, ln, -2.0, BAND, [WIN_N, WIN_S, Rect2(BAY.x, FLOOR, BAY.y - BAY.x, HEAD - FLOOR)],
+	masonry(0.0, ln, -2.0, BAND, [WIN_N, WIN_S, Rect2(BAY.x, -2.0, BAY.y - BAY.x, HEAD + 2.0)],
 		[Rect2(WIN_N.position.x, HEAD, WIN_N.size.x, BAND - HEAD), Rect2(BAY.x, HEAD, BAY.y - BAY.x, BAND - HEAD), Rect2(WIN_S.position.x, HEAD, WIN_S.size.x, BAND - HEAD),
-		Rect2(WIN_N.position.x, -2.0, WIN_N.size.x, SILL + 2.0), Rect2(WIN_S.position.x, -2.0, WIN_S.size.x, SILL + 2.0), Rect2(BAY.x, -2.0, BAY.y - BAY.x, FLOOR + 2.0)], "ladrillo", "crema")
+		Rect2(WIN_N.position.x, -2.0, WIN_N.size.x, SILL + 2.0), Rect2(WIN_S.position.x, -2.0, WIN_S.size.x, SILL + 2.0)], "ladrillo", "crema")
 	for r: Rect2 in [WIN_N, WIN_S]:
 		plinth(r.position.x, r.end.x, SILL, SILL, "granito", 0.04, -2.0)
 		for k in range(int(r.size.x / 1.2)):                      # (vents in the granite)
@@ -554,7 +554,7 @@ func _shopfront() -> void:
 ## the two awnings in a V, out from under the boards, mitred where they meet
 func _v_awnings() -> void:
 	face(NW, SW)
-	var y := 3.48
+	var y := 3.40
 	var reach := 1.3
 	var drop := 0.75
 	var t0 := Vector2(4.5, 0.05)
@@ -857,7 +857,7 @@ func _back_and_roof() -> void:
 		var a: Vector2 = ring[i]
 		var b: Vector2 = ring[(i + 1) % ring.size()]
 		var ln := face(b, a)
-		box(0.0, TOP, -0.25, ln, PARAPET - TOP, 0.005, "medianera")
+		box(0.0, TOP, -0.265, ln, PARAPET - TOP, 0.01, "medianera")
 	home()
 	box(SW.x + 8.0, TOP, SW.y - 9.0, 2.6, 2.4, 2.2, "medianera")                   # the stairs' head on the roof
 	box(SW.x + 7.95, TOP + 2.4, SW.y - 9.05, 2.7, 0.1, 2.3, "blanco")
@@ -870,13 +870,13 @@ func _states() -> void:
 	face(NW, SW)
 	_leaf(DOOR.x, DOOR.y, DOOR_Z)
 	for r: Rect2 in [WIN_N, WIN_S]:
-		box(r.position.x - 0.04, HEAD - 0.12, 0.12, r.size.x + 0.08, 0.14, 0.12, "toldo")        # (the cloth rolled up under the case)
+		box(r.position.x - 0.04, HEAD - 0.12, 0.12, r.size.x + 0.08, 0.125, 0.12, "toldo")        # (the cloth rolled up under the case)
 	for q in [[Vector2(4.5, 0.05), Vector2(APEX.x, APEX.y + 0.04)], [Vector2(APEX.x, APEX.y + 0.04), Vector2(12.65, 0.05)]]:
-		bar(_v3(q[0], 3.36), _v3(q[1], 3.36), 0.12, 0.12, "toldo")               # (the V's cloth rolled up under its cases)
+		bar(_v3(q[0], 3.34), _v3(q[1], 3.34), 0.12, 0.12, "toldo")               # (the V's cloth rolled up under its cases)
 	face(MS, NW)
-	box(WIN_M.position.x - 0.04, HEAD - 0.12, 0.12, WIN_M.size.x + 0.08, 0.14, 0.12, "toldo")
+	box(WIN_M.position.x - 0.04, HEAD - 0.12, 0.12, WIN_M.size.x + 0.08, 0.125, 0.12, "toldo")
 	face(SW, SE)
-	box(WIN_G.position.x - 0.04, HEAD - 0.12, 0.12, WIN_G.size.x + 0.08, 0.14, 0.12, "toldo")
+	box(WIN_G.position.x - 0.04, HEAD - 0.12, 0.12, WIN_G.size.x + 0.08, 0.125, 0.12, "toldo")
 	home()
 	_commit_to(_shut)
 	_open = Node3D.new()

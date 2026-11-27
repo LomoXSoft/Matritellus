@@ -213,7 +213,7 @@ func _way_in() -> void:
 	var fx: float = a + 0.72
 	quad(Vector3(a, 0, -inn), Vector3(fx, 0, -inn), Vector3(fx, h, -inn), Vector3(a, h, -inn), "vidrio", Vector3(0, 0, 1))
 	quad(Vector3(fx, 2.1, -inn), Vector3(b, 2.1, -inn), Vector3(b, h, -inn), Vector3(fx, h, -inn), "vidrio", Vector3(0, 0, 1))
-	for q in [a, fx, b - 0.06]:
+	for q in [a + 0.012, fx, b - 0.072]:
 		box(q, 0.0, -inn, 0.06, h, 0.06, gold)
 	for y in [2.1, h - 0.06]:
 		box(a, y, -inn, b - a, 0.06, 0.06, gold)
@@ -234,8 +234,8 @@ func _way_in() -> void:
 	quad(Vector3(x0, 0, back), Vector3(x1, 0, back), Vector3(x1, h, back), Vector3(x0, h, back), "interior", Vector3(0, 0, 1))
 	quad(Vector3(x0, 0, back), Vector3(x0, 0, zi), Vector3(x0, h, zi), Vector3(x0, h, back), "interior", Vector3(1, 0, 0))
 	quad(Vector3(x1, 0, back), Vector3(x1, 0, zi), Vector3(x1, h, zi), Vector3(x1, h, back), "interior", Vector3(-1, 0, 0))
-	quad(Vector3(x0, h, back), Vector3(x1, h, back), Vector3(x1, h, zi), Vector3(x0, h, zi), "interior", Vector3(0, -1, 0))
-	quad(Vector3(x0, 0.02, back), Vector3(x1, 0.02, back), Vector3(x1, 0.02, zi), Vector3(x0, 0.02, zi), 0xb9774f, Vector3.UP)
+	quad(Vector3(x0, h, back), Vector3(x1, h, back), Vector3(x1, h, -inn), Vector3(x0, h, -inn), "interior", Vector3(0, -1, 0))
+	quad(Vector3(x0, 0.02, back), Vector3(x1, 0.02, back), Vector3(x1, 0.02, -inn), Vector3(x0, 0.02, -inn), 0xb9774f, Vector3.UP)
 	for q in [[x0, WIN_A.position.x, 0.0, h], [WIN_A.end.x, a, 0.0, h], [b, WIN_C.position.x, 0.0, h], [WIN_C.end.x, x1, 0.0, h],      # the inside of the front wall
 			[WIN_A.position.x, WIN_A.end.x, 0.0, WIN_A.position.y], [WIN_C.position.x, WIN_C.end.x, 0.0, WIN_C.position.y]]:
 		quad(Vector3(q[0], q[2], zi), Vector3(q[1], q[2], zi), Vector3(q[1], q[3], zi), Vector3(q[0], q[3], zi), "interior", Vector3(0, 0, -1))
@@ -359,7 +359,7 @@ func _signs() -> void:
 	var y0 := 2.88
 	var hh := 1.0
 	box(x0 - 0.03, y0 - 0.03, 0.0, w + 0.06, hh + 0.06, 0.07, 0xf4f1e8)                 # the red board, its white edge
-	box(x0, y0, 0.0, w, hh, 0.09, RED)
+	box(x0, y0, 0.07, w, hh, 0.02, RED)
 	_text("PIZZERÍA", Vector3(x0 + w * 0.5, y0 + hh * 0.76, 0.1), 32, 0x1c1c1e, 0.0066)
 	var big := _text(NAME, Vector3(x0 + w * 0.5, y0 + hh * 0.34, 0.1), 64, 0xfdfcf8, 0.004)
 	big.outline_size = 10

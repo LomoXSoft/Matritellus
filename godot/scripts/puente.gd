@@ -253,7 +253,7 @@ func _pavements() -> void:
 	_flight(Vector2((hw + _east_out(-36.5)) / 2.0, -36.5), pav(-36.5), Vector2(0, -1), _east_out(-36.5) - hw, drop_n, maxi(2, int(round(drop_n / 0.18))))
 	var drop_s: float = -ground(hw + 0.8, FLAT_S + 1.7)
 	var n_s: int = maxi(3, int(round(drop_s / 0.18)))
-	_flight(Vector2((hw + 5.0) / 2.0, FLAT_S), 0.0, Vector2(0, 1), 5.0 - hw, drop_s, n_s)
+	_flight(Vector2((hw + 0.015 + 5.0) / 2.0, FLAT_S), 0.0, Vector2(0, 1), 5.0 - hw - 0.015, drop_s, n_s)
 	_wall(Vector2(hw, FLAT_S), Vector2(hw, FLAT_S + 0.3 * (n_s - 1)), 0.0, -drop_s + 0.1, Vector2(-1, 0))
 	# --- the other side (west): from the point by the Calle del Santo, with its tree, to the paved corner ---
 	var tip := -40.0                             # (the real point ran on a few metres more: in the game the Calle del Santo passes there)

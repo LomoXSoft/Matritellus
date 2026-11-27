@@ -30,20 +30,20 @@ const GREEN := 0x3f6a34
 
 # [x0, z0, x1, z1, height, look]: the blocks (look: "aula" windows on two floors, "bajo" one floor, "liso" none)
 const COMB: Array = [
-	[-172.0, -1218.0, -163.0, -1141.0, 7.6, "aula"],     # its spine
-	[-163.0, -1211.0, -123.0, -1200.0, 7.6, "aula"],     # the five bars, north to south
-	[-163.0, -1198.0, -150.0, -1190.0, 7.6, "aula"],
-	[-163.0, -1182.0, -126.0, -1174.0, 7.6, "aula"],
-	[-163.0, -1170.0, -127.0, -1163.0, 7.6, "aula"],
-	[-163.0, -1159.0, -127.0, -1151.0, 7.6, "aula"],
+	[-172.0, -1218.0, -163.0, -1149.94, 7.6, "aula"],    # its spine
+	[-163.06, -1211.0, -123.0, -1200.0, 7.6, "aula"],    # the five bars, north to south
+	[-163.06, -1198.0, -150.0, -1190.0, 7.6, "aula"],
+	[-163.06, -1182.0, -126.0, -1174.0, 7.6, "aula"],
+	[-163.06, -1170.0, -127.0, -1163.0, 7.6, "aula"],
+	[-163.06, -1159.0, -127.0, -1151.0, 7.6, "aula"],
 	[-175.0, -1150.0, -128.0, -1141.0, 7.6, "aula"],
-	[-182.0, -1190.0, -172.0, -1172.0, 4.0, "bajo"],      # lower pieces on its west
-	[-178.0, -1170.0, -172.0, -1152.0, 4.0, "bajo"],
+	[-182.0, -1190.0, -171.94, -1172.0, 4.0, "bajo"],     # lower pieces on its west
+	[-178.0, -1170.0, -171.94, -1152.0, 4.0, "bajo"],
 ]
 const NORTH: Array = [
 	[-158.0, -1262.0, -137.0, -1250.0, 7.0, "aula"],     # the vocational school
-	[-137.0, -1262.0, -120.0, -1252.0, 6.0, "aula"],
-	[-146.0, -1252.0, -122.0, -1238.0, 4.2, "bajo"],
+	[-137.06, -1261.94, -120.0, -1252.0, 6.0, "aula"],
+	[-146.0, -1252.06, -122.0, -1238.0, 4.2, "bajo"],
 ]
 const HALL := [-163.0, -1254.0, -150.0, -1236.0]       # the hall under the red roof
 const GYM := [-115.0, -1233.0, -67.0, -1204.0]
@@ -346,8 +346,8 @@ func _gym() -> void:
 		tri(Vector3(s, top + 0.2, z0 - 0.3), Vector3(s, top + 1.2, zm), Vector3(s, top + 0.2, z1 + 0.3), SAGE, Vector3(signf(s - x0) if s > x0 else -1.0, 0, 0))
 	_prism(Array(_frame_rect(b)), DOWN, top + 1.2)
 	blocks.append([Rect2(GYM[0], GYM[1], GYM[2] - GYM[0], GYM[3] - GYM[1]), top + 1.2])
-	_block([-113.0, -1238.5, -66.0, -1233.0, 4.5, "bajo"])
-	_block([-105.0, -1204.0, -70.0, -1197.0, 4.0, "bajo"])
+	_block([-113.0, -1238.5, -66.0, -1232.92, 4.5, "bajo"])
+	_block([-105.0, -1204.08, -70.0, -1197.0, 4.0, "bajo"])
 
 # ---------------- the courts ----------------
 ## two courts side by side, their white lines, a hoop at each end of the basketball one, goals on the other; the
@@ -366,7 +366,7 @@ func _courts() -> void:
 			var bb: Vector2 = ln[1]
 			var dd: Vector2 = (bb - a).normalized()
 			var nn := Vector2(-dd.y, dd.x) * 0.05
-			_lay(PackedVector2Array([a - nn, bb - nn, bb + nn, a + nn]), 0.085, WHITE)
+			_lay(PackedVector2Array([a - nn, bb - nn, bb + nn, a + nn]), 0.086, WHITE)
 		var mid := Vector2((xa + xb) / 2.0, (za + zb) / 2.0)
 		var circle := PackedVector2Array()
 		for i in range(24):
@@ -376,7 +376,7 @@ func _courts() -> void:
 			var bb: Vector2 = circle[(i + 1) % 24]
 			var dd: Vector2 = (bb - a).normalized()
 			var nn := Vector2(-dd.y, dd.x) * 0.05
-			_lay(PackedVector2Array([a - nn, bb - nn, bb + nn, a + nn]), 0.086, WHITE)
+			_lay(PackedVector2Array([a - nn, bb - nn, bb + nn, a + nn]), 0.088, WHITE)
 		for s in [-1.0, 1.0]:
 			var end := Vector2(mid.x + s * 19.6, mid.y)
 			var o := Vector3(end.x - O.x, _g(end), end.y - O.y)
@@ -413,9 +413,9 @@ func _park() -> void:
 		while x < -64.0:
 			var a := Vector2(x, row[0])
 			var bb := Vector2(x, row[1])
-			_lay(PackedVector2Array([a - Vector2(0.05, 0), bb - Vector2(0.05, 0), bb + Vector2(0.05, 0), a + Vector2(0.05, 0)]), 0.06, WHITE)
+			_lay(PackedVector2Array([a - Vector2(0.05, 0), bb - Vector2(0.05, 0), bb + Vector2(0.05, 0), a + Vector2(0.05, 0)]), 0.065, WHITE)
 			x += 2.5
-	_lay(_rect([PARK[0] + 1.0, -1249.0, -66.0, -1245.0]), 0.055, "tierra")      # the strip of its trees
+	_lay(_rect([PARK[0] + 1.0, -1249.0, -66.0, -1245.0]), 0.068, "tierra")      # the strip of its trees
 	for x in range(-116, -66, 7):
 		_tree(Vector2(x, -1247.0), 7.0, 2.2)
 
@@ -586,10 +586,10 @@ func _porch() -> void:
 	var lc: Array = [nf.call(LODGE, 0.0), nf.call(L, 0.0), nf.call(L, back), nf.call(LODGE, back)]
 	_prism(lc, DOWN, ceil_y)
 	# the canopy over it all, its dark edge; the board on it, the name in raised letters
-	box(-0.5, ceil_y, back - 0.4, L + 1.0, 0.22, -back + 0.4 + 0.42, 0xeeebe4)
+	box(-0.46, ceil_y, back - 0.4, L + 0.92, 0.22, -back + 0.80, 0xeeebe4)
 	box(-0.5, ceil_y, 0.4, L + 1.0, 0.22, 0.04, 0x6e5e4c)
 	for x in [-0.5, L + 0.46]:
-		box(x, ceil_y, back - 0.4, 0.04, 0.22, -back + 0.84, 0x6e5e4c)
+		box(x, ceil_y, back - 0.4, 0.04, 0.22, -back + 0.80, 0x6e5e4c)
 	box(0.5, ceil_y + 0.22, -0.32, 11.7, 1.05, 0.32, 0xe9e6df)
 	box(0.48, ceil_y + 1.27, -0.34, 11.74, 0.05, 0.36, 0xd2cec4)
 	var shade := _text(NAME, Vector3(6.37, ceil_y + 0.72, 0.004), 150, 0x4a5566, 0.0066)

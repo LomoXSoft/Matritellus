@@ -30,6 +30,13 @@ Repositorio privado: https://github.com/LomoXSoft/Matritellus
   - Recreativos: `--selftest --recress` (la misión entera), `--llamadas`, `--marcas`, `--tokken` (el minijuego; con `--balance`, todos contra todos).
   - Otros: mira `godot/scripts/selftest.gd` (`has("--...")`).
   - Fotos: añade `--shots`, sin `--headless` y con `--window`. Se guardan en `godot/shots/`.
+- **Edificios a mano (`obra.gd`) y regla anti-Z-fighting:**
+  - Marcos y cercos (`door_frame()`, `stone_frame()`): sacar o embutir `>= 1,5-2 cm` en la jamba/dintel sin que las esquinas se solapen.
+  - Carteles y placas sobre caja de fondo (`sign_board()`): levantar el plano de textura `>= 1,2-1,5 cm` sobre la caja (`>= 0.012 m`).
+  - Suelos y capas apiladas (`_lay`, `flat`): separar pasos en altura `>= 1,2-1,5 cm` y cortar con la misma rejilla del terreno (`MapData.rg`).
+  - Medianeras y bloques pegados: meter las medianeras de Catastro `2,5 cm` hacia dentro (`ring_walls(..., 0.025)`) y embutir anexos `4-6 cm` (u omitir caras ocultas); ojo con materiales `CULL_DISABLED` (chapas y tejas), cuya cara trasera también dibuja.
+  - Comprobación obligatoria tras añadir o editar un edificio: `python tools/run_tests.py zfight solo=<edificio> max=1.0 --timeout 180`.
+  - Guía completa de la campaña (tandas 1–3, cifras, residuos `.glb` conocidos y checklist de repaso para Pretil y Texturas): [guion/zfighting_repaso.md](guion/zfighting_repaso.md).
 - Si añades archivos nuevos (imágenes, OGG…), impórtalos antes de probar:
 
   ```bash
@@ -125,6 +132,7 @@ Versiones:
 | 0.2.3 | 26/11/2026 | Arreglado el cierre en Android al abrir el juego por segunda vez tras la pantalla de carga (ahora se aplican los ajustes gráficos del dispositivo y el encuadre inicial de la cámara antes de activar el 3D y preparar pipelines, incluso cuando se salta el precalentado de sombreadores); y liberación de la caché temporal del suelo (`world._sheets`) al terminar de cargarlo para ahorrar RAM durante el arranque y la partida. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.3 |
 | 0.2.4 | 26/11/2026 | Nueva misión **Carreras Callejeras** con **Xandro** en Talleres Xandro (atuendo cholo, desbloqueo tras el primer turno de Koke y llamada a las 4 h in-game; parrilla nocturna de 8 Setas Panda de colores distintos con salto automático a las 22:30, entrada de 100 €, premios 500/200/100 €, comisión del 10 % por coche prestado, reintento gratis hasta hacer podio y minijuego diario rotando **Circuito de las Rondas**, **Las Avenidas** y **Sprint al Ferial**, con interfaz en pizarra de tiza y tipografía rotulista); y marcadores de luz holográficos con haces en rotación y difuminado progresivo al cielo tanto en las carreras como en las misiones. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.4 |
 | 0.2.5 | 27/11/2026 | Comprobación de nueva versión **antes** de cargar el pueblo (aviso y descarga directa en pantalla inicial para no esperar a la carga antes de reiniciar, con instalación desatendida en Windows y actualización limpia en Linux/Android); nueva frase de **Ángelus Apátrida** sobre *Metro 20XX*; ampliación de diálogos callejeros y murmullos del pueblo diferenciados por edad y sexo con control anti-repetición; y revisión completa de los diálogos en **inglés** con voces británicas por capas (mayores rurales/norteños, calle/noche en argot británico, vecinos provinciales y niños, manteniendo intactos los menús, el alcalde y los guiños manchegos; guía en `guion/english_style.md`). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.5 |
+| 0.2.6 | 27/11/2026 | Mejoras táctiles y de interfaz (flechas indicadoras de desplazamiento, cruceta virtual y toque directo en el creador de personajes, ajuste de margen en burbujas de diálogo con etiqueta de nombre y bloqueo de acelerador al arrastrar hacia arriba en Android con desbloqueo por toque/freno/golpe); y campaña anti-Z-fighting en 50 edificios e interiores de `obra.gd` (tandas 1–3, de 2826.97 a 110.17 m² exactos, -96,1 %), nuevos helpers constructivos, auditor `--zfight` con cálculo exacto en pendientes y guía de repaso para Pretil y Texturas (`guion/zfighting_repaso.md`). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.6 |
 
 ## Varias sesiones en la misma carpeta
 

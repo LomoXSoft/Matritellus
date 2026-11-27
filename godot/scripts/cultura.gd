@@ -381,9 +381,9 @@ func _portada(r: Rect2) -> void:
 		var h := minf(0.46, y1 - y)
 		var w := 0.42 if k % 2 == 0 else 0.55
 		box(x0 - w, y, 0.0, w, h, 0.085, 0x8a8a86)                                      # (the joint's mortar behind each)
-		box(x0 - w, y + 0.008, 0.0, w - 0.008, h - 0.016, 0.1, "granito")
+		box(x0 - w, y + 0.008, 0.02, w - 0.008, h - 0.016, 0.08, "granito")
 		box(x1, y, 0.0, 0.97 - w, h, 0.085, 0x8a8a86)
-		box(x1 + 0.008, y + 0.008, 0.0, (0.97 - w) - 0.008, h - 0.016, 0.1, "granito")
+		box(x1 + 0.008, y + 0.008, 0.02, (0.97 - w) - 0.008, h - 0.016, 0.08, "granito")
 		y += h
 		k += 1
 	box(x0, y0, -0.3, 0.035, y1 - y0, 0.3, "granito")                                   # the reveal, lined with stone
@@ -434,7 +434,7 @@ func _portada(r: Rect2) -> void:
 	qm.size = field.size
 	mi.mesh = qm
 	mi.material_override = _material("relieve")
-	mi.transform = _xf * Transform3D(Basis.IDENTITY, Vector3(cx, field.position.y + field.size.y / 2.0, 0.031))
+	mi.transform = _xf * Transform3D(Basis.IDENTITY, Vector3(cx, field.position.y + field.size.y / 2.0, 0.042))
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 	for kk in range(2):                                                               # the door, two leaves of boards, dark green
@@ -843,7 +843,7 @@ func _musica() -> void:
 	_foot(el, g0, g1, [door], 0.6)
 	door_mus = ea.lerp(eb, (el - 4.0) / el) + _out(ea, eb) * 2.0
 	var deep := 1.6                                                                 # the entrance, set back under the floor above
-	box(door.position.x, door.position.y - 0.05, -deep, door.size.x, 0.05, deep, "granito")
+	box(door.position.x, door.position.y - 0.038, -deep, door.size.x, 0.05, deep, "granito")
 	box(door.position.x, door.position.y, -deep, 0.03, door.size.y, deep - DEEP, "ladrillo_claro")
 	box(door.end.x - 0.03, door.position.y, -deep, 0.03, door.size.y, deep - DEEP, "ladrillo_claro")
 	box(door.position.x, door.end.y - 0.03, -deep, door.size.x, 0.03, deep - DEEP, 0xd8d4cc)
@@ -853,12 +853,12 @@ func _musica() -> void:
 	box(door.position.x, door.position.y + 2.2, -deep, door.size.x, 0.06, 0.06, 0x2b2d31)
 	openings += 1
 	for k in range(3):                                                              # its steps up from the car park
-		box(door.position.x - 0.3, gd + k * 0.15, 0.0, door.size.x + 0.6, 0.15, 1.2 - k * 0.35, 0xb8b4ac)
+		box(door.position.x - 0.3, gd + k * 0.15, 0.045, door.size.x + 0.6, 0.15, 1.155 - k * 0.35, 0xb8b4ac)
 	box(caja.position.x - 0.08, caja.position.y - 0.08, 0.0, caja.size.x + 0.16, caja.size.y + 0.16, 0.14, 0x2b2d31)   # the glazed box
-	box(caja.position.x, caja.position.y, 0.0, caja.size.x, caja.size.y, 0.15, "cristal")
+	box(caja.position.x, caja.position.y, 0.03, caja.size.x, caja.size.y, 0.12, "cristal")
 	for k in range(1, 3):
-		box(caja.position.x + caja.size.x * k / 3.0 - 0.03, caja.position.y, 0.0, 0.06, caja.size.y, 0.17, 0x2b2d31)
-	box(caja.position.x, caja.position.y + caja.size.y / 2.0 - 0.03, 0.0, caja.size.x, 0.06, 0.17, 0x2b2d31)
+		box(caja.position.x + caja.size.x * k / 3.0 - 0.03, caja.position.y, 0.135, 0.06, caja.size.y, 0.035, 0x2b2d31)
+	box(caja.position.x, caja.position.y + caja.size.y / 2.0 - 0.03, 0.135, caja.size.x, 0.06, 0.035, 0x2b2d31)
 	openings += 1
 	for r: Rect2 in smalls:
 		window(r, 0x2b2d31, 0x1f2a33, 0)
@@ -887,7 +887,7 @@ func _musica() -> void:
 			if r.size.y > 2.0:
 				box(r.position.x, r.position.y, -0.22, r.size.x, r.size.y, 0.06, WOOD)
 				for k in range(4):
-					box(r.position.x - 0.2, r.position.y - 0.9 + k * 0.22, 0.0, r.size.x + 0.4, 0.22, 1.2 - k * 0.3, 0xb8b4ac)
+					box(r.position.x - 0.2, r.position.y - 0.9 + k * 0.22, 0.045, r.size.x + 0.4, 0.22, 1.155 - k * 0.3, 0xb8b4ac)
 			else:
 				_ventana_alta(r, false)
 		box(-0.02, _gf(a, b, L / 2.0) - 0.6, 0.0, L + 0.04, 1.5, 0.04, "granito")

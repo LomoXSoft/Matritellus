@@ -248,46 +248,46 @@ func _shell() -> void:
 func _press() -> void:
 	var x0 := 1.45
 	var x1 := 3.55
-	box(x0, 0.5, 0.0, x1 - x0, 1.75, 0.05, 0xf4f1e8)
+	box(x0, 0.5, 0.022, x1 - x0, 1.75, 0.05, 0xf4f1e8)
 	for j in range(4):
 		var y := 0.56 + j * 0.42
-		box(x0, y, 0.05, x1 - x0, 0.03, 0.12, 0xd9d4c8)
-		box(x0, y + 0.03, 0.155, x1 - x0, 0.05, 0.015, 0xd9d4c8)
+		box(x0, y, 0.072, x1 - x0, 0.03, 0.12, 0xd9d4c8)
+		box(x0, y + 0.03, 0.177, x1 - x0, 0.05, 0.015, 0xd9d4c8)
 		var x := x0 + 0.05
 		while x < x1 - 0.24:
 			var w := _rng.randf_range(0.2, 0.23)
 			var c := _tint()
-			box(x, y + 0.03, 0.06 + _rng.randf_range(0.0, 0.03), w, 0.3, 0.012, c)
-			box(x + 0.015, y + 0.25, 0.092, w - 0.03, 0.05, 0.004, 0xfdfcf8 if c != 0xfdfcf8 else 0xe8322a)      # its title, a band across the top
+			box(x, y + 0.03, 0.082 + _rng.randf_range(0.0, 0.03), w, 0.3, 0.012, c)
+			box(x + 0.015, y + 0.25, 0.114, w - 0.03, 0.05, 0.004, 0xfdfcf8 if c != 0xfdfcf8 else 0xe8322a)      # its title, a band across the top
 			x += w + 0.03
-	box(x0, 0.0, 0.0, x1 - x0, 0.42, 0.5, WOODC)                                      # the bench, and the papers on it
+	box(x0, 0.0, 0.022, x1 - x0, 0.42, 0.5, WOODC)                                      # the bench, and the papers on it
 	for i in range(5):
-		_pile(Vector3(x0 + 0.24 + i * 0.4, 0.42, 0.26), Vector2(0.3, 0.4), _rng.randi_range(5, 12), 0.012, 0xe6e2d6 if i % 2 == 0 else 0xdcd6c8)
-		box(x0 + 0.11 + i * 0.4, 0.42 + 0.145, 0.38, 0.26, 0.002, 0.05, 0x26262a)      # (a headline, for what it is worth)
-	_words("PRENSA", Vector3((x0 + x1) / 2.0, 2.52, 0.02), 0.0, 96, GREEN)
+		_pile(Vector3(x0 + 0.24 + i * 0.4, 0.42, 0.28), Vector2(0.3, 0.4), _rng.randi_range(5, 12), 0.012, 0xe6e2d6 if i % 2 == 0 else 0xdcd6c8)
+		box(x0 + 0.11 + i * 0.4, 0.42 + 0.145, 0.4, 0.26, 0.002, 0.05, 0x26262a)      # (a headline, for what it is worth)
+	_words("PRENSA", Vector3((x0 + x1) / 2.0, 2.52, 0.022), 0.0, 96, GREEN)
 	solid(Vector3((x0 + x1) / 2.0, 1.1, 0.25), Vector3(x1 - x0, 2.2, 0.5))
 
 ## the school bags, on the other side of the door: two rails of them
 func _bags() -> void:
 	var x0 := -3.55
 	var x1 := -1.45
-	box(x0, 0.45, 0.0, x1 - x0, 1.75, 0.04, 0xe6dcc6)
+	box(x0, 0.45, 0.022, x1 - x0, 1.75, 0.04, 0xe6dcc6)
 	for j in range(2):
 		var y := 1.0 + j * 0.85
-		box(x0, y + 0.5, 0.04, x1 - x0, 0.03, 0.05, 0x8a8d90)
+		box(x0, y + 0.5, 0.062, x1 - x0, 0.03, 0.05, 0x8a8d90)
 		for i in range(5):
 			var x := x0 + 0.08 + i * 0.41
 			var c := _tint()
 			var d: int = TINTS[(TINTS.find(c) + 5) % TINTS.size()]
-			box(x, y, 0.06, 0.32, 0.44, 0.17, c)
-			box(x + 0.04, y + 0.04, 0.23, 0.24, 0.2, 0.04, d)                         # its pocket
-			box(x + 0.12, y + 0.44, 0.1, 0.08, 0.07, 0.03, 0x26262a)                  # its handle, on the hook
-			box(x + 0.02, y + 0.3, 0.232, 0.28, 0.02, 0.004, 0x26262a)                # its zip
+			box(x, y, 0.082, 0.32, 0.44, 0.17, c)
+			box(x + 0.04, y + 0.04, 0.252, 0.24, 0.2, 0.04, d)                        # its pocket
+			box(x + 0.12, y + 0.44, 0.122, 0.08, 0.07, 0.03, 0x26262a)                 # its handle, on the hook
+			box(x + 0.02, y + 0.3, 0.254, 0.28, 0.02, 0.004, 0x26262a)                 # its zip
 	for i in range(4):                               # under them, boxes of the season's books
-		box(x0 + 0.05 + i * 0.52, 0.0, 0.02, 0.46, 0.34, 0.4, 0xb9925a)
-		box(x0 + 0.05 + i * 0.52, 0.34, 0.02, 0.46, 0.004, 0.4, 0xa07c48)
-		box(x0 + 0.24 + i * 0.52, 0.0, 0.42, 0.08, 0.34, 0.002, 0xd9c8a0)
-	_words("MOCHILAS", Vector3((x0 + x1) / 2.0, 2.52, 0.02), 0.0, 96, GREEN)
+		box(x0 + 0.05 + i * 0.52, 0.0, 0.022, 0.46, 0.34, 0.4, 0xb9925a)
+		box(x0 + 0.05 + i * 0.52, 0.34, 0.022, 0.46, 0.004, 0.4, 0xa07c48)
+		box(x0 + 0.24 + i * 0.52, 0.0, 0.422, 0.08, 0.34, 0.002, 0xd9c8a0)
+	_words("MOCHILAS", Vector3((x0 + x1) / 2.0, 2.52, 0.022), 0.0, 96, GREEN)
 	solid(Vector3((x0 + x1) / 2.0, 1.1, 0.22), Vector3(x1 - x0, 2.2, 0.44))
 
 ## books: six cases of the kit against the wall at -x, each shelf a row of them, more lying on top
@@ -300,9 +300,9 @@ func _books() -> void:
 		var z := 1.75 + wide / 2.0 + i * (wide + 0.04)
 		_prop("mueble_bookcaseOpen", Vector3(-HALF + deep / 2.0 + 0.02, 0.0, z), tall, PI / 2.0)
 		for y in [1.3 * k, 3.7 * k, 6.1 * k]:
-			_row(Vector3(-HALF + 0.46, y, z - wide / 2.0 + 0.11), Vector3(0, 0, 1), wide - 0.22, 0.3, 2.1 * k)
+			_row(Vector3(-HALF + 0.46, y + 0.012, z - wide / 2.0 + 0.11), Vector3(0, 0, 1), wide - 0.22, 0.3, 2.1 * k)
 		for n in range(_rng.randi_range(1, 2)):
-			_pile(Vector3(-HALF + 0.3, tall, z - 0.2 + n * 0.4), Vector2(0.28, 0.2), _rng.randi_range(2, 5), 0.045)
+			_pile(Vector3(-HALF + 0.3, tall + 0.012, z - 0.2 + n * 0.4), Vector2(0.28, 0.2), _rng.randi_range(2, 5), 0.045)
 	var z1 := 1.75 + 6.0 * (wide + 0.04)
 	_words("LIBRERÍA", Vector3(-HALF + 0.02, 2.72, (1.75 + z1) / 2.0), PI / 2.0, 110, GREEN)
 	solid(Vector3(-HALF + deep / 2.0, 1.1, (1.75 + z1) / 2.0), Vector3(deep + 0.04, 2.2, z1 - 1.75))
@@ -313,12 +313,12 @@ func _stationery() -> void:
 	var z0 := 1.75
 	var z1 := 7.35
 	var x := HALF - 0.42
-	box(HALF - 0.03, 0.0, z0, 0.03, 2.2, z1 - z0, 0xf4f1e8)
+	box(HALF - 0.05, 0.0, z0, 0.03, 2.2, z1 - z0, 0xf4f1e8)
 	for i in range(5):
-		box(x, 0.0, z0 + i * (z1 - z0 - 0.03) / 4.0, 0.42, 2.2, 0.03, 0xf4f1e8)
+		box(x, 0.0, z0 + i * (z1 - z0 - 0.03) / 4.0, 0.37, 2.2, 0.03, 0xf4f1e8)
 	for j in range(6):
 		var y := 0.1 + j * 0.42
-		box(x, y - 0.03, z0, 0.42, 0.03, z1 - z0, 0xf4f1e8)
+		box(x, y - 0.03, z0, 0.37, 0.03, z1 - z0, 0xf4f1e8)
 		if j == 5:
 			break
 		for bay in range(4):

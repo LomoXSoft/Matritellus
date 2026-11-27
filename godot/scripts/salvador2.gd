@@ -184,8 +184,8 @@ func _awning(x0: float, x1: float, y: float, out := 0.8) -> void:
 ## railing round it
 func _balcony(x0: float, x1: float, y: float) -> void:
 	balconies += 1
-	box(x0, y - 0.15, 0.0, x1 - x0, 0.15, BALC_OUT, WHITE)
-	quad(Vector3(x0, y - 0.151, 0.0), Vector3(x1, y - 0.151, 0.0), Vector3(x1, y - 0.151, BALC_OUT), Vector3(x0, y - 0.151, BALC_OUT), "sofito", Vector3.DOWN)
+	box(x0, y - 0.135, 0.0, x1 - x0, 0.135, BALC_OUT, WHITE)
+	box(x0, y - 0.15, 0.0, x1 - x0, 0.015, BALC_OUT, "sofito")
 	var z := BALC_OUT - 0.05
 	var n := int((x1 - x0) / 0.11)
 	for k in range(n + 1):
@@ -337,12 +337,12 @@ func _bay() -> void:
 		var ring := Geometry2D.offset_polygon(plan, 0.08, Geometry2D.JOIN_MITER)
 		var big: PackedVector2Array = ring[0] if ring.size() > 0 else plan
 		flat(big, y, WHITE)
-		_flat_down(big, y - 0.16, "sofito" if k < 2 else WHITE)
+		_flat_down(big, y - 0.175, "sofito" if k < 2 else WHITE)
 		for i in range(big.size()):
 			var p: Vector2 = big[i]
 			var q: Vector2 = big[(i + 1) % big.size()]
 			var d := (q - p).normalized()
-			quad(Vector3(p.x, y - 0.16, p.y), Vector3(q.x, y - 0.16, q.y), Vector3(q.x, y, q.y), Vector3(p.x, y, p.y), WHITE, Vector3(d.y, 0, -d.x))
+			quad(Vector3(p.x, y - 0.175, p.y), Vector3(q.x, y - 0.175, q.y), Vector3(q.x, y, q.y), Vector3(p.x, y, p.y), WHITE, Vector3(d.y, 0, -d.x))
 	for k in range(2):
 		var y0: float = SLAB + k * FLOOR_H
 		for i in range(outline.size() - 1):                                       # its three faces: sill wall, windows, band
