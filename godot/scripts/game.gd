@@ -2931,7 +2931,9 @@ func _refresh_creator() -> void:
 		var i: int = rows[row]
 		var off: bool = Creator.not_used(look_sel, i)       # (a cap's colour with no cap, a hairstyle with no hair...)
 		shown.append({"name": names[i], "value": "—" if off else String(values[i][look_sel[i]]), "colour": Creator.swatch(i, look_sel[i]), "off": off})
-	hud.show_creator(Loc.t("c_title"), shown, Loc.t("c_tabs"), creator_tab, creator_row - 1 - _creator_first)
+	var more_up: int = _creator_first
+	var more_dn: int = maxi(0, rows.size() - (_creator_first + room))
+	hud.show_creator(Loc.t("c_title"), shown, Loc.t("c_tabs"), creator_tab, creator_row - 1 - _creator_first, more_up, more_dn)
 
 ## In the creator, the easel with the peña's graffiti (the user, 16 November 2026: "El grafiti debe salir también durante
 ## el selector de personaje. Quizás en un cuadro en un caballete al lado del personaje"): a step behind you and to the
@@ -2968,6 +2970,17 @@ func _creator_input(what: String) -> void:
 			creator_row = (creator_row + n - 2) % n + 1
 		"down":
 			creator_row = creator_row % n + 1
+		"scroll_up":
+			if _creator_first <= 0:
+				return
+			_creator_first = maxi(0, _creator_first - 1)
+			creator_row = clampi(creator_row, _creator_first + 1, _creator_first + hud.CREATOR_ROWS)
+		"scroll_down":
+			var max_first := maxi(0, n - hud.CREATOR_ROWS)
+			if _creator_first >= max_first:
+				return
+			_creator_first = mini(max_first, _creator_first + 1)
+			creator_row = clampi(creator_row, _creator_first + 1, mini(n, _creator_first + hud.CREATOR_ROWS))
 		"left", "right":
 			var opt: int = rows[creator_row - 1]
 			var count: int = Creator.OPTIONS[opt]["values"].size()
@@ -2995,7 +3008,25 @@ func _creator_input(what: String) -> void:
 			creator_tab = 0
 			creator_row = clampi(creator_row, 1, Creator.TABS[0].size())
 		_:
-			return
+			if what.begins_with("row_prev_") or what.begins_with("row_next_"):
+				var next := what.begins_with("row_next_")
+				var target := _creator_first + int(what.substr(9)) + 1
+				if target < 1 or target > n:
+					return
+				creator_row = target
+				var opt: int = rows[creator_row - 1]
+				if not Creator.not_used(look_sel, opt):
+					var count: int = Creator.OPTIONS[opt]["values"].size()
+					look_sel[opt] = (look_sel[opt] + (1 if next else count - 1)) % count
+					while Creator.skipped(opt, look_sel[opt]):
+						look_sel[opt] = (look_sel[opt] + (1 if next else count - 1)) % count
+			elif what.begins_with("row_"):
+				var target := _creator_first + int(what.substr(4)) + 1
+				if target < 1 or target > n:
+					return
+				creator_row = target
+			else:
+				return
 	Sfx.beep(520.0, 0.04, 1, -18.0)
 	_refresh_creator()
 
@@ -4299,7 +4330,25 @@ func _armario_input(what: String) -> void:
 			_close_armario(false)
 			return
 		_:
-			return
+			if what.begins_with("row_prev_") or what.begins_with("row_next_"):
+				var next := what.begins_with("row_next_")
+				var target := int(what.substr(9)) + 1
+				if target < 1 or target > n:
+					return
+				armario_row = target
+				var opt: int = Creator.WARDROBE[armario_row - 1]
+				if not Creator.not_used(look_sel, opt):
+					var have: Array = armario_owned().get(str(opt), [look_sel[opt]])
+					if have.size() >= 2:
+						var at: int = maxi(0, have.find(look_sel[opt]))
+						look_sel[opt] = int(have[(at + (1 if next else have.size() - 1)) % have.size()])
+			elif what.begins_with("row_"):
+				var target := int(what.substr(4)) + 1
+				if target < 1 or target > n:
+					return
+				armario_row = target
+			else:
+				return
 	Sfx.beep(520.0, 0.04, 1, -18.0)
 	_refresh_armario()
 
@@ -5026,6 +5075,8 @@ func _exit_car() -> void:
 func _crash(c, impact: float) -> void:
 	shake = minf(1.0, impact / 14.0)
 	Sfx.noise(0.25 + impact / 60.0, -14.0 + minf(8.0, impact * 0.5))
+	if c == in_car and impact >= 3.5:
+		Touch.unlock_gas()
 	if c == in_car:
 		_damage(c, (impact - 3.0) * 2.4)
 	if c == in_car and phase == "play" and steps[si]["type"] == "deliver" and impact > 7.0:

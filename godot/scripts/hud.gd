@@ -83,6 +83,7 @@ var dlg_slot: Control
 var dlg_name: Label
 var dlg_tag: PanelContainer     # the speaker's name on a tab over the bubble's top left-hand edge (set_dlg_name)
 var dlg_tag_text: Label
+var dlg_top_pad: Control        # breathing room above the first line of dialogue when the speaker tag is shown
 ## (the user, 25 Nov 2026: "si puedes añadir la etiqueta con el nombre de quién habla a la burbuja de diálogo [...]
 ## Propón diseños"; of the three shown -- almagre, the sign-writer's letters on paper, the colour of what the speaker
 ## wears -- "Me quedo con la C": the speaker's own colour)
@@ -159,6 +160,10 @@ var creator_btns: HBoxContainer
 var creator_rand: Button
 var creator_back: Button
 var creator_rows_box: VBoxContainer      # the rows (hidden while a shop's grid shows instead)
+var creator_more_up: Button              # bouncing scroll arrows above/below creator rows when more options lie off-screen
+var creator_more_dn: Button
+var _creator_more_up := 0
+var _creator_more_dn := 0
 var shop_scroll: ScrollContainer         # a clothes shop's fitting room: every garment as a picture (show_shop_grid)
 var shop_grid: GridContainer
 var shop_cells: Array = []               # [{"btn", "icon", "name", "tag", "sb"}]
@@ -176,8 +181,8 @@ var _creator_page := 0
 var creator_panel: Control             # the creator's panel itself (what a finger presses there is its buttons)
 const CREATOR_SIZE := Vector2(600, 688) # the panel, always this size (at 1280 x 720)
 const CREATOR_ROWS := 12               # as many rows as the longest page has
-const CREATOR_ROW_H := 34
-var creator_rows: Array = []           # each row: {"box", "name", "lt", "swatch", "value", "gt"}
+const CREATOR_ROW_H := 32
+var creator_rows: Array = []           # each row: {"box", "name", "lt", "swatch", "value", "gt", "btn_row", "btn_val", "btn_prev", "btn_next"}
 var _creator_said := ""                # what the rows say, as text (the self-test reads it)
 var _creator_grab := Rect2()            # round the character and its arrows: a finger dragged there turns it
 
@@ -502,6 +507,10 @@ func _ready() -> void:
 	dp.custom_minimum_size = Vector2(780, 140)
 	dlg_bubble = dp
 	var dv := VBoxContainer.new()
+	dlg_top_pad = Control.new()
+	dlg_top_pad.custom_minimum_size = Vector2(0, 14)
+	dlg_top_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dlg_top_pad.visible = false
 	dlg_name = _label(22, TERRA)
 	dlg_text = RichTextLabel.new()          # rich text, so names can be picked out in colour
 	dlg_text.bbcode_enabled = true
@@ -511,7 +520,7 @@ func _ready() -> void:
 	dlg_text.add_theme_font_size_override("normal_font_size", 25)
 	dlg_text.add_theme_color_override("default_color", INK)
 	dlg_text.custom_minimum_size = Vector2(730, 74)
-	dv.add_child(dlg_name); dv.add_child(dlg_text)
+	dv.add_child(dlg_top_pad); dv.add_child(dlg_name); dv.add_child(dlg_text)
 	# "go on": the button to press and an arrow that bobs, once the line has been said in full
 	var more := HBoxContainer.new()
 	more.alignment = BoxContainer.ALIGNMENT_END
@@ -619,7 +628,7 @@ func _ready() -> void:
 	crp.clip_contents = true
 	creator_panel = crp
 	var crv := VBoxContainer.new()
-	crv.add_theme_constant_override("separation", 12)
+	crv.add_theme_constant_override("separation", 8)
 	creator_title = _label(36, Color.BLACK)
 	creator_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	creator_text = _label(18, Color.BLACK)         # (no longer shown: the rows are below; it keeps what they say)
@@ -636,13 +645,15 @@ func _ready() -> void:
 	var cr_rule := ColorRect.new()                 # a black rule under the tabs
 	cr_rule.color = Color.BLACK
 	cr_rule.custom_minimum_size = Vector2(0, 3)
+	creator_more_up = _creator_more_btn(true)
 	var cr_rows := VBoxContainer.new()
-	cr_rows.add_theme_constant_override("separation", 3)
-	cr_rows.custom_minimum_size = Vector2(0, CREATOR_ROWS * (CREATOR_ROW_H + 3))
+	cr_rows.add_theme_constant_override("separation", 2)
+	cr_rows.custom_minimum_size = Vector2(0, CREATOR_ROWS * (CREATOR_ROW_H + 2))
 	cr_rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	for i in range(CREATOR_ROWS):
-		cr_rows.add_child(_creator_row())
+		cr_rows.add_child(_creator_row(i))
 	creator_rows_box = cr_rows
+	creator_more_dn = _creator_more_btn(false)
 	shop_scroll = ScrollContainer.new()            # (the fitting room's grid: in the rows' room, scrolling when it is longer)
 	shop_scroll.custom_minimum_size = Vector2(0, CREATOR_ROWS * (CREATOR_ROW_H + 3) - 52)
 	shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -706,7 +717,7 @@ func _ready() -> void:
 	creator_btns.add_child(cr_spacer)
 	creator_btns.add_child(creator_back)
 	creator_btns.add_child(creator_next)
-	crv.add_child(creator_title); crv.add_child(creator_tabs); crv.add_child(cr_rule); crv.add_child(cr_rows); crv.add_child(shop_scroll); crv.add_child(shop_colour); crv.add_child(creator_text); crv.add_child(creator_foot); crv.add_child(creator_btns)
+	crv.add_child(creator_title); crv.add_child(creator_tabs); crv.add_child(cr_rule); crv.add_child(creator_more_up); crv.add_child(cr_rows); crv.add_child(creator_more_dn); crv.add_child(shop_scroll); crv.add_child(shop_colour); crv.add_child(creator_text); crv.add_child(creator_foot); crv.add_child(creator_btns)
 	crp.add_child(crv)
 	creator_turn = Control.new()
 	creator_turn.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1036,6 +1047,8 @@ func set_dlg_name(who: String, colour = null) -> void:
 func dress_tag() -> void:
 	var on: bool = dlg_name.text != ""
 	dlg_name.visible = false
+	if dlg_top_pad != null:
+		dlg_top_pad.visible = on
 	dlg_tag.visible = on
 	if not on:
 		return
@@ -1176,12 +1189,17 @@ func _process(dt: float) -> void:
 			dlg_tag.reset_size()
 			dlg_tag.pivot_offset = dlg_tag.size / 2.0
 			dlg_tag.rotation_degrees = -3.0
-			dlg_tag.position = dlg_bubble.global_position + Vector2(34.0, -dlg_tag.size.y * 0.6)
+			dlg_tag.position = dlg_bubble.global_position + Vector2(34.0, -dlg_tag.size.y * 0.68)
 		dlg_pointer.left = (dlg_tag.size.x + 34.0 + 46.0) if dlg_tag.visible else 70.0      # (the tail grows out clear of the tab)
 		dlg_more.modulate.a = 1.0 if dlg_ready else 0.0
 		var key_text: String = Loc.t("dlg_next")
 		rt(dlg_key, key_text)
 		dlg_arrow.queue_redraw()
+	if creator_slot.visible and creator_rows_box.visible:
+		if _creator_more_up > 0 and creator_more_up.visible:
+			creator_more_up.queue_redraw()
+		if _creator_more_dn > 0 and creator_more_dn.visible:
+			creator_more_dn.queue_redraw()
 	if story_box.visible:                        # the same for the story cards: the hint breathes
 		story_hint.modulate.a = 0.6 + 0.4 * sin(Time.get_ticks_msec() / 260.0)
 	if _toast_t > 0.0:
@@ -1456,7 +1474,7 @@ func hide_story() -> void:
 ## does not apply, as a cap's colour with no cap)} for each option on page `tab`; `at` the one the cursor is on (from 0).
 ## The tabs are not a row the cursor goes to: the page only turns with the shoulder buttons, Tab, or Siguiente/Volver
 ## (the user, 16 November 2026).
-func show_creator(title: String, rows: Array, tabs: Array = [], tab := 0, at := 0) -> void:
+func show_creator(title: String, rows: Array, tabs: Array = [], tab := 0, at := 0, more_up := 0, more_dn := 0) -> void:
 	while creator_tab_boxes.size() < tabs.size():
 		var box := PanelContainer.new()
 		box.custom_minimum_size = Vector2(176, 46)
@@ -1489,12 +1507,25 @@ func show_creator(title: String, rows: Array, tabs: Array = [], tab := 0, at := 
 		lab2.text = String(tabs[i])
 		lab2.add_theme_color_override("font_color", Color.WHITE if here else Color.BLACK)
 	creator_title.text = title
+	_creator_more_up = maxi(0, more_up)
+	_creator_more_dn = maxi(0, more_dn)
+	for pair in [[creator_more_up, _creator_more_up], [creator_more_dn, _creator_more_dn]]:
+		var mb: Button = pair[0]
+		var mc: int = pair[1]
+		mb.visible = true
+		mb.modulate.a = 1.0 if mc > 0 else 0.0
+		mb.mouse_filter = Control.MOUSE_FILTER_STOP if mc > 0 else Control.MOUSE_FILTER_IGNORE
+		mb.queue_redraw()
 	var said := ""
 	for i in range(creator_rows.size()):
 		var r: Dictionary = creator_rows[i]
 		var box: PanelContainer = r["box"]
 		if i >= rows.size():
 			box.modulate.a = 0.0                    # (an empty row keeps its room: the panel never changes size)
+			(r["btn_row"] as Button).mouse_filter = Control.MOUSE_FILTER_IGNORE
+			(r["btn_val"] as Button).mouse_filter = Control.MOUSE_FILTER_IGNORE
+			(r["btn_prev"] as Button).mouse_filter = Control.MOUSE_FILTER_IGNORE
+			(r["btn_next"] as Button).mouse_filter = Control.MOUSE_FILTER_IGNORE
 			continue
 		box.modulate.a = 1.0
 		var row: Dictionary = rows[i]
@@ -1508,6 +1539,12 @@ func show_creator(title: String, rows: Array, tabs: Array = [], tab := 0, at := 
 		var off: bool = row.get("off", false)          # (nothing to change there: no arrows, the letters as black as the rest)
 		(r["lt"] as Label).modulate.a = 0.0 if off else 1.0
 		(r["gt"] as Label).modulate.a = 0.0 if off else 1.0
+		var row_hit := Control.MOUSE_FILTER_STOP if Touch.on else Control.MOUSE_FILTER_IGNORE
+		var arr_hit := Control.MOUSE_FILTER_STOP if (Touch.on and not off) else Control.MOUSE_FILTER_IGNORE
+		(r["btn_row"] as Button).mouse_filter = row_hit
+		(r["btn_val"] as Button).mouse_filter = row_hit
+		(r["btn_prev"] as Button).mouse_filter = arr_hit
+		(r["btn_next"] as Button).mouse_filter = arr_hit
 		var sw: PanelContainer = r["swatch"]
 		var colour = row.get("colour")
 		sw.modulate.a = 1.0 if (colour != null and not off) else 0.0      # (hidden, it keeps its room: the arrows never move)
@@ -1531,9 +1568,51 @@ func show_creator(title: String, rows: Array, tabs: Array = [], tab := 0, at := 
 func creator_shown() -> String:
 	return _creator_said
 
+func _touch_hit_btn(what: String) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.set_anchors_preset(Control.PRESET_FULL_RECT)
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for state in ["normal", "hover", "pressed", "focus"]:
+		b.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	b.pressed.connect(func(): creator_pick.emit(what))
+	return b
+
+func _creator_more_btn(up: bool) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(0, 20)
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for state in ["normal", "hover", "pressed", "focus"]:
+		b.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	b.pressed.connect(func(): creator_pick.emit("scroll_up" if up else "scroll_down"))
+	b.draw.connect(func():
+		var count: int = _creator_more_up if up else _creator_more_dn
+		if count <= 0:
+			return
+		var font := ThemeDB.fallback_font
+		var txt: String = Loc.t("c_more") % count
+		var fs := 14
+		var tw: float = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var cx: float = b.size.x * 0.5
+		var cy: float = b.size.y * 0.5
+		var bob: float = sin(Time.get_ticks_msec() / 160.0) * 2.2 * (-1.0 if up else 1.0)
+		b.draw_string(font, Vector2(cx - tw * 0.5, cy + fs * 0.35), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, INK)
+		for side in [-1.0, 1.0]:
+			var ax: float = cx + float(side) * (tw * 0.5 + 18.0)
+			var pts := PackedVector2Array([
+				Vector2(ax - 7.0, cy + (3.5 if up else -4.5) + bob),
+				Vector2(ax + 7.0, cy + (3.5 if up else -4.5) + bob),
+				Vector2(ax, cy + (-5.5 if up else 4.5) + bob),
+			])
+			b.draw_colored_polygon(pts, TERRA))
+	return b
+
 ## one row of the creator: the name on the left; on the right, in a box of its own width, ‹ the value ›, with a sample
 ## of the colour when the option is one
-func _creator_row() -> PanelContainer:
+func _creator_row(idx: int) -> PanelContainer:
 	var box := PanelContainer.new()
 	box.custom_minimum_size = Vector2(0, CREATOR_ROW_H)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1545,12 +1624,15 @@ func _creator_row() -> PanelContainer:
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 6)
 	box.add_child(hb)
-	var nm := _label(23, Color.BLACK)
+	var nm := _label(22, Color.BLACK)
 	nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	nm.clip_text = true
 	nm.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var lt := _label(26, Color.BLACK)
 	lt.text = "‹"
+	lt.custom_minimum_size = Vector2(22, CREATOR_ROW_H)
+	lt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var swatch := PanelContainer.new()
 	swatch.custom_minimum_size = Vector2(24, 24)
 	swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -1558,23 +1640,39 @@ func _creator_row() -> PanelContainer:
 	ss.set_corner_radius_all(5)
 	ss.set_border_width_all(2)
 	swatch.add_theme_stylebox_override("panel", ss)
-	var value := _label(23, Color.BLACK)
-	value.custom_minimum_size = Vector2(220, 0)
+	var value := _label(22, Color.BLACK)
+	value.custom_minimum_size = Vector2(194, 0)
 	value.clip_text = true
 	value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var gt := _label(26, Color.BLACK)
 	gt.text = "›"
+	gt.custom_minimum_size = Vector2(22, CREATOR_ROW_H)
+	gt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	gt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var btn_row := _touch_hit_btn("row_%d" % idx)
+	var btn_val := _touch_hit_btn("row_%d" % idx)
+	var btn_prev := _touch_hit_btn("row_prev_%d" % idx)
+	var btn_next := _touch_hit_btn("row_next_%d" % idx)
+	btn_prev.offset_left = -8; btn_prev.offset_right = 8
+	btn_next.offset_left = -8; btn_next.offset_right = 8
+	nm.add_child(btn_row)
+	value.add_child(btn_val)
+	lt.add_child(btn_prev)
+	gt.add_child(btn_next)
 	for c in [nm, lt, swatch, value, gt]:
 		hb.add_child(c)
-	creator_rows.append({"box": box, "name": nm, "lt": lt, "swatch": swatch, "value": value, "gt": gt})
+	creator_rows.append({"box": box, "name": nm, "lt": lt, "swatch": swatch, "value": value, "gt": gt,
+		"btn_row": btn_row, "btn_val": btn_val, "btn_prev": btn_prev, "btn_next": btn_next})
 	return box
 
 func hide_creator() -> void:
 	creator_slot.visible = false
 	creator_turn.visible = false
 	creator_tabs.visible = true
+	creator_more_up.visible = false
+	creator_more_dn.visible = false
 	shop_scroll.visible = false
 	shop_colour.visible = false
 	creator_rows_box.visible = true
@@ -1586,6 +1684,8 @@ func hide_creator() -> void:
 func show_shop_grid(title: String, cells: Array, at: int, buy: String, leave: String, colour := {}) -> void:
 	show_creator(title, [], [], 1, 0)
 	creator_tabs.visible = false
+	creator_more_up.visible = false
+	creator_more_dn.visible = false
 	creator_rand.visible = false
 	creator_back.visible = true
 	creator_back.text = leave

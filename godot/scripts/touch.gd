@@ -14,6 +14,10 @@ const STICK_R := 95.0             # how far the stick's knob travels
 const DEAD := 0.18
 const MENU_REPEAT := 0.32         # holding the stick over a menu moves along it at this pace
 const LOOK_PER_PX := 0.0055       # radians the camera turns per pixel dragged (game.gd)
+const DPAD_ARM := 62.0            # virtual D-pad button offset from centre (menus, creator, wardrobe)
+const DPAD_BTN_R := 34.0
+const DPAD_HIT_R := 128.0
+const DPAD_REPEAT := 0.18
 
 var on := false
 var _pad := Control.new()         # where the stick and the buttons' faces are drawn
@@ -22,14 +26,22 @@ var _stick_at := Vector2.ZERO
 var _stick := Vector2.ZERO
 var _menu_dir := ""
 var _menu_t := 0.0
+var _dpad_id := -1                # fixed D-pad on the bottom-left for menus and the character creator
+var _dpad_dir := ""
+var _dpad_t := 0.0
 var _stick_fb := false            # the stick is holding forward or back (on foot): let go of when you take the wheel
 var _look_id := -1
 var _look_last := Vector2.ZERO
 var look_drag := Vector2.ZERO     # pixels dragged since the game last took them
 var look := Vector2.ZERO          # (Controls.look_stick adds this: always zero now, the drag is taken by take_look)
-var _buttons: Array = []          # {node: TouchScreenButton, label, action, centre, r, big}
+var _buttons: Array = []          # {node: TouchScreenButton, label, action, held_action, centre, r, big, small}
 var _context := ""
 var _ctx_t := 0.0
+var _gas_id := -1                 # slide-to-lock accelerator while driving: drag up to the padlock and release
+var _gas_pos := Vector2.ZERO
+var _gas_lock := false
+var _gas_arm := false
+var _gas_tapped_locked := false
 
 func _ready() -> void:
 	layer = 90
@@ -156,11 +168,15 @@ func _context_tick() -> void:
 		return
 	_context = key
 	var s := _size()
-	var main := Vector2(s.x - 150.0, s.y - 160.0)           # the main one, big; the others in an arc round it
 	var g = _game()
-	if g != null and g.get("in_car") != null:
-		main = Vector2(s.x - 135.0, s.y - 320.0)               # (in a car: above the speedometer)
-	var arc: Array = [main + Vector2(-185, 30), main + Vector2(-140, -135), main + Vector2(10, -200), main + Vector2(-290, -90)]
+	var in_car: bool = g != null and g.get("in_car") != null
+	var main := Vector2(s.x - 135.0, s.y - 320.0) if in_car else Vector2(s.x - 150.0, s.y - 160.0)
+	# When driving, clear the vertical lane directly above Acelerar for the slide-to-lock padlock target.
+	var arc: Array = (
+		[main + Vector2(-185, 30), main + Vector2(-155, -130), main + Vector2(-18, -232), main + Vector2(-295, -75)]
+		if in_car else
+		[main + Vector2(-185, 30), main + Vector2(-140, -135), main + Vector2(10, -200), main + Vector2(-290, -90)]
+	)
 	var n_arc := 0
 	var n_top := 0
 	for i in range(_buttons.size()):
@@ -188,13 +204,84 @@ func _context_tick() -> void:
 				b["centre"] = arc[mini(n_arc, arc.size() - 1)]
 				b["r"] = 58.0
 				n_arc += 1
-			(tsb.shape as CircleShape2D).radius = b["r"] * 1.12
+			var gas_touch: bool = in_car and b["action"] == "forward"
+			(tsb.shape as CircleShape2D).radius = 0.01 if gas_touch else b["r"] * 1.12
 			tsb.position = b["centre"]
 			tsb.visible = on
 		else:
 			b["action"] = ""
 			tsb.visible = false
+	if _gas_idx() < 0 or (in_car and g.in_car.broken()):
+		if _gas_lock or _gas_id >= 0:
+			_gas_lock = false
+			_gas_id = -1
+			_gas_arm = false
+			_gas_tapped_locked = false
+			_send("forward", false)
 	_pad.queue_redraw()
+
+func _dpad_mode() -> bool:
+	if not on:
+		return false
+	var g = _game()
+	if g == null or not g.get("_booted"):
+		return false
+	if g.get("padron") != null and g.padron.active:
+		return false
+	if g.get("cartas") != null and g.cartas.writing:
+		return false
+	var menu = g.get("menu")
+	return (menu != null and menu.visible) or (g.get("phase") in ["creator", "armario"])
+
+func _dpad_centre() -> Vector2:
+	return Vector2(142.0, _size().y - 142.0)
+
+func _dpad_dir_at(p: Vector2) -> String:
+	var d := p - _dpad_centre()
+	if d.length() < 14.0 or d.length() > DPAD_HIT_R:
+		return ""
+	if absf(d.x) > absf(d.y):
+		return "m_right" if d.x > 0.0 else "m_left"
+	return "m_down" if d.y > 0.0 else "m_up"
+
+func _dpad_set(dir: String) -> void:
+	if dir == _dpad_dir:
+		return
+	if _dpad_dir != "":
+		_send(_dpad_dir, false)
+	_dpad_dir = dir
+	if dir != "":
+		_send(dir, true)
+		_dpad_t = DPAD_REPEAT * 1.9
+
+func _gas_idx() -> int:
+	var g = _game()
+	if not on or g == null or g.get("in_car") == null:
+		return -1
+	for i in range(_buttons.size()):
+		var b: Dictionary = _buttons[i]
+		if (b["node"] as TouchScreenButton).visible and b["action"] == "forward":
+			return i
+	return -1
+
+func _gas_lock_pos() -> Vector2:
+	var gi := _gas_idx()
+	if gi < 0:
+		return Vector2.ZERO
+	return (_buttons[gi]["centre"] as Vector2) + Vector2(0.0, -124.0)
+
+func unlock_gas() -> void:
+	if not _gas_lock and _gas_id < 0:
+		return
+	var was_locked := _gas_lock
+	_gas_lock = false
+	_gas_arm = false
+	if was_locked and _gas_id < 0:
+		_send("forward", false)
+	_pad.queue_redraw()
+
+func is_gas_locked() -> bool:
+	return _gas_lock
 
 # ---------------- pressing ----------------
 func _send(action: String, down: bool) -> void:
@@ -221,16 +308,27 @@ func _send(action: String, down: bool) -> void:
 
 func _pressed(i: int) -> void:
 	Controls.pad = true
-	_buttons[i]["held_action"] = _buttons[i]["action"]
+	var action: String = _buttons[i]["action"]
+	if action == "forward" and _gas_idx() == i:
+		_pad.queue_redraw()
+		return
+	if action == "back" and _gas_lock:
+		unlock_gas()
+	_buttons[i]["held_action"] = action
 	_send(_buttons[i]["held_action"], true)
 	_pad.queue_redraw()
 
 func _release_button(i: int) -> void:
 	var action: String = _buttons[i]["held_action"]
 	_buttons[i]["held_action"] = ""
+	if action == "forward" and _gas_lock:
+		return
 	_send(action, false)
 
 func _released(i: int) -> void:
+	if _buttons[i]["action"] == "forward" and (_gas_id >= 0 or _gas_lock):
+		_pad.queue_redraw()
+		return
 	_release_button(i)
 	_pad.queue_redraw()
 
@@ -251,8 +349,29 @@ func _input(e: InputEvent) -> void:
 		_show(true)
 	if e is InputEventScreenTouch:
 		if e.pressed:
+			var gi := _gas_idx()
+			if gi >= 0 and _gas_id < 0 and e.position.distance_to(_buttons[gi]["centre"]) <= float(_buttons[gi]["r"]) * 1.15:
+				Controls.pad = true
+				_gas_id = e.index
+				_gas_pos = e.position
+				_gas_arm = false
+				if _gas_lock:
+					_gas_tapped_locked = true
+					_gas_lock = false
+					_send("forward", false)
+				else:
+					_gas_tapped_locked = false
+					_send("forward", true)
+				_pad.queue_redraw()
+				return
 			if _on_button(e.position):
 				return                   # (that one is the button's)
+			if _dpad_mode() and _dpad_id < 0 and e.position.distance_to(_dpad_centre()) <= DPAD_HIT_R:
+				Controls.pad = true
+				_dpad_id = e.index
+				_dpad_set(_dpad_dir_at(e.position))
+				_pad.queue_redraw()
+				return
 			var spot := _creator_spot(e.position)
 			if spot == "panel":
 				return                   # (the creator's own buttons)
@@ -260,6 +379,10 @@ func _input(e: InputEvent) -> void:
 				_look_id = e.index       # a finger on the character in the creator turns it round (game.gd)
 				_look_last = e.position
 			elif e.position.x < _size().x * 0.5 and _stick_id < 0:
+				if _dpad_mode():
+					var g = _game()
+					if g != null and (g.get("phase") in ["creator", "armario"]):
+						return
 				_stick_id = e.index
 				_stick_at = e.position
 				_move_stick(e.position)
@@ -267,6 +390,21 @@ func _input(e: InputEvent) -> void:
 				_look_id = e.index
 				_look_last = e.position
 		else:
+			if e.index == _gas_id:
+				if _gas_arm and not _gas_tapped_locked and _gas_idx() >= 0:
+					_gas_lock = true
+					_send("forward", true)
+				else:
+					_gas_lock = false
+					_send("forward", false)
+				_gas_id = -1
+				_gas_arm = false
+				_gas_tapped_locked = false
+				_pad.queue_redraw()
+				return
+			if e.index == _dpad_id:
+				_dpad_id = -1
+				_dpad_set("")
 			if e.index == _stick_id:
 				_stick_id = -1
 				_move_stick(_stick_at)
@@ -274,7 +412,17 @@ func _input(e: InputEvent) -> void:
 				_look_id = -1
 		_pad.queue_redraw()
 	else:
-		if e.index == _stick_id:
+		if e.index == _gas_id:
+			_gas_pos = e.position
+			if not _gas_tapped_locked:
+				var gi := _gas_idx()
+				var lp := _gas_lock_pos()
+				_gas_arm = gi >= 0 and (_gas_pos.y <= (_buttons[gi]["centre"] as Vector2).y - 86.0 or _gas_pos.distance_to(lp) <= 52.0)
+			_pad.queue_redraw()
+		elif e.index == _dpad_id:
+			_dpad_set(_dpad_dir_at(e.position))
+			_pad.queue_redraw()
+		elif e.index == _stick_id:
 			_move_stick(e.position)
 			_pad.queue_redraw()
 		elif e.index == _look_id:
@@ -310,6 +458,15 @@ func _show(v: bool) -> void:
 		if _stick_id >= 0:
 			_stick_id = -1
 			_move_stick(_stick_at)
+		if _dpad_id >= 0 or _dpad_dir != "":
+			_dpad_id = -1
+			_dpad_set("")
+		if _gas_lock or _gas_id >= 0:
+			_gas_lock = false
+			_gas_id = -1
+			_gas_arm = false
+			_gas_tapped_locked = false
+			_send("forward", false)
 		_look_id = -1
 	else:
 		Controls.pad = true
@@ -354,6 +511,25 @@ func _move_stick(p: Vector2) -> void:
 func _process(dt: float) -> void:
 	if not on:
 		return
+	if _dpad_dir != "":
+		if not _dpad_mode():
+			_dpad_id = -1
+			_dpad_set("")
+		else:
+			_dpad_t -= dt
+			if _dpad_t <= 0.0:
+				_dpad_t = DPAD_REPEAT
+				_send(_dpad_dir, true)
+	if _dpad_mode() and _stick_id >= 0:
+		var g = _game()
+		if g != null and (g.get("phase") in ["creator", "armario"]):
+			_stick_id = -1
+			_move_stick(_stick_at)
+	if _gas_lock:
+		if _gas_idx() < 0:
+			unlock_gas()
+		elif not Input.is_action_pressed("forward"):
+			Input.action_press("forward")
 	if _menu_dir != "":
 		_menu_t -= dt
 		if _menu_t <= 0.0:
@@ -365,6 +541,17 @@ func _process(dt: float) -> void:
 		_context_tick()
 	_pad.queue_redraw()
 
+func _draw_lock(c: Vector2, closed: bool, ink: Color) -> void:
+	var shackle := Vector2(c.x, c.y - 3.5)
+	if closed:
+		_pad.draw_arc(shackle, 5.5, PI, TAU, 16, ink, 2.2, true)
+		_pad.draw_line(shackle + Vector2(-5.5, 0.0), shackle + Vector2(-5.5, 3.5), ink, 2.2, true)
+		_pad.draw_line(shackle + Vector2(5.5, 0.0), shackle + Vector2(5.5, 3.5), ink, 2.2, true)
+	else:
+		_pad.draw_arc(shackle + Vector2(-1.5, -1.5), 5.5, PI * 0.9, PI * 1.9, 16, ink, 2.2, true)
+		_pad.draw_line(shackle + Vector2(-7.0, -1.5), shackle + Vector2(-7.0, 3.5), ink, 2.2, true)
+	_pad.draw_rect(Rect2(c.x - 7.5, c.y - 0.5, 15.0, 11.5), ink, true)
+
 func _draw_pad() -> void:
 	if not on:
 		return
@@ -373,21 +560,60 @@ func _draw_pad() -> void:
 		_pad.draw_circle(_stick_at, STICK_R + 22.0, Color(0, 0, 0, 0.18))
 		_pad.draw_arc(_stick_at, STICK_R + 22.0, 0, TAU, 48, Color(1, 1, 1, 0.4), 3.0, true)
 		_pad.draw_circle(_stick_at + _stick * STICK_R, 44.0, Color(1, 1, 1, 0.42))
-	for b in _buttons:
+	if _dpad_mode():
+		var dc := _dpad_centre()
+		_pad.draw_circle(dc, 108.0, Color(0, 0, 0, 0.16))
+		_pad.draw_arc(dc, 108.0, 0, TAU, 48, Color(1, 1, 1, 0.3), 2.0, true)
+		for entry in [
+			["m_up", Vector2.UP, [Vector2(0, -10), Vector2(-9, 7), Vector2(9, 7)]],
+			["m_down", Vector2.DOWN, [Vector2(0, 10), Vector2(-9, -7), Vector2(9, -7)]],
+			["m_left", Vector2.LEFT, [Vector2(-10, 0), Vector2(7, -9), Vector2(7, 9)]],
+			["m_right", Vector2.RIGHT, [Vector2(10, 0), Vector2(-7, -9), Vector2(-7, 9)]],
+		]:
+			var bc := dc + (entry[1] as Vector2) * DPAD_ARM
+			var hit := _dpad_dir == String(entry[0])
+			var fill := Color(0.98, 0.96, 0.9, 0.78) if hit else Color(0.12, 0.12, 0.14, 0.52)
+			var tri_col := Color(0.12, 0.1, 0.08) if hit else Color(1, 1, 1, 0.95)
+			_pad.draw_circle(bc, DPAD_BTN_R, fill)
+			_pad.draw_arc(bc, DPAD_BTN_R, 0, TAU, 32, Color(1, 1, 1, 0.72), 2.2, true)
+			var pts := PackedVector2Array()
+			for v in (entry[2] as Array):
+				pts.append(bc + (v as Vector2))
+			_pad.draw_colored_polygon(pts, tri_col)
+	var gi := _gas_idx()
+	for i in range(_buttons.size()):
+		var b: Dictionary = _buttons[i]
 		var tsb: TouchScreenButton = b["node"]
 		if not tsb.visible:
 			continue
 		var c: Vector2 = b["centre"]
 		var r: float = b["r"]
-		var held := tsb.is_pressed()
+		var is_gas := i == gi
+		var held := tsb.is_pressed() or (is_gas and (_gas_id >= 0 or _gas_lock))
 		var face := Color(0.98, 0.96, 0.9, 0.7 if held else 0.42) if b["big"] else Color(0.12, 0.12, 0.14, 0.66 if held else 0.4)
+		var rim_col := Color(1, 1, 1, 0.7)
+		var rim_w := 2.5
+		if is_gas and _gas_lock:
+			face = Color(0.28, 0.78, 0.42, 0.82)
+			rim_col = Color(1.0, 0.96, 0.72, 0.95)
+			rim_w = 3.5
 		_pad.draw_circle(c, r, face)
-		_pad.draw_arc(c, r, 0, TAU, 40, Color(1, 1, 1, 0.7), 2.5, true)
+		_pad.draw_arc(c, r, 0, TAU, 40, rim_col, rim_w, true)
+		if is_gas and _gas_lock:
+			_draw_lock(c + Vector2(0.0, -34.0), true, Color.WHITE)
 		var t: String = b["label"]
 		var fs := 25 if b["big"] else (16 if b["small"] else 20)
 		while fs > 11 and font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > r * 1.75:
 			fs -= 1
 		var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var ink := Color(0.12, 0.1, 0.08) if b["big"] else Color(1, 1, 1, 0.96)
-		_pad.draw_string_outline(font, c + Vector2(-w / 2.0, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(1, 1, 1, 0.45) if b["big"] else Color(0, 0, 0, 0.5))
+		var ink := Color.WHITE if (is_gas and _gas_lock) else (Color(0.12, 0.1, 0.08) if b["big"] else Color(1, 1, 1, 0.96))
+		_pad.draw_string_outline(font, c + Vector2(-w / 2.0, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(1, 1, 1, 0.45) if (b["big"] and not (is_gas and _gas_lock)) else Color(0, 0, 0, 0.5))
 		_pad.draw_string(font, c + Vector2(-w / 2.0, fs * 0.36), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
+	if gi >= 0 and _gas_id >= 0 and not _gas_tapped_locked:
+		var gc: Vector2 = _buttons[gi]["centre"]
+		var lp := _gas_lock_pos()
+		var lr := 34.0 if _gas_arm else 28.0
+		_pad.draw_line(gc + Vector2(0.0, -float(_buttons[gi]["r"]) - 4.0), lp + Vector2(0.0, lr + 4.0), Color(1, 1, 1, 0.65), 2.5, true)
+		_pad.draw_circle(lp, lr, Color(0.28, 0.78, 0.42, 0.88) if _gas_arm else Color(0.12, 0.12, 0.14, 0.66))
+		_pad.draw_arc(lp, lr, 0, TAU, 32, Color(1, 1, 1, 0.92), 2.8, true)
+		_draw_lock(lp + Vector2(0.0, 2.0), _gas_arm, Color.WHITE)

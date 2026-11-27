@@ -23131,6 +23131,124 @@ func _run() -> void:
 		print("CREADOR %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
 		get_tree().quit(1 if fails > fails0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--touch_ui"):      # creator scroll + direct row tap + D-pad + bubble tag pad + slide-to-lock gas
+		var fails0 := fails
+		var old_touch := Touch.on
+		var k: float = float(get_window().size.y) / g.get_viewport().get_visible_rect().size.y
+		var tap_ev := func(at: Vector2, down: bool, finger := 0) -> void:
+			var ev := InputEventScreenTouch.new()
+			ev.index = finger
+			ev.position = at * k
+			ev.pressed = down
+			Input.parse_input_event(ev)
+		var drag_ev := func(at: Vector2, finger := 0) -> void:
+			var ev := InputEventScreenDrag.new()
+			ev.index = finger
+			ev.position = at * k
+			Input.parse_input_event(ev)
+		# 1. Creator scroll indicators, direct row taps and virtual D-pad
+		g.menu.close()
+		g.look_sel = load("res://scripts/creator.gd").defaults()
+		g._start_creator()
+		await _frames(6)
+		_check(g.hud._creator_more_up == 0 and g.hud._creator_more_dn == 3 and g.hud.creator_more_dn.visible and g.hud.creator_more_dn.modulate.a > 0.5,
+			"Lustre starts with 0 options above and 3 below, showing the down scroll arrow")
+		g.hud.creator_pick.emit("scroll_down")
+		await _frames(2)
+		_check(g._creator_first == 1 and g.hud._creator_more_up == 1 and g.hud._creator_more_dn == 2,
+			"scroll_down moves the creator list and updates upper/lower counts (%d / %d / %d)" % [g._creator_first, g.hud._creator_more_up, g.hud._creator_more_dn])
+		var row3_before: int = int(g.look_sel[Creator.TABS[0][g._creator_first + 2]])
+		g.hud.creator_pick.emit("row_2")
+		g.hud.creator_pick.emit("row_next_2")
+		await _frames(2)
+		var row3_after: int = int(g.look_sel[Creator.TABS[0][g._creator_first + 2]])
+		_check(g.creator_row == g._creator_first + 3 and row3_after != row3_before,
+			"direct tap selects a row and cycles its option (%d -> %d)" % [row3_before, row3_after])
+		Touch._show(true)
+		g._refresh_creator()
+		await _frames(4)
+		var row_before_dpad: int = g.creator_row
+		var dpad_dn := Touch._dpad_centre() + Vector2(0.0, Touch.DPAD_ARM)
+		tap_ev.call(dpad_dn, true, 1)
+		await _frames(3)
+		tap_ev.call(dpad_dn, false, 1)
+		await _frames(2)
+		_check(Touch._dpad_mode() and g.creator_row == row_before_dpad + 1,
+			"virtual D-pad is active in the creator and moves selection (%d -> %d)" % [row_before_dpad, g.creator_row])
+		g.hud.hide_creator()
+		g.menu.open("main")
+		await _frames(3)
+		_check(Touch._dpad_mode(), "virtual D-pad is active in the pause/main menu")
+		g.menu.close()
+		# 2. Dialogue bubble top padding clears speaker tag
+		g.phase = "free"
+		g.hud.play_ui.visible = true
+		g.hud.set_dlg_name("El pregonero", Color("d9643a"))
+		g.hud.dlg_text.text = "Hoy en Madridejos paece un día tranquilo. De esos en que no pasa ná, y no pasa ná de verdad."
+		g.hud.dlg_text.visible_characters = -1
+		g.hud.dlg_slot.visible = true
+		await _frames(4)
+		var tag_bottom: float = g.hud.dlg_tag.position.y + g.hud.dlg_tag.size.y
+		var text_top: float = g.hud.dlg_text.global_position.y
+		_check(g.hud.dlg_top_pad.visible and tag_bottom <= text_top + 1.0,
+			"dialogue top spacer prevents speaker tag (bottom %.1f) from overlapping first line (top %.1f)" % [tag_bottom, text_top])
+		g.hud.dlg_slot.visible = false
+		g.hud.set_dlg_name("")
+		# 3. Slide-to-lock accelerator on Android while driving
+		g.set_time(11.0)
+		g.set_rain(false, 1e9)
+		g._enter_car(g.paca_car)
+		await _frames(6)
+		Touch._context = ""
+		Touch._context_tick()
+		var gi := Touch._gas_idx()
+		var gas_c: Vector2 = Touch._buttons[gi]["centre"] if gi >= 0 else Vector2.ZERO
+		var lock_c := Touch._gas_lock_pos()
+		var brake_c := Vector2.ZERO
+		for b in Touch._buttons:
+			if b["action"] == "back" and (b["node"] as TouchScreenButton).visible:
+				brake_c = b["centre"]
+		_check(gi >= 0 and lock_c != Vector2.ZERO and brake_c != Vector2.ZERO,
+			"driving on touch exposes Acelerar, lock target above it, and Freno")
+		tap_ev.call(gas_c, true, 2)
+		await _frames(2)
+		drag_ev.call(lock_c, 2)
+		await _frames(2)
+		tap_ev.call(lock_c, false, 2)
+		await _frames(3)
+		var locked_ok: bool = Touch.is_gas_locked() and Input.is_action_pressed("forward")
+		var yaw0: float = g.cam_yaw
+		tap_ev.call(Vector2(760.0, 260.0), true, 3)
+		for step in range(4):
+			drag_ev.call(Vector2(760.0 + (step + 1) * 25.0, 260.0), 3)
+			await _frames(1)
+		tap_ev.call(Vector2(860.0, 260.0), false, 3)
+		await _frames(2)
+		var cam_turned: float = absf(g.cam_yaw - yaw0)
+		_check(locked_ok and cam_turned > 0.05,
+			"sliding Acelerar up to padlock locks forward throttle while free right-half drag turns camera (yaw %.2f rad)" % cam_turned)
+		# Re-tapping Acelerar unlocks
+		tap_ev.call(gas_c, true, 2)
+		await _frames(2)
+		tap_ev.call(gas_c, false, 2)
+		await _frames(2)
+		var unlocked_tap: bool = not Touch.is_gas_locked() and not Input.is_action_pressed("forward")
+		# Re-lock, then unlock via Brake
+		tap_ev.call(gas_c, true, 2); await _frames(2); drag_ev.call(lock_c, 2); await _frames(2); tap_ev.call(lock_c, false, 2); await _frames(2)
+		tap_ev.call(brake_c, true, 4); await _frames(2); tap_ev.call(brake_c, false, 4); await _frames(2)
+		var unlocked_brake: bool = not Touch.is_gas_locked()
+		# Re-lock, then unlock via crash impact
+		tap_ev.call(gas_c, true, 2); await _frames(2); drag_ev.call(lock_c, 2); await _frames(2); tap_ev.call(lock_c, false, 2); await _frames(2)
+		g._crash(g.in_car, 6.0)
+		await _frames(2)
+		var unlocked_crash: bool = not Touch.is_gas_locked() and not Input.is_action_pressed("forward")
+		_check(unlocked_tap and unlocked_brake and unlocked_crash,
+			"locked accelerator releases cleanly on re-tap (%s), brake (%s), and crash (%s)" % [unlocked_tap, unlocked_brake, unlocked_crash])
+		g._exit_car()
+		Touch._show(old_touch)
+		print("TOUCH_UI %s (%d failed)" % ["OK" if fails == fails0 else "FAILED", fails - fails0])
+		get_tree().quit(1 if fails > fails0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--creator"):       # the character creator: its two tabs, and the newer choices on a face
 		shots = true
 		g.menu.close()

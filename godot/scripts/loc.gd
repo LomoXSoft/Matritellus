@@ -1589,6 +1589,7 @@ const TX := {
 			"How long did you say? And what if I told you lunch is on me?",
 			"No, it’s not the battery. …All right, it might be the battery. Just come."]},
 	"c_tabs": {"es": ["LUSTRE", "PINTAS"], "en": ["LUSTRE", "PINTAS"]},
+	"c_more": {"es": "%d más", "en": "%d more"},
 	"box_title": {"es": "¡A PUÑETAZOS!", "en": "FISTS UP!"},
 	"box_hint": {"es": "<punch> Derecha  <box_punch_other> Izquierda  ·  Mantén <box_low> al cuerpo  ·  <back> Guardia  ·  <left> <right> Esquivar", "en": "<punch> Right  <box_punch_other> Left  ·  Hold <box_low> for body  ·  <back> Guard  ·  <left> <right> Dodge"},
 	"box_hint_pad": {"es": "<punch> Derecha  <box_punch_other> Izquierda  ·  Mantén <box_low> al cuerpo  ·  <back> ↓ Guardia  ·  <left> ↔ Esquiva", "en": "<punch> Right  <box_punch_other> Left  ·  Hold <box_low> for body  ·  <back> ↓ Guard  ·  <left> ↔ Dodge"},
