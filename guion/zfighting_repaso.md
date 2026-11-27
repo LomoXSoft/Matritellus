@@ -1,7 +1,7 @@
 # Campaña anti-Z-fighting (`obra.gd`) y guía de repaso para Pretil y Texturas
 
 > Auditoría geométrica automatizada (`--zfight` en `godot/scripts/selftest.gd`) y limpieza por tandas sobre los edificios construidos a mano sobre `obra.gd`.
-> Incluido en el commit de **0.2.6** (release en borrador privado). Ningún archivo de **Texturas** ni archivos de otras sesiones han sido modificados.
+> Publicado en **0.2.6** (`v0.2.6`). Ningún archivo de **Texturas** ni archivos de otras sesiones han sido modificados.
 
 ---
 
@@ -62,7 +62,7 @@ python tools/run_tests.py zfight --timeout 180
 
 > **Confirmación explícita:** en estas tres tandas **no se ha modificado** ningún archivo de Texturas (`godot/scripts/casas.gd`, `godot/scripts/casas_calles.gd`, `godot/scripts/texturas.gd`, `godot/scripts/tela.gd`, `tools/bake_godot.py`, `godot/data/map.json`). Todo ese bloque queda pendiente de su propio repaso visual/geométrico.
 
-### Checklist de 4 puntos para Texturas
+### Checklist de 5 puntos para Texturas
 
 1. **Rótulos, zócalos y molduras sobre `fly` (`casas.gd`, `casas_calles.gd`):**
    - Revisar `cartel ... z=...`, `plinth=...` y bandas de cornisa (`trim`) cuando haya plantas voladas (`fly`, `prev_fly`) para que ningún cartel ni zócalo quede coplanar (`< 1,2–1,5 cm`) con el paño de pared o el intradós del vuelo inferior.
@@ -72,6 +72,8 @@ python tools/run_tests.py zfight --timeout 180
    - `tela.gd` usa `render_mode cull_disabled;` y `casas.gd` activa `CULL_DISABLED` en faldones/tejas; vigilar que los lienzos de toldo y caídas no queden pegados (`0 mm`) contra dinteles, balcones o fachadas colindantes.
 4. **Medianeras, `paño`/`pano`, `lado` y porches (`casas.gd`, `casas_calles.gd`, `tools/bake_godot.py`, `godot/data/map.json`):**
    - Revisar cambios parciales de textura (`paño`), caras laterales (`lado`) y porches adosados para no duplicar polígonos coplanares en esquinas ni en lindes entre casas vecinas.
+5. **Alineación entre fachada (`_facade`), cuerpo lateral de Catastro (`_edges`) y tejado (`_eaves`/`_roof_y`) en Calle de Santa Ana:**
+   - Revisado visualmente en pruebas de 0.2.6; comprobar `stana_96` y viviendas del frente opuesto en Santa Ana donde la fachada delantera aparece ligeramente adelantada/separada como «careta» respecto a la medianera lateral, y casas bajas con huecos visibles entre el remate superior de fachada y el alero/tejado.
 
 ### Cómo verificar cambios en casas de calle
 
