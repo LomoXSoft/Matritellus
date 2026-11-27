@@ -2,6 +2,10 @@ extends "res://scripts/chara.gd"
 ## A villager: wanders near home, can be talked to, and flies (harmlessly) when hit by a car.
 
 var id := ""
+
+func _init() -> void:
+	set_down = true          # (out in the street: on a pavement their figure goes down to it, chara.gd _sink)
+
 var name_key := ""           # Loc key, or "" to use display_name
 var display_name := ""
 var look_data := {}             # the look it was made with (portraits)

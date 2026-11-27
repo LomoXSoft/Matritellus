@@ -1766,6 +1766,7 @@ func _setup_places_and_actors() -> void:
 	places["coop_yard"] = yard
 
 	player = Chara.new()
+	player.set_down = true               # (out in the street: on a pavement the figure goes down to it, chara.gd _sink)
 	add_child(player)
 	player.setup(Creator.look(look_sel))
 	player.collision_layer = 4
@@ -6060,6 +6061,7 @@ func _physics_process(delta: float) -> void:
 		if not cam.is_position_behind(feet_at):
 			hud.creator_turn_at(cam.unproject_position(feet_at), cam.unproject_position(feet_at + Vector3.UP * 1.75))
 		player.h = face + _face_turn
+		MapData.sunk_hold_at = Engine.get_process_frames()      # (on the room's own floor, or a shop's: nobody is set down to a pavement here)
 		player.sync()
 		player.anim(false, dt, 0.0)
 		var eye := at + f * 3.6 + side * 1.1
@@ -6951,6 +6953,9 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 	# Neighbours a long way off are moved a quarter as often (in bigger steps), without the leg-work and without
 	# bumping into things: at that distance nobody can tell, and there are a lot of them.
 	_npc_tick += 1
+	var eye_cam := get_viewport().get_camera_3d()       # (whose feet on a pavement are worth setting down on it: chara.gd _sink)
+	MapData.sunk_eye = Vector2(eye_cam.global_position.x, eye_cam.global_position.z) if eye_cam != null else pp
+	MapData.sunk_eye_at = Engine.get_process_frames()
 	for i in range(npcs.size()):
 		var n = npcs[i]
 		if n.away:

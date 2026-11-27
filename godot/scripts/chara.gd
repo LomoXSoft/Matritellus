@@ -2868,5 +2868,32 @@ func look_at_spot(at, dt: float) -> void:
 func sync() -> void:
 	if rotation.y != h:                # (writing a transform, even the same one, sends every part of the model off to be updated)
 		rotation.y = h
-	if vis.position.y != y:
-		vis.position.y = y
+	var lift := y + _sink()
+	if vis.position.y != lift:
+		vis.position.y = lift
+
+## On a pavement the figure goes down to the pavement's own sheet, which the world draws 6 cm under the ground people
+## stand at (MapData.sunk; the user, 27 Nov 2026: "Parece que levita el jugador"). Only the figure: the body, the
+## camera and whatever is measured from the ground stay put. Not on a deck, a car or anything else that holds them at
+## a height of its own, not up in the air, and worked out again only when they have moved and are near enough to see.
+## Only somebody out in the street (`set_down`: the player and the townspeople, npc.gd): a figure stood somewhere by
+## hand -- a statue, a mannequin, a chess piece, a portrait -- stays where it was put.
+const SINK_SEEN := 60.0
+var set_down := false
+var _sunk := 0.0
+var _sunk_p := Vector2.INF
+func _sink() -> float:
+	if not set_down or Engine.get_process_frames() - MapData.sunk_hold_at < 3:
+		_sunk = 0.0
+		_sunk_p = Vector2.INF
+		return 0.0
+	if y > 0.0:
+		return _sunk * maxf(0.0, 1.0 - y / 0.3)
+	var q := p
+	if Engine.get_process_frames() - MapData.sunk_eye_at < 3 and q.distance_squared_to(MapData.sunk_eye) > SINK_SEEN * SINK_SEEN:
+		_sunk_p = Vector2.INF          # (looked at again when they are near)
+		return _sunk
+	if q.distance_squared_to(_sunk_p) > 0.0009:
+		_sunk_p = q
+		_sunk = MapData.sunk(q) if absf(global_position.y - MapData.height(q)) < 0.004 else 0.0
+	return _sunk

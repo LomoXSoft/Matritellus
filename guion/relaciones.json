@@ -708,6 +708,18 @@
    "role": "Vive en la capital, pero lo que le tira es la salvajada y la fiesta del pueblo. Sostiene que las discotecas se forrarían vendiendo litronas, alterna con preguntas filosóficas («¿Tú piensas en la muerte?») y él coca no, «que eso no es sano»: solo alcohol y hachís.",
    "where": "Abajo, en La Kueva de la Sala Cavernas KAE, siempre que la sala está abierta (arreglada, noches de jueves a domingo, de 23:00 a 6:00).",
    "notes": "Personaje del usuario, 26/11/2026, dicho a Pretil: «Perilla, dejadez, delgado, camiseta de tirantes fosforita verde, ojos pequeños y pelo corto con flequillo levantado». Que esté en La Kueva (y no en la sala de arriba) es lectura de Pretil. Aspecto provisional."
+  },
+  {
+   "id": "xandro",
+   "name": "Xandro",
+   "foto": true,
+   "pos": [
+    6,
+    8
+   ],
+   "role": "El del taller de la carretera de Villacañas, Talleres Xandro. Hace «algo así como de mánager» de las carreras de noche: te ficha por haberte visto «conduciendo a toa leche por el pueblo». Camisa de cuadros abrochada hasta arriba, gorra blanca, gafas de sol y perilla.",
+   "where": "A la puerta de Talleres Xandro (carretera de Villacañas), desde tu primer turno en el taxi de Koke.",
+   "notes": "Entró el 26/11/2026 (versión 0.2.4), sin firma en la documentación (no lo hizo Sistemas; probablemente Antigravity); el visto bueno de Luis tampoco consta. Aparece tras el primer turno del taxi de Koke y, si no vas a verle, te llama a las 4 horas de juego. No sale en el Modo Golismeo. Apuntado aquí el 27/11/2026 desde xandro.gd y loc.gd."
   }
  ],
  "links": [
@@ -1142,6 +1154,14 @@
    "label": "primos",
    "detail": "El Pochi: «El Foski es mi primo. […] como le toques un pelo te arranco la cabeza». El Foski: «Mi primo el Pochi anda también por aquí. […] es buena gente, joder. Más o menos».",
    "source": "pochi"
+  },
+  {
+   "a": "tu",
+   "b": "xandro",
+   "kind": "negocio",
+   "label": "corres para él",
+   "detail": "Carreras de noche de ocho Setas Panda desde su taller: 100 € de entrada, 500 / 200 / 100 € a los tres primeros y un 10 % para él si el coche es suyo. «Yo hago algo así como de mánager entre corredores».",
+   "source": "xandro_intro"
   }
  ],
  "cabos": [
@@ -1151,6 +1171,7 @@
   "Don Anselmo, el teniente Torrezón, el tío Gerardo y la cabra no tienen parentescos ni tratos dichos en los diálogos (aunque todos tienen su manera de firmar, o de no firmar, por el puente).",
   "La Chiki: no se sabe de quién es hija ni dónde vive (es hermana de Don Luis; los dos descienden de Nazario, no se dice cómo). La madre del Alberto (dueña de la hucha) no tiene nombre.",
   "Los hijos de la Tomasa y el chino del Arroyuelo no tienen nombre.",
-  "Los dos hijos de la Pili (treinta años, siguen en casa) y la Laura la mamporrera, que se murió ayer, hija de José Julián el mamporrero, solo se nombran."
+  "Los dos hijos de la Pili (treinta años, siguen en casa) y la Laura la mamporrera, que se murió ayer, hija de José Julián el mamporrero, solo se nombran.",
+  "Xandro aparece cuando acabas el primer turno del taxi de Koke, pero ninguno de los dos nombra al otro: no se sabe qué trato tienen. Tampoco dice quién le ha dado tu número."
  ]
 }

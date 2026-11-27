@@ -75,6 +75,16 @@ python tools/run_tests.py zfight --timeout 180
 5. **Alineación entre fachada (`_facade`), cuerpo lateral de Catastro (`_edges`) y tejado (`_eaves`/`_roof_y`) en Calle de Santa Ana:**
    - Revisado visualmente en pruebas de 0.2.6; comprobar `stana_96` y viviendas del frente opuesto en Santa Ana donde la fachada delantera aparece ligeramente adelantada/separada como «careta» respecto a la medianera lateral, y casas bajas con huecos visibles entre el remate superior de fachada y el alero/tejado.
 
+### Hecho por Texturas (27/11, sin commit; APROBADO por el usuario el 27/11)
+
+- **1 (rótulos, zócalos, molduras sobre `fly`):** revisado en el código; los desfases de `cartel`, placas, parches y bandas ya separan más de 1,5 cm. Sin cambios.
+- **2 (huecos):** el alféizar, el suelo del arco y el poyete de escaparate estaban en el mismo plano que el pie del hueco: ahora 1,5 cm por encima. La persiana va 1,2 cm detrás de sus lamas, que quedan 9 mm detrás del marco.
+- **3 (toldos y tejados):** revisado; sin pegados a 0 mm visibles. La losa de las terrazas de `_adosado` entra 1,5 cm en los muros.
+- **4 (paño, lado, porches):** el paño corta la pared, no la dobla; `lado` va 5 cm dentro. Sin cambios.
+- **5 (Santa Ana):** `stana_96` está de verdad ~0,9 m por delante de su vecina (Street View 2024): no se mueve. La rendija de lado a lado en su esquina venía de `_plain` (paredes de Catastro metidas 5 cm sin alargarse donde el contorno gira hacia dentro): ahora siguen 10 cm. La ranura bajo el alero de las casas bajas (la fachada acaba en `top` y el tejado empieza ~0,34 m más arriba): relleno de pared con el color de la última planta y sus paños.
+- **Medida:** `python tools/run_tests.py zfight casas-sueltas --timeout 1200 --headless` (modo nuevo de `selftest.gd`). 3406 casas: exacto 10382 → 3348 m² (−68 %), cercano 2997 → 2100. Lo que queda es casi todo oculto (dorsos a z −0,30/−0,24 dentro del muro, suelos enterrados de `rosa_*`, azoteas que cruzan el muro).
+- **Hoja:** `fotos/zfighting/santana_esquina_antes_despues.jpg`.
+
 ### Cómo verificar cambios en casas de calle
 
 ```powershell
@@ -90,3 +100,11 @@ python tools/cache_casas_check.py
 - **Auditoría y helpers base:** `godot/scripts/obra.gd`, `godot/scripts/selftest.gd`.
 - **Tandas 1–3 (`godot/scripts/`):** `aceras_altas.gd`, `afueras.gd`, `almazara.gd`, `asador.gd`, `bancosancho.gd`, `calasanz.gd`, `caridad.gd`, `casa_dentro.gd`, `cementerio.gd`, `chinos.gd`, `colegio.gd`, `comunal.gd`, `correos.gd`, `cuartel.gd`, `cuevas.gd`, `cultura.gd`, `entrada.gd`, `farmacia.gd`, `ferial.gd`, `garage.gd`, `ies.gd`, `kebabdeluxe.gd`, `masahorro.gd`, `matias.gd`, `maxiprecio.gd`, `maxiprecio_dentro.gd`, `mercamona.gd`, `merkocarry.gd`, `merkocarry_dentro.gd`, `molino.gd`, `noche.gd`, `noche_dentro.gd`, `optica.gd`, `optica_dentro.gd`, `paseo.gd`, `pisacastana.gd`, `pisacastana_dentro.gd`, `planta_solar.gd`, `plaza.gd`, `puente.gd`, `residencia.gd`, `rize.gd`, `rocas.gd`, `salvador2.gd`, `sopiss.gd`, `teledurum.gd`, `tetoqa.gd`, `tetoqa_dentro.gd`, `toledano.gd`, `toti.gd`.
 - **Documentación:** `guion/zfighting_repaso.md`, `README.md`, `PROJECT_STATE.md`, `TRASPASO_CLAUDE.md`.
+
+---
+
+## Notas de uso de `--zfight` (Pretil, 27/11; comprobadas por Sistemas en `selftest.gd` y en `logs/selftest_zfight_20261127_040337.log`)
+
+- **`max` se compara con el área exacta total de todo lo que casa con `solo`** (subcadena del nombre del archivo). En la 0.2.6 sin tocar, 36 sitios a mano pasan ya de 1,0 m² (de `puente.gd` 9,417 y `cultura.gd` 5,576 a `chinos.gd` 1,026): en ellos `max=1.0` falla de entrada, sin que nadie haya roto nada. **Lectura práctica: no subir del valor de antes.** Se pasa `python tools/run_tests.py zfight solo=<archivo>.gd --timeout 180` sin `max` antes y después de tocar, y se comparan las dos áreas.
+- **Solo se miran los nodos hechos sobre `obra.gd` que estén visibles al correr, y no se entra en uno para buscar otro dentro** (`_zfight_collect_obras`). No salen en el informe los decorados ocultos hasta que entras (por ejemplo `cuevas_dentro.gd`) ni lo que no va sobre `obra.gd` (por ejemplo `petril.gd`). Un resultado limpio no dice nada de ellos.
+- **No hay batería completa en `logs/` posterior a la campaña:** la última (`selftest_full_20261126_214200.log`, 0 fallos) es de antes de la 0.2.4; la 0.2.5 y la 0.2.6 no tienen ninguna.

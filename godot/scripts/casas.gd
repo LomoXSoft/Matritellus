@@ -519,11 +519,11 @@ func window(x: float, y: float, w: float, h: float, face: float, drop := 0.7, fr
 	box(x + w / 2.0 - 0.03, y, z, 0.06, h, 0.05, frame)
 	if drop > 0.0:
 		var bh := (h - 0.14) * drop
-		box(x + 0.06, y + h - 0.14 - bh, z + 0.02, w - 0.12, bh, 0.02, blind)
+		box(x + 0.06, y + h - 0.14 - bh, z + 0.005, w - 0.12, bh, 0.02, blind)       # (1.2 cm behind its slats, which stay 9 mm behind the frame: zfighting_repaso.md 2)
 		var slat := Parts.col(blind).darkened(0.14).to_rgba32() >> 8
 		for i in range(1, int(bh / 0.09) + 1):                    # its slats
-			box(x + 0.06, y + h - 0.14 - i * 0.09, z + 0.04, w - 0.12, 0.012, 0.004, slat)
-	box(x - 0.04, y - 0.05, face - 0.24, w + 0.08, 0.05, 0.3, 0xd9d2c2)          # the sill
+			box(x + 0.06, y + h - 0.14 - i * 0.09, z + 0.037, w - 0.12, 0.012, 0.004, slat)
+	box(x - 0.04, y - 0.035, face - 0.24, w + 0.08, 0.05, 0.3, 0xd9d2c2)         # the sill (its top 1.5 cm over the foot of the hole, not in its plane: zfighting_repaso.md)
 
 ## an iron grille over a window: uprights, three cross bars, a band of curls near the foot
 func grille(x: float, y: float, w: float, h: float, face: float, stand := 0.07) -> void:
@@ -890,6 +890,7 @@ var _ey := 0.0                  # the roof at the edge of the eaves...
 var _ez := 0.3                  # ...and where that edge is
 var _flat_roof := false
 var _flank := false             # the side front being built is the house's longest to another street (its notices: lado=1)
+var _ring := PackedVector2Array()     # the outline of the piece of the plot whose walls are being built (_plain: its corners)
 
 func _mat(spec):
 	if spec is int:
@@ -1219,7 +1220,7 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 			box(x, sy, face - dd - 0.04, w, r.size.y, 0.04, int(o.get("c", 0x4a3c34)))          # the back of the bay, in shadow
 			box(x - 0.05, sy, face - dd, 0.05, r.size.y, dd, wk)                                   # its sides, as deep as it goes
 			box(x + w, sy, face - dd, 0.05, r.size.y, dd, wk)
-			box(x - 0.04, sy - 0.06, face - dd, w + 0.08, 0.06, dd + 0.2, 0xd9d2c2)               # its floor, a little out over the front
+			box(x - 0.04, sy - 0.045, face - dd, w + 0.08, 0.06, dd + 0.2, 0xd9d2c2)              # its floor, a little out over the front (1.5 cm over the foot of the hole)
 			if o.has("bd"):                      # bd=<colour>: the house's own door at the back of it
 				var dw := minf(0.95, w - 0.3)
 				panel_door(x + (w - dw) / 2.0, sy, dw, minf(2.2, r.size.y - 0.2), face - dd + 0.25, int(o["bd"]))      # (it sits 0.2 back from what it is given)
@@ -1276,7 +1277,7 @@ func _opening(kind: String, r: Rect2, o: Dictionary, face: float, y: float) -> v
 				box(e[0], e[1], z, e[2], e[3], 0.06, fr)
 			for i in range(1, int(round(w / 1.4))):
 				box(x + w * i / round(w / 1.4) - 0.03, r.position.y, z, 0.06, r.size.y, 0.06, fr)
-			box(x - 0.03, r.position.y - 0.06, face - 0.16, w + 0.06, 0.06, 0.22, 0xb9b2a6)
+			box(x - 0.03, r.position.y - 0.045, face - 0.16, w + 0.06, 0.06, 0.22, 0xb9b2a6)      # (its sill 1.5 cm over the foot of the hole)
 		"gar":
 			var gh := r.end.y - y
 			if String(o.get("k", "")) == "hueco":            # the hole left as it is: what fills it is built by whoever has the place
@@ -1636,9 +1637,20 @@ func _plain(a: Vector2, b: Vector2, nrm: Vector2, y0: float, key, cap := 1e9) ->
 		pts.append(a.lerp(b, (a.y - _rz) / (a.y - b.y)))
 	pts.append(b)
 	var n3 := Vector3(nrm.x, 0.0, nrm.y)
+	# (where the outline turns in at an end, the wall goes on 10 cm past it, behind the next wall: set in and no longer,
+	# the two left a slit right through at such a corner -- Santa Ana, zfighting_repaso.md 5. Where it turns out they
+	# cross already; and an end on the line of the front stays, or it would stand out of the front)
+	var dir := (b - a).normalized()
+	var a_out := Vector2.ZERO
+	var b_out := Vector2.ZERO
+	if _ring.size() >= 3:
+		if not _on_front(a, 0.1) and Geometry2D.is_point_in_polygon(a - dir * 0.03 - nrm * 0.05, _ring):
+			a_out = dir * 0.1
+		if not _on_front(b, 0.1) and Geometry2D.is_point_in_polygon(b + dir * 0.03 - nrm * 0.05, _ring):
+			b_out = dir * 0.1
 	for i in range(pts.size() - 1):
-		var p: Vector2 = pts[i] - nrm * 0.05
-		var q: Vector2 = pts[i + 1] - nrm * 0.05
+		var p: Vector2 = pts[i] - nrm * 0.05 - (a_out if i == 0 else Vector2.ZERO)
+		var q: Vector2 = pts[i + 1] - nrm * 0.05 + (b_out if i == pts.size() - 2 else Vector2.ZERO)
 		var py: float = minf(cap, _roof_y(pts[i].y) - 0.04)
 		var qy: float = minf(cap, _roof_y(pts[i + 1].y) - 0.04)
 		if maxf(py, qy) <= y0 + 0.02:
@@ -1764,6 +1776,7 @@ func _from_spec(spec: Dictionary) -> void:
 			flank = maxf(flank, ln0)
 	for pc in pieces:
 		var ring: PackedVector2Array = pc["ring"]
+		_ring = ring
 		var zmin := 0.0
 		for q in ring:
 			zmin = minf(zmin, q.y)
@@ -1830,6 +1843,29 @@ func _from_spec(spec: Dictionary) -> void:
 						uv.append(Vector2(q2.x, absf(q2.y - _rz)) / 1.6)
 					tri(v[0], v[1], v[2], "tiles", Vector3(0.0, 1.0, 0.0), uv)
 	if not _flat_roof:                                        # ...and out over the front wall to the edge of the eaves
+		# The front wall stops at `top` and the roof starts higher (0.34 m over it at the front with plain tiles): what the
+		# eaves did not cover was a slit under them, the house's inside seen through it and the street beyond (Santa
+		# Ana, zfighting_repaso.md 5). The wall of the top floor goes on up to the roof, 2 cm behind the eaves' face.
+		var y_fill := _ey + (_ez - zf) * SLOPE - 0.03
+		if y_fill > top + 0.02:
+			var fl: Dictionary = floors[-1]
+			var runs: Array = [[0.0, L, fl.get("wall", spec.get("wall", 0xf2efe6))]]      # (a paño of the top floor goes on up in its own render)
+			for pn in fl.get("panels", []):
+				var p0 := clampf(float(pn[0]) * L, 0.0, L)
+				var p1 := clampf(float(pn[1]) * L, 0.0, L)
+				var rest: Array = []
+				for rn in runs:
+					if rn[1] <= p0 or rn[0] >= p1:
+						rest.append(rn)
+						continue
+					if rn[0] < p0:
+						rest.append([rn[0], p0, rn[2]])
+					if rn[1] > p1:
+						rest.append([p1, rn[1], rn[2]])
+				rest.append([p0, p1, pn[2]])
+				runs = rest
+			for rn in runs:
+				box(rn[0], top - 0.02, zf - 0.3, rn[1] - rn[0], y_fill - top + 0.02, 0.28, _mat(rn[2]))
 		var y_wall := _ey + (_ez + 0.1) * SLOPE
 		var run := (_ez + 0.1) / 1.6
 		quad(Vector3(-0.12, _ey, _ez), Vector3(L + 0.12, _ey, _ez), Vector3(L + 0.12, y_wall, -0.1), Vector3(-0.12, y_wall, -0.1), "tiles", Vector3(0.0, 1.0, 0.2),
@@ -1905,7 +1941,7 @@ func _adosado(side: String) -> void:
 	sect_door(gx + 0.33, 0.0, gw - 0.66, 2.3, 0.0, white)
 	for x in [gx, gx + gw - 0.22]:
 		box(x, -1.4, F, 0.22, gh + 1.4, -F - 0.25, gar_k)
-	box(gx, gh - 0.16, F, gw, 0.16, -F, 0xc9c4b8)
+	box(gx + 0.015, gh - 0.175, F, gw - 0.03, 0.16, -F - 0.015, 0xc9c4b8)      # (its floor 1.5 cm in from the walls' faces and under their tops: zfighting_repaso.md)
 	box(gx, gh, -0.24, gw, 0.3, 0.24, gar_k)                                              # a low kerb round the terrace
 	rail(gx + gw / 2.0, gh + 0.3, gw - 0.1, -0.3, 0.7, true)
 	var open_x: float = (gx + gw - 0.2) if left else gx                                 # its side over the garden: railed too

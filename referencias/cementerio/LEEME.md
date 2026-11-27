@@ -243,3 +243,26 @@ En el cementerio hay dos azafranes escondidos. Los propuse y Luis dijo «Bien, p
     - la planta solar: `cementerio_solar` (desde donde la foto de Luis), `_solar_puerta`, `_solar_alto`, `_solar_seguidor`, `_solar_desde_cementerio`, y `solar` también por la mañana (`_manana`), al atardecer (`_tarde`) y de noche (`_noche`);
     - la A-4 y el pueblo: `cementerio_autovia` (desde la valla), `cementerio_enlace` (hacia el final de la carretera), `cementerio_autovia_alto`, `cementerio_pueblo`, `cementerio_pueblo_alto`, y `autovia` y `pueblo` también al atardecer (`_tarde`) y de noche (`_noche`).
 - Capturas del juego en `guion/fotos/cementerio/`. Las fotos de Street View no se guardan en el repositorio.
+
+## 27/11/2026: la acera de la carretera, de una pieza
+
+Luis, sobre una foto del arco «Núcleo urbano»: «Parece que aquí no enganchan los dos tramos de acera».
+
+- `_roadside()` ya no corta la acera 5 m a cada lado de los arcos de zona: el poste está en el arcén, no en la acera.
+- El tramo sur empezaba suelto sobre la tierra, 25 m carretera arriba. Ahora arranca sobre la acera de la última
+  bocacalle del pueblo (`TOWN_SIDE`, `TOWN_SIDE_HW`), 0,4 m dentro, con una piedra de cierre. Queda 11 cm más alta
+  que la acera del pueblo.
+- `zfight solo=cementerio.gd`: 1,292 m² exactos, igual que antes. Modos `zonas` y `cementerio sinfotos` OK.
+
+## 27/11/2026: la acera y la plazoleta se pisan por encima
+
+La acera se tiende 5 cm sobre el terreno y no se había declarado como suelo pisable: los pies seguían a la altura del
+terreno y las zapatillas se hundían en las baldosas. Luis: «Arregla la acera».
+
+- `_walk(uv, lift)` y `_walk_map(contorno, lift)` añaden a `MapData.decks` un piso inclinado por cada faceta del relieve
+  bajo el suelo, a su misma altura (la receta de la Plazuela del Toledano).
+- Declarados: los dos tramos de la acera de la carretera y el tramo propio del cementerio (+0,05), los adoquines de la
+  plazoleta (+0,03) y la tierra de la isleta (+0,13, antes que los adoquines: el primero que contiene el punto manda).
+- 292 pisos. **Todo suelo nuevo que se tienda aquí por encima del terreno necesita su `_walk`.**
+- Después, también los tres paseos de losetas de dentro (+0,03), en `_floors()`. Quedan sin piso los bordillos (+0,12).
+- Comprobar: `python tools/run_tests.py suelos --timeout 600` y los modos `zonas` y `cementerio sinfotos`.

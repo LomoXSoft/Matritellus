@@ -282,6 +282,52 @@ func _on(w: Vector2, lift: float) -> Vector3:
 	var f := to_frame(w)
 	return Vector3(f.x, MapData.height(w) - level + lift, f.y)
 
+## Whoever walks on a floor laid over the ground stands on it (MapData.foot): one sloping deck for each facet of the
+## relief under its outline, `lift` over the ground, as on the Plazuela del Toledano. With none, the feet stay on the
+## ground under the floor and the shoes are sunk in it: so it was on the pavement along the road and on the square
+## before the cemetery until 27 Nov 2026 (the user: «Arregla la acera»). Its outline in (u, v).
+func _walk(uv_pts: Array, lift: float) -> void:
+	var wpoly := PackedVector2Array()
+	for q in uv_pts:
+		wpoly.append(map_at(q.x, q.y))
+	_walk_map(wpoly, lift)
+
+## the same, its outline on the map
+func _walk_map(wpoly: PackedVector2Array, lift: float) -> void:
+	if Geometry2D.is_polygon_clockwise(wpoly):
+		wpoly.reverse()
+	var box := Rect2(wpoly[0], Vector2.ZERO)
+	for q in wpoly:
+		box = box.expand(q)
+	var g: float = MapData.rg
+	for i in range(int(floor((box.position.x - MapData.rx0) / g)), int(floor((box.end.x - MapData.rx0) / g)) + 1):
+		for j in range(int(floor((box.position.y - MapData.rz0) / g)), int(floor((box.end.y - MapData.rz0) / g)) + 1):
+			var cell := Vector2(MapData.rx0 + i * g, MapData.rz0 + j * g)
+			for facet in [PackedVector2Array([cell, cell + Vector2(g, 0), cell + Vector2(g, g)]), PackedVector2Array([cell, cell + Vector2(g, g), cell + Vector2(0, g)])]:
+				if Geometry2D.is_polygon_clockwise(facet):
+					facet.reverse()
+				var pa: Vector2 = facet[0] * 0.98 + (facet[1] + facet[2]) * 0.01      # (just inside each corner: on this facet for sure)
+				var pb: Vector2 = facet[1] * 0.98 + (facet[0] + facet[2]) * 0.01
+				var pc: Vector2 = facet[2] * 0.98 + (facet[0] + facet[1]) * 0.01
+				var ha: float = MapData.height(pa)
+				var hb: float = MapData.height(pb) - ha
+				var hc: float = MapData.height(pc) - ha
+				var v1: Vector2 = pb - pa
+				var v2: Vector2 = pc - pa
+				var det: float = v1.x * v2.y - v1.y * v2.x
+				var grad := Vector2((hb * v2.y - hc * v1.y) / det, (v1.x * hc - v2.x * hb) / det)
+				for piece in Geometry2D.intersect_polygons(wpoly, facet):
+					if piece.size() < 3 or Geometry2D.is_polygon_clockwise(piece):
+						continue
+					var o := Vector2.ZERO
+					for q in piece:
+						o += q / piece.size()
+					var r2 := 0.0
+					for q in piece:
+						r2 = maxf(r2, o.distance_squared_to(q))
+					MapData.decks.append({"o": o, "poly": piece, "r2": r2 + 1.0, "top": ha + grad.dot(o - pa) + lift, "grad": grad})
+					decks += 1
+
 ## a rectangle (u, v) as an outline
 func _rect(u0: float, u1: float, v0: float, v1: float) -> Array:
 	return [Vector2(u0, v0), Vector2(u1, v0), Vector2(u1, v1), Vector2(u0, v1)]
@@ -294,6 +340,8 @@ func _floors() -> void:
 	_lay(_rect(HALL_D, AVENUE[0], CROSS_WALK[0], CROSS_WALK[1]), 0.03, "losetas")
 	_lay(_rect(AVENUE[1], L_N - t - 0.5, CROSS_WALK[0], CROSS_WALK[1]), 0.03, "losetas")
 	_lay(_rect(HALL_D, 16.0, CROSS_WALK[1], HALL_N + MID + ARCH + 1.0), 0.03, "losetas")      # (from the way in, round to the walk)
+	for walk in [_rect(HALL_D, AVENUE[0], CROSS_WALK[0], CROSS_WALK[1]), _rect(AVENUE[1], L_N - t - 0.5, CROSS_WALK[0], CROSS_WALK[1]), _rect(HALL_D, 16.0, CROSS_WALK[1], HALL_N + MID + ARCH + 1.0)]:
+		_walk(walk, 0.03)                                                     # (people stand on the tiles, not 3 cm into them: 27 Nov 2026)
 
 # ---------------- the wall ----------------
 ## Its four sides, plain and whitewashed, a grey coping on top and a dirty foot; in pieces of a few metres, each standing
@@ -524,6 +572,9 @@ func _annex() -> void:
 func _square() -> void:
 	_lay(_rect(PAVE_U, -0.05, PAVE_V0, PAVE_V1), 0.03, "adoquin")             # (the island's soil lies over them)
 	_lay(_rect(PAVE_U, PAVE_U + 3.0, PAVE_V1, L_W - 2.0), 0.05, "acera")
+	_walk(_isle_outline(-0.2), 0.13)                                          # (people stand on each of these floors: first the island's soil, which lies over the pavers)
+	_walk(_rect(PAVE_U, -0.05, PAVE_V0, PAVE_V1), 0.03)
+	_walk(_rect(PAVE_U, PAVE_U + 3.0, PAVE_V1, L_W - 2.0), 0.05)
 	_kerb_run(Vector2(PAVE_U + 3.0, PAVE_V1), Vector2(PAVE_U + 3.0, L_W - 2.0), 0.12)
 	# the cabinet
 	var at := P(-0.25, HALL_S + 1.6)
@@ -1166,13 +1217,16 @@ func _lamp(o: Vector3) -> void:
 ## yard past the white nave, and south to the town), and its light pavement with its kerb on its side. They go by the
 ## road's own line (zonas.gd), not by the cemetery's frame: the two are a third of a degree apart, metres off over
 ## hundreds of metres. North to a little short of where the old road meets the A-4's slip roads (OSM), south to the
-## town's gate; none at a zone gate (its posts stand where the lamps and the pavement would).
+## town's gate. No lamp nor tree by a zone gate (its posts stand there); the pavement runs on past it, outside its post.
 const ZonasS = preload("res://scripts/zonas.gd")
 const SolarS = preload("res://scripts/planta_solar.gd")
 const AfuerasS = preload("res://scripts/afueras.gd")
 const SIDE_END := 30.0                     # (short of the old road's end)
+const TOWN_SIDE := Vector2(307.5, -1822.1) # the town's last side street: the next point of the map's road east out of where this one starts
+const TOWN_SIDE_HW := 5.35                 # half of it with its pavements: (7.5 + 3.2) / 2 (world.gd, "pavements")
 const TREES_NORTH := -2700.0               # the row of trees north to here
 var roadside: Array = []                   # the pavement's outlines on the map (keep_off: no dry plants on it)
+var decks := 0                             # the floors people stand on that it adds to MapData.decks (_walk)
 
 func _roadside() -> void:
 	var zd: Dictionary = ZonasS.ZONES[0]
@@ -1232,22 +1286,24 @@ func _roadside() -> void:
 		trees_put.append([w.x, w.y, 0, size, turn])
 	# the pavement and its kerb: north from the square's pavers, south from the end of its own
 	var e0: float = (map_at(PAVE_U, PAVE_V1) - a).dot(n)
-	var spans: Array = [[(map_at(PAVE_U, PAVE_V0) - a).dot(d), L - SIDE_END - 10.0], [25.0, (map_at(PAVE_U, L_W - 2.0) - a).dot(d)]]
-	for gt in gate_t:                                              # (cut at the gates)
-		var cut: Array = []
-		for sp in spans:
-			var s0: float = sp[0]
-			var s1: float = sp[1]
-			var g0: float = float(gt) - 5.0
-			var g1: float = float(gt) + 5.0
-			if s1 <= g0 or s0 >= g1:
-				cut.append(sp)
-				continue
-			if s0 < g0:
-				cut.append([s0, g0])
-			if s1 > g1:
-				cut.append([g1, s1])
-		spans = cut
+	# South, it starts on the pavement of the town's last side street, 0.4 m on to it, closed with a stone: it began
+	# 25 m up the road, loose on the earth, until 27 Nov 2026.
+	var side_way: Vector2 = (TOWN_SIDE - a).normalized()
+	var side_up := Vector2(side_way.y, -side_way.x)
+	if side_up.dot(d) < 0.0:
+		side_up = -side_up
+	var s_town := 25.0
+	var joined := false
+	var foot = Geometry2D.line_intersects_line(a + n * (e0 + 1.5), d, a + side_up * TOWN_SIDE_HW, side_way)
+	if foot != null:
+		var s_foot: float = ((foot as Vector2) - a).dot(d) - 0.4
+		if s_foot > 0.0 and s_foot < 25.0:
+			s_town = s_foot
+			joined = true
+	var spans: Array = [[(map_at(PAVE_U, PAVE_V0) - a).dot(d), L - SIDE_END - 10.0], [s_town, (map_at(PAVE_U, L_W - 2.0) - a).dot(d)]]
+	# (it runs on past the zone's gate, outside its post, which stands on the verge between it and the road. It was
+	# cut 5 m either side of each gate until 27 Nov 2026 -- the user, on a picture of that gate: «Parece que aquí no
+	# enganchan los dos tramos de acera»)
 	for sp in spans:
 		var s0: float = sp[0]
 		var s1: float = sp[1]
@@ -1260,7 +1316,14 @@ func _roadside() -> void:
 			var poly := PackedVector2Array([pa + n * e0, pb + n * e0, pb + n * (e0 + 3.0), pa + n * (e0 + 3.0)])
 			_lay_map(poly, 0.05, "acera")
 			_kerb_map(pa + n * (e0 + 3.0), pb + n * (e0 + 3.0), 0.12)
+		_walk_map(PackedVector2Array([a + d * s0 + n * e0, a + d * s1 + n * e0, a + d * s1 + n * (e0 + 3.0), a + d * s0 + n * (e0 + 3.0)]), 0.05)      # (people stand on it)
 		roadside.append(PackedVector2Array([a + d * s0 + n * (e0 - 0.4), a + d * s1 + n * (e0 - 0.4), a + d * s1 + n * (e0 + 3.4), a + d * s0 + n * (e0 + 3.4)]))
+	if joined:                                                     # (the stone across its end, on the town's pavement)
+		var fa: Vector2 = a + d * s_town + n * e0
+		var fb: Vector2 = a + d * s_town + n * (e0 + 3.0)
+		var fl := face(to_frame(fa), to_frame(fb), MapData.height((fa + fb) / 2.0) - level)
+		box(0.0, -0.1, 0.0, fl, 0.15, 0.06, 0xdcd5c8)
+		home()
 
 ## within `reach` of a zone gate, along the road
 func _by_gate(t: float, gate_t: Array, reach: float) -> bool:

@@ -361,7 +361,10 @@ func _blocks() -> void:
 		3: {"cols": [1.84, 5.54, 8.34, 13.24, 16.04, 20.69, 23.54], "racks": true, "then": _x_ne_north}})
 	# south-east: the court, the yard with its two garages, the neighbour, its inner side
 	_block(SE, TOP, {0: {"cols": [3.2, 8.0, 12.2], "bars": false}, 1: {"cols": [3.6, 10.6, 14.3], "floors": [1, 2], "holes": GARAGES, "foot": false, "then": _x_se_south}, 2: plain})
-	_block(ELINK, TOP - 0.3, {0: plain, 1: {"skip": true}, 2: plain, 3: {"skip": true}})
+	# (its east side is drawn: the south-east block ends 10 cm short of it and nothing else hides it. Left out with its
+	# west one on 27 Nov 2026, it left a hole into the block from the back yard -- the user: «Hemos perdido una pared
+	# aquí?»)
+	_block(ELINK, TOP - 0.3, {0: plain, 1: plain, 2: plain, 3: {"skip": true}})
 
 # ---------------- the way in ----------------
 ## In the front of the link: the glass doors in their white frame, the black plaque over them, the flag-striped sign

@@ -2179,6 +2179,120 @@ El mueble y su pantalla están en `godot/scripts/recress_sala.gd`, la selección
 - **Sin comprobar**: no he corrido `--mundo-huella` antes y después; no he tocado `obra.gd` ni piezas comunes, solo esa línea de `masahorro.gd`, así que la huella del MasAhorro cambia en esas cajas y en nada más.
 - **Archivos tocados**: mío, `masahorro.gd`. Después de la 0.2.1: sin publicar. Sin commit.
 
+### 27/11 · Pretil: repaso de la campaña anti-solapes de Antigravity en los edificios a mano (solo propuestas)
+
+- **Encargo**: Luis: «Si, repasa todo lo de antigravity. Propón cambios/ajustes si piensas que son necesarios». Leído como repasar y proponer: no se toca el juego sin su palabra.
+- **Resultado**: informe en [`guion/repaso_antigravity_pretil.md`](guion/repaso_antigravity_pretil.md), con fotos en `guion/fotos/repaso_antigravity/`. **Ningún archivo del juego tocado.**
+- **Propuesto y sin aplicar** (espera la respuesta de Luis):
+  - De la campaña:
+    - `cuartel.gd`: falta el lado este del enlace de atrás (`ELINK`, `1: {"skip": true}`; nada lo tapa).
+    - `toledano.gd`: las capas del suelo suben hasta 7 cm sobre el bordillo y tapan el pie de bancos y lápiz.
+    - Nueve rendijas de 1–4,5 cm (tabla del informe): se separaron piezas que se tocaban.
+  - Míos, vistos por Luis en las fotos del repaso:
+    - `cultura.gd`, `_arco()`: los pilares del arco del Callejón Pando no tienen cara hacia el paso, y su tope solo cubre 30 de sus 65 cm.
+    - `cementerio.gd`, `_roadside()`: la acera se corta 5 m antes y después del arco «Núcleo urbano» y empieza suelta a la salida del pueblo.
+  - Ocho notas de método para la guía `guion/zfighting_repaso.md` (informe, apartado 4). La principal: la auditoría no ve el suelo del pueblo, ni una pared que falta, ni una pieza hundida en otra.
+- **Tres pruebas de fotos caducadas, no de la campaña**: los modos `ferial` (aseos), `correos` y `merkocarry` fallan en «entrar por la flecha verde».
+  - Desde el 20/11 (0.0.18, commit `2f7ba87`) entrar pide ponerse encima y pulsar acción (`entradas.gd`, `enter_here()` / `enter()`).
+  - Esos tres pasos de `selftest.gd` ponen al personaje encima y esperan. El de la copistería (prueba del Recress) ya llama a `g.interact()` y el del silo a `E.enter()`.
+  - Sin arreglar: `selftest.gd` tiene cambios sin commit de otra sesión.
+- **Pruebas** (con ventana, una por sitio, logs `logs/selftest_<modo>_20261127_06*.log` y `_07*.log`):
+  - OK: `toledano`, `plaza`, `paseo`, `caridad`, `cuartel`, `maxiprecio`, `bancosancho`, `almazara`, `cultura`, `masahorro`, `tetoqa`, `comunal`, `farmacia`, `zonas`.
+  - Con un fallo, el de la flecha: `ferial` (7 ok), `correos` (4 ok), `merkocarry` (7 ok).
+  - Sin pasada completa.
+- **Sin comprobar**:
+  - Las nueve rendijas salen de cuentas sobre el código, no de fotos de cerca.
+  - 23 sitios de la campaña no tienen foto (lista en el informe, apartado 7).
+  - En el Toledano el código predice que el personaje se hunde 4–7 cm; en dos fotos de cerca no se ve hundido y no he encontrado por qué.
+- **Aviso para quien compare fotos**: `godot/shots/` guarda fotos viejas de vistas que un modo ya no saca (`plaza_crest.png` es del 14/11). Antes de usar una como «ahora», mirar su fecha.
+- **Archivos tocados**: nuevos, `guion/repaso_antigravity_pretil.md` y `guion/fotos/repaso_antigravity/` (6 fotos). Sin commit.
+
+### 27/11 · Pretil: los cuatro arreglos del repaso y las tres pruebas de flecha, aplicados
+
+Luis, sobre el informe `guion/repaso_antigravity_pretil.md`: «Arregla las cuatro cosas. Que no se apilen las capas del
+suelo» y «Lo de la flecha arreglalo. Lo de las rendijas no termino de entenderlo». Hecho lo aprobado; **las nueve
+rendijas siguen sin tocar** (no están aprobadas; de cerca no se nota ninguna: mi consejo es dejarlas).
+
+Archivos: `cuartel.gd`, `toledano.gd`, `cultura.gd`, `cementerio.gd` y `selftest.gd` (+6 líneas, con el sí de Sistemas).
+Sin rehorneado, sin tocar `world.gd`. Sin commit.
+
+**APROBADO por Luis (27/11: «Visto bueno»)**, vistas las hojas de antes y después de los cuatro arreglos (entre ellas la
+de los costados de la torre, que no había pedido). De las rendijas no ha dicho más: siguen sin tocar. Lo de los 6 cm
+sobre las aceras normales (abajo) se lo ha encargado a Sistemas: «Si. Pásaselo».
+
+- **Cuartel** (`cuartel.gd`): el bloque de enlace de atrás recupera su pared este (`ELINK`, lado 1 `plain`; la campaña
+  lo había dejado en `"skip"` y no lo tapaba nada).
+- **Plazuela del Toledano** (`toledano.gd`): el suelo es ahora UNA sola lámina a la altura del bordillo (`KERB`), sin
+  capas apiladas. Cada piedra se recorta de las que taparía (`_minus`) y todas se tienden canto con canto con
+  `_lay_tight` (esquinas atadas a 0,1 mm, triángulos partidos donde cae una esquina ajena). `_gy`, la lámina y los
+  pisos (`MapData.decks`) están los tres a `KERB`: los bancos, el lápiz y los pies quedan justo encima.
+  - **Trampa de Clipper (apuntada en el código):** se recorta con los parterres y las bandas ENTEROS, nunca con lo que
+    de ellos se tiende. Un recorte que acaba justo en un canto de lo que corta deja las dos mitades unidas por un
+    puente sin anchura; `Geometry2D.triangulate_polygon` devuelve vacío y esa piedra no se dibuja sin dar error. La
+    primera versión perdió cuatro piedras así (se veían como rayitas oscuras a ras de suelo: la tinta de los contornos
+    de `game.gd` sobre el hueco). Comprobación: el área de la lámina es la del contorno (191,109 m²).
+- **Casa Grande** (`cultura.gd`, `_arco()`): caras de jamba en los bordes del hueco del arco del Callejón Pando, del
+  suelo al arranque, con zócalo y remate de granito, y sólidos del ancho del pilar. **Añadido sin que se pidiera
+  (avisado a Luis):** la torre de encima no tenía paredes laterales por encima del arranque del arco (se veía hueca
+  sobre los tejados vecinos); ahora suben hasta `TOWER_EAVES` con su cornisa.
+- **Carretera del cementerio** (`cementerio.gd`, `_roadside()`): la acera ya no se corta en los arcos de zona, y su tramo
+  sur empieza sobre la acera de la última bocacalle del pueblo (`TOWN_SIDE`, `TOWN_SIDE_HW`: donde la franja cruza el
+  borde de esa acera, 0,4 m dentro, con una piedra de cierre). Allí queda 11 cm por encima de la acera del pueblo.
+- **Pruebas** (`selftest.gd`): en los pasos «entrar por la flecha verde» de `ferial` (aseos), `correos` y `merkocarry`,
+  tras ponerse en la flecha: `await _frames(6)` y `E.enter()` (desde la 0.0.18 hay que pulsar acción).
+
+Medidas (`zfight solo=<archivo>.gd`, área exacta antes → después): cuartel 3,522 → 3,522; Toledano 0,000 → 0,000;
+Casa Grande 5,576 → 5,567 (cercana 11,256 → 11,314); cementerio 1,292 → 1,292. Modos: `toledano` 4 ok, `cuartel` 4 ok,
+`cultura` 2 ok, `zonas` 11 ok, `cementerio sinfotos` 9 ok, `ferial` 8 ok, `correos` 5 ok, `merkocarry` 8 ok. La batería
+completa la pasó después Sistemas con estos cambios dentro: 1151 ok, 0 fallos (`logs/selftest_full_20261127_085436.log`).
+
+**«Parece que levita el jugador»** (Luis, sobre mis fotos a ras de suelo del Toledano, antes y después). Medido: en el
+Toledano los pies quedan exactamente sobre el suelo (`MapData.foot` = altura + `KERB` = la lámina; lo comprueba la
+prueba del modo). La impresión venía de la cámara a la altura del tobillo y de que la sombra del cuerpo cae separada
+de las zapatillas; desde una altura normal se ven apoyadas (`arreglo_toledano_pies.jpg`). **Lo que sí flota, en todo
+el pueblo y desde siempre:** sobre las aceras normales los pies van 6 cm por encima de la malla de la acera
+(`world.gd`: aceras a `ROAD_Y + 0.12` = −0,06; el suelo que se pisa, 0,00). Es de `world.gd`, no lo he tocado: dicho a
+Luis y a Sistemas.
+
+**Encontrado después y arreglado el mismo día (Luis: «Arregla la acera»):** en la acera de la carretera del cementerio
+las zapatillas se hundían unos 5 cm. `_roadside()` la tiende con `_lay_map(poly, 0.05, "acera")`, 5 cm sobre el suelo que
+se pisa, y `cementerio.gd` no declara ningún piso (`MapData.decks`), así que los pies siguen a la altura del terreno.
+Es mío y viene del 25/11, no de hoy. Foto: `guion/fotos/repaso_antigravity/pies_acera_cementerio.jpg`. Arreglo
+(`cementerio.gd`, funciones nuevas `_walk` y `_walk_map`): un piso por cada faceta del relieve bajo cada suelo, a su
+misma altura, como en el Toledano. Los dos tramos de la franja y el tramo propio del cementerio a +0,05; los adoquines
+de la plazoleta de la entrada a +0,03; la tierra de la isleta a +0,13 (declarada antes: va encima de los adoquines).
+292 pisos más en `MapData.decks` (que tenía entre 450 y 500: sube en torno a un 60 %). Medido al construir: pie − terreno = 0,05 en la franja (también al
+final y en el arranque del pueblo), 0,03 en la plazoleta, 0,13 en la isleta y 0 a un metro de la franja. `zfight
+solo=cementerio.gd` igual (1,292 / 9,973); `zonas` 11 ok, `cementerio sinfotos` 9 ok, `suelos` ok (36 827 puntos, ninguno
+distinto, 2,3 µs por consulta). Foto de los pies, antes y después, cuando Sistemas terminó su cambio de las aceras:
+`guion/fotos/repaso_antigravity/arreglo_pies_acera_cementerio.jpg`. Después (Luis: «Continúa») también los paseos de
+losetas de dentro del cementerio (+0,03): `arreglo_pies_cementerio_dentro.jpg` (a 3 cm apenas se nota). Quedan sin piso
+los bordillos (+0,12), que se cruzan de un paso. `cementerio sinfotos` 9 ok; `aceras-suelos` 10 ok (el archivo de
+Sistemas, al día).
+
+**Búsqueda de suelos donde se hunde la suela, en toda mi obra a mano (27/11, sin arreglar: espera a Luis).** Con un
+modo temporal (`pies_scan.gd` y 6 líneas `PIESTMP` en `selftest.gd`, ya quitados; copia en el scratchpad de la sesión,
+`repaso/tools/pies_scan.gd`): cada cara que mira arriba en las mallas de los sitios de `obra.gd`, cada 25 cm, frente a
+donde se pisa (`MapData.foot`, y `MapData.sunk` como lo usa `chara.gd`), sin contar lo que está dentro de un sólido.
+Resultado: en 51 de los 75 sitios hay suelo de 1,5 a 15 cm por encima de los pies, unos 44 500 m² en total.
+Por hondura (aproximado: el registro da solo las cuatro alturas más frecuentes de cada sitio): **de 4 a 9 cm,
+unos 17 200 m² en 16 sitios** con más de 50 m² (IES 4 100, almazara 3 150, Paseo del Cristo 2 050, Mercamona 1 650,
+cuartel 1 150, Caridad 1 050, Sala Cavernas 950, plaza 500, afueras 500, Cristo del Prado 450, molino 400, Todopizza
+350, Residencia 250, colegio 200, MasAhorro 200, San Sebastián 150); de 10 a 15 cm unos 1 500 m² (bordillos y cantos de
+escalón, y 1 050 m² en el Paseo del Cristo que no sé qué son: en su foto no se ve tanto); **de 3 cm o menos, unos
+23 300 m²**. En las fotos: a 5 cm se nota claro (la acera del cementerio antes), a 4 cm algo (la suela se ve más fina:
+almazara), a 3 cm o menos nada (paseos de dentro del cementerio, antes y después iguales). Fotos de cuatro sitios: `guion/fotos/repaso_antigravity/pies_sitios_hundidos.jpg` y
+`arreglo_pies_cementerio_dentro.jpg`. Registro completo: `logs/selftest_piessuelo_20261127_102924.log`. Pregunta a Luis: arreglarlo donde se nota (de 4 cm
+arriba) o dejarlo. Cómo, si se hace, lo hablo antes con Sistemas: o de una vez para todos en su sistema
+(`aceras_suelos.json` guardando también la altura del suelo, leído por `MapData.foot`) o con pisos sitio por sitio
+(cientos más en `MapData.decks`, que `car.gd` `_ramp_launch` recorre entero por coche y fotograma). El cementerio
+tiene ahora 292 pisos más los de los tres paseos de dentro. Aviso para Sistemas: `car.gd` `_ramp_launch` recorre todos los pisos por coche y fotograma. Sin mirar: lo mismo en el resto de mis sitios que tienden
+suelos sin declarar pisos (lista de `obra.gd` sin `decks` pasada a Sistemas el 27/11); conviene repasarlo cuando
+Sistemas termine su cambio de las aceras del pueblo, no a la vez.
+
+Hojas de antes y después en `guion/fotos/repaso_antigravity/arreglo_*.jpg` y `rendijas_de_cerca.jpg`. Copias de los
+cinco archivos como estaban a las 08:00 en el scratchpad de la sesión (`repaso/respaldo_2711_0800/`).
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
@@ -3759,9 +3873,70 @@ Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductori
   - En `game.gd`: `_clean_npc_look(o)` al final de `_neighbour_look()` evita combinaciones conflictivas en NPCs anónimos (`toquilla`/`mandil` sobre anorak/plumas/sudadera con capucha, doble delantal, melenas sueltas atravesando capuchas o bufandas/pajaritas cortando barbas cerradas) sin consumir aleatorios ni restringir el Creador.
 - **Resultados y pruebas.** Vecinos con nombre con clipping **`11 → 0`**, `body→top`/`top→mandil`/`top→toquilla` **`48 → 0`**, muestra de 400 vecinos del pueblo **`138 (34,5 %) → 36 (9,0 %)`**, pares del Creador **`711 → 239`** (-66 %). Suites `audit_clip`, `creador` (21/21 ok), `ropa` (2/2 ok) y `luto` (10/10 ok) con 0 fallos. APROBADO por el usuario («Me convence, le damos costo bueno»). Sin commit.
 
+### 27/11 · Sistemas (Claude): los pies sobre los suelos bajos de los sitios hechos a mano
+
+- **Publicado en la 0.2.7** por orden de Luis: «Cambio de aceras, pruebas, commit y release». Batería completa 1159/1159 (la primera, 12 fallos: el de los «decks», mío y arreglado, y una cadena de 11 por un vecino que pasaba al lado del coche a robar). Caché de las casas OK.
+- **Encargo:** Pretil midió los zapatos hundidos en suelos sin «deck» de sus sitios (registro `logs/selftest_piessuelo_20261127_102924.log`, el script ya quitado). Luis a Pretil: «Lo arreglamos». Manera (a), la general, de acuerdo con Pretil: en el archivo generado, sin pisos nuevos (car.gd `_ramp_launch` recorre todos los pisos por coche y fotograma).
+- **Lo hecho:** `MapData.foot()` suma `_up(p)` en sus tres salidas sin «deck» (un «deck» sigue mandando). `_up` lee `ups` de `godot/data/aceras_suelos.json` (clave `up`: x, z del cuadro de 0,5 m y la altura sobre el suelo en mm). `MapData.lift_on` lo apaga mientras la prueba calcula el archivo. Sin archivo, nada sube (como antes).
+- **Cómo se calcula** (`selftest.gd` `_suelos_altos`, `_suelos_celdas`, `_suelos_estados`): cada 25 cm, la cara más alta que mira arriba de una malla de un sitio de `obra.gd` (la del sitio más cercano por encima de la malla), entre 3,5 y 10 cm sobre el suelo, mostrada dentro de su sitio, donde no hay «deck» y sin sólido justo encima (consulta de punto a 6 cm sobre la cara, máscara 1). Un cuadro de 0,5 m sube si 3 o 4 de sus puntos son suelo, a la media de ellos. Se hace dos veces, con los sitios que tienen `set_restored` / `set_works` en un estado y en el otro, y solo queda lo que coincide. Fuera: claves de material `agua` y `seto` (`_mats` del sitio), y `casa_fuera.gd` entero.
+- **Cifras:** 73.609 cuadros (18.402 m²); de 19.063 m² de suelo sobre los pies quedan 1.137; 146 m² de bordes pisados en el aire. Fotos: el patio del IES (`godot/shots/vista_pjsuelo0b.png`).
+- **Pruebas:** `aceras-suelos` 12/12 (archivo al día, la gente sobre los suelos bajos, ningún suelo por encima de los pies).
+- **Para Pretil:** igual que con las aceras: tras tocar un suelo a ras de calle o un «deck», `python tools/run_tests.py aceras-suelos --timeout 900`, y si dice que no está al día, `... aceras-suelos escribe ...` y otra vez. Un sitio nuevo con estados que no sean `set_restored`/`set_works`, o una clave de material que no se pisa (como el agua), hay que añadirlos en `SUELO_FUERA` / `SUELO_NO`.
+
+### 27/11 · Sistemas (Claude): los pies sobre las aceras, y la segunda batería completa
+
+- **Segunda batería completa: 1151 ok, 0 fallos, 664 s** (`logs/selftest_full_20261127_085436.log`), con los cuatro arreglos de Pretil dentro. Sin commit.
+- **Encargo** (Luis a Pretil, y Pretil a mí con su «Si. Pásaselo»): que el jugador no quede 6 cm por encima de las aceras normales («Parece que levita el jugador»).
+- **Causa:** `world.gd` apila las láminas planas bajo el nivel al que se pisa: asfalto 0, sendas −3 cm, aceras −6, caminos −9, campos −12/−15, tierra −18. Todo el mundo pisa a 0.
+- **Lo que NO hice y por qué:** subir la lámina de la acera. El ferial (aprobado) apila sus suelos contra esos niveles (baldosas a −0,058, 2 mm sobre la lámina; losas a −0,044; hormigón a −0,03) y quedarían tapados; habría que reapilarlos y volver a enseñarlos. Tampoco puse el descenso dentro de `MapData.foot()`: lo usan también los suelos de las casas por dentro, las tiendas, las placas, los maniquíes y un centenar de líneas de la prueba.
+- **Lo hecho:** `MapData.sunk(p)` (0 o menos) y `chara.gd` `sync()`, que baja solo la figura (`vis`). Baja en rampa de 25 cm desde el borde del asfalto y desde el bordillo de una casa, para que nadie dé un escalón donde no lo hay. No se calcula para quien está a más de 60 m de la cámara (`MapData.sunk_eye`, lo pone `game.gd` al mover a los vecinos), ni si no se ha movido.
+- **Dónde no baja:** (1) sobre asfalto, sendas, plazas y calles empedradas, por las medidas del mapa, las mismas con que `world.gd` y `empedrado.gd` dibujan; (2) en un «deck» o subido a un coche (el cuerpo no está a la altura del suelo); (3) en las aceras de las casas y su bordillo: `lotes.gd` `_place` avisa a `MapData.slabs_add` de cada malla `acera` que entra al pueblo, recién hecha o leída de la caché (33.398 triángulos; con `--casas-sueltas` no hay lotes y entonces no baja nadie: `MapData.floors_off`); (4) en los suelos de sitios hechos a mano sin «deck»: `godot/data/aceras_suelos.json`.
+- **El archivo y su prueba.** `--aceras-suelos` recorre todas las mallas del pueblo, se vean o no (un sitio que se arregla después también tiene suelos), y apunta los cuadros de 0,5 m donde una cara que mira arriba queda entre −4,5 y +15 cm del suelo sobre la franja de acera y sin «deck». Con `--escribe` los guarda; sin él comprueba que el archivo está al día y que, con todo lo que sabe `MapData.sunk`, en ningún punto se pone a nadie por debajo de un suelo. Quedan 232 puntos de las casas (escalones y rampas donde la casa no tiende acera propia) que la prueba cuenta y tolera hasta 400. Órdenes: `python tools/run_tests.py aceras-suelos escribe --timeout 900` y `python tools/run_tests.py aceras-suelos --timeout 900`.
+- **Para Pretil:** no hay que declarar nada. Tras tocar un suelo a ras de calle, las dos órdenes de arriba. Un «deck» nuevo quita cuadros del archivo (la prueba lo dice: «there for nothing»), así que también hay que regenerarlo.
+- **Para Texturas:** `casas.gd` no se tocó. Si cambia el nombre de la herramienta `"acera"` o el ancho del bordillo (0,22; `MapData.SLAB_EDGE` 0,24), avisad.
+- **Quién baja:** solo quien anda por la calle, `set_down` en `chara.gd`: el jugador (`game.gd`) y los vecinos (`npc.gd` `_init`). Las figuras hechas con `chara.gd` a mano (estatuas del Paseo y de Santa Ana, maniquíes, ajedrez, retratos) no. En el creador y en el armario, nadie (`MapData.sunk_hold_at`). Y si no se pudo leer `aceras_suelos.json`, o no se conoce ninguna acera de casa con los lotes puestos, nadie: es preferible lo de antes a hundir a todos en cada suelo.
+- **Pruebas:** `aceras` 8/8 (también con la caché de las casas escrita y leída: 33.398 triángulos las dos veces), `aceras-suelos` 10/10 con los 292 pisos nuevos de Pretil en el cementerio, `salto` bien, `tools/cache_casas_check.py` CACHE CASAS OK (mallas 1578760630, casas 1599492245). `MapData.sunk` cuesta 3 µs junto a la acera de una casa. **La batería completa no se ha vuelto a pasar con este cambio: se debe antes de subir nada.** Sin probar en Android ni en la Steam Machine (allí las mallas de las aceras se leen de vuelta de la gráfica: si no se pudiera, no baja nadie).
+- **Pendiente, apuntado y sin tocar:** objetos de calle 6 cm sobre la lámina; pies 3 cm dentro de las aceras de las casas; 3 cm en el aire en sendas, 9 en caminos, 18 en campo. Y `car.gd` `_ramp_launch` recorre todos los «decks» por coche rápido y fotograma (aviso de Pretil: con los 292 del cementerio, un 60 % más de vueltas): convendría guardar aparte los que tienen `ramp`.
+
+### 27/11 · Sistemas (Claude): batería completa tras las pruebas de Pretil y Texturas
+
+- **Orden de Luis:** «Cuando Petril y texturas terminen sus pruebas haz una batería completa (habla con ellos para ver qué ha cambiado)».
+- **Qué había cambiado:** Pretil, ningún archivo del juego (solo fotos y su informe `guion/repaso_antigravity_pretil.md`). Texturas, `casas.gd` (retoques de milímetros contra solapes en todas las casas de calle, un remate de 10 cm en esquinas hacia dentro con la variable nueva `_ring`, y una caja de relleno bajo el alero en tejados inclinados; sin rehorneado) y 5 líneas en `selftest.gd` (`--zfight --casas-sueltas`).
+- **Resultado: 1151 ok, 0 fallos, 696 s** (`logs/selftest_full_20261127_072113.log`; el estado de la carpeta al lanzarla, en `logs/full_run_tree_20261127.txt`).
+- **Caché de las casas:** la primera pasada de `tools/cache_casas_check.py` dio FAILED (la huella de las mallas fundidas, distinta sin caché que con ella) y la segunda OK. Entre medias: `--mundo-huella` sin caché y escribiéndola, 5253 mallas iguales; y 18 arranques seguidos con la misma huella (1578760630). En total, 2 arranques de 24 dieron otra huella, uno sin caché y otro escribiéndola: no es la caché ni `_ring` (la huella propia de las casas, 1599492245, fue la misma siempre). Lo que entra en esa huella además de los bytes es el nombre, el giro, `visibility_range_end` (sale de las opciones gráficas guardadas en `user://`, que cualquier prueba puede cambiar) y el material. **Causa sin cazar.**
+- **Para la próxima vez:** `world.gd` escribe con `--lotes-huella` una línea por malla en `user://lotes_huella.txt`, y `tools/cache_casas_check.py` la guarda de cada arranque (`logs/cache_casas_check_<arranque>_lotes.txt`) y, si las huellas no casan, dice cuántas mallas difieren, si es solo en la distancia de dibujo, y enseña las tres primeras.
+- **`_ring`** (Texturas) entra en lo que la caché guarda de cada casa: no hace daño. Si se quiere fuera, añadirla a `STATE_SKIP` en `casas.gd` (es un apunte de la construcción, no un resultado).
+- **Los pasos de «entrar por la flecha verde»** de `ferial`, `correos` y `merkocarry` fallan en sus modos sueltos desde que entrar pide pulsar acción (0.0.18): son de la prueba, no corren en la completa; Pretil les añade `g.interact()`.
+
+### 27/11 · Sistemas (Claude): al día con la 0.2.6, y lo que faltaba por apuntar
+
+- **Orden de Luis:** «Poneos todas las sesiones de Matritellus al día con la documentación y la última versión del juego».
+- **La última versión es la 0.2.6:** commit `faf45d0`, etiqueta `v0.2.6` (movida a ese commit: los instaladores se volvieron a subir con el arreglo del bloqueo en Android), `main` igual que `origin/main`. Entre la 0.2.1 (mía, 26/11) y la 0.2.6 nada lo hizo esta sesión: las piezas de la 0.2.2 y la campaña anti-Z-fighting van firmadas por Antigravity; la 0.2.3, la 0.2.4, la 0.2.5 y lo táctil no llevan firma (probablemente también suyas; en git todo sale como LomoXSoft).
+- **Lo que no tenía entrada aquí** (0.2.3, 0.2.4, 0.2.5 y lo táctil de la 0.2.6) está ahora resumido en `PROJECT_STATE.md`, escrito desde los mensajes de los commits, las cabeceras de los guiones y `loc.gd`. No consta el visto bueno de Luis a ninguna de esas piezas: no lo doy por dado.
+- **Xandro** entra en el árbol de relaciones (`guion/relaciones.json` → `python tools/make_relaciones.py`, foto `guion/fotos/xandro.png` sacada con `--selftest --portraits --looks=… --out=…`) y en el mapa de misiones (`guion/misiones.html`, y su artefacto). Solo lo que dicen los textos: corres para él; su trato con Koke queda como cabo suelto (el juego lo abre tras el taxi, pero ninguno nombra al otro).
+- **Reglas nuevas que obligan a todos** (leedlas antes de tocar): `guion/zfighting_repaso.md` (obras a mano: `python tools/run_tests.py zfight solo=<edificio> max=1.0 --timeout 180` tras tocar un edificio; ayudantes `door_frame()`, `sign_board()`, `ring_walls()` en `obra.gd`) y `guion/english_style.md` (inglés de `loc.gd`).
+- **Para quien publique:** el archivo de sumas de la versión tiene que llamarse `SHA256SUMS.txt` (el aviso de versión nueva lo descarga y comprueba con él el instalador; en la 0.2.1 lo subí como `SHA256SUMS`, cuando aún no se usaba).
+- **Lo mío de la carga, repasado contra el código de hoy:** `obra.gd` conserva la caja rápida (`old_boxes`, la rama del determinante y la guarda de las cajas sin grosor) junto a los ayudantes nuevos; `world.gd` sigue con la caché de las casas apagada en móvil. La referencia `logs/mundo_huella_a.txt` ya no vale (cambiaron unos 50 sitios a mano): sáquese una nueva antes de cada cambio de piezas comunes.
+- **Cabos sueltos en la carpeta, sin tocar (no son míos; dicho a Luis):** `godot/scripts/audit_clip.gd` y su `.uid`, y `godot/scripts/xandro.gd.uid`, están sin subir al repositorio (los demás `.uid` sí están); el modo `audit_clip` que cita la entrada de la auditoría de clipping no existe en `selftest.gd` ni en `tools/run_tests.py` (pedirlo lanzaría la batería entera); `godot/scripts/trailer.gd` tiene un cambio grande sin commit y está en CRLF en disco.
+- **Dos avisos de Pretil sobre `--zfight`, comprobados y apuntados al final de `guion/zfighting_repaso.md`:** `max=1.0` falla de entrada en 36 sitios (léase «no subir del valor de antes») y la auditoría no ve decorados ocultos ni lo que no va sobre `obra.gd`. **Y un hallazgo:** en `logs/` no hay batería completa posterior al 26/11 a las 21:52, es decir, ninguna de la 0.2.5 ni de la 0.2.6 (dicho a Luis).
+- **Sin Godot más que para la foto de Xandro; sin commit.**
+
 ### 27/11 — Antigravity: auditoría y limpieza anti-Z-fighting en obra.gd (tandas 1–3), helpers y guía de repaso para Pretil y Texturas
 
 - **Auditor (`godot/scripts/selftest.gd`).** Modo `--zfight` (`solo=<edificio>`, `max=<m2>`) con corrección en `_zfight_scan_obra()` y `_zfight_tri_overlap()` para calcular la separación perpendicular exacta sobre el centroide 2D del polígono de intersección con las normales exactas `ni`, `nj` de cada triángulo (elimina falsos positivos en pendientes como la cuesta de `cementerio.gd`).
 - **Helpers (`godot/scripts/obra.gd`) y limpieza por tandas (50 scripts de edificios/interiores).** Regla constructiva de separación `>= 1,2–1,5 cm` en marcos/cercos (`door_frame()`, `stone_frame()`, `window()`), carteles sobre caja (`sign_board()`), suelos/capas apiladas (`cornice()`, `_lay`, `flat`, anillos escalonados en `plaza.gd`) y medianeras retranqueadas (`ring_walls(..., 0.025)` + anexos/marquesinas/pilares en `caridad.gd`, `almazara.gd`, `ies.gd`, etc.).
 - **Resultados medidos (`logs/selftest_zfight_20261127_040337.log`).** De `2826.97 m²` exactos / `4093.15 m²` cercanos en línea base → `2470.05 / 1069.12 m²` (tanda 1) → `243.00 / 874.55 m²` (tanda 2) → **`110.17 m²` exactos (`7022` pares) / `503.48 m²` cercanos (`27956` pares)** en tanda 3 (`75` escaneados, `-96,1 %` exacto). Todos los scripts sin GLB quedan bajo `5,6 m²` exactos; residuos principales en GLBs externos (`puente.gd`/`obra.glb` `9.417 m²`, `casa_dentro.gd` `6.377 m²`, `planta_solar.gd` `2.215 m²`).
 - **Traspaso documentado (`guion/zfighting_repaso.md`, `README.md`, `PROJECT_STATE.md`).** Checklist específica para **Pretil** (`obra.gd`, regla `zfight solo=<edificio> max=1.0`) y para **Texturas** (`casas.gd`, `casas_calles.gd`, `tela.gd`, `texturas.gd`, `bake_godot.py`, `map.json` — sin tocar ninguno de sus archivos — más `tools/cache_casas_check.py`). Publicado en 0.2.6 (`v0.2.6`).
+
+### 27/11 · Worldbuilding (Claude): al día con la 0.2.6
+
+- **Leído:** `guion/english_style.md`, `PROJECT_STATE.md` y las entradas del 26 y 27/11; Xandro (`xandro.gd`), Radio Patio (`guion/radio_patio.json`) y las charlas y murmullos nuevos por edad y sexo.
+- **Comprobado:** entre la 0.2.1 y la 0.2.6 ningún texto en castellano de `loc.gd` se ha perdido (7 claves cambiadas, todas por añadir frases; 69 nuevas) y las listas `es`/`en` siguen con la misma longitud. `palabros` 3/3.
+- **Radio Patio no la mira la prueba:** con las reglas de los palabros salen «Muy buenas» (programa 01) y «todavía» dos veces (03 y 04). Sin tocar: cambiarlo obliga a volver a sacar el audio con `tools/make_radio_patio.py`. Se lo digo a Luis.
+- Sin cambios en el juego; sin commit.
+
+### Repaso de z-fighting de las casas de calle (27/11, Claude · Texturas)
+
+- **Qué.** Los cinco puntos de `guion/zfighting_repaso.md` §3 (allí el detalle). Solo `casas.gd` (reemplazos exactos; `box()` sin tocar) y `selftest.gd` (`--casas-sueltas` para `--zfight`). Sin rehorneado.
+- **Trucos.** El audit no distingue caras ocultas: agrupar los pares por color y plano (scratchpad `zf_agg.py`) y mirar dónde caen (z −0,30 = dorso del muro de fachada). `_plain` usa `_ring` (el contorno de la pieza) para saber si una esquina gira hacia dentro; nunca alarga un extremo sobre la línea de fachada.
+- **Pruebas.** `zfight casas-sueltas` 10382 → 3348 m² exactos, 0 errores de script; `casas` OK en cinco casas. APROBADO por el usuario (27/11). Sin commit.

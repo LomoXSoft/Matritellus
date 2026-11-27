@@ -98,3 +98,15 @@ Hojas para comparar con la web (solo en el scratchpad, porque las fotos son del 
 - La esquina noreste de la escuela, abierta en planta baja según n6, sin hacer: no está clara.
 - Si hace falta: los cajones de piedra en columnas como en las fotos (ahora van al tresbolillo), y la fachada de
   Argentina medida ventana por ventana.
+
+## 27/11/2026: los pilares del arco del Callejón Pando y la torre
+
+Luis, sobre una foto del arco: «Aquí parece que falta pared, no?». Los pilares no tenían cara hacia el pasaje: las
+paredes del pasaje estaban en los bordes del cuerpo, 0,655 m más afuera que el hueco, y mirando en diagonal se veía
+a través.
+
+- `_arco()`: caras de jamba en los bordes del hueco, del suelo al arranque del arco, todo el fondo (`ARCH_DEEP`), con
+  zócalo y remate de granito; los sólidos ocupan ahora todo el pilar.
+- La torre de encima no tenía paredes laterales por encima del arranque del arco (hueca vista desde los tejados):
+  ahora suben hasta `TOWER_EAVES` con su cornisa. Esto no lo pidió Luis; se le avisó.
+- `zfight solo=cultura.gd`: 5,576 → 5,567 m² exactos.

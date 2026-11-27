@@ -519,16 +519,31 @@ func _arco() -> void:
 				_ventana_alta(r, false)
 		cornice(-0.1, w + 0.1, TOWER_EAVES, true)
 		home()
-	# the passage's sides of brick and its ceiling of beams
+	# The tower's sides, turned to the neighbours on either hand, of brick up to its eaves with their cornice (they
+	# stopped at the arch's crown until 27 Nov 2026: over the neighbours' roofs one saw into the tower from the
+	# street), and the passage's ceiling of beams
 	for s in [ARCH_N, ARCH_S]:
 		var p0: Vector2 = s
 		var p1: Vector2 = s + inward * ARCH_DEEP
-		if s == ARCH_S:                                                             # (each side facing into the passage)
+		if s == ARCH_S:                                                             # (each side facing out of the tower)
 			face(p0, p1, 0.0)
 		else:
 			face(p1, p0, 0.0)
-		quad(Vector3(0, g - 0.3, -0.01), Vector3(ARCH_DEEP, g - 0.3, -0.01), Vector3(ARCH_DEEP, spring + rad, -0.01), Vector3(0, spring + rad, -0.01), "brick", Vector3(0, 0, 1))
+		quad(Vector3(0, g - 0.3, -0.01), Vector3(ARCH_DEEP, g - 0.3, -0.01), Vector3(ARCH_DEEP, TOWER_EAVES, -0.01), Vector3(0, TOWER_EAVES, -0.01), "brick", Vector3(0, 0, 1))
+		cornice(0.0, ARCH_DEEP, TOWER_EAVES, true)
 		home()
+	# The piers' faces to the way through, at the edges of the opening: brick from under the ground to the arch's
+	# springing and its whole depth, over a foot of granite as on their fronts (27 Nov 2026 -- the user, on a picture
+	# of it: «Aquí parece que falta pared, no?». The sides above stand on the body's edges, 0.65 m out from the
+	# opening and turned to the neighbours, so each pier was an open box: looking in at a slant one saw the street
+	# through the back of its other face)
+	face(ARCH_N, ARCH_S, 0.0)
+	for side: float in [-1.0, 1.0]:
+		var jx: float = cx + side * rad
+		quad(Vector3(jx, g - 0.6, 0.0), Vector3(jx, g - 0.6, -ARCH_DEEP), Vector3(jx, spring, -ARCH_DEEP), Vector3(jx, spring, 0.0), "brick", Vector3(-side, 0, 0))
+		box((jx if side < 0.0 else jx - 0.045), g - 0.6, -ARCH_DEEP - 0.045, 0.045, 1.4, ARCH_DEEP + 0.09, "granito")
+		box((jx if side < 0.0 else jx - 0.07), g + 0.8, -ARCH_DEEP - 0.07, 0.07, 0.05, ARCH_DEEP + 0.14, "granito")
+	home()
 	var q := PackedVector2Array([ARCH_N, ARCH_S, e1, e0])
 	_flat_down(q, spring + rad - 0.15, 0x6a4a34)
 	for k in range(6):
@@ -537,9 +552,10 @@ func _arco() -> void:
 		var p1: Vector2 = p0 + inward * ARCH_DEEP
 		bar(Vector3(p0.x, spring + rad - 0.25, p0.y), Vector3(p1.x, spring + rad - 0.25, p1.y), 0.16, 0.2, 0x5a3a26)
 	# its solids: the two piers either side of the way through, and the tower over it
-	for s in [0.0, w]:
+	var pier := cx - rad                                                          # (each from 0.3 m out of the body's edge to the opening's: they stopped 0.35 m short of it)
+	for s in [(pier - 0.3) / 2.0, w - (pier - 0.3) / 2.0]:
 		var at: Vector2 = ARCH_N.lerp(ARCH_S, s / w) + inward * (ARCH_DEEP / 2.0)
-		solid(Vector3(at.x, g + 2.0, at.y), Vector3(ARCH_DEEP, 4.0, 0.6), -atan2(inward.y, inward.x))
+		solid(Vector3(at.x, g + 2.0, at.y), Vector3(ARCH_DEEP, 4.0, pier + 0.3), -atan2(inward.y, inward.x))
 	_prism([ARCH_N, ARCH_S, e1, e0], spring + rad, TOWER_EAVES)
 	# its roof (in a frame along its front, +z out to the Arcos: the tower stands at z < 0)
 	_xf = Transform3D(Basis(Vector3((ARCH_S - ARCH_N).normalized().x, 0, (ARCH_S - ARCH_N).normalized().y), Vector3.UP, Vector3(-inward.x, 0, -inward.y)), Vector3(ARCH_N.x, 0.0, ARCH_N.y))

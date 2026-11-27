@@ -59,6 +59,7 @@ Repositorio privado: https://github.com/LomoXSoft/Matritellus
 
 1. **Prueba completa en verde.** Si hay otras sesiones trabajando en la carpeta, avísalas antes: no se lanzan dos pruebas completas a la vez.
    - **Y la caché de las casas:** `python tools/cache_casas_check.py` (unos 4 minutos). El juego real lee de disco las mallas de las casas (`user://casas.cache`, `godot/scripts/lotes.gd`) y la prueba completa no: construye el pueblo de verdad. Esta comprobación arranca tres veces (sin caché, escribiéndola y leyéndola) y exige que el pueblo quede idéntico.
+   - **Y los suelos sobre las aceras:** `python tools/run_tests.py aceras-suelos --timeout 900` (algo más de un minuto). El juego baja la figura de la gente hasta la acera del mapa, que se dibuja 6 cm bajo el nivel al que se pisa, salvo donde un sitio hecho a mano tiende su propio suelo encima (`godot/data/aceras_suelos.json`). Si dice que el archivo no está al día, se regenera con `python tools/run_tests.py aceras-suelos escribe --timeout 900` y se vuelve a pasar. Lo mismo tras tocar un suelo a ras de calle en un sitio hecho a mano.
 2. **Los tres instaladores**, construidos desde ese mismo estado. El de Android, con el número de la versión: `python tools/make_apk.py X.Y.Z`. **Primero el de Android**: es el que escribe la versión en `project.godot`, y los otros dos la llevan dentro (el aviso de versión nueva y la caché de las casas la leen).
 3. **Commit y etiqueta.** La versión se numera `X.Y.Z` y la etiqueta es `vX.Y.Z`.
 
@@ -87,6 +88,7 @@ Repositorio privado: https://github.com/LomoXSoft/Matritellus
      ```
 
    - Las novedades, en castellano.
+   - **Con ellos, `SHA256SUMS.txt`** (ese nombre exacto; una línea por instalador: la suma, dos espacios y el nombre del archivo). Desde la 0.2.5 el juego descarga el instalador de la versión nueva y lo comprueba contra ese archivo antes de instalarlo (`godot/scripts/actualiza.gd`): sin él, o con otro nombre, la actualización desde el juego no puede verificar la descarga.
 
 Reglas:
 
@@ -133,6 +135,7 @@ Versiones:
 | 0.2.4 | 26/11/2026 | Nueva misión **Carreras Callejeras** con **Xandro** en Talleres Xandro (atuendo cholo, desbloqueo tras el primer turno de Koke y llamada a las 4 h in-game; parrilla nocturna de 8 Setas Panda de colores distintos con salto automático a las 22:30, entrada de 100 €, premios 500/200/100 €, comisión del 10 % por coche prestado, reintento gratis hasta hacer podio y minijuego diario rotando **Circuito de las Rondas**, **Las Avenidas** y **Sprint al Ferial**, con interfaz en pizarra de tiza y tipografía rotulista); y marcadores de luz holográficos con haces en rotación y difuminado progresivo al cielo tanto en las carreras como en las misiones. https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.4 |
 | 0.2.5 | 27/11/2026 | Comprobación de nueva versión **antes** de cargar el pueblo (aviso y descarga directa en pantalla inicial para no esperar a la carga antes de reiniciar, con instalación desatendida en Windows y actualización limpia en Linux/Android); nueva frase de **Ángelus Apátrida** sobre *Metro 20XX*; ampliación de diálogos callejeros y murmullos del pueblo diferenciados por edad y sexo con control anti-repetición; y revisión completa de los diálogos en **inglés** con voces británicas por capas (mayores rurales/norteños, calle/noche en argot británico, vecinos provinciales y niños, manteniendo intactos los menús, el alcalde y los guiños manchegos; guía en `guion/english_style.md`). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.5 |
 | 0.2.6 | 27/11/2026 | Mejoras táctiles y de interfaz (flechas indicadoras de desplazamiento, cruceta virtual y toque directo en el creador de personajes, ajuste de margen en burbujas de diálogo con etiqueta de nombre y bloqueo de acelerador al arrastrar hacia arriba en Android con desbloqueo por toque/freno/golpe); y campaña anti-Z-fighting en 50 edificios e interiores de `obra.gd` (tandas 1–3, de 2826.97 a 110.17 m² exactos, -96,1 %), nuevos helpers constructivos, auditor `--zfight` con cálculo exacto en pendientes y guía de repaso para Pretil y Texturas (`guion/zfighting_repaso.md`). https://github.com/LomoXSoft/Matritellus/releases/tag/v0.2.6 |
+| 0.2.7 | 27/11/2026 | Los pies en el suelo: ya no se levita 6 cm sobre las aceras (la figura baja hasta la acera del mapa, salvo donde hay otro suelo encima) ni se hunde uno en los suelos bajos de los sitios hechos a mano (patios, paseos, plazoletas: unos 18.000 m², `godot/data/aceras_suelos.json`, generado); la acera y la plazoleta del cementerio se pisan por encima; repaso de solapes en las casas de calle; arreglos en el cuartel, la Plazuela del Toledano y la Casa Grande. |
 
 ## Varias sesiones en la misma carpeta
 

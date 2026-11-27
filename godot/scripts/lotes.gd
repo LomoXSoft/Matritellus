@@ -158,6 +158,8 @@ func _place(cell: String, mi: MeshInstance3D, gk, turn: float, tris: int) -> voi
 	mi.rotation.y = turn
 	world.add_child(mi)
 	made += 1
+	if str(gk).get_slice("@", 0) == "acera":           # (the houses' own pavements: nobody's figure is set down on them, MapData.sunk)
+		MapData.slabs_add(mi.mesh, Transform3D(Basis(Vector3.UP, turn), Vector3.ZERO))
 	var base_key: String = str(gk).get_slice("@", 0)
 	var kind: String = base_key if colour else (base_key.left(1) if base_key.substr(1).is_valid_int() else base_key)
 	if not stats.has(kind):

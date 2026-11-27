@@ -21,12 +21,40 @@ import re
 import subprocess
 import sys
 import time
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GODOT = "C:/Users/luis_/Fable/tools/godot/Godot_v4.7.2-stable_win64_console.exe"
 RUNS = [("none", "--sin-cache-casas"), ("written", "--cache-casas"), ("read", "--cache-casas")]
 WANT = ["the merged meshes' fingerprint", "the houses' own fingerprint"]
+# (27 Nov 2026: each boot also leaves a line a merged mesh in user://lotes_huella.txt -- name, turn, how far it is drawn,
+# material, format, vertices and a hash of its bytes --, so that when two boots differ this says in which meshes and in
+# what. A difference only in "far" is the graphics options having changed between boots, not the cache.)
+USER = Path(os.environ.get("APPDATA", "")) / "Godot" / "app_userdata" / "Matritellus"
+
+
+def mesh_lines(name: str, logs: Path) -> list:
+    src = USER / "lotes_huella.txt"
+    if not src.exists():
+        return []
+    text = src.read_text(encoding="utf-8", errors="replace")
+    (logs / f"cache_casas_check_{name}_lotes.txt").write_text(text, encoding="utf-8")
+    return text.splitlines()
+
+
+def tell_apart(a: list, b: list) -> str:
+    if not a or not b:
+        return "no lines a mesh to compare (user://lotes_huella.txt missing)"
+    if len(a) != len(b):
+        return "%d and %d merged meshes" % (len(a), len(b))
+    pairs = [(x, y) for x, y in zip(a, b) if x != y]
+    if not pairs:
+        return "every mesh's line is the same, in the same order: what differs is not in the lines"
+    far = r" far \S+ "
+    only_far = all(re.sub(far, " ", x) == re.sub(far, " ", y) for x, y in pairs)
+    out = "%d of %d meshes differ%s" % (len(pairs), len(a), ", only in how far they are drawn (the graphics options changed between boots?)" if only_far else "")
+    return out + "".join("\n      %s\n      %s" % (x[:170], y[:170]) for x, y in pairs[:3])
 
 
 def godot_running() -> bool:
@@ -56,7 +84,7 @@ def main() -> int:
         lines = {w: next((ln.strip() for ln in text.splitlines() if w in ln), "") for w in WANT}
         state = re.search(r"their cache: ([a-z]+)[^,]*, (\d+) MB, (\d+) ms, (\d+) houses not worked out", text)
         houses = re.search(r"boot: houses\s+(\d+) ms", text)
-        got.append((name, lines, state, houses, "SCRIPT ERROR" in text or "Parse Error" in text))
+        got.append((name, lines, state, houses, "SCRIPT ERROR" in text or "Parse Error" in text, mesh_lines(name, logs)))
         print("%-8s cache %-8s %4s MB  houses step %6s ms  %s houses not worked out" % (
             name, state.group(1) if state else "?", state.group(2) if state else "?", houses.group(1) if houses else "?",
             state.group(4) if state else "?"))
@@ -65,6 +93,10 @@ def main() -> int:
         seen = {g[1][w] for g in got}
         if len(seen) != 1 or "" in seen:
             bad.append("%s differs:\n    %s" % (w, "\n    ".join("%s: %s" % (g[0], g[1][w] or "(none printed)") for g in got)))
+            if w == WANT[0]:
+                for g in got[1:]:
+                    if g[1][w] != got[0][1][w]:
+                        bad.append("%s against %s: %s" % (got[0][0], g[0], tell_apart(got[0][5], g[5])))
     if any(g[4] for g in got):
         bad.append("script errors in a boot (see logs/cache_casas_check_*.log)")
     if not got[2][2] or got[2][2].group(1) != "read":

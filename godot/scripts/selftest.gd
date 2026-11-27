@@ -581,6 +581,7 @@ func _suelos_checks() -> void:
 		spots.append(Vector2(rng.randf_range(-900.0, 900.0), rng.randf_range(-1300.0, 700.0)))
 	var wrong := 0
 	var first := ""
+	MapData.lift_on = false                 # (the decks alone: the low floors people are stood on are MapData._up's, --aceras-suelos)
 	for p in spots:
 		var a: float = MapData.foot(p)
 		var b: float = _foot_every(p)
@@ -592,6 +593,7 @@ func _suelos_checks() -> void:
 	for p in spots:
 		MapData.foot(p)
 	var each := (Time.get_ticks_usec() - t0) / float(spots.size())
+	MapData.lift_on = true
 	_check(wrong == 0 and each < 15.0, "the decks people walk on are found through a grid: the same height at all %d spots tried (%s), %.1f microseconds a call" % [spots.size(), first if first != "" else "none differs", each])
 
 ## the height somebody on foot stands at, going through every deck in turn (as map_data.gd did before its grid)
@@ -2282,6 +2284,497 @@ func _padron_checks(pictures := false) -> void:
 ## after a mission is about it, then half, a quarter and a tenth of them, and after that it is one more of their sayings;
 ## two missions before any talk wait in a queue, the second keeping its 100 % for its turn; each neighbour says it as they
 ## are (glad, against, not caring); and it is all kept in a saved game.
+## Feet on the pavements (27 Nov 2026; the user: "Parece que levita el jugador"): the figure goes down to the pavement's
+## sheet, 6 cm under the ground, and nowhere else; the body stays where it was.
+func _aceras_checks() -> void:
+	var down: float = MapData.PAVEMENT_DOWN
+	# a stretch of an ordinary street with room on its pavement: its middle, and a metre in from the kerb
+	var mid := Vector2.ZERO
+	var pav := Vector2.ZERO
+	var found := false
+	for sg in MapData.segs:
+		var r: Dictionary = sg.road
+		if int(r["k"]) != 0 or int(r.get("paved", 0)) != 0 or String(r["h"]).begins_with("motorway") or sg.a.distance_to(sg.b) < 20.0:
+			continue
+		var m: Vector2 = (sg.a + sg.b) / 2.0
+		var nrm: Vector2 = (sg.b - sg.a).normalized().orthogonal()
+		var q: Vector2 = m + nrm * (MapData.fitted_hw(sg) + 1.0)
+		if absf(MapData.sunk(q) + down) < 0.0001 and MapData.room_at(q) > 0.6 and absf(MapData.foot(q) - MapData.height(q)) < 0.001 and MapData.sunk(m) == 0.0:
+			mid = m
+			pav = q
+			found = true
+			break
+	_check(found, "there is a street whose pavement is %d cm under the ground people stand at, and its asphalt is not (%s)" % [roundi(down * 100.0), str(pav)])
+	if not found:
+		return
+	var worst := 0.0
+	var lowest := 0.0
+	var highest := -1.0
+	var last: float = MapData.sunk(mid)
+	for i in range(1, 401):
+		var v: float = MapData.sunk(mid.lerp(pav, i / 400.0))
+		worst = maxf(worst, absf(v - last))
+		lowest = minf(lowest, v)
+		highest = maxf(highest, v)
+		last = v
+	_check(worst < 0.012 and lowest >= -down - 0.0001 and highest <= 0.0, "from the middle of the street to its pavement the way down is a slope, not a step (%.1f mm at most at a time, between 0 and %.0f mm)" % [worst * 1000.0, lowest * 1000.0])
+	var pl = g.player
+	var was_p: Vector2 = pl.p
+	var was_y: float = pl.y
+	pl.y = 0.0
+	MapData.sunk_eye_at = -9             # (wherever you are put down, you are looked at: the game sets it again next frame)
+	pl.p = pav
+	pl.sync()
+	var on_pav: float = pl.vis.position.y
+	var body: float = pl.global_position.y - MapData.height(pav)
+	pl.p = mid
+	pl.sync()
+	var on_road: float = pl.vis.position.y
+	var statue = load("res://scripts/chara.gd").new()        # (a figure stood somewhere by hand: a statue, a mannequin)
+	statue.setup(pl.look)
+	g.world.add_child(statue)
+	statue.p = pav
+	statue.sync()
+	var stood: float = statue.vis.position.y
+	statue.queue_free()
+	MapData.sunk_hold_at = Engine.get_process_frames()
+	pl.p = pav + Vector2(0.05, 0.0)
+	pl.sync()
+	var held: float = pl.vis.position.y
+	MapData.sunk_hold_at = -9
+	pl.p = mid
+	pl.sync()
+	_check(stood == 0.0 and held == 0.0, "a figure stood by hand on a pavement stays where it was put, and so does everybody while the creator asks (%.3f, %.3f)" % [stood, held])
+	_check(absf(on_pav + down) < 0.0005 and absf(body) < 0.002 and on_road == 0.0, "on the pavement your figure is set down on it and your body stays at the ground's level; on the asphalt nothing moves (figure %.3f, body %.3f, on the road %.3f)" % [on_pav, body, on_road])
+	# decks: whoever stands on something of its own height is not sunk, pavement under it or not
+	var decks := 0
+	var over := 0
+	var sunk_on_deck := 0
+	for d in MapData.decks:
+		var o: Vector2 = d["o"]
+		if absf(MapData.foot(o) - MapData.height(o)) < 0.004:      # (a deck at the ground's own level is no deck here: chara.gd _sink, the same measure)
+			continue
+		decks += 1
+		if MapData.sunk(o, true) < 0.0:
+			over += 1
+		pl.p = o
+		pl.sync()
+		if pl.vis.position.y != 0.0:
+			sunk_on_deck += 1
+	_check(sunk_on_deck == 0, "nobody is sunk on a deck (%d decks off the ground, %d of them over a pavement)" % [decks, over])
+	# what is drawn over the pavements: footpaths, squares, streets paved in brick
+	var wrong := 0
+	var looked := 0
+	for sg in MapData.segs:
+		var r: Dictionary = sg.road
+		if int(r["k"]) != 2 and int(r.get("paved", 0)) == 0:
+			continue
+		var m: Vector2 = (sg.a + sg.b) / 2.0
+		var nrm: Vector2 = (sg.b - sg.a).normalized().orthogonal()
+		var hw: float = float(r["w"]) / 2.0 - 0.1
+		if int(r.get("paved", 0)) != 0:
+			hw += MapData.PAVEMENT_OUT / 2.0
+		for off in [-hw, 0.0, hw]:
+			looked += 1
+			if MapData.sunk(m + nrm * off) != 0.0:
+				wrong += 1
+	_check(looked > 100 and wrong == 0, "nobody is sunk on a footpath, a square or a street paved in brick (%d spots looked at, %d wrong)" % [looked, wrong])
+	# the houses' own pavements, 3 cm over the ground: nobody is set down on those, nor on their kerb
+	var slabs: int = MapData.slab_count()
+	var on_slab := 0
+	var by_kerb := 0
+	for t in range(0, slabs, maxi(1, slabs / 400)):
+		var ctr: Vector2 = (MapData._slab_v[t * 3] + MapData._slab_v[t * 3 + 1] + MapData._slab_v[t * 3 + 2]) / 3.0
+		if MapData.sunk(ctr) != 0.0:
+			on_slab += 1
+		for dir in [Vector2(0.2, 0.0), Vector2(-0.2, 0.0), Vector2(0.0, 0.2), Vector2(0.0, -0.2)]:
+			if MapData.sunk(MapData._slab_v[t * 3] + dir) != 0.0:
+				by_kerb += 1
+	_check((slabs > 1000 or MapData.floors_off) and on_slab == 0 and by_kerb == 0, "nobody is set down on a house's own pavement or on its kerb (%d slabs known; %d and %d spots wrong)" % [slabs, on_slab, by_kerb])
+	var t_us := Time.get_ticks_usec()
+	var probe: Vector2 = pav               # (the dearest spot to ask about: on a pavement, a kerb's breadth from a house's slabs)
+	for t in range(slabs):
+		var v0: Vector2 = MapData._slab_v[t * 3]
+		for dir in [Vector2(0.4, 0.0), Vector2(-0.4, 0.0), Vector2(0.0, 0.4), Vector2(0.0, -0.4)]:
+			if MapData.sunk(v0 + dir, true) < -0.05 and MapData.sunk(v0 + dir) < 0.0:
+				probe = v0 + dir
+		if probe != pav:
+			break
+	for i in range(2000):
+		MapData.sunk(probe + Vector2(0.00001 * i, 0.0))
+	print("  ..    MapData.sunk by a house's pavement: %.1f microseconds a call; houses' cache %s" % [(Time.get_ticks_usec() - t_us) / 2000.0, str(g.world.lotes.cache_state) if g.world.lotes != null else "no lots"])
+	var stale := 0
+	for c in MapData.floors:
+		var q := (Vector2(c) + Vector2(0.5, 0.5)) * MapData.FLOOR_CELL
+		if MapData.sunk(q, true) == 0.0 and MapData.sunk(q + Vector2(0.2, 0.2), true) == 0.0 and MapData.sunk(q - Vector2(0.2, 0.2), true) == 0.0:
+			stale += 1
+	_check(stale * 5 <= MapData.floors.size(), "the squares kept as built over (data/aceras_suelos.json: %d) are on pavements (%d are not)" % [MapData.floors.size(), stale])
+	pl.p = was_p
+	pl.y = was_y
+	pl.sync()
+
+func _aceras_meshes(root: Node, out: Array) -> void:
+	for c in root.get_children():
+		if c is CharacterBody3D:
+			continue
+		if c is MeshInstance3D and (c as MeshInstance3D).mesh != null:
+			out.append(c)
+		_aceras_meshes(c, out)
+
+## What is built over the pavements' sheet, and whether anybody's feet go into it. Every face that looks up within
+## reach of a shoe of the ground, of every mesh in the town, shown or not (a place done up later has its floors too):
+## - Those of the hand-built places, from 4.5 cm under the ground to 15 over, at a spot where the streets alone would
+##   set a figure down and no deck holds people up, are the squares kept in data/aceras_suelos.json: MapData leaves
+##   people there at the ground's level, as before. --escribe writes the file; without it the file has to be current.
+##   (The houses' own pavements are not in it: MapData reads them from their meshes each time the town is built.)
+## - And the test of it all: with everything MapData.sunk knows, nowhere is a figure set down under a face of anything.
+func _aceras_suelos(write: bool) -> void:
+	var t0 := Time.get_ticks_msec()
+	MapData.lift_on = false                 # (what is worked out here is what the file is for: the ground, and the decks, as they are)
+	var cells := {}
+	var by := {}
+	var into := {}
+	var meshes: Array = []
+	_aceras_meshes(g.world, meshes)
+	var tris := 0
+	for mi: MeshInstance3D in meshes:
+		var top: Node = mi
+		while top.get_parent() != g.world:
+			top = top.get_parent()
+		var lot: bool = top == mi and String(mi.name).begins_with("lote_")
+		var sheet: bool = top == mi and not lot              # (the world's own sheets, and whatever a place lays as one: puente.gd)
+		var scr: Script = top.get_script()
+		var who: String = scr.resource_path.get_file() if scr != null else ("the houses" if lot else "sheet " + String(top.name))
+		if scr != null and "id" in top and scr.resource_path.ends_with("casas.gd"):
+			who = "casa " + String(top.id)
+		var xf: Transform3D = mi.global_transform
+		var mesh: Mesh = mi.mesh
+		for sf in range(mesh.get_surface_count()):
+			if mesh is ArrayMesh and (mesh as ArrayMesh).surface_get_primitive_type(sf) != Mesh.PRIMITIVE_TRIANGLES:
+				continue
+			var arr: Array = mesh.surface_get_arrays(sf)
+			if arr.is_empty() or arr[Mesh.ARRAY_VERTEX] == null:
+				continue
+			var vs: PackedVector3Array = xf * (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array)
+			var ix := PackedInt32Array()
+			if arr[Mesh.ARRAY_INDEX] != null:
+				ix = arr[Mesh.ARRAY_INDEX]
+			else:
+				ix.resize(vs.size())
+				for k in range(vs.size()):
+					ix[k] = k
+			var i := 0
+			var n := ix.size()
+			while i + 2 < n:
+				var a: Vector3 = vs[ix[i]]
+				var b: Vector3 = vs[ix[i + 1]]
+				var c: Vector3 = vs[ix[i + 2]]
+				i += 3
+				var nrm := (b - a).cross(c - a)
+				var l2 := nrm.length_squared()
+				if l2 < 1e-10 or nrm.y * nrm.y < 0.81 * l2:
+					continue
+				var mid := Vector2((a.x + b.x + c.x) / 3.0, (a.z + b.z + c.z) / 3.0)
+				var rel: float = (a.y + b.y + c.y) / 3.0 - MapData.height(mid)
+				if rel < -0.6 or rel > 0.7:
+					continue
+				if sheet:              # (a sheet lies on the ground as it is: its middle tells; and the town's own are too big to go over spot by spot)
+					if rel < -0.045 or rel > 0.15:
+						continue
+					if MapData.sunk(mid, true) >= 0.0 and MapData.sunk(Vector2(a.x, a.z), true) >= 0.0 and MapData.sunk(Vector2(b.x, b.z), true) >= 0.0 and MapData.sunk(Vector2(c.x, c.z), true) >= 0.0:
+						continue
+				tris += 1
+				var got := _aceras_tri(a, b, c, {} if lot else cells, lot)
+				if got.x > 0 and not lot:
+					by[who] = int(by.get(who, 0)) + got.x
+				if got.y > 0:
+					into[who] = int(into.get(who, 0)) + got.y
+	# the floors to stand people on: in every state the places can be in (worn and restored, with the works or without)
+	await get_tree().physics_frame
+	var best_a: Dictionary = _suelos_altos()
+	var flipped: Array = _suelos_estados(g.world, [])
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var best_b: Dictionary = _suelos_altos()
+	_suelos_estados(g.world, flipped)
+	await get_tree().physics_frame
+	var up_a: Dictionary = _suelos_celdas(best_a)
+	var up_b: Dictionary = _suelos_celdas(best_b)
+	var ups := {}
+	for c in up_a:
+		if up_b.has(c):
+			ups[c] = mini(int(up_a[c]), int(up_b[c]))
+	print("ACERAS SUELOS: floors to stand people on: %d squares (%.0f m2), of %d spots of 25 cm 3.5 to 10 cm up (%d in the other states; %d places switched)" % [ups.size(), ups.size() * MapData.FLOOR_CELL * MapData.FLOOR_CELL, best_a.size(), best_b.size(), flipped.size()])
+	MapData.lift_on = true
+	var names: Array = by.keys()
+	names.sort_custom(func(x, y): return int(by[x]) > int(by[y]))
+	print("ACERAS SUELOS: %d squares of %.2f m built over a pavement by hand, from %d faces near the ground in %d meshes; %d slabs of the houses' own (%d ms)" % [cells.size(), MapData.FLOOR_CELL, tris, meshes.size(), MapData.slab_count(), Time.get_ticks_msec() - t0])
+	for w in names:
+		print("  %-28s %d" % [w, by[w]])
+	var missing := 0
+	for c in cells:
+		if not MapData.floors.has(c):
+			missing += 1
+	var extra := 0
+	for c in MapData.floors:
+		if not cells.has(c):
+			extra += 1
+	if write:
+		var flat: Array = []
+		var keys: Array = cells.keys()
+		keys.sort()
+		for c in keys:
+			flat.append(c.x)
+			flat.append(c.y)
+		var up_flat: Array = []
+		var up_keys: Array = ups.keys()
+		up_keys.sort()
+		for c in up_keys:
+			up_flat.append(c.x)
+			up_flat.append(c.y)
+			up_flat.append(ups[c])
+		var f := FileAccess.open("res://data/aceras_suelos.json", FileAccess.WRITE)
+		f.store_string(JSON.stringify({"cell": MapData.FLOOR_CELL, "cells": flat, "up": up_flat}) + "\n")
+		f.close()
+		print("ACERAS SUELOS: written, %d squares (%d new, %d gone), %d to stand people on; run it again without --escribe for the test of it" % [cells.size(), missing, extra, ups.size()])
+		return
+	var up_missing := 0
+	var up_wrong := 0
+	for c in ups:
+		if not MapData.ups.has(c):
+			up_missing += 1
+		elif absf(float(MapData.ups[c]) * 1000.0 - float(ups[c])) > 2.0:
+			up_wrong += 1
+	var up_extra := 0
+	for c in MapData.ups:
+		if not ups.has(c):
+			up_extra += 1
+	_check(up_missing == 0 and up_wrong == 0 and up_extra == 0, "the floors to stand people on in data/aceras_suelos.json are current (%d missing, %d at another height, %d there for nothing: --aceras-suelos --escribe writes it again)" % [up_missing, up_wrong, up_extra])
+	# and with them: of the spots where a hand-built floor stands 3.5 to 10 cm over the ground, how many still have the
+	# feet more than 3 cm under it (the edges of a narrow walk, a corner: a square is stood on when most of it is floor),
+	# and how many spots of those squares that are not floor have the feet up in the air
+	var off := 0
+	for k in best_a:
+		var q := (Vector2(k) + Vector2(0.5, 0.5)) * 0.25
+		if float(best_a[k]) - (MapData.foot(q) - MapData.height(q)) > 0.03:
+			off += 1
+	var air := 0
+	for c in MapData.ups:
+		for dx in [0, 1]:
+			for dz in [0, 1]:
+				var k := Vector2i(c.x * 2 + dx, c.y * 2 + dz)
+				if not best_a.has(k):
+					air += 1
+	print("  ..    with the floors stood on: %.0f m2 of floor still over the feet by more than 3 cm, %.0f m2 of their squares' edges stood on in the air (before: %.0f m2 over the feet)" % [off * 0.0625, air * 0.0625, best_a.size() * 0.0625])
+	_check(MapData.ups.size() > 1000 and off * 3 < best_a.size() and air * 4 < MapData.ups.size() * 4, "people stand on the hand-built places' low floors: of %.0f m2 of floor 3.5 to 10 cm up, %.0f m2 left over the feet (%.0f m2 of edges in the air)" % [best_a.size() * 0.0625, off * 0.0625, air * 0.0625])
+	_check(missing == 0 and extra == 0, "data/aceras_suelos.json is current: every square a hand-built place lays over a pavement, and no other (%d missing, %d there for nothing: --aceras-suelos --escribe writes it again)" % [missing, extra])
+	# (The houses leave a few: a doorstep or a garage's ramp out on a pavement where the house lays no slabs of its own,
+	# 232 spots of 25 cm in the whole town on 27 Nov 2026. Feet were 5 cm into those before; they are no floor.)
+	var bad := 0
+	var steps: int = int(into.get("the houses", 0))
+	var worst: Array = into.keys()
+	worst.sort_custom(func(x, y): return int(into[x]) > int(into[y]))
+	for w in worst:
+		if w != "the houses":
+			bad += int(into[w])
+	for w in worst.slice(0, 20):
+		print("  (feet into it) %-28s %d" % [w, into[w]])
+	_check(MapData.slab_count() > 1000 and bad == 0 and steps < 400, "nowhere is a figure set down under a floor: of all the faces near the ground, none stands over where MapData.sunk puts the feet (%d spots; %d more on the houses' doorsteps and ramps; %d slabs of the houses' own known)" % [bad, steps, MapData.slab_count()])
+
+## A face that looks up, spot by spot (every 25 cm). Returns how many spots of it are [within reach of a shoe of the
+## ground, over nothing but pavement by the streets alone, and on no deck -- their squares go in `cells` --, over where
+## MapData.sunk, with all it knows, puts somebody's feet (1.5 cm of grace: a paving laid just over the sheet)]
+## Every 25 cm, the highest face of a hand-built place (obra.gd) that looks up 3.5 to 10 cm over the ground, where no
+## deck is, out of any solid (a wall, a planter: nobody's feet get there) and shown within its place (a state that is
+## not shown -- the ruin of a place restored -- is not walked on). Vector2i(spot) -> metres over the ground.
+const SUELO_BAJO := 0.035
+const SUELO_ALTO := 0.10
+const SUELO_NO := ["agua", "seto"]
+const SUELO_FUERA := ["casa_fuera.gd"]     # (six fronts, one shown at a time, each with its own steps and yard: set_state)
+func _suelos_altos() -> Dictionary:
+	var best := {}
+	var meshes: Array = []
+	_aceras_meshes(g.world, meshes)
+	var space: PhysicsDirectSpaceState3D = g.world.get_world_3d().direct_space_state
+	var pq := PhysicsPointQueryParameters3D.new()
+	pq.collision_mask = 1
+	pq.collide_with_areas = false
+	for mi: MeshInstance3D in meshes:
+		var ob: Node = mi.get_parent()
+		var shown: bool = mi.visible
+		while ob != null and ob != g.world and not is_instance_of(ob, ObraS):
+			if ob is Node3D and not (ob as Node3D).visible:
+				shown = false
+			ob = ob.get_parent()
+		if ob == null or ob == g.world or not shown:
+			continue
+		var scr: Script = ob.get_script()
+		if scr != null and scr.resource_path.get_file() in SUELO_FUERA:
+			continue
+		if "_mats" in ob and mi.material_override != null:      # (water and hedges are not walked on: Pretil, 27 Nov 2026)
+			var key = (ob._mats as Dictionary).find_key(mi.material_override)
+			if key is String and key in SUELO_NO:
+				continue
+		var xf: Transform3D = mi.global_transform
+		var mesh: Mesh = mi.mesh
+		for sf in range(mesh.get_surface_count()):
+			if mesh is ArrayMesh and (mesh as ArrayMesh).surface_get_primitive_type(sf) != Mesh.PRIMITIVE_TRIANGLES:
+				continue
+			var arr: Array = mesh.surface_get_arrays(sf)
+			if arr.is_empty() or arr[Mesh.ARRAY_VERTEX] == null:
+				continue
+			var vs: PackedVector3Array = xf * (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array)
+			var ix := PackedInt32Array()
+			if arr[Mesh.ARRAY_INDEX] != null:
+				ix = arr[Mesh.ARRAY_INDEX]
+			else:
+				ix.resize(vs.size())
+				for k in range(vs.size()):
+					ix[k] = k
+			var i := 0
+			while i + 2 < ix.size():
+				var a: Vector3 = vs[ix[i]]
+				var b: Vector3 = vs[ix[i + 1]]
+				var c: Vector3 = vs[ix[i + 2]]
+				i += 3
+				var nrm := (b - a).cross(c - a)
+				var l2 := nrm.length_squared()
+				if l2 < 1e-10 or nrm.y * nrm.y < 0.81 * l2:
+					continue
+				var a2 := Vector2(a.x, a.z)
+				var b2 := Vector2(b.x, b.z)
+				var c2 := Vector2(c.x, c.z)
+				var mid: Vector2 = (a2 + b2 + c2) / 3.0
+				var rel_mid: float = (a.y + b.y + c.y) / 3.0 - MapData.height(mid)
+				if rel_mid < -0.3 or rel_mid > 0.4:
+					continue
+				var det: float = (b2 - a2).cross(c2 - a2)
+				if absf(det) < 1e-8:
+					continue
+				var lo: Vector2 = a2.min(b2).min(c2)
+				var hi: Vector2 = a2.max(b2).max(c2)
+				for kx in range(floori(lo.x / 0.25), floori(hi.x / 0.25) + 1):
+					for kz in range(floori(lo.y / 0.25), floori(hi.y / 0.25) + 1):
+						var q := Vector2((kx + 0.5) * 0.25, (kz + 0.5) * 0.25)
+						var u: float = (q - a2).cross(c2 - a2) / det
+						var v: float = (b2 - a2).cross(q - a2) / det
+						if u < 0.0 or v < 0.0 or u + v > 1.0:
+							continue
+						var h: float = MapData.height(q)
+						var rel: float = a.y + (b.y - a.y) * u + (c.y - a.y) * v - h
+						if rel < SUELO_BAJO or rel > SUELO_ALTO:
+							continue
+						var key := Vector2i(kx, kz)
+						if float(best.get(key, -1.0)) >= rel:
+							continue
+						if absf(MapData.foot(q) - h) >= 0.004:       # (a deck: it says where people stand there)
+							continue
+						pq.position = Vector3(q.x, h + rel + 0.06, q.y)
+						var inside := false
+						for hit in space.intersect_point(pq, 4):
+							if hit["collider"] is StaticBody3D:
+								inside = true
+						if not inside:
+							best[key] = rel
+	return best
+
+## the squares of FLOOR_CELL (four spots of 25 cm) three or four of whose spots are floor: how high, in millimetres
+func _suelos_celdas(best: Dictionary) -> Dictionary:
+	var acc := {}
+	for k in best:
+		var c := Vector2i(floori(k.x / 2.0), floori(k.y / 2.0))
+		acc[c] = (acc.get(c, Vector2.ZERO) as Vector2) + Vector2(float(best[k]), 1.0)
+	var out := {}
+	for c in acc:
+		var a: Vector2 = acc[c]
+		if a.y >= 3.0:
+			out[c] = roundi(a.x / a.y * 1000.0)
+	return out
+
+## The places with more than one state (worn and restored: cuevas.gd, toros.gd; with the works or without: puente.gd),
+## each put in its other one; given those back, each put back as it was. Returns the ones it switched.
+func _suelos_estados(root: Node, back: Array) -> Array:
+	if not back.is_empty():
+		for n in back:
+			if n.has_method("set_restored"):
+				n.set_restored(not n.restored)
+			else:
+				n.set_works(not n.works)
+		return back
+	var out: Array = []
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n.has_method("set_restored") and "restored" in n:
+			n.set_restored(not n.restored)
+			out.append(n)
+		elif n.has_method("set_works") and "works" in n:
+			n.set_works(not n.works)
+			out.append(n)
+		stack.append_array(n.get_children())
+	return out
+
+var _ac_blocks = null            # Vector2i(square of 20 m) -> the blocks of buildings (MapData.outlines) near it
+func _aceras_indoors(q: Vector2) -> bool:
+	if _ac_blocks == null:
+		_ac_blocks = {}
+		for k in range(MapData.outlines.size()):
+			var ring: PackedVector2Array = MapData.outlines[k]
+			var lo := Vector2(1e9, 1e9)
+			var hi := Vector2(-1e9, -1e9)
+			for pt in ring:
+				lo = lo.min(pt)
+				hi = hi.max(pt)
+			for cx in range(floori(lo.x / 20.0), floori(hi.x / 20.0) + 1):
+				for cy in range(floori(lo.y / 20.0), floori(hi.y / 20.0) + 1):
+					var key := Vector2i(cx, cy)
+					if not _ac_blocks.has(key):
+						_ac_blocks[key] = []
+					_ac_blocks[key].append(k)
+	for k in _ac_blocks.get(Vector2i(floori(q.x / 20.0), floori(q.y / 20.0)), []):
+		if Geometry2D.is_point_in_polygon(q, MapData.outlines[k]):
+			return true
+	return false
+
+## (`house`: a piece of a street house. Of those only what is laid like a pavement counts -- up to a kerb's height, 6 cm,
+## out of doors and a body's breadth from the wall: a doorstep, a plinth or the foot of a wall is no floor, and nobody
+## walks inside the walls)
+func _aceras_tri(a: Vector3, b: Vector3, c: Vector3, cells: Dictionary, house := false) -> Vector2i:
+	const STEP := 0.25
+	var a2 := Vector2(a.x, a.z)
+	var b2 := Vector2(b.x, b.z)
+	var c2 := Vector2(c.x, c.z)
+	var det: float = (b2 - a2).cross(c2 - a2)
+	if absf(det) < 1e-8:
+		return Vector2i.ZERO
+	var lo: Vector2 = a2.min(b2).min(c2)
+	var hi: Vector2 = a2.max(b2).max(c2)
+	var got := 0
+	var into := 0
+	var x: float = (floorf(lo.x / STEP) + 0.5) * STEP
+	while x <= hi.x:
+		var z: float = (floorf(lo.y / STEP) + 0.5) * STEP
+		while z <= hi.y:
+			var q := Vector2(x, z)
+			z += STEP
+			var u: float = (q - a2).cross(c2 - a2) / det
+			var v: float = (b2 - a2).cross(q - a2) / det
+			if u < 0.0 or v < 0.0 or u + v > 1.0:
+				continue
+			var h: float = MapData.height(q)
+			var rel: float = a.y + (b.y - a.y) * u + (c.y - a.y) * v - h
+			if rel < -0.045 or rel > 0.15:
+				continue
+			if MapData.sunk(q, true) >= 0.0 or absf(MapData.foot(q) - h) >= 0.004:      # (a deck: chara.gd _sink leaves people on one alone, by the same measure)
+				continue
+			cells[Vector2i(floori(q.x / MapData.FLOOR_CELL), floori(q.y / MapData.FLOOR_CELL))] = true
+			got += 1
+			var feet: float = MapData.sunk(q)
+			if feet < 0.0 and rel > feet + 0.015 and (not house or (rel <= 0.06 and not _aceras_indoors(q) and MapData.room_at(q) > 0.3)):
+				into += 1
+		x += STEP
+	return Vector2i(got, into)
+
 func _chismes_checks() -> void:
 	var C = g.chismes
 	var was := [g.stats.get("chismes"), g.stats.get("chismes_pool")]
@@ -17990,6 +18483,17 @@ func _run() -> void:
 		print("PADRON %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--aceras") or OS.get_cmdline_user_args().has("--aceras-suelos"):      # feet on the pavements; --aceras-suelos: what is built over them too ( --escribe: and keep it)
+		g.menu.close()
+		g.slot = 0
+		g._end_cutscene()
+		await _frames(20)
+		await _aceras_checks()
+		if OS.get_cmdline_user_args().has("--aceras-suelos"):
+			await _aceras_suelos(OS.get_cmdline_user_args().has("--escribe"))
+		print("ACERAS %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--chismes"):       # just what the town says about the missions you finish: the chances, the queue, the pool
 		g.menu.close()
 		g.slot = 0
@@ -20438,6 +20942,8 @@ func _run() -> void:
 			await _frames(8)
 			g.player.p = at_door
 			g.player.sync()
+			await _frames(6)
+			E.enter()                                        # (standing on the arrow: the action button, "Entrar")
 			var w := 0
 			while g.inside_of != ti and w < 40:
 				await _frames(1)
@@ -20525,6 +21031,8 @@ func _run() -> void:
 			await _frames(8)
 			g.player.p = at_door
 			g.player.sync()
+			await _frames(6)
+			E.enter()                                        # (standing on the arrow: the action button, "Entrar")
 			var w := 0
 			while g.inside_of != ti and w < 40:
 				await _frames(1)
@@ -20621,6 +21129,8 @@ func _run() -> void:
 		await _frames(8)
 		g.player.p = E.spot(ti, false)
 		g.player.sync()
+		await _frames(6)
+		E.enter()                                            # (standing on the arrow: the action button, "Entrar")
 		var w := 0
 		while g.inside_of != ti and w < 40:
 			await _frames(1)
@@ -23305,6 +23815,9 @@ func _run() -> void:
 				max_exact = float(sa.substr(6))
 		var obras: Array = []
 		_zfight_collect_obras(g, obras)
+		var casas_zf: bool = OS.get_cmdline_user_args().has("--casas-sueltas")     # (Texturas, 27 Nov 2026: the street houses instead, each with its own meshes)
+		if casas_zf:
+			obras = g.world.casas.filter(func(c): return (c as Node3D).is_visible_in_tree())
 		var reports: Array = []
 		var scanned := 0
 		var with_exact := 0
@@ -23316,6 +23829,8 @@ func _run() -> void:
 		for ob in obras:
 			var scr: Script = ob.get_script()
 			var sname: String = scr.resource_path.get_file() if scr != null else String(ob.name)
+			if casas_zf:
+				sname = String(ob.id)
 			if solo != "" and not sname.to_lower().contains(solo) and not String(ob.name).to_lower().contains(solo):
 				continue
 			scanned += 1
@@ -24391,6 +24906,7 @@ func _run() -> void:
 	await _ninos_checks()
 	await _ninos_calle_checks()
 	await _chismes_checks()
+	await _aceras_checks()
 	await _cartas_checks()
 	await _raya_checks()
 	await _valla_checks()

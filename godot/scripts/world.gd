@@ -1460,6 +1460,8 @@ func _buildings() -> void:
 	CasasS.old_boxes = OS.get_cmdline_user_args().has("--cajas-viejas")
 	var args := OS.get_cmdline_user_args()
 	lotes = null if args.has("--casas-sueltas") or args.has("--casas-suma") or CasasS.slow else LotesS.new(self)
+	MapData.slabs_clear()                # (the houses' own pavements, for MapData.sunk: lotes.gd tells of them as it places them)
+	MapData.floors_off = lotes == null
 	if lotes != null:                               # (the last house of each square: when it is built, its square is made)
 		lotes.plan(MapData.houses)
 		# kept from one run to the next (lotes.gd): not in the self-test, which builds the real thing, nor on a phone yet
@@ -1518,6 +1520,7 @@ func _houses() -> bool:
 			if args_has_huella():
 				var mix := 0                              # (the same meshes built and read back? their names, turns, materials and every byte)
 				var n_l := 0
+				var lines_l := PackedStringArray()
 				for c in get_children():
 					if c is MeshInstance3D and String(c.name).begins_with("lote_"):
 						var mi := c as MeshInstance3D
@@ -1526,6 +1529,13 @@ func _houses() -> bool:
 						var what := mo.get_class() + (str((mo as StandardMaterial3D).albedo_color) + str((mo as StandardMaterial3D).uv1_scale) if mo is StandardMaterial3D else "")
 						mix = hash([mix, String(mi.name), mi.rotation.y, mi.visibility_range_end, what, surf.get("format", 0), surf.get("vertex_count", 0), surf.get("vertex_data"), surf.get("attribute_data", 0)])
 						n_l += 1
+						# (27 Nov 2026: and a line a mesh in user://lotes_huella.txt, to see which part differs when two boots do)
+						lines_l.append("%s rot %s far %s mat %s fmt %s n %s verts %d attrs %d" % [mi.name, mi.rotation.y, mi.visibility_range_end, what, surf.get("format", 0), surf.get("vertex_count", 0), hash(surf.get("vertex_data")), hash(surf.get("attribute_data", 0))])
+				var f_l := FileAccess.open("user://lotes_huella.txt", FileAccess.WRITE)
+				if f_l != null:
+					f_l.store_string("
+".join(lines_l))
+					f_l.close()
 				print("buildings: the merged meshes' fingerprint: %d of them, %d" % [n_l, mix])
 				var own := 0                              # (...and the houses themselves: what each was left with, built or not)
 				for c in casas:

@@ -161,7 +161,7 @@ func _p3(q: Vector2, lift: float) -> Vector3:
 
 ## how high the islet's floor is at a spot of the map, in this frame
 func _gy(q: Vector2) -> float:
-	return MapData.height(q) - level + KERB + 0.02
+	return MapData.height(q) - level + KERB
 
 ## the relief's facets under a rectangle of the map: [triangle (PackedVector2Array), its three heights]
 func _facets(box: Rect2) -> Array:
@@ -216,36 +216,177 @@ func _inside(poly: PackedVector2Array, within: PackedVector2Array) -> Array:
 			out.append(piece)
 	return out
 
+## What is left of an outline (on the map) once these others are cut out of it: whole pieces, none with a hole in it
+## (where one of them lies right inside a piece, that piece is first split in two through its middle).
+func _minus(poly: PackedVector2Array, cutters: Array, from := 0, depth := 0) -> Array:
+	if poly.size() < 3 or _m2(poly) < 0.0004:
+		return []
+	poly = _ccw(poly)
+	if from >= cutters.size():
+		return [poly]
+	var cutter: PackedVector2Array = _ccw(cutters[from])
+	var rest := Geometry2D.clip_polygons(poly, cutter)
+	var holed := false
+	for piece in rest:
+		if Geometry2D.is_polygon_clockwise(piece):
+			holed = true
+	var out: Array = []
+	if not holed or depth > 6:
+		for piece in rest:
+			if not Geometry2D.is_polygon_clockwise(piece):
+				out.append_array(_minus(piece, cutters, from + 1, 0))
+		return out
+	var mid := Vector2.ZERO
+	for q in cutter:
+		mid += q / cutter.size()
+	var around := _box_of(poly).grow(1.0)
+	var halves: Array = []
+	if depth % 2 == 0:
+		halves = [Rect2(around.position, Vector2(mid.x - around.position.x, around.size.y)), Rect2(Vector2(mid.x, around.position.y), Vector2(around.end.x - mid.x, around.size.y))]
+	else:
+		halves = [Rect2(around.position, Vector2(around.size.x, mid.y - around.position.y)), Rect2(Vector2(around.position.x, mid.y), Vector2(around.size.x, around.end.y - mid.y))]
+	for half: Rect2 in halves:
+		var sq := PackedVector2Array([half.position, Vector2(half.end.x, half.position.y), half.end, Vector2(half.position.x, half.end.y)])
+		for part in Geometry2D.intersect_polygons(poly, _ccw(sq)):
+			if not Geometry2D.is_polygon_clockwise(part):
+				out.append_array(_minus(part, cutters, from, depth + 1))
+	return out
+
+## an outline's area, m2
+func _m2(poly: PackedVector2Array) -> float:
+	var sum := 0.0
+	for i in range(poly.size()):
+		var q: Vector2 = poly[(i + 1) % poly.size()]
+		sum += poly[i].x * q.y - q.x * poly[i].y
+	return absf(sum) / 2.0
+
+## Lays these stones edge to edge as one sheet with no seam in it, `lift` over the ground: [[outline (map), what of],
+## ...], none over another. Each is cut along the relief's facets as _lay does; then the corners that should be one
+## are made one, and every triangle is split at whatever corner of another falls on one of its sides, so that no two
+## triangles meet along part of a side. Where they do, a hair's gap opens between them at some pixels, what is under
+## the floor shows through it far deeper, and the ink of the screen's outlines (game.gd) draws a line along the seam.
+func _lay_tight(parts: Array, lift: float) -> void:
+	var cells: Array = []                            # [outline, what of], cut along the facets
+	for part in parts:
+		var poly: PackedVector2Array = _ccw(part[0])
+		if poly.size() < 3:
+			continue
+		pieces += 1
+		for facet: PackedVector2Array in _facets(_box_of(poly)):
+			for piece in Geometry2D.intersect_polygons(poly, facet):
+				if piece.size() >= 3 and not Geometry2D.is_polygon_clockwise(piece):
+					cells.append([piece, part[1]])
+	var knots := {}                                  # a grid of 0.2 mm -> the corner kept there
+	var corners: Array = []
+	for cell in cells:
+		var tied := PackedVector2Array()             # (its corners, each the one kept for its spot)
+		for q: Vector2 in cell[0]:
+			tied.append(_knot(q, knots, corners))
+		cell.append(tied)
+	for cell in cells:
+		var ring: PackedVector2Array = cell[0]       # (cut into triangles as Clipper gave it: two of its corners made one may pinch it)
+		var tied: PackedVector2Array = cell[2]
+		var box := _box_of(ring).grow(0.001)
+		var near: Array = []
+		for q: Vector2 in corners:
+			if box.has_point(q):
+				near.append(q)
+		var idx := Geometry2D.triangulate_polygon(ring)
+		if idx.is_empty():                           # (it would not be cut into triangles as it is: in convex parts, a fan each)
+			for part: PackedVector2Array in Geometry2D.decompose_polygon_in_convex(ring):
+				for t in range(1, part.size() - 1):
+					_tight_tri(_knot(part[0], knots, corners), _knot(part[t], knots, corners), _knot(part[t + 1], knots, corners), near, lift, cell[1], 0)
+			continue
+		for t in range(0, idx.size(), 3):
+			_tight_tri(tied[idx[t]], tied[idx[t + 1]], tied[idx[t + 2]], near, lift, cell[1], 0)
+
+## the corner kept for this spot: the first one seen within 0.1 mm of it
+func _knot(q: Vector2, knots: Dictionary, corners: Array) -> Vector2:
+	var cx := roundi(q.x * 5000.0)
+	var cy := roundi(q.y * 5000.0)
+	for dx: int in [0, -1, 1]:
+		for dy: int in [0, -1, 1]:
+			var k := Vector2i(cx + dx, cy + dy)
+			if knots.has(k) and (knots[k] as Vector2).distance_squared_to(q) < 1e-8:
+				return knots[k]
+	knots[Vector2i(cx, cy)] = q
+	corners.append(q)
+	return q
+
+## a triangle of the sheet, split first at any corner that falls on one of its sides
+func _tight_tri(a: Vector2, b: Vector2, c: Vector2, near: Array, lift: float, key, depth: int) -> void:
+	if absf((b - a).cross(c - a)) < 2e-8:            # (nothing left of it)
+		return
+	if depth < 24:
+		for side in [[a, b, c], [b, c, a], [c, a, b]]:
+			var p0: Vector2 = side[0]
+			var p1: Vector2 = side[1]
+			var d := p1 - p0
+			var ln2 := d.length_squared()
+			for q: Vector2 in near:
+				var t: float = (q - p0).dot(d) / ln2
+				if t <= 0.0 or t >= 1.0 or q.distance_squared_to(p0) < 4e-8 or q.distance_squared_to(p1) < 4e-8:
+					continue
+				if (p0 + d * t).distance_squared_to(q) < 1e-8:
+					_tight_tri(p0, q, side[2], near, lift, key, depth + 1)
+					_tight_tri(q, p1, side[2], near, lift, key, depth + 1)
+					return
+	tri(_p3(a, lift), _p3(b, lift), _p3(c, lift), key, Vector3.UP)
+
 ## The floor: asphalt out to where the map's pale path reached; the kerb's stone; the flags; a band of pale stone
 ## inside the kerb all round, more of them across and one along; the beds of red under the trees and the pencil.
+## It is one sheet at the kerb's height, where one walks (_walkable) and the things on it stand (_gy): no stone of it
+## lies on another, each is cut out of the ones it would cover, and they are laid edge to edge with no seam (27 Nov
+## 2026 -- the user: «Que no se apilen las capas del suelo». Laid one on another a centimetre and a half apart, the
+## last of the five was 7 cm up and the benches and the pencil stood sunk in it).
 func _floor() -> void:
 	_lay(_grown(outline, 3.5), 0.006, "asfalto")
-	_lay(outline, KERB, "bordillo")
+	var sheet: Array = []                            # its stones: [outline, what of]
 	var flags := _grown(outline, -0.16)
-	_lay(flags, KERB + 0.014, "losas")
+	for piece in _minus(outline, [flags]):           # the kerb's stone, all round
+		sheet.append([piece, "bordillo"])
 	var band_out := _grown(outline, -1.15)
 	var band_in := _grown(outline, -1.45)
-	if band_in.size() >= 3:
-		_lay(band_out, KERB + 0.028, PALE)
-		_lay(band_in, KERB + 0.042, "losas")
-		var across := Vector2(-_along.y, _along.x)
-		for k in range(-4, 5):                       # bands across it, 4.4 m apart, through the pencil's bed
-			for piece in _inside(_strip(PENCIL + _along * (k * 4.4), across, 40.0, 0.28), band_in):
-				_lay(piece, KERB + 0.056, PALE)
-		for piece in _inside(_strip(PENCIL, _along, 60.0, 0.28), band_in):      # and one along it
-			_lay(piece, KERB + 0.056, PALE)
+	# (what is cut out of the others is each bed and each band whole, not what of it is laid: one that ended on an
+	# edge of what it cuts would leave the two sides of it joined by a bridge of no width, and Godot will not cut
+	# such an outline into triangles -- that stone would be missing)
+	var red: Array = []                              # the beds, whole: nothing lies on them
 	var beds: Array = [[PENCIL, 1.7], [BIG_TREE, 1.6], [SAPLING, 1.3]]
 	for at: Vector2 in CYPRESSES:
 		beds.append([at, 1.6])
 	for bed in beds:
-		for piece in _inside(_strip(bed[0], _along, bed[1], bed[1]), flags):
-			_lay(piece, KERB + 0.070, RED)
+		red.append(_strip(bed[0], _along, bed[1], bed[1]))
 	var round_bed := PackedVector2Array()
 	for i in range(16):
 		round_bed.append(PINE + Vector2(cos(TAU * i / 16.0), sin(TAU * i / 16.0)) * 1.0)
-	for piece in _inside(round_bed, flags):
-		_lay(piece, KERB + 0.070, RED)
-
+	red.append(round_bed)
+	for bed in red:
+		for piece in _inside(bed, flags):
+			sheet.append([piece, RED])
+	if band_in.size() < 3:                           # (too small an islet for its bands: flags up to the kerb)
+		for piece in _minus(flags, red):
+			sheet.append([piece, "losas"])
+		_lay_tight(sheet, KERB)
+		return
+	var strips: Array = []                           # the bands of pale stone across it, whole, 4.4 m apart, through the pencil's bed
+	var across := Vector2(-_along.y, _along.x)
+	for k in range(-4, 5):
+		strips.append(_strip(PENCIL + _along * (k * 4.4), across, 40.0, 0.28))
+	var along := _strip(PENCIL, _along, 60.0, 0.28)  # ...and the one along it
+	for strip in strips:
+		for laid in _inside(strip, band_in):
+			for piece in _minus(laid, red):
+				sheet.append([piece, PALE])
+	for laid in _inside(along, band_in):
+		for piece in _minus(laid, strips + red):
+			sheet.append([piece, PALE])
+	for piece in _minus(band_in, strips + [along] + red):        # the flags within the band all round
+		sheet.append([piece, "losas"])
+	for piece in _minus(band_out, [band_in] + red):              # that band of pale stone
+		sheet.append([piece, PALE])
+	for piece in _minus(flags, [band_out] + red):                # the flags between it and the kerb
+		sheet.append([piece, "losas"])
+	_lay_tight(sheet, KERB)
 ## The kerb's face all round, following the ground; and what stops a car: a slab with a chamfered edge, so it bumps
 ## up on to it rather than into it.
 func _kerb() -> void:

@@ -84,3 +84,9 @@ desapareció el bloque genérico (48 muros, 2 tejados planos); relieve, nudos, c
   realidad): el coche patrulla va paralelo a la fachada, no de morro.
 - **El desnivel**: casi llano; los muros bajan hasta el terreno.
 - La escalinata y la rampa son sólidas: no se sube por ellas.
+
+## 27/11/2026: la pared del enlace de atrás
+
+La campaña anti-solapes (0.2.6) había dejado sin pared este el bloque de enlace de atrás (`ELINK`, lado 1 en
+`"skip"`). Luis: «Hemos perdido una pared aquí?». Vuelve a ser `plain`. `zfight solo=cuartel.gd`: 3,522 m² exactos,
+igual que antes.

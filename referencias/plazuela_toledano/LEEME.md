@@ -41,3 +41,19 @@ de enfrente (`props.gd`: se los lleva un coche).
 - Los contenedores: no he comprobado en foto que salgan donde están (en la acera de la calle que va a lo largo de su
   lado más largo).
 - La isleta real sigue un poco más hacia el oeste bajo los árboles inclinados; en el juego la corta la calle.
+
+## 27/11/2026: el suelo, una sola lámina
+
+Luis: «Que no se apilen las capas del suelo». La campaña anti-solapes había separado las cinco capas 1,5 cm cada una:
+la última quedaba 7 cm alta y los bancos y el lápiz, hundidos.
+
+- Ahora no hay ninguna piedra encima de otra: bordillo, losas, bandas claras y parterres rojos son trozos de UNA lámina
+  a la altura del bordillo (`KERB`), cada uno recortado de los que taparía (`_minus`) y tendidos canto con canto
+  (`_lay_tight`). Debajo solo queda el asfalto de alrededor.
+- `_gy` (donde se apoyan las cosas), la lámina y los pisos por donde se anda están a la misma altura: se pisa
+  exactamente el suelo que se ve.
+- **Trampa:** se recorta con los parterres y las bandas enteros, no con lo que de ellos se tiende. Si un recorte acaba
+  justo en un canto, Clipper deja las dos mitades unidas por un puente sin anchura, Godot no sabe triangularlo y esa
+  piedra desaparece sin dar error.
+- Comprobar tras tocarlo: `python tools/run_tests.py zfight solo=toledano.gd --timeout 180` (0,000 exactos) y el modo
+  `toledano`; mirar el suelo a ras (rayitas oscuras = falta una piedra).

@@ -369,12 +369,12 @@ func _index_decks() -> void:
 func foot(p: Vector2) -> float:
 	var h := height(p)
 	if decks.is_empty():
-		return h
+		return h + _up(p)
 	if not is_same(decks, _deck_list) or decks.size() != _deck_n:
 		_index_decks()
 	var cell = _deck_cells.get(Vector2i(floori(p.x / DECK_CELL), floori(p.y / DECK_CELL)))
 	if cell == null:
-		return h
+		return h + _up(p)
 	for i in (cell as PackedInt32Array):
 		var d: Dictionary = decks[i]
 		var rel: Vector2 = p - (d["o"] as Vector2)
@@ -389,7 +389,211 @@ func foot(p: Vector2) -> float:
 			if d.has("low"):
 				return lerpf(float(d["low"]), float(d["top"]), clampf((float(d["half"]) + s) / float(d["ramp"]), 0.0, 1.0))
 			return lerpf(h, float(d["top"]), clampf((float(d["half"]) - a) / float(d["ramp"]), 0.0, 1.0))
-	return h
+	return h + _up(p)
+
+## How far under the ground everybody stands at the drawn floor is at a spot of the street (0 or less): the pavements.
+## The world draws its flat layers one under another so that they do not flicker (world.gd _ground_list): the asphalt at
+## the ground's own level, the pavements PAVEMENT_DOWN under it. Somebody stood on a pavement was that far up in the air
+## (the user, 27 Nov 2026: "Parece que levita el jugador"), so the figure of a person goes down by this (chara.gd sync;
+## the body, and everything else that asks foot() or height(), stays where it was).
+## It is 0 wherever something is drawn over the pavement's sheet: the asphalt (fitted between the facades, as the world
+## fits it), a footpath or a square, a street paved in brick and setts (empedrado.gd), the slabs and kerb a house
+## lays along its own front, 3 and 5 cm over the ground (casas.gd _acera: `slabs`, below, read from the houses' merged
+## meshes as they join the town), and whatever a hand-built place lays over the strip with no deck of its own
+## (`floors`, below). Over the first SUNK_RAMP from the asphalt or a house's kerb it comes down little by little, so
+## nobody drops a step on crossing a kerb that is not there.
+## What it leaves alone, as before: dirt tracks, fields and bare ground (drawn lower still), and footpaths (3 cm).
+const PAVEMENT_DOWN := 0.06       # (world.gd: asphalt at ROAD_Y + 0.18, pavements at ROAD_Y + 0.12)
+const PAVEMENT_OUT := 3.2         # (world.gd: the pavements' ribbon is the street and this much more)
+const SUNK_RAMP := 0.25
+const SUNK_CELL := 10.0
+const FLOOR_CELL := 0.5           # `floors`: squares this size where something built lies over the pavement's sheet
+var floors := {}                  # Vector2i(square) -> true (data/aceras_suelos.json, written by the self-test's --aceras-suelos)
+var floors_off := false           # the houses were not merged (--casas-sueltas): where their slabs are is not known, nobody is set down
+var _floors_ok := false           # data/aceras_suelos.json was read. Without it, or without a slab of the houses' known, nobody is set down
+                                  # either: better 6 cm up in the air, as it was, than as much again into every floor laid over a pavement
+var sunk_hold_at := -9            # the frame somebody asked that nobody be set down (game.gd: the creator and the wardrobe, on a set's floor)
+const SLAB_CELL := 6.0
+const SLAB_EDGE := 0.24           # (the kerb beyond a house's slabs: casas.gd _acera, 0.22)
+var _slab_v := PackedVector2Array()       # the houses' slabs: three corners a triangle
+var _slab_box := PackedFloat32Array()     # four a triangle: the box round it, grown by SLAB_EDGE + SUNK_RAMP
+var _slab_cells := {}                     # Vector2i(cell) -> PackedInt32Array of triangles
+var sunk_eye := Vector2.INF       # where the camera is: nobody's feet are looked at from far off (game.gd sets it
+var sunk_eye_at := -9             #  each frame it moves the townspeople, with the frame's number: stale, it is not heeded)
+var _sk_cells = null              # Vector2i(cell) -> PackedInt32Array of the stretches near it
+var _sk_a := PackedVector2Array()
+var _sk_d := PackedVector2Array()
+var _sk_il := PackedFloat32Array()        # 1 / length squared (0: no length)
+var _sk_top0 := PackedFloat32Array()      # half the width of what is drawn over the pavement there, at each end
+var _sk_top1 := PackedFloat32Array()
+var _sk_out := PackedFloat32Array()       # half the width of its pavements' ribbon (0: it has none)
+
+func _sunk_index() -> void:
+	_sk_cells = {}
+	_sk_a.clear(); _sk_d.clear(); _sk_il.clear(); _sk_top0.clear(); _sk_top1.clear(); _sk_out.clear()
+	for r in roads:
+		var k := int(r["k"])
+		if k == 1:
+			continue
+		var wide: float = (float(r["w"]) + PAVEMENT_OUT) / 2.0
+		var paved := int(r.get("paved", 0)) != 0
+		var p: PackedInt32Array = r["p"]
+		for i in range(p.size() - 1):
+			var a: Vector2 = nodes[p[i]]
+			var b: Vector2 = nodes[p[i + 1]]
+			var top0: float = float(r["w"]) / 2.0
+			var top1 := top0
+			if paved:
+				top0 = wide; top1 = wide
+			elif k == 0:
+				top0 = minf(top0, maxf(1.8, float(clr[p[i]]) - 0.5))
+				top1 = minf(top1, maxf(1.8, float(clr[p[i + 1]]) - 0.5))
+			var d := b - a
+			var l := d.length_squared()
+			var n := _sk_a.size()
+			_sk_a.append(a); _sk_d.append(d); _sk_il.append(1.0 / l if l > 0.0001 else 0.0)
+			_sk_top0.append(top0); _sk_top1.append(top1)
+			_sk_out.append(wide if (k == 0 and not paved) else 0.0)
+			var pad := Vector2(wide + SUNK_RAMP, wide + SUNK_RAMP)
+			var lo := a.min(b) - pad
+			var hi := a.max(b) + pad
+			for cx in range(floori(lo.x / SUNK_CELL), floori(hi.x / SUNK_CELL) + 1):
+				for cy in range(floori(lo.y / SUNK_CELL), floori(hi.y / SUNK_CELL) + 1):
+					var key := Vector2i(cx, cy)
+					if not _sk_cells.has(key):
+						_sk_cells[key] = PackedInt32Array()
+					var arr: PackedInt32Array = _sk_cells[key]
+					arr.append(n)
+					_sk_cells[key] = arr
+	if not _floors_loaded:
+		_floors_load()
+
+## Feet up on the floors the hand-built places lay a few centimetres over the ground with no deck of their own (a
+## square's flags, a yard's concrete, a park's walk): in Pretil's count of 27 Nov 2026, 17 200 m2 in 16 places where
+## the shoes went 4 to 9 cm into the floor (the user: "Lo arreglamos"). `ups`: how far over the ground the floor is in
+## each square of FLOOR_CELL, from data/aceras_suelos.json too (the self-test's --aceras-suelos works it out from the
+## places' own meshes: 3.5 to 10 cm up, covering most of the square, out of any solid, the same in every state a place
+## can be in). foot() stands people there; a deck still goes first.
+var ups := {}                     # Vector2i(square) -> metres over the ground
+var lift_on := true               # (the self-test turns it off while it works out what goes in the file)
+var _floors_loaded := false
+
+func _floors_load() -> void:
+	_floors_loaded = true
+	floors.clear()
+	ups.clear()
+	_floors_ok = false
+	var f := FileAccess.open("res://data/aceras_suelos.json", FileAccess.READ)
+	if f == null:
+		return
+	var got = JSON.parse_string(f.get_as_text())
+	if not (got is Dictionary) or float(got.get("cell", 0.0)) != FLOOR_CELL:
+		return
+	var c: Array = got.get("cells", [])
+	_floors_ok = true
+	for i in range(0, c.size() - 1, 2):
+		floors[Vector2i(int(c[i]), int(c[i + 1]))] = true
+	var u: Array = got.get("up", [])
+	for i in range(0, u.size() - 2, 3):
+		ups[Vector2i(int(u[i]), int(u[i + 1]))] = float(u[i + 2]) / 1000.0
+
+func _up(p: Vector2) -> float:
+	if not lift_on:
+		return 0.0
+	if not _floors_loaded:
+		_floors_load()
+	if ups.is_empty():
+		return 0.0
+	return float(ups.get(Vector2i(floori(p.x / FLOOR_CELL), floori(p.y / FLOOR_CELL)), 0.0))
+
+func slabs_clear() -> void:
+	_slab_v.clear()
+	_slab_box.clear()
+	_slab_cells.clear()
+
+## the slabs of a mesh of houses' pavements (lotes.gd, as each joins the town), `xf` its place in the world
+func slabs_add(mesh: Mesh, xf: Transform3D) -> void:
+	var grow := SLAB_EDGE + SUNK_RAMP
+	for sf in range(mesh.get_surface_count()):
+		var arr: Array = mesh.surface_get_arrays(sf)
+		if arr.is_empty() or arr[Mesh.ARRAY_VERTEX] == null:
+			continue
+		var vs: PackedVector3Array = xf * (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array)
+		var ix = arr[Mesh.ARRAY_INDEX]
+		var n: int = (ix as PackedInt32Array).size() if ix != null else vs.size()
+		for i in range(0, n - 2, 3):
+			var a3: Vector3 = vs[ix[i]] if ix != null else vs[i]
+			var b3: Vector3 = vs[ix[i + 1]] if ix != null else vs[i + 1]
+			var c3: Vector3 = vs[ix[i + 2]] if ix != null else vs[i + 2]
+			var a := Vector2(a3.x, a3.z)
+			var b := Vector2(b3.x, b3.z)
+			var c := Vector2(c3.x, c3.z)
+			var lo: Vector2 = a.min(b).min(c) - Vector2(grow, grow)
+			var hi: Vector2 = a.max(b).max(c) + Vector2(grow, grow)
+			var t := _slab_v.size() / 3
+			_slab_v.append(a); _slab_v.append(b); _slab_v.append(c)
+			_slab_box.append(lo.x); _slab_box.append(lo.y); _slab_box.append(hi.x); _slab_box.append(hi.y)
+			for cx in range(floori(lo.x / SLAB_CELL), floori(hi.x / SLAB_CELL) + 1):
+				for cy in range(floori(lo.y / SLAB_CELL), floori(hi.y / SLAB_CELL) + 1):
+					var key := Vector2i(cx, cy)
+					if not _slab_cells.has(key):
+						_slab_cells[key] = PackedInt32Array()
+					var cell: PackedInt32Array = _slab_cells[key]
+					cell.append(t)
+					_slab_cells[key] = cell
+
+func slab_count() -> int:
+	return _slab_v.size() / 3
+
+## how clear of the houses' slabs and kerbs a spot is: 0 on one, 1 from SUNK_RAMP past a kerb on
+func _slab_clear(p: Vector2) -> float:
+	var list = _slab_cells.get(Vector2i(floori(p.x / SLAB_CELL), floori(p.y / SLAB_CELL)))
+	if list == null:
+		return 1.0
+	var best := SLAB_EDGE + SUNK_RAMP
+	for t in (list as PackedInt32Array):
+		var o: int = t * 4
+		if p.x < _slab_box[o] or p.y < _slab_box[o + 1] or p.x > _slab_box[o + 2] or p.y > _slab_box[o + 3]:
+			continue
+		var a: Vector2 = _slab_v[t * 3]
+		var b: Vector2 = _slab_v[t * 3 + 1]
+		var c: Vector2 = _slab_v[t * 3 + 2]
+		if Geometry2D.point_is_inside_triangle(p, a, b, c):
+			return 0.0
+		var d: float = minf(Geometry2D.get_closest_point_to_segment(p, a, b).distance_to(p), minf(Geometry2D.get_closest_point_to_segment(p, b, c).distance_to(p), Geometry2D.get_closest_point_to_segment(p, c, a).distance_to(p)))
+		if d < best:
+			best = d
+	return clampf((best - SLAB_EDGE) / SUNK_RAMP, 0.0, 1.0)
+
+## (`plain`: by the streets alone, without the houses' slabs or `floors` -- what the self-test asks to fill `floors`)
+func sunk(p: Vector2, plain := false) -> float:
+	if _sk_cells == null:
+		_sunk_index()
+	var list = _sk_cells.get(Vector2i(floori(p.x / SUNK_CELL), floori(p.y / SUNK_CELL)))
+	if list == null:
+		return 0.0
+	var inside := 0.0             # how far in from the outer edge of a pavement's ribbon
+	var off := 1e9                # how far out from the edge of whatever is drawn over it
+	for i in (list as PackedInt32Array):
+		var rel: Vector2 = p - _sk_a[i]
+		var d: Vector2 = _sk_d[i]
+		var t := clampf(rel.dot(d) * _sk_il[i], 0.0, 1.0)
+		var dist := (rel - d * t).length()
+		var o := dist - lerpf(_sk_top0[i], _sk_top1[i], t)
+		if o <= 0.0:
+			return 0.0
+		if o < off:
+			off = o
+		if _sk_out[i] - dist > inside:
+			inside = _sk_out[i] - dist
+	if inside <= 0.0:
+		return 0.0
+	var k := minf(1.0, minf(off, inside) / SUNK_RAMP)
+	if not plain:
+		if floors_off or not _floors_ok or _slab_v.is_empty() or floors.has(Vector2i(floori(p.x / FLOOR_CELL), floori(p.y / FLOOR_CELL))):
+			return 0.0
+		k = minf(k, _slab_clear(p))
+	return -PAVEMENT_DOWN * k
 
 ## slow full scan, for setup only. Returns {p: point on the road, u: unit direction, seg}
 func nearest_road(p: Vector2, any_road := false) -> Dictionary:

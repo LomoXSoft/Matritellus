@@ -85,7 +85,7 @@ code { font-family: var(--mono); font-size: 13px; }
 <main>
   <header style="display:flex;flex-direction:column;gap:6px">
     <h1>Misiones de Matritellus</h1>
-    <p class="sub">Leído del código el 21/11/2026, sobre la 0.0.18 con los cambios de ese día; el taxi del Kokas se añadió el 23/11, y desde el 25/11 el puente enlaza con la herencia. Quién da cada misión, cuándo se puede hacer y qué abre al acabarla. Pulsa un recuadro del diagrama para ir a su ficha.</p>
+    <p class="sub">Leído del código el 21/11/2026, sobre la 0.0.18 con los cambios de ese día; el taxi del Kokas se añadió el 23/11, desde el 25/11 el puente enlaza con la herencia, y el 27/11 entraron las Carreras Callejeras de Xandro (versión 0.2.4). Quién da cada misión, cuándo se puede hacer y qué abre al acabarla. Pulsa un recuadro del diagrama para ir a su ficha.</p>
   </header>
 
   <div class="legend" aria-label="Leyenda">
@@ -286,6 +286,11 @@ code { font-family: var(--mono); font-size: 13px; }
       <li>Paras a su lado, se suben y empieza su propio reloj. Al dejarlo pagan una base por la distancia y una propina que baja cuanto más tardas, y el turno gana 30 s.</li>
       <li>Si se le acaba su reloj, se baja sin pagar. Cuando el turno llega a cero, se acaba.</li>
       <li>Mientras dura, la furgoneta no se rompe y la policía no te persigue (Koke les pasa hierba). Los clientes van hablando: de tu velocidad, de los golpes, de tus pintas, de sus divorcios...</li></ol></article>
+    <article class="card" id="m-xandro"><h3>Carreras Callejeras</h3><p>Cuando acabas tu primer turno en el taxi de <span class="p">Koke el Kokas</span> aparece <span class="p">Xandro</span> a la puerta de <span class="l">Talleres Xandro</span> (carretera de Villacañas); si no vas a verle, te llama a las 4 horas de juego. Lleva las carreras de noche: aceptas, el reloj salta a las 22:30 y salen ocho Setas Panda, cada uno de un color.</p>
+      <ol><li>Entrada, 100 €. Premios: 500, 200 y 100 € a los tres primeros. Con tu propio Seta Panda te lo llevas entero; si te presta uno, se queda el 10 %.</li>
+      <li><b>La primera</b> es el Circuito de las Rondas, a dos vueltas. Hasta que hagas podio la repites sin volver a pagar.</li>
+      <li><b>Después</b>, una carrera al día por 100 € (cuarto o peor, los pierdes), rotando entre el Circuito de las Rondas, Las Avenidas y el Sprint al Ferial.</li></ol>
+      <p>No sale en el Modo Golismeo.</p></article>
     <article class="card" id="m-javi"><h3>Los pollos de Javi</h3><p>Después del jamón de la <span class="p">Josefa</span>, <span class="p">Javi</span> (el de <span class="l">Pollos Asados Javi</span>, calle de los Arcos) se da a conocer el primer martes o domingo, o al hablar con él; la Josefa te habla de él una vez. Los martes y domingos, tras su mostrador, te da un pollo asao pa un vecino: 30–150 € según lo caliente que llegue y +2 de confianza.</p></article>
     <article class="card" id="m-pedidos"><h3>Pedidos de Henry</h3><p>Cualquier día menos el jueves (que es el del jamón), <span class="p">Henry</span> te manda a llevarle comida a un vecino. 30–150 € según lo caliente que llegue, y +2 de confianza.</p></article>
   </div>
@@ -318,7 +323,7 @@ code { font-family: var(--mono); font-size: 13px; }
     <article class="card"><h3>Sin hacer todavía</h3><p>La plaza de toros restaurada no está ligada a ninguna misión. Los modelos de los estados de la casa y el interior del banco los está haciendo Pretil.</p></article>
   </div>
 
-  <p class="foot">Fuentes: <code>missions.gd</code>, <code>game.gd</code>, <code>recress.gd</code>, <code>sabotaje.gd</code>, <code>motin.gd</code>, <code>pintadas.gd</code>, <code>ajedrez_humano.gd</code>, <code>tomasa.gd</code>, <code>pili.gd</code>, <code>fondo_casa.gd</code>, <code>trabajos.gd</code>, <code>javi.gd</code>, <code>koke.gd</code>, <code>cartas.gd</code> y <code>loc.gd</code> en X:\MatritellusGPT.</p>
+  <p class="foot">Fuentes: <code>missions.gd</code>, <code>game.gd</code>, <code>recress.gd</code>, <code>sabotaje.gd</code>, <code>motin.gd</code>, <code>pintadas.gd</code>, <code>ajedrez_humano.gd</code>, <code>tomasa.gd</code>, <code>pili.gd</code>, <code>fondo_casa.gd</code>, <code>trabajos.gd</code>, <code>javi.gd</code>, <code>koke.gd</code>, <code>xandro.gd</code>, <code>cartas.gd</code> y <code>loc.gd</code> en X:\MatritellusGPT.</p>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
@@ -359,6 +364,7 @@ code { font-family: var(--mono); font-size: 13px; }
       'obras[' + L('Obras de la casa', 'Edmundo Monedero · de fondo') + ']:::fondo',
       'faenas([' + L('Trabajos', 'El de las faenas, en la plaza') + ']):::des',
       'koke([' + L('Taxi del Kokas', 'una vez al día, en el ferial') + ']):::des',
+      'xandro([' + L('Carreras Callejeras', 'Xandro · de noche, en su taller') + ']):::des',
       'pedidos([' + L('Pedidos de Henry', 'menos los jueves') + ']):::des',
       'javi([' + L('Los pollos de Javi', 'martes y domingos') + ']):::des',
       'ini --> aceite',
@@ -389,6 +395,7 @@ code { font-family: var(--mono); font-size: 13px; }
       'faenas -.->|"el dinero"| casa',
       'casa -->|"Vizum de la Josefa, y 1 h después"| koke',
       'koke -.->|"el dinero"| casa',
+      'koke -->|"tras tu primer turno; a las 4 h te llama"| xandro',
       'ini -.-> faenas',
       'ini -.-> pedidos',
       'menu -->|"el primer martes o domingo"| javi',
@@ -400,7 +407,7 @@ code { font-family: var(--mono); font-size: 13px; }
     ].join('\n');
   }
   var CARD = { aceite: 'm-aceite', velatorio: 'm-velatorio', noche: 'm-noche', movil: 'm-movil', puente: 'm-puente',
-    menu: 'm-menu', luis: 'm-luis', jueves: 'm-jueves', chiki: 'm-chiki', recress: 'm-recress', ajedrez: 'm-ajedrez', tomasa: 'm-tomasa', pili: 'm-pili', casa: 'm-casa', obras: 'm-casa', faenas: 'm-faenas', koke: 'm-koke', pedidos: 'm-pedidos', javi: 'm-javi',
+    menu: 'm-menu', luis: 'm-luis', jueves: 'm-jueves', chiki: 'm-chiki', recress: 'm-recress', ajedrez: 'm-ajedrez', tomasa: 'm-tomasa', pili: 'm-pili', casa: 'm-casa', obras: 'm-casa', faenas: 'm-faenas', koke: 'm-koke', xandro: 'm-xandro', pedidos: 'm-pedidos', javi: 'm-javi',
     box: 'mini', jamon: 'mini', tokken: 'mini', rally: 'mini', hit: 'mini', ajm: 'mini', sala: 'mini', inf: 'm-menu', rest: 'm-luis', pc: 'm-puente' };
   function go(id) {
     var el = document.getElementById(id);
