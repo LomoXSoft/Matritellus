@@ -616,8 +616,13 @@ func _unhandled_input(e: InputEvent) -> void:
 				Sfx.beep(520.0, 0.04, 1, -18.0)
 				rebuild()
 		return
+	var tap_pos := Vector2(-1.0, -1.0)
 	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-		var ci := _row_at(e.position)
+		tap_pos = e.position
+	elif e is InputEventScreenTouch and e.pressed and not (Touch.on and Touch.blocks_tap(e.position)):
+		tap_pos = e.position
+	if tap_pos.x >= 0.0:
+		var ci := _row_at(tap_pos)
 		if ci >= 0 and ci < _items.size():
 			sel = ci
 			var it_c: Dictionary = _items[sel]
@@ -628,7 +633,7 @@ func _unhandled_input(e: InputEvent) -> void:
 					rebuild()
 			elif it_c.has("left") and it_c.has("right"):
 				var mid_x := _box.get_global_rect().get_center().x
-				(it_c["left"] if e.position.x < mid_x else it_c["right"]).call()
+				(it_c["left"] if tap_pos.x < mid_x else it_c["right"]).call()
 				Sfx.beep(600.0, 0.04, 1, -18.0)
 				rebuild()
 			elif it_c.has("right"):

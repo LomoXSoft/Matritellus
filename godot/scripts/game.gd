@@ -406,6 +406,7 @@ func _ready() -> void:
 	_boot.layer = 60
 	var black := ColorRect.new()
 	black.color = Color.BLACK
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	black.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_boot.add_child(black)
 	# (the studio's logo is no longer here: it comes up after, in the intro, all the same -- the user, 17 Nov 2026. In
@@ -414,6 +415,7 @@ func _ready() -> void:
 	_boot.add_child(raya)
 	var bar := ProgressBar.new()                 # how far along it is, small, under the logo
 	bar.show_percentage = false
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.custom_minimum_size = Vector2(260, 6)
 	bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	bar.position = Vector2(-130, -90)
@@ -485,10 +487,14 @@ func _ready() -> void:
 			actualiza.offered = true
 			_boot_continue = false
 			_boot_menu.open("update")
+			if Touch.on:
+				Touch._context_tick()
 			while not _boot_continue:
 				await get_tree().process_frame
 			_boot_menu.queue_free()
 			_boot_menu = null
+			if Touch.on:
+				Touch._context_tick()
 		raya.visible = true
 		bar.visible = true
 		doing.visible = true

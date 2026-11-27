@@ -70,17 +70,31 @@ func _game():
 # ---------------- what there is to do now ----------------
 ## [label, action, kind] for each button there should be: kind "big" (the main one), "" (round it) or "top" (small,
 ## along the top edge)
+func _active_menu(g):
+	if g == null:
+		return null
+	var bm = g.get("_boot_menu")
+	if bm != null and is_instance_valid(bm) and bm.visible:
+		return bm
+	var m = g.get("menu")
+	if m != null and is_instance_valid(m) and m.visible:
+		return m
+	return null
+
+func blocks_tap(p: Vector2) -> bool:
+	return _on_button(p) or (_dpad_mode() and p.distance_to(_dpad_centre()) <= DPAD_HIT_R)
+
 func _wanted() -> Array:
 	var es: bool = Loc.lang == "es"
 	var g = _game()
 	if g == null or g.get("phase") == null:
 		return []
+	var menu = _active_menu(g)
+	if menu != null:
+		return [["Aceptar" if es else "OK", "m_accept", "big"], ["Volver" if es else "Back", "m_back", ""]]
 	if not g.get("_booted"):
 		return []                                 # the loading screen: nothing to press yet
 	var phase: String = g.phase
-	var menu = g.get("menu")
-	if menu != null and menu.visible:
-		return [["Aceptar" if es else "OK", "m_accept", "big"], ["Volver" if es else "Back", "m_back", ""]]
 	match phase:
 		"intro", "title_in", "press", "title_out", "title":
 			# the studio's logo and the title gliding in: no buttons until the main menu (the user, 13 November 2026;
@@ -108,7 +122,7 @@ func _wanted() -> Array:
 			# (ajedrez) chess on the square: a finger picks the squares on the board itself; these are Vista, Soltar, II
 			var aj = g.get("ajedrez")
 			return aj.touch_buttons() if aj != null and aj.has_method("touch_buttons") else []
-	if g.get("hud_hidden") == true and (menu == null or not menu.visible) and not g.get("map_open"):
+	if g.get("hud_hidden") == true and menu == null and not g.get("map_open"):
 		return []
 	if g.get("inventario") != null and g.inventario.open:
 		return []
@@ -224,14 +238,17 @@ func _dpad_mode() -> bool:
 	if not on:
 		return false
 	var g = _game()
-	if g == null or not g.get("_booted"):
+	if g == null:
+		return false
+	if _active_menu(g) != null:
+		return true
+	if not g.get("_booted"):
 		return false
 	if g.get("padron") != null and g.padron.active:
 		return false
 	if g.get("cartas") != null and g.cartas.writing:
 		return false
-	var menu = g.get("menu")
-	return (menu != null and menu.visible) or (g.get("phase") in ["creator", "armario"])
+	return g.get("phase") in ["creator", "armario"]
 
 func _dpad_centre() -> Vector2:
 	return Vector2(142.0, _size().y - 142.0)
@@ -372,6 +389,9 @@ func _input(e: InputEvent) -> void:
 				_dpad_set(_dpad_dir_at(e.position))
 				_pad.queue_redraw()
 				return
+			var am = _active_menu(_game())
+			if am != null and am.has_method("_row_at") and am._row_at(e.position) >= 0:
+				return
 			var spot := _creator_spot(e.position)
 			if spot == "panel":
 				return                   # (the creator's own buttons)
@@ -485,7 +505,7 @@ func _move_stick(p: Vector2) -> void:
 	var x := radial.x
 	var y := radial.y
 	var g = _game()
-	var wheel_only: bool = g != null and (g.get("in_car") != null or g.phase == "rally") and not (g.get("menu") != null and g.menu.visible)
+	var wheel_only: bool = g != null and (g.get("in_car") != null or g.phase == "rally") and _active_menu(g) == null
 	for pair in [["right", maxf(x, 0.0)], ["left", maxf(-x, 0.0)], ["back", maxf(y, 0.0)], ["forward", maxf(-y, 0.0)]]:
 		if wheel_only and (pair[0] == "back" or pair[0] == "forward"):
 			continue                              # (at the wheel the stick only steers: the pedals are buttons, and hold those two)

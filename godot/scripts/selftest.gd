@@ -7056,6 +7056,47 @@ func _actualiza_checks(ask := false) -> void:
 	var and_go: bool = A.opened == A.link and g.menu.page == "update_go" and String(g._menu_page("update_go")["sub"]).contains(next)
 	_check(and_two and and_go, "Android falls back to 2-option browser handoff (-Android.apk -> update_go)")
 
+	# Android pre-boot update gate: Touch exposes D-pad + OK/Back and direct row tap dismisses
+	var boot_was_touch: bool = Touch.on
+	var boot_was_booted: bool = g._booted
+	g.menu.close()
+	g._booted = false
+	var boot_layer := CanvasLayer.new()
+	boot_layer.layer = 60
+	g.add_child(boot_layer)
+	var bm = load("res://scripts/menu.gd").new()
+	bm.builder = g._menu_page
+	boot_layer.add_child(bm)
+	g._boot_menu = bm
+	g._boot_continue = false
+	bm.open("update")
+	Touch._show(true)
+	await _frames(2)
+	var boot_dpad: bool = Touch._dpad_mode()
+	var boot_actions: Array = Touch._wanted().map(func(w): return String(w[1]))
+	var boot_btns_ok: bool = "m_accept" in boot_actions and "m_back" in boot_actions
+	var tap_pt := Vector2(-1.0, -1.0)
+	for rc in bm._list.get_children():
+		if rc is Control and rc.has_meta("menu_i") and int(rc.get_meta("menu_i")) == 1:
+			tap_pt = (rc as Control).get_global_rect().get_center()
+			break
+	if tap_pt.x >= 0.0:
+		var ev := InputEventScreenTouch.new()
+		ev.index = 0
+		ev.pressed = true
+		ev.position = tap_pt
+		bm._unhandled_input(ev)
+	await _frames(1)
+	var boot_tap_ok: bool = g._boot_continue == true
+	bm.queue_free()
+	boot_layer.queue_free()
+	g._boot_menu = null
+	g._boot_continue = false
+	g._booted = boot_was_booted
+	Touch._show(boot_was_touch)
+	await _frames(1)
+	_check(boot_dpad and boot_btns_ok and boot_tap_ok, "Android pre-boot update menu enables Touch OK/Back + D-pad and direct row tap (%s)" % str([boot_dpad, boot_btns_ok, boot_tap_ok]))
+
 	if ask:                                           # GitHub, for real: whatever it says, the game must not wait on it
 		A.platform_override = ""
 		A.state = "idle"
