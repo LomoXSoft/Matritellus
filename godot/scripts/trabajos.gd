@@ -501,7 +501,7 @@ func show() -> void:
 				var it = _order_item()
 				G.set_target(it["p"] if it != null else null, false)
 				return
-			G.hud.set_objective(G._tag(), Loc.t("obj_" + kind()) % (who.shown_name() if who != null else "?"))
+			G.hud.set_objective(G._tag(), Loc.t("obj_" + kind()) % G.entradas.name_where(who))      # (and in which shop: entradas.gd)
 			G.set_target(who.p if who != null else null, false)
 
 func _order_item():

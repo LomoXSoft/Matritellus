@@ -67,6 +67,7 @@ const ColegioPubS = preload("res://scripts/colegiopub.gd")
 const LapizS = preload("res://scripts/lapiz.gd")
 const MiguelAngelS = preload("res://scripts/miguelangel.gd")
 const ViveroS = preload("res://scripts/vivero.gd")
+const PolideportivoS = preload("res://scripts/polideportivo.gd")
 const Detalles = preload("res://scripts/detalles.gd")
 const Toro = preload("res://scripts/toro.gd")
 const Empedrado = preload("res://scripts/empedrado.gd")
@@ -79,6 +80,10 @@ const L_WORLD := 1      # physics layers: 1 world, 2 cars, 4 characters
 const ROAD_Y := -0.18   # flat layers are stacked just below the ground you drive on, so the top of the asphalt is the physics ground
 
 var mill_blades: Node3D
+## Rect2s on the map (x, z) where the street gets no random furniture (props.gd _place_furniture) and no car parked at
+## random when a game begins (game.gd): a hand-built car park or square of its own (the Polideportivo's car park; Pretil
+## and Sistemas, 28 Nov 2026). Filled by the hand-built places while the town is built, before props.gd places things.
+var sin_muebles: Array = []
 var extra_props: Array = []       # [kind, where (Vector2), heading, variant]: street furniture that hand-built places saw in their photos (props.gd stands it there, to be knocked over like the rest)
 var hand_tags: Array = []         # [where (Vector2, on the wall), outwards (Vector2), room (m), ground y]: walls a house built by hand saw graffiti on in its photo (casas.gd "pintada"; props.gd gives them a peña's tag before any other)
 var extra_ramps: Array = []       # [where (Vector2), heading]: builders' skips with boards against them (props.gd makes ramps of them)
@@ -179,6 +184,7 @@ var pisacastana                 # the shoe shop "Pisacastaña" at the corner of 
 var requejo                     # the Red Cross's block (its name in the game: requejo.gd's NAME) and the park behind it, the Plaza de Jesús Requejo, built by hand on its house of the map (requejo.gd)
 var colegiopub                  # the primary school of the Calle del Socorro, "Colegio Público" (the Garcilaso de la Vega), built by hand on the empty block of the map, over the old cemetery's bones (colegiopub.gd)
 var miguelangel                 # the Burger Pizzería Miguel Ángel of the Calle de Tembleque, built by hand on its house of the map (miguelangel.gd)
+var polideportivo               # the Polideportivo Municipal east of the Calle de Federico Martín Bahamontes, built by hand; its inside a set by the green arrow (polideportivo.gd, polideportivo_dentro.gd)
 var vivero                      # the Vivero de Empresas of the Avenida de la Reina Sofía, built by hand on its house of the map; its inside a set by the green arrow (vivero.gd, vivero_dentro.gd)
 var lapiz                       # the car electrician's "Taller Lápiz" and the sweet maker's "Dulces San Paquito" of the Avenida de Martín Descalzo, built by hand on their three houses of the map (lapiz.gd)
 var mirador                     # the cream house with the bay window, on the corner of the avenue and Santa Ana at the crossroads of the traffic lights, built by hand on its house of the map (mirador.gd)
@@ -200,7 +206,7 @@ func build() -> void:
 ## opens, so that the window goes on answering (and showing the studio's logo) instead of freezing until it is all up.
 func build_steps() -> Array:
 	return [["bodies", _build_begin], ["ground", _ground_timed], ["buildings", _buildings], ["houses", _houses], ["trees", _trees], ["windmill", _windmill],
-		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the dance hall of the old road", _build_cuevas], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the shop MaxiPrecio", _build_maxiprecio], ["the shop Tetoqa", _build_tetoqa], ["the shop Pisacastaña", _build_pisacastana], ["the optician Óptica Corsa", _build_optica], ["the signs at the north entrance", _build_entrada], ["the roundabout at the north entrance", _build_rotonda_norte], ["the cemetery", _build_cementerio], ["the Plaza de Jesús Requejo", _build_requejo], ["the crossroads' traffic lights", _build_cruce], ["the Colegio Público", _build_colegiopub], ["the Taller Lápiz and Dulces San Paquito", _build_lapiz], ["the Burger Pizzería Miguel Ángel", _build_miguelangel], ["the Vivero de Empresas", _build_vivero], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
+		["cooperative", _build_coop], ["plaza", _build_plaza], ["church", _build_church], ["health centre", _build_salud], ["the Petril", _build_petril], ["the old bullring", _build_toros], ["the nursery school", _build_calasanz], ["the pharmacy's row", _build_farmacia], ["the hermitage of the Caridad", _build_caridad], ["the convent of Santa Ana", _build_santaana], ["the old school", _build_colegio], ["the Tricornios' barracks", _build_cuartel], ["the people's university and the stationer's", _build_comunal], ["the Plazuela del Toledano", _build_toledano], ["Kebab Deluxe", _build_kebabdeluxe], ["the Tricornios' roundabout", _build_rotonda], ["the IES Valdeacero", _build_ies], ["the MasAhorro", _build_masahorro], ["the Noche", _build_noche], ["the bank and the copy shop", _build_bancosancho], ["the Merkocarry", _build_merkocarry], ["the post office", _build_correos], ["the fairground", _build_ferial],["the supermarket", _build_mercamona], ["the pizza house", _build_todopizza], ["the kebab house of Santa Ana", _build_teledurum], ["the grocer's at the point", _build_chinos], ["the pizzeria Toti", _build_toti], ["the corner house of the Salvador", _build_salvador2], ["the Casa Grande's block", _build_cultura], ["the hermitage of San Sebastián", _build_sebastian], ["the hermitage of San Cristóbal", _build_cristobal], ["the house of Matías Pérez", _build_matias], ["the hermitage of the Cristo del Prado", _build_cristoprado], ["the old people's home of the Cristo", _build_residencia], ["the park of the Paseo del Cristo", _build_paseo], ["the Silo del Tío Anaranjao", _build_silo], ["the house you inherit", _build_casa_fuera], ["the oil mill", _build_almazara], ["the roast chicken shop", _build_asador], ["the Cafetería Rize", _build_rize], ["the dance hall of the old road", _build_cuevas], ["the Travesía del Clavel", _build_travesia], ["Seguros Sopiss", _build_sopiss], ["the dental clinic", _build_clinica], ["the white house of Santa Ana", _build_stana2], ["the house with the bay window", _build_mirador], ["the house north of the Salvador", _build_beige], ["the shop MaxiPrecio", _build_maxiprecio], ["the shop Tetoqa", _build_tetoqa], ["the shop Pisacastaña", _build_pisacastana], ["the optician Óptica Corsa", _build_optica], ["the signs at the north entrance", _build_entrada], ["the roundabout at the north entrance", _build_rotonda_norte], ["the cemetery", _build_cementerio], ["the Plaza de Jesús Requejo", _build_requejo], ["the crossroads' traffic lights", _build_cruce], ["the Colegio Público", _build_colegiopub], ["the Taller Lápiz and Dulces San Paquito", _build_lapiz], ["the Burger Pizzería Miguel Ángel", _build_miguelangel], ["the Vivero de Empresas", _build_vivero], ["the Polideportivo Municipal", _build_polideportivo], ["details", _build_details], ["dry plants", _build_matojos], ["bounds", _bounds]]
 
 func _build_begin() -> void:
 	audit = OS.get_cmdline_user_args().has("--selftest")
@@ -440,6 +446,12 @@ func _build_vivero() -> void:
 		return
 	vivero = ViveroS.new()
 	vivero.build(self, hd)
+
+func _build_polideportivo() -> void:
+	if MapData.polideportivo.is_empty(): # (a map baked before it: Catastro's box still stands there)
+		return
+	polideportivo = PolideportivoS.new() # (the Polideportivo Municipal: polideportivo.gd, and its inside polideportivo_dentro.gd)
+	polideportivo.build(self)
 
 func _build_mirador() -> void:
 	for hd in MapData.houses:        # (the cream house with the bay window, at the crossroads of the traffic lights: mirador.gd, on its house of the map)
@@ -1555,7 +1567,7 @@ func _houses() -> bool:
 				var n_l := 0
 				var lines_l := PackedStringArray()
 				for c in get_children():
-					if c is MeshInstance3D and String(c.name).begins_with("lote_"):
+					if c is MeshInstance3D and String(c.name).begins_with("lote_") and (c as MeshInstance3D).mesh != null:
 						var mi := c as MeshInstance3D
 						var surf: Dictionary = (mi.mesh.get("_surfaces") as Array)[0]
 						var mo: Material = mi.material_override

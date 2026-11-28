@@ -42,6 +42,7 @@ var calasanz: Dictionary = {}    # the nursery school of the Calle del Palo's (c
 var caridad: Dictionary = {}     # the hermitage of the Caridad's island (caridad.gd): {o: the hermitage's south-west corner, u: along its south side}; empty on a map baked without it
 var mercamona: Dictionary = {}   # the supermarket's (mercamona.gd): {o: the shop's north-west corner, u: along its west side, low: its car park's level}; empty on a map baked without it
 var correos: Dictionary = {}     # the post office of the Calle de Zaragoza's (correos.gd): {o: its front's middle}; empty on a map baked without it
+var polideportivo: Dictionary = {}   # the Polideportivo Municipal (polideportivo.gd): {o: its north-west corner, u: along its north wall, to the east}; empty on a map baked without it
 var cristobal: Dictionary = {}   # the little hermitage of San Cristóbal (cristobal.gd): {o: its south-west corner, u: the street's way}; empty on a map baked without it
 var almazara: Dictionary = {}    # the oil mill of the road to Villacañas (almazara.gd): {o: its corner on the road, u: along its front}; empty on a map baked without it
 var cuevas: Dictionary = {}      # the dance hall of the old Madrid-Cádiz road (cuevas.gd): {o: Catastro's north-west corner of the hall, u: along its front}; empty on a map baked without it
@@ -123,6 +124,7 @@ func _ready() -> void:
 	cultura = data.get("cultura", {})
 	sebastian = data.get("sebastian", {})
 	cristobal = data.get("cristobal", {})
+	polideportivo = data.get("polideportivo", {})
 	almazara = data.get("almazara", {})
 	rize = data.get("rize", {})
 	cuevas = data.get("cuevas", {})

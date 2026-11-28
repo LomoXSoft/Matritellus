@@ -123,6 +123,49 @@ for name, a, b, pts in RESHAPE:
         print('reshaped: %s through %d points' % (name, len(pts)))
     print('street renamed: %s (%d stretch%s)' % (name, len(hit), '' if len(hit) == 1 else 'es'))
 # Streets that are pedestrian and paved in setts from a given node on, though the map's source has them for cars: the
+# Streets the map's source has not got at all. The Polideportivo's (godot/scripts/polideportivo.gd; the user, 28
+# November 2026: "Calles con coches y algunos aparcados en el parking"): the street along its north side from the Calle
+# Bahamontes and down the aisle of its car park, a service road with no name; and the Calle Mariano Haro along its south
+# side, from the Calle Bahamontes past the foot of the car park to the Avenida de la Constitución (the user the same
+# day, of its stretch east of the car park: "no le falta aquí carretera? (C. Mariano Haro)"; the orthophoto: 5 m of
+# asphalt between two rows of trees, so a service road as well). Both ways, no dead end. Their points are numbered
+# after every other, so no other street's numbers change; a point "on" a street is a new point on its line, put into
+# that street between the two it falls between; ('at', x, z) is a point the map has already (Pretil, Sistemas and
+# Texturas, 28 November 2026).
+EXTRA_WAYS = [{'h': 'service', 'n': '', 'from': (-79.2, -1063.9), 'pts': [(-70.07, -1057.11), (4.41, -1045.31), (-4.39, -989.76)]},
+              {'h': 'service', 'n': 'Calle Mariano Haro', 'from_on': ('Calle de Federico Martín Bahamontes', (-59.80, -998.53)),
+               'pts': [('at', -4.39, -989.76)], 'to_on': ('Avenida de la Constitución', (61.33, -979.39))},
+              # ...and the car park's second aisle, along its east side by the workshop's wall (the user, 28 November
+              # 2026, of the two aisles a street map draws there: "Dibújalo"): on east from the head of the first
+              # aisle, and down, slanting as that wall does, to the Calle Mariano Haro 8 m east of the first aisle's foot
+              {'h': 'service', 'n': '', 'from': (4.41, -1045.31), 'pts': [(18.83, -1043.03), (10.48, -1012.71)],
+               'to_on': ('Calle Mariano Haro', (3.61, -988.49))}]
+def _node_near(x, z):
+    i = min(range(len(npts)), key=lambda k: math.dist(npts[k], (x, z)))
+    assert math.dist(npts[i], (x, z)) < 1.0, ('no point of the map there', x, z, npts[i])
+    return i
+def _node_on(name, x, z):
+    best = None
+    for r in roads:
+        if r['n'] != name: continue
+        for k, (i, j) in enumerate(zip(r['p'], r['p'][1:])):
+            (ax, az), (bx, bz) = npts[i], npts[j]
+            l2 = (bx - ax) ** 2 + (bz - az) ** 2
+            t = ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / l2 if l2 else 0.0
+            if not 0.02 < t < 0.98: continue
+            q = (ax + (bx - ax) * t, az + (bz - az) * t)
+            if best is None or math.dist(q, (x, z)) < best[0]: best = (math.dist(q, (x, z)), r, k, q)
+    assert best and best[0] < 2.0, ('not on that street', name, x, z, best and best[0])
+    npts.append(best[3]); best[1]['p'].insert(best[2] + 1, len(npts) - 1)
+    return len(npts) - 1
+for e in EXTRA_WAYS:
+    run = [_node_near(*e['from']) if 'from' in e else _node_on(*e['from_on'][:1], *e['from_on'][1])]
+    for q in e['pts']:
+        if q[0] == 'at': run.append(_node_near(q[1], q[2])); continue
+        npts.append(q); run.append(len(npts) - 1)
+    if 'to_on' in e: run.append(_node_on(e['to_on'][0], *e['to_on'][1]))
+    roads.append({'w': WIDTH[e['h']], 'k': KIND.get(e['h'], 0), 'h': e['h'], 'n': e['n'], 'p': run})
+    print('a street the source has not got: %d points, %.0f m' % (len(run), sum(math.dist(npts[a], npts[b]) for a, b in zip(run, run[1:]))))
 # Calle Real from its crossroads with Colón and La Palma down to the end, among the shops (Street View, November 2024;
 # the user, 15 November 2026: "es zona peatonal y el suelo está empedrado"). That stretch becomes a footpath (k 2: no
 # traffic, no asphalt, no kerbs; empedrado.gd lays the setts) but keeps a car street's corridor, so no house moves.
@@ -570,6 +613,15 @@ cristobal = {'o': [429.23, -981.43], 'u': [0.8875, -0.4610]}
 _cristobal_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'cristobal.gd')
 if not (os.path.exists(_cristobal_gd) and 'const READY := true' in open(_cristobal_gd, encoding='utf-8').read()):      # (not built yet: Catastro's building stays)
     CRISTOBAL_RC, cristobal = None, {}
+# The Polideportivo Municipal, the town's sports hall east of the Calle de Federico Martín Bahamontes
+# (godot/scripts/polideportivo.gd; the user, 28 November 2026; referencias/polideportivo/): Catastro's box of it is not
+# raised -- polideportivo.gd builds the hall from the orthophoto's roof, its stairs, its hut and the ground round it.
+POLIDEPORTIVO_RC = '4201010VJ5740S'
+polideportivo_built = Polygon([(-42.4, -1046.4), (-9.21, -1041.14), (-16.16, -997.29), (-49.35, -1002.55)])
+polideportivo = {'o': [-42.4, -1046.4], 'u': [0.98769, 0.15643]}
+_polideportivo_gd = os.path.join(HERE, '..', 'godot', 'scripts', 'polideportivo.gd')
+if not (os.path.exists(_polideportivo_gd) and 'const READY := true' in open(_polideportivo_gd, encoding='utf-8').read()):      # (not built yet: Catastro's box stays)
+    POLIDEPORTIVO_RC, polideportivo = None, {}
 # The oil mill of the road to Villacañas, "González de la Ruz" in the game (godot/scripts/almazara.gd; the user, 21
 # November 2026; referencias/almazara/): Catastro's buildings of it are not raised -- almazara.gd builds them, and the
 # tall nave beside them on the road, which Catastro has not got -- and the map plants no trees on its plot nor on the
@@ -837,6 +889,7 @@ def add_part(g, bid, floors, look=None, hand=None):
     if bid == CULTURA_RC: return                                 # ...and the block of the Casa Grande, the library and the music school
     if bid == SEBASTIAN_RC: return                               # ...and the hermitage of San Sebastián
     if bid == CRISTOBAL_RC: return                               # ...and the little hermitage of San Cristóbal
+    if bid == POLIDEPORTIVO_RC: return                           # ...and the town's sports hall
     if bid == ALMAZARA_RC: return                                # ...and the oil mill of the road to Villacañas
     if bid in RIZE_RCS: return                                   # ...and the Cafetería Rize and the garage opposite it in its alley
     if bid == CUEVAS_RC: return                                  # ...and the dance hall of the old road
@@ -1157,6 +1210,29 @@ print('relief %d x %d heights, %.1f to %.1f m | terraces %s' % (rnx, rnz, RH.min
 _gz, _gx = np.gradient(RH, GRID)
 print('slopes (%%): median %.1f, 90%% under %.1f, 99%% under %.1f, steepest %.1f' % tuple(list(np.percentile(np.hypot(_gx, _gz) * 100, [50, 90, 99])) + [float(np.hypot(_gx, _gz).max() * 100)]))
 
+# A wall is hidden or shown whole, by what stands just outside its middle (below). Where a neighbour buries only a
+# part of a long wall, that is wrong for the rest of it: the workshop east of the Polideportivo's car park stood with
+# no wall to its yard, 18 m of it open, its roof seen from below, because a lean-to stands against the east half of
+# that side (the user, 28 November 2026: "arreglado el fallo viejo de la nave"). At each of these points the wall
+# of the generic building that passes through it is cut in two, and each half is then asked on its own (Pretil).
+WALL_CUTS = [(32.2, -1009.9)]
+for _q in WALL_CUTS:
+    _cut = 0
+    for p in parts:
+        if p.get('hand'): continue
+        c = list(p['poly'].exterior.coords)
+        for k, ((x1, z1), (x2, z2)) in enumerate(zip(c[:-1], c[1:])):
+            l2 = (x2 - x1) ** 2 + (z2 - z1) ** 2
+            if l2 < 4.0: continue
+            t = ((_q[0] - x1) * (x2 - x1) + (_q[1] - z1) * (z2 - z1)) / l2
+            if not 1.0 < t * math.sqrt(l2) < math.sqrt(l2) - 1.0: continue
+            m = (x1 + (x2 - x1) * t, z1 + (z2 - z1) * t)
+            if math.dist(m, _q) > 0.15: continue
+            p['poly'] = Polygon(c[:k + 1] + [m] + c[k + 1:-1], [list(h.coords) for h in p['poly'].interiors]); _cut += 1
+            break
+    print('a wall cut in two at (%.1f, %.1f): %d' % (_q[0], _q[1], _cut))
+    assert _cut == 1, ('one wall should pass through there', _q, _cut)
+
 polys = [p['poly'] for p in parts]
 tree = STRtree(polys)
 heights = np.array([p['base'] + p['h'] for p in parts])
@@ -1389,6 +1465,7 @@ if correos: block_list.append(correos_built)        # (the post office, likewise
 if cultura: block_list.append(cultura_built)        # (the block of the Casa Grande, likewise)
 if sebastian: block_list.extend([sebastian_built, sebastian_chapel])      # (the hermitage of San Sebastián and its little chapel, likewise)
 if cristobal: block_list.append(cristobal_built)    # (the little hermitage of San Cristóbal, likewise)
+if polideportivo: block_list.append(polideportivo_built)    # (the sports hall, likewise)
 if almazara: block_list.extend(almazara_built)      # (the oil mill, its long wall and its tall nave on the road, likewise)
 if rize: block_list.extend(rize_built)              # (the Cafetería Rize, the garage opposite and the wall at the alley's end, likewise)
 if cuevas: block_list.extend(cuevas_built)          # (the dance hall of the old road, its terrace and its sheds, likewise)
@@ -1481,7 +1558,7 @@ for e in els:
     pois.append({'n': t['name'], 't': t.get('amenity') or t.get('shop') or t.get('man_made') or t.get('leisure') or t.get('building') or '', 'x': r1(x), 'z': r1(z)})
 
 out = {'bounds': BOUNDS, 'nodes': [r1(v) for q in npts for v in q], 'clr': clr, 'roads': roads, 'areas': areas, 'trees': trees, 'pois': pois,
-       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'cristobal': cristobal, 'cristoprado': cristoprado, 'residencia': residencia, 'colegio': colegio, 'cuartel': cuartel, 'almazara': almazara, 'rize': rize, 'cuevas': cuevas, 'travesia': travesia, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
+       'walls': walls, 'roofs_gable': roofs_gable, 'roofs_flat': roofs_flat, 'outlines': outlines, 'towers': towers, 'townhall': townhall, 'coop': coop, 'garages': garages, 'church': church, 'salud': salud, 'petril': petril, 'molino': molino, 'toros': toros, 'puente': puente, 'calasanz': calasanz, 'caridad': caridad, 'santaana': santaana, 'mercamona': mercamona, 'masahorro': masahorro, 'noche': noche, 'merkocarry': merkocarry, 'correos': correos, 'cultura': cultura, 'sebastian': sebastian, 'cristobal': cristobal, 'polideportivo': polideportivo, 'cristoprado': cristoprado, 'residencia': residencia, 'colegio': colegio, 'cuartel': cuartel, 'almazara': almazara, 'rize': rize, 'cuevas': cuevas, 'travesia': travesia, 'aceras': aceras, 'raised': [{'line': [list(q) for q in st['line']], 'h0': st['h0'], 'h1': st['h1']} for st in RAISED],
        'wall_y': wall_y, 'looks': LOOK_NAMES, 'houses': houses, 'relief': {'g': GRID, 'x0': rx0, 'z0': rz0, 'nx': rnx, 'nz': rnz, 'h': [int(round(v * 100)) for v in RH.ravel()]}}
 path = os.path.join(HERE, '..', 'godot', 'data', 'map.json')
 os.makedirs(os.path.dirname(path), exist_ok=True)

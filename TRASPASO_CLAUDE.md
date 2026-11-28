@@ -2474,6 +2474,140 @@ building)». El lore se le pasó a Worldbuilding ese mismo día.
   una vista; lo devolví entero a CRLF en el momento. Para archivos CRLF, parches en Python.
 - **APROBADO por el usuario (28/11: «Ponlo, y visto bueno»)**. No hay commit.
 
+### Polideportivo Municipal, a mano y con interior (28/11, Claude · Pretil)
+
+- **Encargo**: Luis, por Texturas: «Ese es el polideportivo. Se lo pasamos a pretil»; luego, con fotos del interior:
+  «Te paso imágenes por dentro. Quiero que se pueda acceder».
+- **Archivos nuevos**: `godot/scripts/polideportivo.gd` (la nave), `godot/scripts/polideportivo_dentro.gd` (el
+  interior), `tools/polideportivo/dibujos.py`, `godot/assets/polideportivo/` (cuatro PNG y sus `.import`),
+  `tools/ign/polideportivo.jpg` y `.json`, `referencias/polideportivo/LEEME.md`, `guion/fotos/polideportivo/`.
+- **Rehorneado**: `tools/bake_godot.py` con `POLIDEPORTIVO_RC = '4201010VJ5740S'`. `map.json` pierde la caja del
+  Catastro (un contorno, cuatro muros, un tejado plano) y gana la clave `polideportivo`. Calles, árboles, áreas,
+  relieve, aceras y POIs, idénticos. El horneado que hay ahora es de Texturas (06:44), con mi clave dentro.
+- **Archivos compartidos** (solo líneas añadidas): `map_data.gd` (var y `data.get`), `world.gd` (preload, var,
+  entrada en la lista, `_build_polideportivo`), `entradas.gd` (`shops()`), `selftest.gd` (modo `--polideportivo`,
+  `_polideportivo_checks`, llamada en la pasada completa tras `_vivero_checks`), `bake_godot.py`.
+- **`godot/data/aceras_suelos.json` reescrito** con `aceras-suelos escribe` (Sistemas avisado): las losas de
+  alrededor de la nave.
+- **Cómo es**: nave de ladrillo de 31,3 × 44,4 m girada 9°, cuatro cubiertas de chapa de hastial quebrado, fachada
+  este escalonada con dos puertas, dos escaleras de hormigón y las letras; caseta al suroeste; aparcamiento de 18
+  plazas, calle del norte con la tapia del campo y cipreses, paseo del sur. Aparcamiento y calle son suelo a mano,
+  sin tráfico. Emblema nuestro en vez de los cinco aros.
+- **Dentro** (decorado en (1050, −1550), 44 × 28 m): grada de 290 asientos con pasarela, dos escaleras que se suben,
+  pista azul con sus líneas, porterías, canastas colgadas, marcador y doce carteles de tiendas del juego. Siempre
+  abierto, sin horario; nadie dentro.
+- **Pruebas**: `polideportivo` OK (5); `zfight` unos 0,4 m² fuera y menos de 0,1 m² dentro; `aceras-suelos` OK (12);
+  `cache_casas_check` OK (la primera pasada falló porque otra sesión cambió `lotes.gd` a medias).
+- **Para Sistemas**: `selftest.gd` tiene una línea (la 14787, `if DisplayServer.get_name() != "headless":`) con
+  final LF en un archivo CRLF. No es mía y no la he tocado.
+- **Dato del horneado**: dos horneados seguidos no dan los mismos `outlines` (unos 240 cambian en centímetros). Ya
+  venía así.
+- Detalle en `referencias/polideportivo/LEEME.md`. Fotos en `guion/fotos/polideportivo/`.
+- **ENSEÑADO a Luis el 28/11; falta su visto bueno.** Azafrán propuesto, sin poner. No hay commit.
+
+### Polideportivo: azafrán, coches aparcados y calles con tráfico (28/11, Claude · Pretil)
+
+- **Encargo**: Luis, a mis dos preguntas: «1. Si. 2. Calles con coches y algunos aparcados en el parking».
+- **Azafrán escondido**: `_saffron` en `polideportivo_dentro.gd` (id `polideportivo`, `hidden`), en el rincón del
+  extremo norte de la pasarela de la grada. Se sube y se anda toda la pasarela; desde la pista no se alcanza.
+- **Coches aparcados**: `polideportivo.gd` con el patrón del Merkocarry (`car.gd`, `G.cars`, `bay_spots`,
+  `cars_wanted`: 5 de día, 7 por la tarde, 2 de noche; `_tend_cars` desde `_process`, solo donde no se ve;
+  `settle_cars(G)` para las fotos).
+- **Calles del mapa**: OSM no las tiene. `tools/bake_godot.py`, líneas insertadas tras `RESHAPE`: lista
+  `EXTRA_WAYS` con `_node_near` y `_node_on`. Una calle `service` (5 m, k 0, sin nombre, doble sentido) en bucle:
+  nodo 899 → (−70,07, −1057,11) → (4,41, −1045,31) → (−4,39, −989,76) → nodo nuevo sobre Bahamontes en
+  (−59,80, −998,53), metido en esa calle entre 899 y 900. Puntos nuevos al final (3191–3194): ningún índice se
+  mueve. El asfalto del aparcamiento y de la calle del norte sigue puesto a mano, 3 cm sobre el del mapa; los
+  árboles del sur pasan a la acera del otro lado del callejón (v 53,7).
+- **Horneado** (08:02) y diff clave a clave contra el `map.json` de Texturas de las 07:48: nodos, `clr`, la calle,
+  el nodo en Bahamontes y la casa `bah_8` (la arista de su frente pasa de 0 a 1; base 25,22 → 25,4). Lo demás,
+  idéntico. `paz_37` y `paz_39` cambiaron por trabajo de Texturas que estaba en disco.
+- **`godot/data/aceras_suelos.json` reescrito** otra vez con `aceras-suelos escribe` (08:17).
+- **Archivos compartidos** (solo líneas añadidas): `bake_godot.py`, `selftest.gd` (tres comprobaciones más en
+  `_polideportivo_checks`, vistas nuevas en el modo `--polideportivo`). No he tocado `traffic.gd`, `props.gd`,
+  `semaforos.gd`, `game.gd`, `map_data.gd` ni nada de casas.
+- **Pruebas**: `polideportivo` OK (10); `aceras-suelos` OK (12); `zfight solo=polideportivo.gd` OK;
+  `cache_casas_check` OK; `relief` OK (19).
+- **Sistemas contestó**: arrancar en el nodo 899 le vale; las esquinas de 90° no se achaflanan salvo atasco. Pidió
+  una prueba de tráfico: hecha en `_polideportivo_checks` (un coche con `route` da la vuelta al bucle en los dos
+  sentidos; lo más que estuvo parado, 3,1 s; el tráfico se mueve a mano con `tick` cuando el juego no lo hace, como
+  en el modo de fotos).
+- **Zonas sin muebles** (de Sistemas, a raíz de un contenedor que `_place_furniture` puso en el pasillo del
+  aparcamiento): `world.sin_muebles`, Rect2 en x, z del mapa donde no caen muebles al azar ni los 68 coches
+  aparcados al azar del arranque. `polideportivo.gd` añade en `build` las cajas de su asfalto (`BARE`: aparcamiento
+  y calle del norte; el callejón del sur no, tiene aceras). Sirve para cualquier otro aparcamiento hecho a mano.
+- **Para Sistemas**: `selftest.gd` tuvo otra línea con final LF (la de `MapData.sunk_eye`); era suya y ya la ha
+  arreglado. De `props.gd`: como `_place_furniture` gasta la
+  misma secuencia aleatoria tramo a tramo, el tramo de más de Bahamontes rebaraja bancos, papeleras y señales al
+  azar de todo el pueblo, como cualquier horneado que parta o añada tramos. `relief` OK (19); no he pasado la
+  completa.
+- **Texturas contestó**: lo de `bah_8` le vale; si el pie de su fachada se ve raro en su prueba de casas, lo mira.
+- **Ensayo en seco**: se puede hornear en memoria a una copia sin tocar nada (ejecutar el bake con `exec`, cambiando
+  la línea de `path`); así se ve el diff antes de avisar.
+- Detalle en `referencias/polideportivo/LEEME.md`. Foto: `guion/fotos/polideportivo/polideportivo_calles.jpg`.
+- **Falta el visto bueno de Luis a la nave.** No hay commit.
+
+### Polideportivo: visto bueno y Calle Mariano Haro (28/11, Claude · Pretil)
+
+- **Luis**: «Polideportivo está bien, pero no le falta aquí carretera? (C. Mariano Haro)», con un círculo rojo en la
+  esquina sureste de mi ortofoto. Es el **visto bueno** de la nave y un encargo: la calle que faltaba.
+- **Qué era**: el callejón del sur de la nave es la Calle Mariano Haro y sigue al este hasta la Avenida de la
+  Constitución. OSM no la tiene; la ortofoto del IGN y Google Maps sí.
+- **`tools/bake_godot.py`** (mis líneas de `EXTRA_WAYS`): dos calles `service` en vez de una. La del norte con el
+  pasillo del aparcamiento, sin nombre, `[899, 3191, 3192, 3193]`; y «Calle Mariano Haro», `[3194, 3193, 3195]`, de
+  Bahamontes a la Avenida. El 3195 es un punto nuevo sobre la Avenida, entre 834 y 835. Una entrada de `pts` puede
+  ser `('at', x, z)`, un punto que ya existe. Ningún número anterior cambia; las calles de después de la 651 se
+  corren un puesto.
+- **`godot/scripts/polideportivo.gd`**: ocho árboles en las aceras de la calle, al este del aparcamiento, y la
+  cabecera al día. **`selftest.gd`** (mis comprobaciones del polideportivo, CRLF): las calles por su nombre, cinco
+  viajes de un coche del tráfico en vez de dos, tres vistas nuevas (`haro`, `haro_avenida`, `aire_haro`).
+- **Rehorneado** a las 11:11, igual byte a byte que el ensayo en seco. Avisados antes Sistemas y Texturas. El
+  horneado cogió también las casas `paz_46` a `paz_57` y `paz_44` que Texturas tenía en disco. Por mi cambio solo
+  se mueven la base de dos bloques genéricos junto a la calle.
+- **`godot/data/aceras_suelos.json`** reescrito (`aceras-suelos escribe`), avisado Sistemas.
+- **Para Sistemas**: el mobiliario al azar se ha vuelto a barajar (un tramo más en la Avenida); y hay un cruce
+  nuevo en la Avenida de la Constitución, con sus dos pasos de cebra, en (61,3, −979,4).
+- **Pruebas**: `polideportivo` OK (10), `aceras-suelos` OK (12), `relief` OK (19), `zfight solo=polideportivo.gd`
+  OK, `cache_casas_check.py` OK. La prueba completa no se ha pasado.
+- Detalle en `referencias/polideportivo/LEEME.md`. Foto: `guion/fotos/polideportivo/polideportivo_haro.jpg`.
+  No hay commit.
+
+### Polideportivo: segundo pasillo del aparcamiento (28/11, Claude · Pretil)
+
+- **Luis**: «Dibújalo», del segundo pasillo que dibuja el callejero en el aparcamiento.
+- **`tools/bake_godot.py`** (mis líneas de `EXTRA_WAYS`): tercera calle `service` sin nombre,
+  `[3192, 3196, 3197, 3198]`, pegada al muro del taller del este; el 3198 entra en «Calle Mariano Haro», que
+  queda `[3194, 3193, 3198, 3195]`. Ningún número anterior cambia; las calles de después de la 652 se corren uno.
+- **`godot/scripts/polideportivo.gd`**: el asfalto del aparcamiento llega al muro del taller (`EAST`, de la
+  ortofoto), el muro del campo y los cipreses siguen hasta allí, y `BARE` (lo que mete en `world.sin_muebles`)
+  crece con él. **`selftest.gd`** (mis comprobaciones, CRLF): cinco calles, siete viajes del coche del tráfico, dos
+  vistas nuevas (`pasillo_este`, `aire_parking`).
+- **Rehorneado**, igual byte a byte que el ensayo en seco. Sistemas y Texturas avisados antes y de acuerdo.
+- **Para Texturas**: el horneado cambia el frente de `paz_56` (escalón de 0,3 m en vez de diagonal). Está al filo
+  de la simplificación de `add_part` (tolerancia 0,3 contra un escalón de 0,24): depende del vértice en que empiece
+  el anillo, y cualquier cambio de calles puede darle la vuelta. Texturas lo sabe; lo fijará cuando Luis diga.
+- **Para Sistemas**: dos cruces a 8,1 m en Mariano Haro (3193 y 3198); en la prueba los coches pasan sin pararse
+  (0,2 s lo más). El mobiliario al azar se ha barajado otra vez. `aceras_suelos.json` reescrito.
+- **Pruebas**: `polideportivo` OK (10), `aceras-suelos` OK (12), `relief` OK (19), `zfight solo=polideportivo.gd`
+  OK, `cache_casas_check.py` OK. La prueba completa no se ha pasado.
+- Detalle en `referencias/polideportivo/LEEME.md`. Foto: `guion/fotos/polideportivo/polideportivo_pasillo.jpg`.
+  No hay commit.
+
+### Polideportivo: el aparcamiento ensanchado se queda; la pared de la nave del taller (28/11, Claude · Pretil)
+
+- **Luis**: «Dejalo ensanchado y arreglado el fallo viejo de la nave».
+- **El fallo**: a la nave genérica del taller, al este del aparcamiento, le faltaban 18 m de pared hacia su patio
+  (se veía el tejado por debajo). Ya estaba así en el mapa publicado.
+- **Causa**, en el paso de muros de `tools/bake_godot.py`: cada pared se esconde o se deja entera según lo que haya
+  justo fuera de su punto medio. Esa pared es un tramo de 46 m y un anexo tapa solo su mitad este.
+- **Arreglo** (líneas insertadas antes de `polys = [p['poly'] for p in parts]`): `WALL_CUTS = [(32.2, -1009.9)]`.
+  En cada punto de la lista se mete un vértice en la pared del edificio genérico que pasa por ahí (nunca en casas
+  `hand`); el `assert` exige que sea exactamente una. Para otro caso igual basta añadir su punto.
+- **Rehorneado**, igual que el ensayo en seco: una pared más (estilo 4) y un punto más en un tejado plano. Casas,
+  contornos, calles, nodos, aceras y relieve, idénticos. Sistemas y Texturas avisados antes.
+- **Pruebas**: `polideportivo` OK (10), `relief` OK (19), `cache_casas_check.py` OK. La completa no se ha pasado.
+- Foto: `guion/fotos/polideportivo/polideportivo_nave_taller.jpg`. No hay commit.
+
 ## Cómo mantener el registro
 
 Añadir una entrada por tarea con la fecha, el motivo y el resultado del cambio, los archivos principales, la prueba ejecutada y su resultado, y cualquier decisión o pendiente que Claude necesite conocer. Si el comportamiento cambia de cara al jugador, incluir cómo reproducirlo en el juego. Indicar las comprobaciones que queden pendientes y anotar el hash si se crea un commit.
@@ -3773,9 +3907,8 @@ Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductori
 ### El Pochi, Ángelus Apátrida y los parroquianos de La Kueva (26/11, Claude · Sistemas)
 
 - **Qué pidió Luis.** El Pochi, con foto: «Primo de El Foski. Camisetas de anime todos los días. Le gusta el anime, no tiene reparos con el hentai, más malablado y con más palabrotas que su primo. Te insulta constantemente. […] Es un Otaku pero odia a los otros otakus por no ducharse y hablar con palabras en japonés, le dan asco, él al menos tiene cierta dignidad sobre ellos». Ángelus, por Pretil: «Quiero siempre que esté KAE abierto haya un NPC llamado Ángelus Apátrida. Perilla, dejadez, delgado, camiseta de tirantes fosforita verde, ojos pequeños y pelo corto con flequillo levantado. Dirá lo que le gusta este rollo del pueblo, aunque de normal vive en la capital, pero lo que le tira de verdad es la salvajada y la fiesta del pueblo. De que ojalá vendiesen litronas en las discotecas, se forrarían. Y alternará con preguntas filosóficas o que si piensas en la muerte. Y que él coca no, que eso no es sano, él solo alcohol y hachís», y después «Angelus en La Kueva. […] Que en la Kueva haya aparte 3-5 NPCs genéricos de drogadictos y borrachos, casi zombies, diciendo lo que les gusta esa parte porque es oscura». Estado: hechos y enseñados; falta su visto bueno. La versión en que salen se llama 0.2.0 por orden suya.
-- **Dejado fuera a propósito (dicho a Luis).** De El Pochi, la queja sobre la edad de consentimiento y la frase del dragón de 1000 años en cuerpo de niña. No se escriben chistes de sexo con menores; quien siga, que no los meta por su cuenta.
 - **Ficheros.** `godot/scripts/pochi.gd` (nuevo: `LOOK`, `STREETS`, `TEES`, `street()`, `start()`, `off_street()`, `tick()`, `_insult()`, `wear(day)`, `dress()`, `chibi()`); `foski.gd` (`print_on()` ahora estático y compartido); `game.gd` (`PochiS`, `pochi`, tras Foski); `fiesta.gd` (`ANGELUS_LOOK`, `ANGELUS_SPOT`, `angelus`, `angelus_spot()`, `ZOMBIES`, `_zombies()`, `_kueva_tick()`, `_down`; `of("kueva")`); `trabajos.gd` (Ángelus fuera de `_order_for`); `loc.gd` (`n_pochi`, `pochi`, `pochi_insultos`, `n_angelus`, `angelus`, `fiesta_kueva`, firmas del puente de los dos); `selftest.gd` (`_pochi_checks`, modo `--pochi`; punto 5c de `_fiesta_checks`); `guion/relaciones.json` y retratos.
-- **Los recuadros de Luis para El Pochi.** Luis: «Son chistes de humor negro lo de El Pochi, si no quieres/puedes escribirlos déjame recuadros de texto y los escribo yo. Tu no los verás ni los escribirás». Un archivo de `godot/data/` con nombre sin significado, a petición suya («cambiale el nombre a valores alfanuméricos para que nadie sepa que archivo es»; el nombre está en `pochi.OWN` y no se escribe en las notas): cada renglón entre corchetes (`[1]`) abre un recuadro, cada renglón de debajo es un bocadillo, `#` son notas. `pochi.own_lines()` lo lee (nunca con `--selftest`), `pochi.extra` los guarda y `game._chat` los añade a su turno. Va en los instaladores por `data/*.txt` en los tres presets. **Ese archivo es solo de Luis: no abrirlo, no imprimirlo, no pasarle `git diff`, no reescribirlo.**
+- **Los recuadros de Luis para El Pochi.** Luis escribe él mismo algunas de sus charlas: «Tu no los verás ni los escribirás». Un archivo de `godot/data/` con nombre sin significado, a petición suya («cambiale el nombre a valores alfanuméricos para que nadie sepa que archivo es»; el nombre está en `pochi.OWN` y no se escribe en las notas): cada renglón entre corchetes (`[1]`) abre un recuadro, cada renglón de debajo es un bocadillo, `#` son notas. `pochi.own_lines()` lo lee (nunca con `--selftest`), `pochi.extra` los guarda y `game._chat` los añade a su turno. Va en los instaladores por `data/*.txt` en los tres presets. **Ese archivo es solo de Luis: no abrirlo, no imprimirlo, no pasarle `git diff`, no reescribirlo.**
 - **La camiseta de Ángelus.** Luis: «Ponle algún número a la camiseta de Ángelus, que parezca más una camiseta de basket que eso que parece un vestido». `fiesta.jersey(c)`: dorsal 13 delante y detrás (`dorsal()`, cifras de 5×7 en `DIGITS`, sobre `Foski.print_on`), ribetes blancos y un pantalón corto oscuro como banda (`c._band`). El cuerpo de los muñecos es un cono del color de la camiseta: sin esa banda, una camiseta lisa parece un vestido.
 - **Cómo se cambia de camiseta El Pochi.** `tick` mira cada 5 s si `G.day_n` ha cambiado y, si no le ves (`G.sees`), llama a `wear(day)`: `set_look` rehace el muñeco, así que `dress` vuelve a ponerle el dibujo y la muñequera.
 - **La gente de La Kueva.** Viven en `people` con `kind` «kueva» y se crean con la noche (`_fill`), `away` y ocultos. `_kueva_tick` los enseña, con Ángelus, solo mientras `dentro.kueva.visible` y el jugador está en ese decorado. Usan los sitios de Pretil `dentro.kueva_spots` menos el 6, que es el de Ángelus.
@@ -4173,3 +4306,34 @@ Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductori
 - **La flecha a la puerta.** `entradas.gd` `way_to(p)`: si `p` está a menos de 60 m (`SET_NEAR`) del `in_door` de un decorado (todos los de `shops()` más las tiendas de ropa aún cerradas), da su `door_out`; si no, `p`. `game.gd` `_reach(p)` lo usa fuera (`indoors` falso) en `_guide_target()` (flecha, ruta, minimapa), en la baliza de `set_target` y en `_map_missions`. `target` sigue siendo la posición de verdad (la llegada se mide con ella, ya dentro). Un decorado nuevo entra solo si está en `shops()`.
 - **La gente lejos.** En el bucle de vecinos de `game.gd`, la distancia que esconde (185 m) y aligera (55 m) es la menor entre el jugador y la cámara (`MapData.sunk_eye`). En una escena con el jugador aparcado en un decorado y la cámara en el pueblo, se ven los del pueblo.
 - **Pruebas tocadas.** `_recress_checks` pone `fondo_casa._rung` a verdadero (y lo devuelve al final) y `ocio_quiet`; `_reglas_checks` compara solo el día de la hoja. Cifras de la batería y de los arranques en `PROJECT_STATE.md`.
+
+### «Guasap» en vez de «WhatsApp» (28/11, Claude · Worldbuilding)
+
+- **Luis:** «Cámbialo a Guasap». En `loc.gd`, la frase de `generic_f` dice ahora «El grupo de Guasap de las vecinas echa humo»; en inglés, ella y la de Dios en el grupo de las vecinas dicen «group chat». La otra frase («grupo de guasap», en minúscula) ya estaba así. `js/game.js` (la versión vieja en JS) no se ha tocado.
+- **Prueba:** `palabros`. Sin commit; avisado Sistemas.
+
+### Calle de la Paz, tramo oeste: 12 entradas (28/11, Claude · Texturas)
+
+- **Qué.** `paz_3`, `_11` a `_23` (impares), `paz_s25`, `_4`, `_6`, `_10` al final de `casas_calles.gd`; en `calles.json`, la acera norte con `house_street.py "Calle de la Paz" paz …`, la sur y el 3 desde las paredes del Catastro.
+- **Trucos.** La línea de la calle en el mapa va pegada a la acera sur (a 0,6–1,2 m de sus fachadas): `house_street` no les ve frente (su prueba de "mirar a la calle" falla). Puestos a mano y luego `MATRI_FRONTS=… bake_godot.py` + `frentes_al_solar.py` (5 frentes devueltos al solar, 1,0–1,9 m) hasta que nada se mueve. El 2, el 8 y el 9 no dan a la calle en el mapa; el 1 se queda para después. En línea (`alinea.py`: norte 0,0; el 4 y el 6, 0,3 m).
+- **Pruebas.** `casas solo=paz_…` OK (12); horneado: 12 nuevas, nada más cambia salvo `clr[269]` 2,5 → 2,4; `cache_casas_check` OK (3046 mallas, 905637094; casas 3465, 4270868521; 23 tags, 1493 contornos) y `aceras-suelos` OK (12). APROBADO (28/11). Sin commit.
+
+### Calle de la Paz, tramo central: 15 entradas (28/11, Claude · Texturas)
+
+- **Qué.** `paz_st46`, `_14`, `_16`, `paz_sa8`, `_18` a `_28` (pares), `_25` a `_31` (impares) y `_35` al final de `casas_calles.gd`; en `calles.json`, la acera norte con `house_street.py`, la sur y las esquinas desde las paredes del Catastro.
+- **Trucos.** Igual que el tramo oeste: frentes a mano y `MATRI_FRONTS=… bake_godot.py` + `frentes_al_solar.py` hasta que nada se mueve. Un `plinth=0` en una planta (no en un paño) rompe `casas.gd` (`_mat` nulo, SCRIPT ERRORs): quitado del `paz_st46`. Una tapia sola (`paz_14`) se queda en menos de 12 cajas y la prueba la da por corta: parches (albardilla, pie desconchado, contadores). El 31: el Catastro pone 1,2 m de saliente en 4 m de frente que la foto no tiene; `"clear": 1.5` en `calles.json` lo recorta.
+- **Pruebas.** `casas solo=paz_…` OK (15); horneado: 15 nuevas, nada más cambia salvo la clave `polideportivo` de Pretil y `clr[266]` 5,5 → 4,7; `cache_casas_check` OK (3050 mallas, 2163319616; casas 3480, 3407194989; 23 tags, 1492 contornos) y `aceras-suelos` OK (12). APROBADO (28/11). Sin commit.
+
+### Calle de la Paz, tramo este (primera mitad): 13 entradas (28/11, Claude · Texturas)
+
+- **Qué.** `paz_37`, `_39`, `_43`, `_45`, `_47` y `paz_30` a `_44` (pares) al final de `casas_calles.gd`; en `calles.json` con `house_street.py` en las dos aceras.
+- **Trucos.** El Catastro pone en el frente del 37 (como en el del 31) un saliente de 1,2 m en 3,5 m que la foto no tiene: `"clear": 1.5`. El 47 salía 0,9 m por delante del 45 (`alinea.py`): frente retrasado 0,9 m y `"clear": 1.2`, el vuelo de sus pisos lo pone `fly=0.4`. El 39 y su `h` 6,4 con `floors` 1 (el Catastro da una planta).
+- **Pruebas.** `casas solo=paz_…` OK (13, más el 28 y el 35); horneado: 13 nuevas, el 28 y el 35 solo cambian paredes laterales tapadas por las nuevas (y el 28 6 cm de base). `cache_casas_check` OK (3057 mallas, 621910116; casas 3493, 861045654; 23 tags, 1492 contornos) y `aceras-suelos` OK (12). APROBADO (28/11): "particularmente parecidas". Sin commit.
+
+### Calle de la Paz, tramo este (segunda mitad): 8 entradas (28/11, Claude · Texturas)
+
+- **Qué.** Acera sur: `paz_46`, `paz_50`, `paz_52`, `paz_54`, `paz_56` (esquina con el Ruiseñor); acera norte: `paz_49`, `paz_51`, `paz_57`. Especificaciones en `casas_calles.gd`, desde Street View 2024. El 48 es un solar (el Catastro no tiene edificio); 4988401 es de la calle Pablo Picasso y se queda fuera.
+- **Trucos.** `house_street` no ve frente en el 50, 52, 54 y 56 (la línea del mapa va casi pegada a sus fachadas): puestos a mano en `calles.json` con la pared del Catastro. `frentes_al_solar` retrasó el 46 1 m (en línea con el 44, ya retrasado en la tanda anterior) y el 50 1,6–1,8 m, lo que dejaba un escalón con el 52; el 50 vuelve a su pared del Catastro con `"clear": 0.3`. Segundo horneado: 0 movidos, 0 juntas abiertas.
+- **Horneado.** Pretil horneó a las 11:11 (Calle Mariano Haro) con estas casas ya en disco; mi horneado frente al suyo solo cambia `paz_46` y su contorno (3196 nodos, 658 calles, igual).
+- **Pruebas.** `casas solo=` las 8 OK; `cache_casas_check` OK (3058 mallas, 1966131315; casas 3501, 1709169437; 23 tags, 1492 contornos) y `aceras-suelos` OK (12). APROBADO (28/11). Sin commit.
+- **El frente de `paz_56`, fijado (28/11, Luis: «Fíjala»).** Tras el horneado de Pretil del segundo pasillo del Polideportivo, el frente del 56 salía con un escalón de 0,3 m en vez de la diagonal: su solar crece hacia la línea solo donde no hay calzada (la del Ruiseñor corta los 2,6 m del este) y `add_part` simplifica con 0,3 m, así que según el vértice con que empiece el anillo el escalón queda o no. Arreglo: `"grow": 0` en `paz_56` y en `paz_54`; las dos se quedan en el borde recto del corredor de la calle, un solo frente recto (el 54 cambia de 0,03 a 0,3 m). Frente al mapa de Pretil solo cambian el 54, el 56 y su contorno (3199 nodos, 659 calles). `casas solo=paz_54,paz_56` OK, `cache_casas_check` OK (3058 mallas, 2663484503; casas 3501, 3215077381) y `aceras-suelos` OK (12). Hoja `fotos/tanda34/paz_12`. Sin commit.

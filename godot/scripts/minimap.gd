@@ -11,6 +11,7 @@ var spin := 0.0              # ...which is this way (the camera's heading)
 var dark_gps := false        # sleek dark modern satnav palette for in-dash car GPS screens (Edison, Julietta)
 var radius := 150.0
 var target = null            # Vector2 or null
+var target_door := false     # the target is a shop's door, the person inside it (game.gd guide_door): a door in the green dot
 var givers: Array = []       # [where, round photo (or null)]: who has a mission for you (marcas.gd)
 var cars: Array = []
 var cops: Array = []
@@ -249,8 +250,16 @@ func _draw() -> void:
 		var edge := sz.x / 2.0 - (24.0 if round else 8.0)
 		if not full and tp.length() > edge:
 			tp = tp.normalized() * edge
-		draw_circle(tp + half, 8.0, Color("4a3424"))
-		draw_circle(tp + half, 6.0, Color("38d64d"))
+		if target_door:          # (the person is inside: a door in the green, the way in -- entradas.gd)
+			var dc := tp + half
+			draw_circle(dc, 10.0, Color("4a3424"))
+			draw_circle(dc, 8.0, Color("38d64d"))
+			draw_rect(Rect2(dc - Vector2(3.5, 5.5), Vector2(7.0, 10.0)), Color("6b3f22"))
+			draw_rect(Rect2(dc - Vector2(3.5, 5.5), Vector2(7.0, 10.0)), Color("f8f2e2"), false, 1.2)
+			draw_circle(dc + Vector2(1.6, 0.6), 0.9, Color("f2c94c"))
+		else:
+			draw_circle(tp + half, 8.0, Color("4a3424"))
+			draw_circle(tp + half, 6.0, Color("38d64d"))
 	# who has a mission for you: their photo in a circle, kept upright however the map turns; at the edge if far off
 	_giver_hits.clear()
 	if not givers.is_empty():

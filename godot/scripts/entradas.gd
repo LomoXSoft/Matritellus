@@ -115,6 +115,9 @@ func shops() -> Array:
 	var viv = G.world.get("vivero") if G.world != null else null
 	if viv != null and viv.get("dentro") != null:  # the Vivero de Empresas of the Avenida de la Reina Sofía, in its hours (its set: vivero_dentro.gd, several rooms)
 		out.append(viv.dentro)
+	var poli = G.world.get("polideportivo") if G.world != null else null
+	if poli != null and poli.get("dentro") != null:  # the Polideportivo Municipal, always open (its set: polideportivo_dentro.gd, the court and the stand)
+		out.append(poli.dentro)
 	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
 		out.append(G.casa)
 	return out
@@ -127,6 +130,11 @@ func shops() -> Array:
 const SET_NEAR := 60.0
 
 func way_to(p: Vector2) -> Vector2:
+	var place = set_at(p)
+	return place.door_out if place != null else p
+
+## the set a place off the map is in (null: a place in the town)
+func set_at(p: Vector2):
 	var sets: Array = shops()
 	for k in ["maxiprecio", "tetoqa", "pisacastana", "optica"]:      # (shops() leaves out the clothes shops still shut to you)
 		var w = G.world.get(k) if G.world != null else null
@@ -141,7 +149,40 @@ func way_to(p: Vector2) -> Vector2:
 		if d < bd:
 			bd = d
 			best = place
-	return best.door_out if best != null else p
+	return best
+
+## The objective says where the person is when they are inside a set ("Llévale el jamón a Edmundo (en el banco)"):
+## proposal 2 of 28 Nov 2026, the user: "Venga y 2 y 3 también". Each set and the words for it, by where the game
+## keeps it: [what it hangs from ("" the game itself, else a key of the world), its field, the words' key].
+const SET_WORDS := [["", "vip", "set_vip"], ["recress", "sala", "set_recress"], ["comunal", "tienda", "set_rocas"],
+	["noche", "tienda", "set_noche"], ["chinos", "tienda", "set_chinos"], ["bancosancho", "tienda", "set_copisteria"],
+	["bancosancho", "banco", "set_banco"], ["correos", "tienda", "set_correa"], ["merkocarry", "tienda", "set_merkocarry"],
+	["merkocarry", "trasera", "set_merkocarry"], ["ferial", "aseos", "set_aseos"], ["silo", "dentro", "set_silo"],
+	["asador", "dentro", "set_asador"], ["maxiprecio", "dentro", "set_maxiprecio"], ["tetoqa", "dentro", "set_tetoqa"],
+	["pisacastana", "dentro", "set_pisacastana"], ["optica", "dentro", "set_optica"], ["cuevas", "dentro", "set_cuevas"],
+	["vivero", "dentro", "set_vivero"], ["polideportivo", "dentro", "set_poli"], ["", "casa", "set_casa"]]
+
+## "en el banco" for someone inside the bank's set; "" in the town, or in a set with no words yet
+func where_words(p: Vector2) -> String:
+	var place = set_at(p)
+	if place == null:
+		return ""
+	for e in SET_WORDS:
+		var owner = G if e[0] == "" else (G.recress if e[0] == "recress" else (G.world.get(e[0]) if G.world != null else null))
+		if owner == null:
+			continue
+		var it = owner.get(e[1])
+		if it != null and (it == place or (it.get("azotea") != null and it.azotea == place)):
+			return Loc.t(e[2])
+	return ""
+
+## a name with where they are after it: "Edmundo Monedero (en el banco)"
+func name_where(n) -> String:
+	if n == null:
+		return "?"
+	var w := where_words(n.p)
+	var name: String = n.shown_name()
+	return name + (" (%s)" % w if w != "" and not name.ends_with(")") else "")      # ("El Fonsi (V.I.P.)" says it already)
 
 ## two doors of one set (the Merkocarry's, its front and its back): inside, either of them is a way out
 static func _same_set(a, b) -> bool:

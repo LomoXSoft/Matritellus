@@ -7,7 +7,9 @@
    the Android preset, as the name the phone shows (version/name) and as the number that tells it which build is
    newer (version/code = X*10000 + Y*100 + Z, so 0.0.4 is 4 and 0.1.0 is 100: it must only ever go up);
 1. Godot exports the "Android" preset (godot/export_presets.cfg), signed with the release keystore in
-   C:/Users/luis_/Fable/tools/android (its password is in keystore_pass.txt there, and is never printed);
+   C:/Users/luis_/Fable/tools/android (its password is in keystore_pass.txt there, and is never printed) -- from
+   the Android copy of the project (tools/android_copia.py, dist/_android/godot: its 3D textures VRAM compressed,
+   since 28 Nov 2026), not from godot/ itself;
 2. the radio stations (godot/radio, which Godot leaves out: the folder has a .gdignore) go into the package as
    assets/radio/..., together with a radio/index.json manifest, and every injected file is registered in
    assets/assets.sparsepck (Godot 4.7's sparse bundle PCK index) so res://radio works natively on Android;
@@ -64,7 +66,10 @@ if head + sep + rest != text:
     PRESETS.write_text(head + sep + rest, encoding='utf8', newline='\n')
 
 OUT.parent.mkdir(exist_ok=True)
-r = subprocess.run([GODOT, '--headless', '--path', str(ROOT / 'godot'), '--export-release', 'Android', str(OUT)], env=env, capture_output=True, text=True, encoding='utf8', errors='replace')
+sys.path.insert(0, str(ROOT / 'tools'))
+import android_copia                                 # (after the version is written: the copy takes it from godot/)
+COPY = android_copia.prepare()
+r = subprocess.run([GODOT, '--headless', '--path', str(COPY), '--export-release', 'Android', str(OUT)], env=env, capture_output=True, text=True, encoding='utf8', errors='replace')
 if r.returncode != 0 or not OUT.exists():
     print(r.stdout[-3000:], r.stderr[-3000:]); sys.exit('export failed')
 

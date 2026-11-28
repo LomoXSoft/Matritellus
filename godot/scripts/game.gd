@@ -198,6 +198,11 @@ const NIGHT_AT := 21.5
 var autopilot = null            # the Edison driving itself: its entry in traffic.gd, or null
 var _auto_t := 0.0
 var cam_fixed = null            # [where from, looking at]: the camera stays put (while the shutter is down)
+const SCENE_REACH := 450.0       # how far from a scene's camera its people are kept drawn and moving (the NPC tick)
+var scene_cast := 0              # how many of them that frame (the self-test)
+var guide_door := false         # the guide leads to a shop's door, the person inside it (_guide_target: the maps draw a door)
+var _bug_note := ""             # under PAUSA once a report is written from it (report_bug)
+var _pause_shot: Image = null    # the picture as the pause came up (a bug report from the pause: report_bug)
 var side = null                 # the side mission under way, if any: {id, who, stage: fetch | bring, t: seconds left}
 var day_n := 0                  # days since the game began (the day of the week only tells you so much)
 var _turbo_on := false
@@ -1801,6 +1806,8 @@ func _setup_places_and_actors() -> void:
 			continue
 		if at.distance_to(PuenteS.AT) < 50.0:        # nor in the middle of the demonstration
 			continue
+		if world.sin_muebles.any(func(r): return r is Rect2 and (r as Rect2).has_point(at)):      # nor in a hand-built car park (world.sin_muebles: its own cars in its bays)
+			continue
 		var roll := randf()
 		var make := "panda"
 		if roll >= 0.22 and roll < 0.36:
@@ -2332,8 +2339,9 @@ func _menu_page(id: String) -> Dictionary:
 			items.append({"text": Loc.t("m_settings"), "do": _open_settings.bind("pause")})
 			if Settings.data.get("dev", false):
 				items.append({"text": Loc.t("m_dev"), "do": _goto.bind("dev")})
+			items.append({"text": Loc.t("m_bug"), "do": report_bug})
 			items.append({"text": Loc.t("m_quit"), "do": _goto.bind("quit_confirm")})
-			return {"title": Loc.t("m_pause"), "items": items, "back": _close_pause, "foot": Loc.t("m_foot")}
+			return {"title": Loc.t("m_pause"), "sub": _bug_note, "items": items, "back": _close_pause, "foot": Loc.t("m_foot")}
 		"quit_confirm":
 			items.append({"text": Loc.t("m_quit_game"), "do": _quit_app})
 			items.append({"text": Loc.t("m_quit_menu"), "do": _quit_to_menu})
@@ -2366,6 +2374,7 @@ var _raw_beacon := false
 var _map_mouse_was := Input.MOUSE_MODE_CAPTURED
 
 func _guide_target():
+	guide_door = false
 	if track_pick == "none":
 		return null
 	if track_pick == "pin":                      # (your own marker on the big map)
@@ -2376,9 +2385,13 @@ func _guide_target():
 		var gid := track_pick.substr(6)
 		var n = named.get(gid)
 		if n != null and is_instance_valid(n) and marcas != null and (n in marcas._list):
-			return vip.door_out if gid == "vip" and vip != null else _reach(n.p)
+			var r = vip.door_out if gid == "vip" and vip != null else _reach(n.p)
+			guide_door = r != n.p
+			return r
 		track_pick = "auto"
-	return _reach(target)
+	var r = _reach(target)
+	guide_door = target != null and r != target
+	return r
 
 ## A place inside a shop's set, off the map, seen from the town: the shop's door in the street (entradas.gd way_to;
 ## the Thursday ham for Edmundo at the bank sent you 2 km out into the fields). Indoors, the place itself.
@@ -2435,6 +2448,8 @@ func select_mission(id: String) -> void:
 	if hud != null:
 		hud.minimap.target = gt
 		hud.bigmap.target = gt
+		hud.minimap.target_door = guide_door
+		hud.bigmap.target_door = guide_door
 		hud.bigmap.tracked_id = track_pick
 		var ms := _map_missions()
 		hud.bigmap.missions = ms
@@ -2473,6 +2488,7 @@ func _set_map(open: bool) -> void:
 		for key in ["center", "heading", "target", "cars", "cops", "repairs", "ramps", "givers", "blink", "spray", "race_route", "race_cars"]:
 			mm.set(key, hud.minimap.get(key))
 		mm.target = _guide_target()
+		mm.target_door = guide_door
 		mm.missions = _map_missions()
 		mm.tracked_id = track_pick
 		mm.map_sel = 0
@@ -2693,6 +2709,10 @@ func _dev_title(id: String) -> String:
 	return id
 
 func _open_pause() -> void:
+	_bug_note = ""
+	_pause_shot = null                          # the frame before the menu: a bug report's picture (informe.gd). Not on a
+	if not OS.has_feature("mobile") and DisplayServer.get_name() != "headless":      # phone (it could not be reached there) nor headless
+		_pause_shot = get_viewport().get_texture().get_image()
 	paused = true
 	_hold_world(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -2700,6 +2720,7 @@ func _open_pause() -> void:
 
 func _close_pause() -> void:
 	paused = false
+	_pause_shot = null
 	_hold_world(false)
 	menu.close()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -2713,6 +2734,21 @@ func _hold_world(on: bool) -> void:
 	CarS.held = on                             # (nor do the cars push themselves meanwhile: car.gd held)
 	Sfx.hold(on)
 	Ambience.hold(on)
+
+## "Informar de un fallo": the pause's line or F12 anywhere (informe.gd writes it; the text also goes to the clipboard)
+func report_bug() -> void:
+	var shot: Image = null                       # (none on a phone: the tester's own screenshot goes with the text)
+	if paused and _pause_shot != null:
+		shot = _pause_shot
+	elif not OS.has_feature("mobile") and DisplayServer.get_name() != "headless":
+		shot = get_viewport().get_texture().get_image()
+	var r: Dictionary = Informe.make(self, shot)
+	if paused and menu.visible:                  # (a toast would be under the menu: the words go under PAUSA instead)
+		_bug_note = Informe.where_words(r)
+		_goto("pause")
+	else:
+		hud.toast(Informe.where_words(r), 7.0)
+	Sfx.jingle([659, 523], 0.08)
 
 func _pause_save() -> void:
 	_save(save_si)
@@ -5455,6 +5491,10 @@ func _duty_hits() -> void:
 
 # ================= input =================
 func _unhandled_input(e: InputEvent) -> void:
+	if _booted and e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_F12:
+		report_bug()                             # (any time, the menus too: informe.gd)
+		get_viewport().set_input_as_handled()
+		return
 	if not _booted or menu.visible or _input_lock > 0.0:
 		return
 	if phase == "press":                         # the name over the town: any key, button, click or touch to begin
@@ -5990,6 +6030,9 @@ func _physics_process(delta: float) -> void:
 		return
 	var dt := minf(delta, 0.05)
 	_prof_t = Time.get_ticks_usec()
+	if world.lotes != null and world.lotes.fine_stream:     # (a phone: the houses' small pieces near the camera only, lotes.gd)
+		var vc := get_viewport().get_camera_3d()
+		world.lotes.stream(vc.global_position if vc != null else cam.global_position)
 	if phase == "rally":
 		rally.tick(dt)
 		return
@@ -6544,6 +6587,7 @@ func _physics_process(delta: float) -> void:
 		mm.heading = ph
 		mm.spin = cam_yaw
 		mm.target = guide
+		mm.target_door = guide_door
 		mm.cars = cars.map(func(c): return c.p)
 		mm.cops = police.cops.map(func(e): return e["car"].p)
 		mm.repairs = props.repairs.map(func(e): return e["p"])
@@ -6757,7 +6801,7 @@ func _side_show() -> void:
 		set_target(places["henry"]["p"], false)          # (the ham is handed to you: the green arrow over Henry, marcas.gd)
 	else:
 		var who = named[side["who"]]
-		hud.set_objective(_tag(), Loc.t("obj_menu_bring" if menu_job else "obj_ham_bring") % who.shown_name())
+		hud.set_objective(_tag(), Loc.t("obj_menu_bring" if menu_job else "obj_ham_bring") % entradas.name_where(who))      # (and in which shop: entradas.gd)
 		set_target(vip.door_out if side["who"] == "vip" else who.p, false)
 
 ## The calendar leaf written again, when what it says at the end of the story's steps has changed (fondo_casa.gd: the
@@ -6963,6 +7007,13 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 	var eye_cam := get_viewport().get_camera_3d()       # (whose feet on a pavement are worth setting down on it: chara.gd _sink)
 	MapData.sunk_eye = Vector2(eye_cam.global_position.x, eye_cam.global_position.z) if eye_cam != null else pp
 	MapData.sunk_eye_at = Engine.get_process_frames()
+	# In a scene (a side mission's, the story's cutscenes, a talk), whoever is in its picture is never hidden nor moved in
+	# jumps, however far from you and from the camera: proposal 3 of 28 Nov 2026 ("Venga y 2 y 3 también"), after the
+	# mayor and his wife went missing from the Recress's night scene. Up to SCENE_REACH from the camera; the two you
+	# talk with always (in a plain talk only those two: the rest of the town keeps its savings). Their distance stays
+	# their own -- who turns the head to you goes by it -- only what is hidden and how often they move does not.
+	var scene_on: bool = cine_lock or phase == "cutscene" or phase == "flyover"
+	scene_cast = 0
 	for i in range(npcs.size()):
 		var n = npcs[i]
 		if n.away:
@@ -6971,20 +7022,24 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 		# (from you, or from the camera when it is nearer: in a scene you may be parked in a set 2 km off while the camera
 		# films somebody in the town, the mayor and his wife outside the Recress, who were hidden; a tester, 28 Nov 2026)
 		var d2: float = minf(n.p.distance_squared_to(pp), n.p.distance_squared_to(MapData.sunk_eye))
-		if d2 > 185.0 * 185.0 and n.state != "fly":
+		var pinned: bool = d2 > 25.0 and ((talk_npc != null and (n == talk_npc or n == _talk_with)) or (scene_on and eye_cam != null
+				and n.p.distance_squared_to(MapData.sunk_eye) < SCENE_REACH * SCENE_REACH and eye_cam.is_position_in_frustum(Vector3(n.p.x, MapData.height(n.p) + 1.0, n.p.y))))
+		if pinned:                               # (in the scene's picture: drawn, every frame, arms and legs too)
+			scene_cast += 1
+		if d2 > 185.0 * 185.0 and n.state != "fly" and not pinned:
 			if n.visible:
 				n.visible = false
 			continue
 		if not n.visible:
 			n.visible = true
-		var far: bool = d2 > 55.0 * 55.0 and n.state != "fly" and n.state != "down"
+		var far: bool = d2 > 55.0 * 55.0 and n.state != "fly" and n.state != "down" and not pinned
 		if far and (i + _npc_tick) % 4 != 0:
 			continue
 		var ndt: float = dt * 4.0 if far else dt
 		# How much of them moves (the user's 2K at 30-odd fps, 16 Nov 2026): arms, legs and head only for those in the
 		# picture (or right by you); past 30 m one tick in three, in bigger steps; the standing bob only within 15 m.
-		var shown: bool = not far and (d2 < 64.0 or cam.is_position_in_frustum(Vector3(n.p.x, n.global_position.y + 1.0, n.p.y)))
-		var mid: bool = d2 > 30.0 * 30.0
+		var shown: bool = not far and (pinned or d2 < 64.0 or cam.is_position_in_frustum(Vector3(n.p.x, n.global_position.y + 1.0, n.p.y)))
+		var mid: bool = d2 > 30.0 * 30.0 and not pinned
 		var limbs: bool = shown and (not mid or (i + _npc_tick) % 3 == 0)
 		var adt: float = ndt * (3.0 if mid else 1.0)
 		var bob: bool = d2 < 15.0 * 15.0

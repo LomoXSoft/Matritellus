@@ -24,6 +24,8 @@ para los viejos, los adultos y jóvenes que usen "toavía"»). Viejos son las ch
 la Tía Paca, la Pili, Tomasa); la ruta del colesterol, los chismes, los avisos y Wences y La Justi, «toavía». La prueba
 `palabros` lo vigila (`HABLA_VIEJA` en `selftest.gd`).
 
+**Guasap**, no «WhatsApp»: la marca no sale en el juego; en «es» se escribe «Guasap» (Luis, 28-11-2026: «Cámbialo a Guasap»), y en «en» se dice «group chat».
+
 Y dos más (Luis, 12-11-2026):
 
 - **«vía»** en vez de «voy a».

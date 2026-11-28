@@ -55,6 +55,8 @@ func _place_furniture() -> void:
 		var h: String = s.road["h"]
 		if s.road["k"] != 0 or h.begins_with("motorway"):
 			continue
+		# (a stretch in world.sin_muebles still takes its throws of the dice, and only stands nothing: the rest of the
+		# town keeps its benches and bins where they were)
 		var d: Vector2 = s.b - s.a
 		var length := d.length()
 		if length < 12.0:
@@ -71,18 +73,27 @@ func _place_furniture() -> void:
 		if roll < 0.10:
 			var sp: Vector2 = along + n * (edge + 0.55) * side
 			if not _near_tree(sp, 2.0):
-				_prop("sign", sp, atan2(u.x, u.y) + (0.0 if side < 0.0 else PI), rng.randi() % 3)
+				var variant := rng.randi() % 3
+				if not bare(sp):
+					_prop("sign", sp, atan2(u.x, u.y) + (0.0 if side < 0.0 else PI), variant)
 		elif roll < 0.17 and room > edge + 1.7:
 			var bp: Vector2 = along + n * (edge + 1.1) * side
-			if not _near_tree(bp, 2.2):
+			if not _near_tree(bp, 2.2) and not bare(bp):
 				var facing := -n * side
 				_prop("bench", bp, atan2(facing.x, facing.y), 0)
 		elif roll < 0.28:
 			var kp: Vector2 = along + n * (edge + 0.6) * side
-			if not _near_tree(kp, 2.0):
+			if not _near_tree(kp, 2.0) and not bare(kp):
 				_prop("bin", kp, 0.0, 0)
 	for req in world.extra_props:                 # what the hand-built places have standing by them in their photos
 		_prop(String(req[0]), req[1], float(req[2]), int(req[3]))
+
+## a spot of world.sin_muebles: no random furniture there, nor a car parked at random (game.gd)
+func bare(p: Vector2) -> bool:
+	for r in world.get("sin_muebles") if world != null and world.get("sin_muebles") != null else []:
+		if r is Rect2 and (r as Rect2).has_point(p):
+			return true
+	return false
 
 func _near_tree(p: Vector2, dist: float) -> bool:
 	var k := _key(p)

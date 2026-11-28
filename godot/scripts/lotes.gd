@@ -22,7 +22,29 @@ const Parts = preload("res://scripts/parts.gd")
 const Tex = preload("res://scripts/texturas.gd")
 const CELL := 128.0                # the plain colours, where nearly all the triangles are: squares small enough to leave out of the picture
 const CELL_BIG := 512.0           # the rest -- painted walls, brick, wood, each colour and way round its own mesh -- few triangles, many meshes
-var _last := {}                   # square ("s:x:y" small, "b:x:y" big) -> the last house in it (its index in MapData.houses)
+## On a phone, the plain colours' meshes packed (Sistemas, 28 Nov 2026; the user: lower the video memory "solo para
+## android", where a phone's video memory is its RAM and the town's houses took 1.25 GB of it): ARRAY_FLAG_COMPRESS_
+## ATTRIBUTES keeps each corner's place in 16 bits across the mesh's box -- a square of CELL metres, steps of 2 mm --
+## and its normal smaller, some a third less memory. Only the small squares (col, colf): the big ones would step by
+## 8 mm, on painted and photo walls and on the pavements MapData reads back (slabs_add). `--mallas-movil` tries it on
+## a computer. (In the cache's fingerprint: a cache of one kind is never read as the other.)
+static var packed: bool = OS.has_feature("mobile") or OS.get_cmdline_user_args().has("--mallas-movil")
+## ...and there, the small pieces (colf: bars, rods, knobs, drawn no further than FINE_FAR) kept on the graphics card
+## only near the camera (Sistemas, 28 Nov 2026; the user: "Si, quitaselas cuando están lejos en android"). They were
+## some 360 MB of it, 112 squares; packed in memory (zstd) they are 56. Each square's mesh is read back from the card
+## as soon as it is made and let go of; stream() (game.gd, every frame, a check every FINE_EVERY ms) puts it back on
+## the card when the camera comes within FINE_IN metres of where it starts being drawn, and lets go of it again
+## FINE_OUT past it. With the draw distance at "no limit" every square stays on the card. The unpacking and packing
+## are done by the WorkerThreadPool; a square the camera is already inside (a jump, a cut to another place) is
+## unpacked there and then.
+static var fine_stream: bool = packed and not OS.get_cmdline_user_args().has("--finos-todos")     # (--finos-todos: all on the card, to compare)
+const FINE_IN := 60.0
+const FINE_OUT := 140.0
+const FINE_EVERY := 150
+var _fine := {}                   # square -> {"mi": its MeshInstance3D, "c": its box's centre, "z": packed, "rs": unpacked size, "s": unpacked, waiting, "task": its WorkerThreadPool task or -1}
+var _fine_next := 0
+var fine_on := 0                  # of them, on the card now (the self-test)
+var _last := {}                  # square ("s:x:y" small, "b:x:y" big) -> the last house in it (its index in MapData.houses)
 
 var world: Node3D
 var _cells := {}                  # square -> {group key -> Group}
@@ -70,7 +92,7 @@ func house(id: String):
 
 static func cache_key() -> String:
 	var parts: Array = [CACHE_MARK, str(ProjectSettings.get_setting("application/config/version", "")), str(Engine.get_version_info().get("string", "")),
-		RenderingServer.get_current_rendering_method(), FileAccess.get_md5("res://data/map.json"), str(CELL), str(CELL_BIG)]
+		RenderingServer.get_current_rendering_method(), FileAccess.get_md5("res://data/map.json"), str(CELL), str(CELL_BIG), "packed" if packed else "plain"]
 	for s in CACHE_SCRIPTS:                       # (an exported game has them compiled: .gdc)
 		var p := "res://scripts/%s.gd" % s
 		parts.append(FileAccess.get_md5(p) + FileAccess.get_md5(p + "c"))
@@ -133,7 +155,8 @@ func _flush_cached(cell: String) -> void:
 		_in.seek(int(at))
 		var zs := _in.get_32()
 		var rs := _in.get_32()
-		var rec = bytes_to_var(_in.get_buffer(zs).decompress(rs, FileAccess.COMPRESSION_ZSTD))
+		var zbuf := _in.get_buffer(zs)
+		var rec = bytes_to_var(zbuf.decompress(rs, FileAccess.COMPRESSION_ZSTD))
 		if not (rec is Dictionary) or not rec.has("s"):
 			cache_state = "broken: a mesh of %s could not be read" % cell
 			continue
@@ -146,6 +169,8 @@ func _flush_cached(cell: String) -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = am
 		_place(cell, mi, gk, float(rec["turn"]), int(rec["tris"]))
+		if fine_stream and gk is String and gk == "colf":
+			_fine_hold(cell, mi, zbuf, rs)                # (the record as the cache has it, packed already)
 	t_cache += Time.get_ticks_usec() - t0
 
 ## a square's mesh into the town: its material, how far it is drawn from, its name, the way it is turned
@@ -414,15 +439,99 @@ func flush(cell: String) -> void:
 			mi.mesh = st.commit()
 		else:
 			var am := ArrayMesh.new()
-			am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays, [], {},
+				Mesh.ARRAY_FLAG_COMPRESS_ATTRIBUTES if packed and cell.begins_with("s:") else 0)
 			mi.mesh = am
 		_place(cell, mi, gk, g.turn, g.v.size() / 3)
 		if _out != null:
 			_keep(cell, mi, gk, g.turn, g.v.size() / 3)
+		if fine_stream and gk is String and gk == "colf":
+			_fine_hold(cell, mi, PackedByteArray(), 0)
+
+## a square's small pieces off the card, kept packed (`z`: the packed record already, from the cache; empty: read back now)
+func _fine_hold(cell: String, mi: MeshInstance3D, z: PackedByteArray, rs: int) -> void:
+	var e := {"mi": mi, "c": mi.mesh.get_aabb().get_center(), "z": z, "rs": rs, "s": null, "task": -1}
+	_fine[cell] = e
+	if z.is_empty():                              # (read back from the card: the only way to have it as the card takes it)
+		# (no more than FINE_PENDING read back and waiting to be packed: while the town is built nothing else would let
+		# go of them, and all of them at once are the very memory this is to spare)
+		while _fine_pending.size() >= FINE_PENDING:
+			_fine_reap(_fine_pending.pop_front())
+		e["s"] = mi.mesh.get("_surfaces")
+		e["task"] = WorkerThreadPool.add_task(_fine_pack.bind(e))
+		_fine_pending.append(e)
+	mi.mesh = null
+
+const FINE_PENDING := 4
+var _fine_pending: Array = []
+func _fine_reap(e: Dictionary) -> void:
+	if int(e["task"]) >= 0:
+		WorkerThreadPool.wait_for_task_completion(int(e["task"]))
+		e["task"] = -1
+
+func _fine_pack(e: Dictionary) -> void:           # (a worker thread: nobody else touches `e` till its task is over)
+	var raw := var_to_bytes(e["s"])
+	e["s"] = null
+	e["z"] = raw.compress(FileAccess.COMPRESSION_ZSTD)
+	e["rs"] = raw.size()
+
+func _fine_unpack(e: Dictionary) -> void:         # (a worker thread too, or there and then)
+	var v = bytes_to_var((e["z"] as PackedByteArray).decompress(int(e["rs"]), FileAccess.COMPRESSION_ZSTD))
+	e["s"] = v.get("s") if v is Dictionary else v  # (from the cache: its whole record)
+
+func _fine_put(e: Dictionary) -> void:
+	var am := ArrayMesh.new()
+	am.set("_surfaces", e["s"])
+	e["s"] = null
+	(e["mi"] as MeshInstance3D).mesh = am
+	fine_on += 1
+
+## the camera is at `eye`: the small pieces near it onto the card, those far off let go of
+func stream(eye: Vector3, now := false) -> void:
+	if _fine.is_empty():
+		return
+	var t := Time.get_ticks_msec()
+	if t < _fine_next and not now:
+		return
+	_fine_next = t + FINE_EVERY
+	_fine_pending.clear()                         # (the town is built: stream() itself waits for the tasks from now on)
+	var puts := 0                                 # (at "no limit", every square at once: a few each time, not a freeze)
+	var started := 0
+	for cell in _fine:
+		var e: Dictionary = _fine[cell]
+		if int(e["task"]) >= 0:
+			if not WorkerThreadPool.is_task_completed(int(e["task"])):
+				continue
+			WorkerThreadPool.wait_for_task_completion(int(e["task"]))
+			e["task"] = -1
+		var mi: MeshInstance3D = e["mi"]
+		if not is_instance_valid(mi):
+			continue
+		var r: float = mi.visibility_range_end        # (0: drawn from any distance -- every one kept on the card)
+		var d: float = eye.distance_to(e["c"])        # (visibility ranges go by the distance to the box's centre)
+		if mi.mesh == null:
+			if not (r <= 0.0 or d < r + FINE_IN):
+				e["s"] = null                         # (unpacked for nothing: the camera went off again)
+			elif now or (r > 0.0 and d < r + 8.0):    # in the picture already, or about to: there and then
+				if e["s"] == null:
+					_fine_unpack(e)
+				_fine_put(e)
+			elif e["s"] != null:
+				if puts < 3:
+					_fine_put(e)
+					puts += 1
+			elif started < 3:
+				e["task"] = WorkerThreadPool.add_task(_fine_unpack.bind(e))
+				started += 1
+		elif r > 0.0 and d > r + FINE_OUT:
+			mi.mesh = null
+			fine_on -= 1
 
 func flush_all() -> void:
 	for cell in _cells.keys():
 		flush(cell)
+	while not _fine_pending.is_empty():           # (the small pieces' last squares packed before the game goes on)
+		_fine_reap(_fine_pending.pop_front())
 	if dry:
 		for cell in _index:                       # (none should be left: every square is read when its last house is built)
 			_flush_cached(String(cell))

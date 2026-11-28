@@ -1196,3 +1196,41 @@ Una casa no puede quedar suelta, adelantada a sus vecinas y enseñando un trozo 
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.
+
+## La Calle de la Paz, el tramo oeste (APROBADA, 28/11)
+
+- **Hecho:** acera norte: el 3, del 11 al 23; acera sur: la esquina de Suspiro 25 (`paz_s25`), el 4, el 6 y el 10. Desde Street View 2024 y el Catastro. Lo gordo primero (el usuario, 28/11): los detalles, apuntados abajo para después.
+- **El 3:** salmón abajo con zócalo de piedra, puerta con cortina en marco de granito entre dos ventanas grandes de reja; blanca arriba, tres ventanitas con barandilla. **El 11:** ladrillo rojo con cenefa de dientes entre plantas, reja verde, persianas blancas bajadas. **El 13:** ladrillo, zócalo de lajas, portón de madera, alero de madera. **El 15:** una planta de ladrillo, cancela blanca y puerta de cochera blanca. **El 17:** amarilla con persiana enrollable marrón. **El 19:** ladrillo ajedrezado. **El 21:** amarilla con cancela blanca y reja grande. **El 23:** blanca entre machones de ladrillo, con balcón.
+- **Acera sur:** Suspiro 25, ladrillo con dos rejas en zigzag; el 4, revoco gris claro con dos portones de chapa gris azulada y dos balcones corridos de ladrillo encima (tres plantas); el 6, salmón con portón gris azulado y ladrillo pardo arriba; el 10, blanca con zócalo de terracota y un cartel de se vende en la reja.
+- **Sin hacer (para después):** el 1 (la esquina de la Calle del Cristo: las fotos no la dejan clara); el 2 y el 8 (en el mapa no dan a la calle: el 8 se ve detrás del hueco entre el 6 y el 10); el 9 (queda detrás de una parcela ya hecha); el tramo de Silos del Toledillo hacia el este, para otras tandas.
+- **Sin dibujar:** los toldos de rayas del 3; el borde rojo del alero del 21; el sofito de madera de los balcones del 4; la reja de hierro sobre el portón del 13; los aires acondicionados.
+- **Hojas:** `fotos/tanda34/paz_1`, `_2`, `_3`.
+
+## La Calle de la Paz, el tramo central (APROBADA, 28/11)
+
+- **Hecho:** acera sur: la esquina de Silos del Toledillo 46 (`paz_st46`), el 14, el 16, la esquina de San Agustín 8 (`paz_sa8`), del 18 al 28; acera norte: del 25 al 35 (impares). Desde Street View 2024 y el Catastro. Lo gordo primero.
+- **Acera sur:** Silos 46, melocotón con blanco hasta la primera planta; el 14, una tapia de bloques, encalada junto al 12 y gris después, con albardilla y dos cajas de contadores; el 16, un almacén gris con portón corredizo; San Agustín 8, melocotón con alero de madera y cochera marrón; el 18, amarilla en la esquina del Olvido; el 20, amarillo pálido con zócalo de piedra; el 22, gotelé pardo; el 24, rosa con portón de madera claveteado; el 26, amarilla con tres persianas grises; el 28, crema con recercados de azulejo y contraventanas verdes.
+- **Acera norte:** el 25, blanca con zócalo de lajas y recercados de ladrillo; el 27, almacén amarillo de una planta con portón verde; el 29, blanca de una planta bajo teja vieja; el 31, bloque de ladrillo con balcones largos y toldos verdes, blanco abajo sobre zócalo negro (el saliente que pone el Catastro en su frente quitado: en la foto no está); el 35, blanca con zócalo de terracota y cochera blanca.
+- **Sin hacer (para después):** Navas de Tolosa 14 (en el mapa queda a 1,4 m de la Paz y no da a ella); San Agustín 4 y Silos 35 (no dan a la Paz); la casa del mirador al este del 35 y lo que sigue, para la próxima tanda.
+- **Sin dibujar:** el chaflán del 18 con su balcón; el balcón de esquina de San Agustín 8 (puesto como uno pequeño); el portón del 16 es corredizo de chapa (sale como dos hojas pardas); los toldos de los demás y los aires acondicionados.
+- **Hojas:** `fotos/tanda34/paz_4`, `_5`, `_6`.
+
+## La Calle de la Paz, el tramo este, primera mitad (APROBADA, 28/11)
+
+- **Hecho:** acera norte: el 37, el 39 (esquina), el 43, el 45 y el 47; acera sur: del 30 al 44. Desde Street View 2024 y el Catastro. Lo gordo primero.
+- **Acera norte:** el 37, blanca abajo con portón verde y arriba ladrillo claro con mirador acristalado y balcón corrido blanco; el 39, ladrillo rosado en esquina con zócalo de arenisca y una cenefa blanca entre plantas (el Catastro le da una planta; tiene dos); el 43, una planta mitad ocre mitad blanca sobre zócalo naranja; el 45, una planta de azulejo salmón sobre lajas; el 47, bloque de cuatro plantas de ladrillo claro con cochera marrón y balcones de hierro, los pisos volados.
+- **Acera sur:** el 30, melocotón con recercados grises y portón de madera; el 32, amarilla enmarcada en piedra con portón pardo; el 34, beige enmarcada en piedra con portón azul grisáceo y dos puertas de cortina; el 36, rosa con portón verde grisáceo y el piso de arriba volado; el 38, gris parda con dos puertas de cortina; el 40, crema con puerta claveteada y otra de tablas; el 42, una planta beige con puerta de madera en marco de ladrillo; el 44, beige rosada con zócalo de mármol.
+- **Sin hacer (para después):** el 41 (no hay parcela en la Paz entre el 39 y la calle de al lado); el resto del tramo este (del 46 y el 49 hasta el final), para la próxima tanda.
+- **Sin dibujar:** los rombos de azulejo del 42; los cuadros grises del zócalo del 43; el alero hondo del 39; la piedra de arriba del 32 y del 34 bajo el alero; el vuelo del alero de hormigón del 34.
+- **Hojas:** `fotos/tanda34/paz_7`, `_8`, `_9`.
+
+## La Calle de la Paz, el tramo este, segunda mitad (APROBADA, 28/11)
+
+- **Hecho:** acera sur: el 46, el 50, el 52, el 54 y el 56 (esquina con la calle del Ruiseñor); acera norte: el 49, el 51 y el 57. Desde Street View 2024 y el Catastro.
+- **Acera sur:** el 46, ocre anaranjado con zócalo de azulejo, portón pardo, puerta en hueco tras una cancela y una cenefa crema; el 50, amarillo pálido con recercados de granito, portón pardo y un balcón de hierro; el 52, una planta amarilla sobre zócalo rosa; el 54, una planta beige con portón gris de chapa y puerta de cortina naranja; el 56, beige en esquina con puerta de cortina a rayas azules y ventanas con barandillas.
+- **Acera norte:** el 49, ladrillo rojo con dos portones blancos y el piso de arriba volado con un balcón blanco en cada punta; el 51, amarilla con recercados y esquinas de ladrillo, dos balcones y portón de madera; el 57, melocotón con recercados blancos, zócalo de piedra blanca, puerta tras cancela y portón de madera.
+- **Arreglos:** el 46 retrasado 1 m a su solar (`frentes_al_solar`), en línea con el 44; el 50 también lo movía 1,6–1,8 m y dejaba un escalón con el 52 (en la foto van enrasados): se queda en la línea del Catastro con `"clear": 0.3`.
+- **Sin hacer (para después):** el 48 es un solar sin edificar; entre el 51 y el 57, la tapia de ladrillo del solar y la cochera verde (el mapa pone ahí una nave gris genérica); la esquina con la calle Pablo Picasso es de esa calle.
+- **Sin dibujar:** los rombos del zócalo del 46 (va liso); los recuadros de líneas blancas del 56; el alero hondo del 49; los canecillos de madera del alero del 51; la cornisa moldurada del 57.
+- **Hojas:** `fotos/tanda34/paz_10`, `_11`.
+- **Después del visto bueno (28/11, «Fíjala»):** el 54 y el 56 con `"grow": 0`, para que el frente del 56 no salga con un escalón según cómo se hornee el mapa; quedan en un solo frente recto. Hoja `fotos/tanda34/paz_12`.

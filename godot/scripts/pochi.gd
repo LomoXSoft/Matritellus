@@ -6,20 +6,25 @@ extends RefCounted
 ## cierta dignidad sobre ellos").
 ##
 ##   Where: the Calle del Florido and its Bajada, at any hour, like his cousin Foski (foski.gd) but at his own pace and
-##   starting from one end. No missions yet.
+##   starting from one end. No missions yet. While the Calasanz has its children out in the yard (school days, 10 to
+##   13: ninos.gd), up and down the Calle del Palo in front of it (the user, 28 Nov 2026: "Si, pónselo"); he moves
+##   from one to the other while nobody sees him or where he goes, as his T-shirt changes.
 ##   Looks: big, fair, his hair cropped to nothing, three days' beard, black rectangular glasses, a dark wristband. A
 ##   T-shirt of another colour each day with a cartoon face on it (chibi(): big eyes, hair in points; made up here, it
 ##   is nobody's character).
 ##   What he says (Loc "pochi", taken in turn by game.gd _chat): anime, hentai, the otakus who do not wash and talk in
 ##   Japanese words, his cousin; an insult in every line. And when you come near he throws you one unasked
 ##   ("pochi_insultos").
-##   Left out on purpose (Sistemas): the two jokes of the brief about the age of consent and about a girl of ten.
 
 const Foski = preload("res://scripts/foski.gd")
+const Ninos = preload("res://scripts/ninos.gd")
+const Calasanz = preload("res://scripts/calasanz.gd")
 const Parts = preload("res://scripts/parts.gd")
 const LOOK := {"top": 0, "shirt": 0x5b7fb5, "skin": 0xf3cbb0, "hair": 0x8a6a48, "hair_style": 17, "face": 5, "brows": 0,
 	"eyes": 0, "eye_color": 0x5a4030, "glasses": 7, "build": 1.34, "shoes": 0x2a2a30, "hat": ""}
 const STREETS := ["Calle del Florido", "Bajada del Florido"]
+const SCHOOL_STREET := "Calle del Palo"          # in front of the Calasanz, in its hours
+const SCHOOL_REACH := 100.0     # how much of that street: its nodes this near the school (three: some 80 m of it)
 const PACE := 1.2
 const TEES := [                 # the T-shirt, the drawing's hair, its eyes: one a day, in turn
 	[0x5b7fb5, 0xf07ab0, 0x3aa0e8], [0xf1efe8, 0x3a7fe0, 0xd9453a], [0xe8c23a, 0xd9453a, 0x3f9a55],
@@ -35,11 +40,13 @@ var _day := -1
 var _t := 0.0
 var _bark := 4.0
 var extra: Array = []           # the user's own talks, said in turn after the others (game.gd _chat)
+var at_school := false          # walking the Calle del Palo by the Calasanz just now
 
 func setup(game) -> void:
 	G = game
-	var beat := street()
-	n = G._make_npc("pochi", LOOK.duplicate(), "adult_m", start())
+	at_school = school_hours() and not school_beat().is_empty()
+	var beat := school_beat() if at_school else street()
+	n = G._make_npc("pochi", LOOK.duplicate(), "adult_m", school_start() if at_school else start())
 	n.still = false
 	if not beat.is_empty():
 		n.walker = true
@@ -91,11 +98,55 @@ func start() -> Vector2:
 			return G._pavement(MapData.nodes[r["p"][1]])
 	return G._pavement(MapData.poi("Ayuntamiento"))
 
-## how far a spot is from the middle of the nearest of his streets
+## the Calasanz's yard hours (its children out: ninos.gd), when he walks by it
+func school_hours() -> bool:
+	return int(G.weekday) < 5 and G.clock >= Ninos.OUT_FROM and G.clock < Ninos.OUT_TO
+
+## the road nodes of the Calle del Palo near the school
+func school_beat() -> Dictionary:
+	var out := {}
+	for r in MapData.roads:
+		if String(r["n"]) == SCHOOL_STREET:
+			for i in r["p"]:
+				if MapData.nodes[i].distance_to(Calasanz.O) < SCHOOL_REACH:
+					out[int(i)] = true
+	return out
+
+## where he turns up by the school: the pavement at the node of it nearest the school
+func school_start() -> Vector2:
+	var best := -1
+	for i in school_beat():
+		if best < 0 or MapData.nodes[i].distance_to(Calasanz.O) < MapData.nodes[best].distance_to(Calasanz.O):
+			best = i
+	return G._pavement(MapData.nodes[best]) if best >= 0 else start()
+
+## from his streets to the school's or back, when the hour says so and nobody sees him go nor arrive
+func _move_on() -> void:
+	var want: bool = school_hours() and not school_beat().is_empty()
+	if want == at_school or n.away or (n.state != "idle" and n.state != "walk") or G.talk_npc == n:
+		return
+	if G.sees(n.p) or G.sees(school_start() if want else start()):
+		return
+	go(want)
+
+## there at once (and the self-test, which looks)
+func go(school: bool) -> void:
+	at_school = school
+	n.beat = school_beat() if school else street()
+	n.walker = not n.beat.is_empty()
+	n.p = school_start() if school else start()
+	n.wa = -1
+	n.wb = -1
+	n.wpts = []
+	n.wi = 0
+	n.sync()
+
+## how far a spot is from the middle of the nearest of the streets he walks just now
 func off_street(at: Vector2) -> float:
 	var best := 1e9
+	var now: Array = [SCHOOL_STREET] if at_school else STREETS
 	for r in MapData.roads:
-		if String(r["n"]) in STREETS:
+		if String(r["n"]) in now:
 			var pts: PackedInt32Array = r["p"]
 			for i in range(pts.size() - 1):
 				best = minf(best, Geometry2D.get_closest_point_to_segment(at, MapData.nodes[pts[i]], MapData.nodes[pts[i + 1]]).distance_to(at))
@@ -109,6 +160,7 @@ func tick(dt: float) -> void:
 	if _t > 0.0:
 		return
 	_t = EVERY
+	_move_on()
 	if int(G.day_n) != _day and not G.sees(n.p):     # (another day, another T-shirt: changed while you are not looking)
 		wear(int(G.day_n))
 
