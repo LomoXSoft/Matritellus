@@ -94,7 +94,12 @@ print('one way (OpenStreetMap): %d stretches' % sum(1 for r in roads if r.get('o
 # The two parallel streets of the UA-20 development (user, 12 November 2026): Segadores is the southern one.
 # (Corrected the same evening: I had them the wrong way round. z runs SOUTH, so the street at z -377..-463 is the southern
 # one: Segadores. The houses' own names in the code -- segadores_N, labradores_N -- were given before this and stay crossed.)
-RENAME = [((-796.2, -377.4), (-908.5, -462.8), 'Calle de los Segadores'), ((-769.6, -418.3), (-860.1, -487.0), 'Calle de los Labradores')]
+# The two streets of the 2006 development between the top of the Cristo del Humilladero and the Avenida de la
+# Constitución, which the map's source calls "Avenida de la Constitución" (Catastro, Google Maps; the user, 27 November
+# 2026): the Calle Sueños, from the avenue west to the Humilladero, and the Calle Ilusión, the L from the Sueños south and
+# then east to the avenue. And the Calle de Santa Margarita, the row back to back with the Sueños, which the map's
+# source calls "Calle de la Virgen del Sagrario" (Catastro: CL SANTA MARGARITA; Google Maps: Calle Sta. Margarita).
+RENAME = [((-796.2, -377.4), (-908.5, -462.8), 'Calle de los Segadores'), ((-769.6, -418.3), (-860.1, -487.0), 'Calle de los Labradores'), ((-10.0, -660.0), (-122.0, -690.0), 'Calle Sueños'), ((-57.0, -672.0), (3.0, -612.0), 'Calle Ilusión'), ((-6.0, -707.0), (-104.0, -733.0), 'Calle de Santa Margarita')]
 for (ax, az), (bx, bz), name in RENAME:
     hit = [r for r in roads if min(math.dist(npts[r['p'][0]], (ax, az)) + math.dist(npts[r['p'][-1]], (bx, bz)), math.dist(npts[r['p'][0]], (bx, bz)) + math.dist(npts[r['p'][-1]], (ax, az))) < 8.0]
     for r in hit: r['n'] = name

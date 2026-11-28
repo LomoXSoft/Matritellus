@@ -2376,22 +2376,29 @@ func _guide_target():
 		var gid := track_pick.substr(6)
 		var n = named.get(gid)
 		if n != null and is_instance_valid(n) and marcas != null and (n in marcas._list):
-			return vip.door_out if gid == "vip" and vip != null else n.p
+			return vip.door_out if gid == "vip" and vip != null else _reach(n.p)
 		track_pick = "auto"
-	return target
+	return _reach(target)
+
+## A place inside a shop's set, off the map, seen from the town: the shop's door in the street (entradas.gd way_to;
+## the Thursday ham for Edmundo at the bank sent you 2 km out into the fields). Indoors, the place itself.
+func _reach(p):
+	if p == null or indoors or entradas == null:
+		return p
+	return entradas.way_to(p)
 
 func _map_missions() -> Array:
 	var out: Array = [{"id": "none", "label": Loc.t("map_track_none"), "p": null}]
 	if side != null:
 		var lbl := String(hud.obj_text.text) if hud != null and hud.obj_text.text != "" else String(Loc.t("map_track_active"))
-		out.append({"id": "auto", "label": lbl, "p": target})
+		out.append({"id": "auto", "label": lbl, "p": _reach(target)})
 	elif phase == "play" and target != null:
 		var s: Dictionary = steps[si] if si >= 0 and si < steps.size() else {}
 		var lbl := String(Loc.t(s["card"])) if s.has("card") else (String(hud.obj_text.text) if hud != null and hud.obj_text.text != "" else String(Loc.t("map_track_active")))
-		out.append({"id": "auto", "label": lbl, "p": target})
+		out.append({"id": "auto", "label": lbl, "p": _reach(target)})
 	if marcas != null:
 		for n in marcas.givers():
-			var np: Vector2 = vip.door_out if n.id == "vip" and vip != null else n.p
+			var np: Vector2 = vip.door_out if n.id == "vip" and vip != null else _reach(n.p)
 			out.append({"id": "giver:" + n.id, "label": n.shown_name(), "p": np})
 	if map_pin != null:
 		out.append({"id": "pin", "label": Loc.t("map_pin"), "p": map_pin})
@@ -3455,7 +3462,7 @@ func set_target(p, with_beacon: bool) -> void:
 	var gt = _guide_target()
 	beacon.visible = track_pick == "auto" and p != null and with_beacon and not hud_hidden
 	if p != null:
-		beacon.position = MapData.at(p)
+		beacon.position = MapData.at(_reach(p))
 	if gt == null:
 		MapData.clear_route()
 	else:
@@ -6961,7 +6968,9 @@ func _update_npcs(dt: float, pp: Vector2) -> void:
 		if n.away:
 			continue
 		n.tick_bark(dt)
-		var d2: float = n.p.distance_squared_to(pp)
+		# (from you, or from the camera when it is nearer: in a scene you may be parked in a set 2 km off while the camera
+		# films somebody in the town, the mayor and his wife outside the Recress, who were hidden; a tester, 28 Nov 2026)
+		var d2: float = minf(n.p.distance_squared_to(pp), n.p.distance_squared_to(MapData.sunk_eye))
 		if d2 > 185.0 * 185.0 and n.state != "fly":
 			if n.visible:
 				n.visible = false

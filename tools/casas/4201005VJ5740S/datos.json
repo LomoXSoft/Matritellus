@@ -1,0 +1,145 @@
+{
+ "rc": "4201005VJ5740S",
+ "record": {
+  "address": "AV CONSTITUCION 113 45710 MADRIDEJOS (TOLEDO)",
+  "use": "Industrial",
+  "built_m2": "28",
+  "year": "1950",
+  "units": [
+   {
+    "use": "ALMACEN",
+    "floor": "00",
+    "door": "",
+    "m2": "28"
+   }
+  ],
+  "properties": 1
+ },
+ "parts": [
+  {
+   "id": "4201005VJ5740S_part1",
+   "floors": 1,
+   "below": 0,
+   "area": 19.2,
+   "ring": [
+    [
+     -27.09,
+     -852.2
+    ],
+    [
+     -27.44,
+     -856.61
+    ],
+    [
+     -26.1,
+     -856.76
+    ],
+    [
+     -23.35,
+     -857.06
+    ],
+    [
+     -22.9,
+     -852.26
+    ]
+   ],
+   "walls": [
+    {
+     "a": [
+      -27.09,
+      -852.2
+     ],
+     "b": [
+      -27.44,
+      -856.61
+     ],
+     "len": 4.42,
+     "out": [
+      -0.997,
+      0.079
+     ],
+     "street": "Calle de Federico Martín Bahamontes",
+     "to_centre": 3.82
+    },
+    {
+     "a": [
+      -27.44,
+      -856.61
+     ],
+     "b": [
+      -26.1,
+      -856.76
+     ],
+     "len": 1.35,
+     "out": [
+      -0.111,
+      -0.994
+     ],
+     "street": "Calle de Federico Martín Bahamontes",
+     "to_centre": 4.53
+    },
+    {
+     "a": [
+      -26.1,
+      -856.76
+     ],
+     "b": [
+      -23.35,
+      -857.06
+     ],
+     "len": 2.77,
+     "out": [
+      -0.108,
+      -0.994
+     ],
+     "street": "Calle de Federico Martín Bahamontes",
+     "to_centre": 6.58
+    },
+    {
+     "a": [
+      -23.35,
+      -857.06
+     ],
+     "b": [
+      -22.9,
+      -852.26
+     ],
+     "len": 4.82,
+     "out": [
+      0.996,
+      -0.093
+     ],
+     "street": "",
+     "to_centre": 7.97
+    },
+    {
+     "a": [
+      -22.9,
+      -852.26
+     ],
+     "b": [
+      -27.09,
+      -852.2
+     ],
+     "len": 4.19,
+     "out": [
+      0.014,
+      1.0
+     ],
+     "street": "Calle de Federico Martín Bahamontes",
+     "to_centre": 5.88
+    }
+   ],
+   "ground": [
+    25.23,
+    25.36
+   ]
+  }
+ ],
+ "aerial": {
+  "x0": -36.44051598064988,
+  "z0": -866.0561268241395,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
+}

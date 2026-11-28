@@ -27,7 +27,7 @@
       "titulo": "El Puente, la Herencia y el Forastero",
       "archivo": "01_Wences y La Justi - El Puente, la Herencia y el Forastero.ogg",
       "lineas": [
-        {"s": "W", "t": "¡Muy buenas, Madridejos! ¡Aquí arranca Radio Patio!", "m": "alegre", "gap": -60, "sfx_pre": "pajaros"},
+        {"s": "W", "t": "¡Mu buenas, Madridejos! ¡Aquí arranca Radio Patio!", "m": "alegre", "gap": -60, "sfx_pre": "pajaros"},
         {"s": "M", "t": "¡La única emisora ande te enteras de tó antes que el interesao!", "m": "emocionada", "gap": 180},
         {"s": "W", "t": "Al micrófono, Wenceslao Carreño, vuestro Wences de toa la vida, barrudo hasta la médula. Y aquí enfrente, echando humo...", "m": "alegre", "gap": -90},
         {"s": "M", "t": "¡Enga ya, Wences! María Justina de la Llave, La Justi pa los amigos. ¡De Consuegra, con mucha honra! Y que conste una cosa: yo no soy golismera, ¿eh? Yo informo al vecindario.", "m": "alegre", "gap": 100},
@@ -102,7 +102,7 @@
         {"s": "M", "t": "¡Eso no es ná! Cogió una panga de la pescadería pa darle cristiana sepultura... ¡y la pobre Pescadera del Merkocarry tuvo que ir al entierro por compromiso! Ahora a La Pili ni acercarse al aparcamiento.", "m": "risa", "gap": 150, "sfx_post": "boing"},
         {"s": "W", "t": "¡Jesús amante! Y luego pregunta que qué nos creemos, que por vivir en la Magdalena no comen carroña. Oye, Justi, ¿y sus dos hijos? ¿No tienen ya treinta tacos?", "m": "normal", "gap": 100},
         {"s": "M", "t": "Treinta añazos y ahí siguen en casa a mesa puesta, más zanguangos que ná. ¡Cómo podrá una con tanto!", "m": "indignada", "gap": 240},
-        {"s": "W", "t": "¡Venga, que hoy el patio está calentito y todavía nos quedan vecinos de postín!", "m": "alegre", "gap": 140, "sfx_pre": "bumper"},
+        {"s": "W", "t": "¡Venga, que hoy el patio está calentito y toavía nos quedan vecinos de postín!", "m": "alegre", "gap": 140, "sfx_pre": "bumper"},
         {"s": "M", "t": "Dime tú, Wenceslao, ¿has pasao últimamente por la calle de la Amargura?", "m": "risa", "gap": 100},
         {"s": "W", "t": "Sí, ayer mismo vide a doña Dolores Fuertes de Varriga dando vueltas más cabreá que una mona. Dice que a quién se le ocurre ponerle ese nombre a una calle.", "m": "risa", "gap": 110},
         {"s": "M", "t": "Normal, si su hermana vive en la calle de la Paz y ya ni se felicitan por el santo. Están disimulás perdías. Y dicen que se cambió su apellido original porque era francés... ¡no te digo cuál era porque nos cierran el chiringuito!", "m": "risa", "gap": 140, "sfx_post": "rimshot"},
@@ -126,7 +126,7 @@
       "lineas": [
         {"s": "W", "t": "¡Atención, Madridejos! Hoy en Radio Patio nos ponemos serios... bueno, cinco minutos, lo que tarde La Justi en arrancarse.", "m": "alegre", "gap": -80},
         {"s": "M", "t": "¡Qué bocarán eres, Wences! Hoy toca política municipal... ¡y el escándalo de las recreativas de los Galaxy Recress!", "m": "emocionada", "gap": 120, "sfx_pre": "exclusiva"},
-        {"s": "W", "t": "¡Atiza! ¿Lo del torneo de Tokken nueve? Todavía no me lo creo. Resulta que nuestro señor alcalde, ese que habla tan fino que no dice un «pa» ni aunque lo maten...", "m": "normal", "gap": -70},
+        {"s": "W", "t": "¡Atiza! ¿Lo del torneo de Tokken nueve? Toavía no me lo creo. Resulta que nuestro señor alcalde, ese que habla tan fino que no dice un «pa» ni aunque lo maten...", "m": "normal", "gap": -70},
         {"s": "M", "t": "¡Era tricampeón manchego de Tokken dos en los ochenta! ¡Se llamaba «Doom Asasin setenta y ocho»! ¡Qué risión, Jesús amante! En Consuegra nos enteramos al cuarto de hora.", "m": "risa", "gap": 120, "sfx_post": "boing"},
         {"s": "W", "t": "Y lo mejor no fue el alcalde dándole a los botones, sino su propia madre entre el público gritando «¡Reviéntale la puta cara!» a pleno pulmón.", "m": "risa", "gap": 140, "sfx_post": "vinilo"},
         {"s": "M", "t": "¡Una madre es una madre! Aunque el chaval del foro, Katakumba sesenta y nueve, jura y perjura que el alcalde se dejó ganar.", "m": "emocionada", "gap": 110},

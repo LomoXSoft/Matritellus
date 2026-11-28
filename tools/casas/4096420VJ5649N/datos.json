@@ -181,7 +181,7 @@
       -0.267,
       0.964
      ],
-     "street": "Avenida de la Constitución",
+     "street": "Calle Sueños",
      "to_centre": 4.94
     },
     {
@@ -224,5 +224,11 @@
     24.08
    ]
   }
- ]
+ ],
+ "aerial": {
+  "x0": -100.5726645931867,
+  "z0": -709.3073272953568,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
 }

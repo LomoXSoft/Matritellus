@@ -1143,6 +1143,56 @@ Una casa no puede quedar suelta, adelantada a sus vecinas y enseñando un trozo 
 - **Sin dibujar aún:** la terraza con balaustrada en la azotea de la esquina `vm_1`; el arco de medio punto del porche de `vm_14` (puerta recta); el arco de ladrillo de la ventana de `vm_5` (marco recto); la obra `vm_13` va con el hueco oscuro, sin andamio ni materiales; la celosía de la terraza de `vm_s107` es aproximada; las señales de tráfico, cables y macetas.
 - **Hojas:** `fotos/tanda34/vmella_1` a `_6`.
 
+## Calles Sueños e Ilusión (APROBADA, 27/11)
+
+- **Hecho:** Sueños, los pares del 2 al 20 (`sue_2` … `sue_20`); Ilusión, el 1, 2, 3, 4 y 6 (`ilu_1`, `ilu_2`, `ilu_3`, `ilu_4`, `ilu_6`). Desde Street View 2024 y el Catastro.
+- **Las calles:** OpenStreetMap las llamaba «Avenida de la Constitución»; `RENAME` de `bake_godot.py` les pone su nombre. Sueños va de la Avenida al Cristo del Humilladero; Ilusión es la L que baja de Sueños y vuelve a la Avenida.
+- **Sueños:** diez adosadas de 2006 iguales, en pares que se miran (las puertas juntas: 4-6, 8-10, 12-14, 16-18; el 2 y el 20 sueltos en las puntas). Cambian el color de la cochera, el de la puerta y alguna fachada crema.
+- **Ilusión 6:** la esquina; el frente es el largo, a Sueños, y el de Ilusión va en filas `lado`. **Ilusión 3:** frente puesto en la línea del 1 (el Catastro lo tenía 1,5 m atrás y torcido).
+- **Sin dibujar:** los dentellones de las impostas sobre las ventanas, las bajantes marrones entre casas, la placa de la calle en el 20 y su cancela de arco, el desván a dos aguas detrás del almacén del 1, la terraza con barandilla del costado del 2 y la tapia blanca con albardilla de teja a su lado. El ladrillo del 2 es más rosado que el del juego.
+- **Sin hacer:** el 2 A de Ilusión (Santa Margarita y la esquina de la Avenida 103-107 ya están: sección siguiente).
+- **Hojas:** `fotos/tanda34/suenos_1`, `_2`, `ilusion_1`.
+
+## Calle de Santa Margarita y Avenida de la Constitución 103-107 (APROBADA, 27/11)
+
+- **Hecho:** Santa Margarita, los impares del 1 al 17 (`mar_1` … `mar_17`); la Avenida 103, 105 y 107 (`constitucion_103`, `_105`, `_107`). Desde Street View 2024 y el Catastro.
+- **La calle:** OpenStreetMap la llamaba «Calle de la Virgen del Sagrario»; `RENAME` de `bake_godot.py` le pone su nombre. Las tres de la Avenida dan a la vía de servicio, que el mapa llama «Calle de Federico Martín Bahamontes»: sin renombrar.
+- **Santa Margarita:** la hilera de 2006 del mismo proyecto que Sueños, en pares con las puertas juntas (1-3, 5-7, 9-11, 13-15); el 17, en la punta oeste, con otra planta (cochera, ventana con reja, puerta). Cambian las cocheras y las cortinas de los porches.
+- **Avenida 107:** la esquina; frente a la Avenida (la puerta con cortina junto a la de la 105, dos paños cegados) y su costado a Santa Margarita en filas `lado` (tres paños cegados y una cochera oscura al fondo). Su frente se alargó hasta la 105 para cubrir el porche abierto.
+- **Sin dibujar:** las impostas sobre las ventanas, las bajantes marrones entre casas, la persiana enrollada a medias de la cochera del 17 (va cerrada). Las cocheras de madera salen algo más claras y naranjas que en la foto.
+- **Hojas:** `fotos/tanda34/margarita_1`, `_2`.
+
+## Calle de Santa Margarita, acera norte (APROBADA, 27/11)
+
+- **Hecho:** la esquina de la vía de servicio (`mar_2`) y las seis adosadas de 1999 (`mar_v6` … `mar_v1`, de este a oeste). Desde Street View 2024 y el Catastro, que las apunta en la «Calle Virgen Sagrario» 1-6.
+- **Las adosadas:** tres plantas tras jardines con rampa: cochera y puerta con tejadillo abajo, enfoscado blanco con terraza en el primero, ladrillo claro con dos ventanas de persiana blanca arriba. Van las seis en una línea; la del oeste (`mar_v1`) va de ladrillo también abajo.
+- **`mar_2`:** la casa baja blanca de 2011 de tejado de teja, sobre piedra parda, con rejas y puerta blanca; su costado a la vía de servicio, alto y liso, con una cochera oscura al fondo. Va 2,8 m por delante de la hilera, como en el Catastro.
+- **Sin dibujar:** los jardines, las rampas y los muretes con reja de delante; la marquesina del jardín de `mar_v6`; el saliente del bajo de `mar_v1`; el bar con toldos de la esquina. El ladrillo claro sale más naranja que en la foto (el más claro que hay; el `brick_buff` sale pardo).
+- **Sin hacer:** el solar del oeste (vacío) y, por la vía de servicio hacia el norte, las naves y tapias de la Avenida 111-119 y la Calle Bahamontes.
+- **Hojas:** `fotos/tanda34/margarita_3`, `_4`.
+
+## Vía de servicio de la Avenida de la Constitución, hacia el norte (APROBADA, 27/11)
+
+- **Hecho:** por el este, de sur a norte: `constitucion_111`, `constitucion_113`, `bah_t1`, `bah_2`, `bah_t2`, `bah_4`, `bah_6`; por el oeste, `bah_3`. Desde Street View 2024 y el Catastro (Avenida 111 y 113; Calle Bahamontes 2, 3, 4 y 6).
+- **La calle:** el mapa la llama «Calle de Federico Martín Bahamontes»; el Catastro reparte sus casas entre la Avenida y la Calle Bahamontes. Sin renombrar.
+- **Los corrales viejos (`constitucion_111`, `_113`):** la tapia gris larga y sin huecos, bajo el borde del tejado de la nave; los remiendos del revoco van como parches (sin ellos la prueba la da por vacía: menos de 12 piezas).
+- **Las tapias (`bah_t1`, `bah_t2`) y `bah_2`:** revoco gris y luego tapial de tierra, con una puerta gris de chapa. **`bah_4`:** el cobertizo de ladrillo de la puerta verde de tablas (en el Catastro, un patio).
+- **`bah_6`:** la casa blanca de 2009 de aleros de madera oscura, dos rejas abajo y un balcón largo arriba; su puerta no da a esta calle. **`bah_3`:** la casa de 2003, revoco salmón sobre pizarra, puertas con cortina en marcos de piedra y portón de madera; ladrillo oscuro arriba.
+- **Sin dibujar:** las piedras incrustadas en el ladrillo de `bah_3` y su cobertizo blanco del sur; el hastial más alto del extremo sur de `constitucion_111`; las tapias con puertas verdes del lado de la Avenida; la verja y el hueco con maleza entre `bah_4` y `bah_6`.
+- **Sin hacer:** más al norte, el solar vallado, la tapia de ladrillo de Bahamontes 8 y la nave de la Avenida 119; la Avenida 115.
+- **Hojas:** `fotos/tanda34/bahamontes_1`, `_2`.
+
+## El final norte de la vía de servicio y la Avenida 115–119 (APROBADA, 28/11)
+
+- **Hecho:** `bah_t3` (la tapia de la vía, sin Catastro), `bah_8` (Calle Bahamontes 8), `constitucion_115`, `_117` y `_119` (Avenida 115, 117 y 119 D). Desde Street View 2024 y el Catastro.
+- **`bah_t3`:** la tapia larga de ladrillo rojo que sube por la vía hasta la nave, con pilares grises de cemento y garabatos (en el juego, una pintada de peña); al sur, el portón viejo de tablas verdes entre pilares blancos.
+- **`bah_8`:** la nave blanca y baja de 1950 con tejado de chapa; su fachada da al norte, a un camino que el mapa no tiene (el frente, puesto a mano en `calles.json`): ventanas cegadas, una puerta gris de chapa y una placa; la punta que da a la vía, de ladrillo con un pilar de cemento.
+- **`constitucion_115`:** el almacén blanco con zócalo azul vivo detrás de su jardín de la avenida: ventana con rejas en marco de ladrillo, puerta blanca de reja; el tramo final gris con puerta de madera. **`constitucion_117`:** el mismo tejado, revoco gris, el portón grande de chapa verde oscuro, una ventana de madera y una puerta verde.
+- **`constitucion_119`:** la nave de 2007 retirada de la vía detrás de un solar vallado: un muro alto de ladrillo sin huecos, una franja clara de mortero, letras oscuras arriba y manchas abajo (parches: sin ellos la prueba la da por vacía).
+- **Sin dibujar:** el bloque blanco más alto del extremo este de `bah_8`; la valla de malla y la hiedra del solar entre `bah_6` y la tapia; el borde de arriba irregular del muro de `constitucion_119`; la reja de hierro encima del portón del 117. Los tejados del 115 y el 117 salen planos con borde de teja (en la realidad, a dos aguas).
+- **Sin hacer:** la nave grande de dientes de sierra al norte del camino (4201010, en el Catastro «suelo sin edificar»).
+- **Hojas:** `fotos/tanda34/bahamontes_3`, `_4`.
+
 ## Lo que no está en esta lista
 
 Las calles hechas antes del 16/11 se compararon con menos cuidado que las últimas. Solo el Arroyuelo Alto y Extremadura se repasaron con Street View: Real, Colón, Zaragoza, Palo, Arroyuelo Medio y Bajo, San Rafael, Santo, Santa Clara, Nalda, Toledano y las demás no. Puede haber casas que no se parecen y que no están apuntadas aquí.

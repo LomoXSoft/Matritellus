@@ -2282,7 +2282,11 @@ cuartel 1 150, Caridad 1 050, Sala Cavernas 950, plaza 500, afueras 500, Cristo 
 escalón, y 1 050 m² en el Paseo del Cristo que no sé qué son: en su foto no se ve tanto); **de 3 cm o menos, unos
 23 300 m²**. En las fotos: a 5 cm se nota claro (la acera del cementerio antes), a 4 cm algo (la suela se ve más fina:
 almazara), a 3 cm o menos nada (paseos de dentro del cementerio, antes y después iguales). Fotos de cuatro sitios: `guion/fotos/repaso_antigravity/pies_sitios_hundidos.jpg` y
-`arreglo_pies_cementerio_dentro.jpg`. Registro completo: `logs/selftest_piessuelo_20261127_102924.log`. Pregunta a Luis: arreglarlo donde se nota (de 4 cm
+`arreglo_pies_cementerio_dentro.jpg`. Registro completo: `logs/selftest_piessuelo_20261127_102924.log`. **Arreglado (Luis: «Lo arreglamos»), de forma general, por Sistemas en
+la 0.2.7** (`aceras_suelos.json` con la altura del suelo; fuera «agua», «seto» y `casa_fuera.gd`; claves y sitios nuevos
+que no se pisan en `SUELO_NO` / `SUELO_FUERA` de `selftest.gd`). Comprobado en fotos, antes y después, en el IES, el
+Paseo del Cristo, la almazara y la plaza de toros: `guion/fotos/repaso_antigravity/pies_arreglo_general.jpg`. Lo que
+sigue es lo que se pensó antes de hacerlo. Pregunta que hice a Luis: arreglarlo donde se nota (de 4 cm
 arriba) o dejarlo. Cómo, si se hace, lo hablo antes con Sistemas: o de una vez para todos en su sistema
 (`aceras_suelos.json` guardando también la altura del suelo, leído por `MapData.foot`) o con pisos sitio por sitio
 (cientos más en `MapData.decks`, que `car.gd` `_ramp_launch` recorre entero por coche y fotograma). El cementerio
@@ -2292,6 +2296,183 @@ Sistemas termine su cambio de las aceras del pueblo, no a la vez.
 
 Hojas de antes y después en `guion/fotos/repaso_antigravity/arreglo_*.jpg` y `rendijas_de_cerca.jpg`. Copias de los
 cinco archivos como estaban a las 08:00 en el scratchpad de la sesión (`repaso/respaldo_2711_0800/`).
+
+### 27/11 · Pretil: el Colegio Público, a mano, con los huesos del cementerio viejo
+
+Luis: «Podrías ponerte con el colegio público Garcilaso de la vega (creo que con llamarlo colegio público es
+suficiente). Ocupa más o menos la zona en rojo. Está construido sobre las ruinas del antiguo cementerio. Así que si
+quieres poner algunos huesos o calaveras en algún sitio como easter egg estaría guay (también pásale este Lore a world
+building)». El lore se le pasó a Worldbuilding ese mismo día.
+
+- **Nuevo** `godot/scripts/colegiopub.gd` (sobre `obra.gd`). Es la manzana entre la calle de los Huertos, la del
+  Socorro, el callejón del este y las traseras de la calle del Santo. **Sin rehorneado**, porque el mapa no tenía nada
+  en ella.
+  - Dos alas de dos plantas, con la entrada y el letrero «COLEGIO PÚBLICO» (solo eso).
+  - Las aulas de una planta, con patinillo y placas solares.
+  - El porche sobre el patio de arena, con el arenero.
+  - El gimnasio y su anexo.
+  - La pista de fútbol sala, con canastas y tres torres de focos, que son farolas del pueblo.
+  - El aparcamiento y los bancales del huerto.
+  - La valla de OSM y la acera de fuera.
+- **Huevo de pascua**: una calavera en el arenero, un fémur en un bancal y una calavera con dos huesos cruzados al
+  fondo del patinillo. El modelo es propio: `tools/blender/calavera.py` → `godot/assets/colegiopub/calavera.glb`
+  (importado).
+- **Archivos compartidos** (solo líneas añadidas):
+  - `world.gd`: const, var, la entrada «the Colegio Público» en la lista de construcción y `_build_colegiopub`.
+  - `selftest.gd`: el modo `--colegiopub`, que pone al jugador en el patio para la foto de noche, porque las luces de
+    verdad siguen al jugador; también `_colegiopub_checks`, metido además en la pasada completa.
+  - Sistemas está avisado.
+- **Pruebas**:
+  - `colegiopub`: OK (15 vistas y comprobaciones).
+  - `zfight solo=colegiopub.gd`: el área exacta baja de 285 m² a 3,04 m², casi todo del zócalo enterrado.
+  - `aceras-suelos`: reescrito con `escribe` (faltaban 17 002 pisos y 2 533 cuadros del colegio) y luego OK (12); `suelos` OK
+- Detalle en `referencias/colegio_publico/LEEME.md`. Fotos en `guion/fotos/colegio_publico/`: `antes_despues.jpg`,
+  `vistas.jpg` y `huesos.jpg`.
+- **Después** (Luis: «Si, pon uno. Además de que funcione como Calasanz, niños jugando y dando vueltas durante el horario escolar»):
+  - **El azafrán escondido**: está en el cubo rojo del arenero, al lado de la calavera (`_saffron`, `id`
+    "colegiopub", `"hidden": true`). Sistemas lleva la cuenta.
+  - **Los niños**: el colegio tiene tres patios en `ninos.gd`, de Sistemas, que estaba avisado y dio el visto bueno.
+    Hay 5 pequeños en el patio de arena y 10 mayores en la pista y por el patio. Tienen el mismo horario que
+    Calasanz: de lunes a viernes, de 10 a 13, sin lluvia.
+    - Los sitios están en `colegiopub.gd` `KID_YARDS`, lejos de los árboles, las porterías, las paredes, la valla y
+      la calavera del arenero.
+    - Los patios van en cuesta: cada niño pisa el suelo que tiene debajo y no se ha puesto ningún piso.
+  - **Cambios en `ninos.gd`**:
+    - `_add_yard` admite un tamaño opcional (por defecto el de siempre).
+    - En `setup` se ha añadido el bloque del colegio, con las claves `slope` y `eye`.
+  - **Cambios en las comprobaciones de los niños** (`selftest.gd`):
+    - Ahora esperan 5 patios.
+    - En los patios con `slope`, la altura se mide con `MapData.foot(n.p)`.
+    - La foto de cada patio se saca desde `eye`.
+  - **`_colegiopub_checks`**: comprueba el azafrán (en el juego, dentro de la valla y sin nada sólido encima) y que
+    hay 15 niños.
+  - **Pruebas**: `colegiopub` OK (4) y `ninos` OK (15, con fotos de los tres patios). Hoja en
+    `guion/fotos/colegio_publico/ninos_azafran.jpg`.
+- **Horario** (Luis: «Horario escolar 9 a 14. Por lo demás, visto bueno»). Los niños del colegio salen de lunes a
+  viernes de 9 a 14 (`ninos.gd` `SCHOOL`). Las guarderías siguen de 10 a 13.
+  - `ninos.gd`: `play_time(hours)` lleva las horas como parámetro opcional, cada patio puede tener su clave `hours` y
+    `_process` mira las horas de cada patio.
+  - En las comprobaciones de los niños, el arreglo final respeta las horas de cada patio.
+  - `_colegiopub_checks` comprueba el horario a las 9:30, 13:30 y 14:30.
+  - Pruebas: `colegiopub` OK (5) y `ninos` OK (15). Sistemas está avisado.
+- **APROBADO por el usuario (27/11: «Por lo demás, visto bueno»)**. No hay commit.
+
+## 27/11/2026 (Pretil): «Taller Lápiz» y «Dulces San Paquito», a mano
+
+- **Encargo** (Luis: «Vamos ahora con Taller López (que llamaremos taller Lápiz) y dulces san Francisco (que llamaremos
+  dulces san Paquito) ya que están los edificios pegados», con cinco fotos de Street View de 2024).
+- **Dónde**: Avenida de Martín Descalzo, sobre `md_9e` (el taller y la puerta azul), `md_9d` (la nave, que es el
+  obrador) y `md_9c` (el pilar blanco, la casa blanca y el almacén beige).
+  - Texturas las entregó con `["obra"]` en `casas_calles.gd`. `md_7` y `md_9` siguen siendo suyas.
+  - Sin rehorneado.
+- **Archivos nuevos**: `godot/scripts/lapiz.gd` (kit `obra.gd`), `tools/lapiz/dibujos.py` y los dibujos de
+  `godot/assets/lapiz/` (los rótulos, la tabla de Dulces y los azulejos).
+- **Cómo es**:
+  - El taller y el pilar con la casa dan a la línea de la calle. La puerta azul y la nave están 2,6 m más atrás
+    (`BACK`), con la jardinera de rosales y dos rampas delante.
+  - Letras «ELECTRICIDAD DEL AUTOMÓVIL» de punta a punta de la fachada y tabla «TALLER LÁPIZ» sobre el pretil.
+  - Ladrillo tostado, postes azules, la puerta de tijera del obrador y el portón azul con su farol.
+  - La tabla «DULCES SAN PAQUITO» va en el **costado suroeste del pilar blanco**, que da a la calle. Luis, 27/11: «El
+    cartel no está en el frente, está en la fachada lateral de la casa blanca, por los que vienen conduciendo desde la
+    rotonda vean el cartel de frente». Debajo, los contadores; al lado, la caja de los cables.
+  - Delante, hasta la acera del pueblo, donde el mapa dejaba tierra: hormigón y baldosa gris (`_apron`, que mide
+    dónde empieza la acera con `MapData.sunk`). También el alcorque del árbol.
+  - En la calle: el árbol (`W.add_trees`), el contenedor beige de tapa verde (`W.extra_props`), el poste de hormigón y
+    el farol del portón (`W.lamp_spots`). El suelo de detrás de la jardinera y las rampas son `MapData.decks`.
+  - **Horarios** (Google Maps): el taller abre de lunes a viernes de 9 a 20:45 y los sábados de 9 a 14; Dulces, todos
+    los días de 9 a 14 y de 16 a 20. Cierres y luces siguen el reloj.
+- **Archivos compartidos** (solo líneas añadidas):
+  - `world.gd`: const, var, la entrada «the Taller Lápiz and Dulces San Paquito» y `_build_lapiz`.
+  - `selftest.gd`: el modo `--lapiz` (14 vistas, cerrado y de noche) y `_lapiz_checks`, metido en la pasada completa
+    después del Colegio Público.
+- **Pruebas**:
+  - `lapiz`: OK (6).
+  - `zfight solo=lapiz.gd`: 1,2 m² exactos, casi todo caras escondidas dentro de la pared de la nave.
+  - `aceras-suelos`: `escribe` OK (8). La comprobación se hizo después, con la pizzería Miguel Ángel: OK (12).
+- Detalle en `referencias/taller_lapiz/LEEME.md`. Fotos en `guion/fotos/taller_lapiz/lapiz_vistas.jpg`.
+- **APROBADO por el usuario (27/11: «Sin azafrán. Visto bueno y pasamos al siguiente local»)**. No lleva azafrán.
+  No hay commit.
+
+## 27/11/2026 (Pretil): la «Burger Pizzería Miguel Ángel», a mano
+
+- **Encargo** (Luis: «Pizzería Michelangelo (que llamaremos Pizzeria Miguel Ángel)»). Después, con una foto del
+  letrero de verdad: «Que se parezca más en estilo al original» y «En el cartel que ponga Burger Pizzería Miguel
+  Ángel». El sitio se llama «Burger Pizzería Miguel Ángel» y el letrero dice BURGER / PIZZERÍA / Miguel Ángel.
+- **Dónde**: Calle de Tembleque, sobre `tembleque_8` (Catastro 3993742).
+  - Texturas la entregó con `["obra"]` en `casas_calles.gd`. `tembleque_6` y `tembleque_10` siguen siendo suyas.
+  - Sin rehorneado.
+- **Archivos nuevos**: `godot/scripts/miguelangel.gd` (kit `obra.gd`), `tools/miguelangel/dibujos.py` y los dibujos
+  de `godot/assets/miguelangel/` (el letrero, la baldosa del zócalo y la cortina).
+- **Cómo es**:
+  - La pizzería está en el portón del garaje viejo. Cerrada, se ve la persiana beige. Abierta, la persiana sube y
+    queda un porche de 1,2 m con una cristalera de madera, y detrás el comedor encendido (mesas, mostrador, horno).
+  - Ladrillo tostado sobre baldosa terracota con rombos. La puerta de los pisos lleva una cortina de rayas.
+  - Arriba, revoco crema, ladrillo dentado y persianas blancas. El tejado de detrás es una suposición.
+  - Letrero de caja al estilo del de verdad: azul casi negro, marco de aluminio, letras carmesí y el nombre en cursiva
+    azul claro.
+  - Dos faroles, y el segundo es farol del pueblo (`W.lamp_spots`). La rampa del garaje y el porche son
+    `MapData.decks`.
+  - **Horarios** (Google Maps): lunes de 18 a 23:30, de jueves a domingo de 19 a 23:30, cerrado martes y miércoles.
+    La persiana, las luces y el letrero siguen el reloj.
+- **El porche no se pisa**: el muro invisible de cada manzana (`world.gd`, `MapData.outlines`) pasa por la línea de
+  la fachada. Para entrar andando habría que rehornear el contorno de la manzana. La persiana no tiene sólido propio.
+- **El letrero salía blanco**: Godot 4 suma el color de emisión al dibujo (`(emission + textura) × energía`), y con
+  `Color.WHITE` toda la cara se aclaraba. Se arregla con `emission = Color.BLACK`.
+- **Archivos compartidos** (solo líneas añadidas):
+  - `world.gd`: const, var, la entrada «the Burger Pizzería Miguel Ángel» y `_build_miguelangel`.
+  - `selftest.gd`: el modo `--miguelangel` (10 vistas; abierta, cerrada y de noche) y `_miguelangel_checks`, metido
+    en la pasada completa después de Lápiz.
+- **Pruebas**:
+  - `miguelangel`: OK (5).
+  - `zfight solo=miguelangel.gd`: 0,35 m² exactos, casi todo caras de espaldas metidas en la pared.
+  - `aceras-suelos`: reescrito con `escribe` y luego comprobado: OK (12).
+- Detalle en `referencias/pizzeria_miguelangel/LEEME.md`. Fotos en
+  `guion/fotos/pizzeria_miguelangel/miguelangel_vistas.jpg`.
+- **APROBADO por el usuario (27/11: «Visto bueno. Sin azafrán»)**. No lleva azafrán. No hay commit.
+
+## 28/11/2026 (Pretil): el «Vivero de Empresas», a mano y con interior
+
+- **Encargo** (Luis, 27/11, con una foto de su fachada): «Ponte ahora con el Vivero de empresas. Que se pueda pasar
+  y tenga horario».
+- **Dónde**: Avenida de la Reina Sofía, sobre `rsof_10` (Catastro 4090017, el antiguo centro de salud).
+  - Texturas la entregó con `["obra"]` en `casas_calles.gd`. `rsof_12` y `abj_rs14` siguen siendo suyas.
+  - Sin rehorneado.
+- **Archivos nuevos**: `godot/scripts/vivero.gd` (la fachada, kit `obra.gd`), `godot/scripts/vivero_dentro.gd` (el
+  interior), `tools/vivero/dibujos.py` y los dibujos de `godot/assets/vivero/`.
+- **Cómo es por fuera**:
+  - Toda la fachada es una celosía de ladrillo melocotón claro, 45 cm por delante del frente viejo blanco, con el
+    remate en tres tramos. Medida en la foto de Luis: un hueco cada 40 cm, hiladas de huecos cada 15 cm.
+  - Los huecos «cerrados» son ladrillos metidos, pintados en el dibujo (opaco). Solo las zonas abiertas (ante el
+    porche, ante las dos ventanas viejas y sobre la marquesina) son transparentes de verdad.
+  - Portón azul de chapa perforada (VIVE / RO), marquesina de canto azul con azulejos azules, ventana de marco azul
+    marino, banda de cristales esmerilados y paneles azules, dos placas, señal de minusválidos y un árbol.
+  - **La avenida cae 1,3 m a lo largo de la fachada**. El nivel del sitio es el del extremo este; el portón y el
+    porche llevan su propia cota (`gate_y`) para que el umbral quede en la acera. Hay una comprobación para eso.
+- **Horario** (Google Maps): de lunes a viernes de 9 a 14. El portón, el vestíbulo y la flecha siguen el reloj.
+- **Cómo se entra**: por la flecha verde ante el portón (`entradas.gd`), solo en su horario. El muro de manzana del
+  mapa pasa por la fachada: el porche se ve pero no se pisa.
+- **Dentro** (decorado aparte en (−550, 1550), 12 × 24 m): recepción, pasillo entre dos despachos de cristal y un
+  patio al aire libre con la celosía en sus paredes, coworking con 14 puestos bajo tres lucernarios y la escalera
+  volada (con cuerda: no hay piso de arriba), sala de reuniones y office. No hay nadie dentro: las figuras las
+  decide Luis. 10 luces sin sombras.
+- **Archivos compartidos** (solo líneas añadidas):
+  - `world.gd`: const, var, la entrada «the Vivero de Empresas» y `_build_vivero`.
+  - `entradas.gd`: el decorado en `shops()`.
+  - `selftest.gd`: el modo `--vivero` (10 vistas de fuera y 12 de dentro) y `_vivero_checks` (7 comprobaciones),
+    metido en la pasada completa después de Miguel Ángel.
+- **Pruebas** (28/11):
+  - `vivero`: OK (7), con el azafrán. Una pasada (04:05) dio 6 de 7: tres paseos de dentro (pasillo, despacho 1 y
+    reuniones). No se ha repetido en tres pasadas más sin tocar nada, y no he encontrado la causa (pista sin
+    comprobar: `casas_calles.gd` acababa de cambiar y esa pasada rehízo la caché de las casas).
+  - `zfight solo=vivero.gd`: 0,07 m² exactos; `zfight solo=vivero_dentro.gd`: 0,28 m². La primera pasada dio 0,87 y
+    1,1 m² de solapes de verdad (el alféizar de la banda y los marcos de dos puertas), ya arreglados.
+  - `aceras-suelos`: OK (12), sin reescribir.
+- Detalle en `referencias/vivero/LEEME.md`. Fotos en `guion/fotos/vivero/` (`vivero_fuera.jpg`, `vivero_dentro.jpg`).
+- **Azafrán escondido** (Luis: «Ponlo»): en el patio, detrás de la maceta del olivo del fondo (`"id": "vivero"`).
+  Va fuera de la capa de interiores (`_open_air`) para que le dé el sol. Foto en `vivero_azafran.jpg`.
+- **Ojo con `sed -i` en Git Bash**: quita los `\r` de todo el archivo. Me pasó con `selftest.gd` (CRLF) al añadir
+  una vista; lo devolví entero a CRLF en el momento. Para archivos CRLF, parches en Python.
+- **APROBADO por el usuario (28/11: «Ponlo, y visto bueno»)**. No hay commit.
 
 ## Cómo mantener el registro
 
@@ -3940,3 +4121,55 @@ Luis: «Oculta la agenda en este modo. Y crea una nueva cinemática introductori
 - **Qué.** Los cinco puntos de `guion/zfighting_repaso.md` §3 (allí el detalle). Solo `casas.gd` (reemplazos exactos; `box()` sin tocar) y `selftest.gd` (`--casas-sueltas` para `--zfight`). Sin rehorneado.
 - **Trucos.** El audit no distingue caras ocultas: agrupar los pares por color y plano (scratchpad `zf_agg.py`) y mirar dónde caen (z −0,30 = dorso del muro de fachada). `_plain` usa `_ring` (el contorno de la pieza) para saber si una esquina gira hacia dentro; nunca alarga un extremo sobre la línea de fachada.
 - **Pruebas.** `zfight casas-sueltas` 10382 → 3348 m² exactos, 0 errores de script; `casas` OK en cinco casas. APROBADO por el usuario (27/11). Sin commit.
+
+### Sueños e Ilusión: 15 entradas (27/11, Claude · Texturas)
+
+- **Qué.** `sue_*` e `ilu_*` al final de `casas_calles.gd`; las dos calles renombradas en `RENAME` de `bake_godot.py` (OSM las tenía como «Avenida de la Constitución»).
+- **Trucos.** Tras renombrar una calle hay que volver a pasar `house_data.py` por cada parcela: su `datos.json` guarda el nombre de la calle de cada pared, y `house_fronts.py` no ve el frente hasta entonces. Panorámicas: `tools/molino/panos.py cerca` desde una conocida (la primera, de la barra de direcciones de Maps).
+- **Pruebas.** `casas solo=sue_,ilu_` OK. Horneado: 15 nuevas, nada más cambia. `cache_casas_check` y `aceras-suelos` OK. APROBADO (27/11). Sin commit.
+
+### Santa Margarita y Avenida 103-107: 12 entradas (27/11, Claude · Texturas)
+
+- **Qué.** `mar_*` y `constitucion_103/105/107` al final de `casas_calles.gd`; la calle renombrada en `RENAME` de `bake_godot.py` (OSM: «Calle de la Virgen del Sagrario»).
+- **Trucos.** `house_street.py` escribe `calles.json` con CRLF: pasarlo a LF después (si no, el diff es el archivo entero). La 107 la acortaba `house_street` y dejaba el porche como hueco: frente puesto a mano en la línea de la 105.
+- **Pruebas.** `casas solo=mar_,constitucion_103,constitucion_105,constitucion_107` OK. Horneado: 12 nuevas, nada más cambia. `aceras-suelos` OK; `cache_casas_check` FALLA en dos mallas lejos de estas casas (`lote_b_0_-1_r_-14`, `lote_s_-3_0_colf`), avisado Sistemas el 27/11. APROBADO (27/11). Sin commit.
+
+### Santa Margarita, acera norte: 7 entradas (27/11, Claude · Texturas)
+
+- **Qué.** `mar_2` y `mar_v1`..`mar_v6` al final de `casas_calles.gd`; en calles.json las seis con `floors: 3`, `h: 8.8`.
+- **Trucos.** Fachadas tras jardín, a 15 m del eje de la calle: `house_street.py --reach=19`. El frente que saca es el del porche (dos plantas); se pusieron en la línea de `mar_v6`.
+- **Avisos.** La RAM del PC tiene bits rotos (Sistemas, 27/11): un arranque de la prueba se cayó a los 6 s y repetido salió OK.
+- **Pruebas.** `casas solo=mar_2,mar_v` OK. Horneado: 7 nuevas, nada más cambia. `cache_casas_check` (a la segunda: en la primera se cayó un arranque, la RAM) y `aceras-suelos` OK. APROBADO (27/11). Sin commit.
+
+### Vía de servicio hacia el norte: 8 entradas (27/11, Claude · Texturas)
+
+- **Qué.** `bah_*` y `constitucion_111/113` al final de `casas_calles.gd`.
+- **Trucos.** Una tapia sin Catastro (`rc: None`) de menos de 5 m² (largo × `deep`) la tira el horneado sin decir nada (`add_part`): `deep` 0,8. Una casa con menos de 12 piezas la suspende la prueba `casas`: en una tapia lisa, los remiendos van como `parche`. `plinth=0` en una línea de planta (no de paño) rompe `_mat` (String(null)): no se pone.
+- **Pruebas.** `casas solo=bah_,constitucion_111,constitucion_113,ctn_109` OK; `cache_casas_check` y `aceras-suelos` OK. APROBADO (27/11). Sin commit.
+
+### El Colegio Público, sobre el cementerio viejo (28/11, Claude · Worldbuilding)
+
+- **Lore de Luis, por Pretil (27/11):** el Colegio Público está hecho sobre las ruinas del cementerio viejo; Pretil esconde huesos y una calavera en el que construye. Apuntado en `guion/palabros.md` («El pueblo por dentro»).
+- **Frases:** cinco, aprobadas por Luis («Me gustan todas menos» el murmullo de niño, que se queda fuera): dos en `generic_kid`, dos en `generic_old` y una en `generic` (`loc.gd`), con su inglés en la voz de cada capa (`guion/english_style.md`). Avisado Sistemas.
+- **Prueba:** `palabros` 3/3 (la primera vez falló por un «donde», cambiado a «ande»). Sin commit.
+
+### «Entoavía» solo los viejos; Radio Patio corregida (28/11, Claude · Worldbuilding)
+
+- **Luis:** «"entoavía" solo para los viejos, los adultos y jóvenes que usen "toavía"».
+- **`loc.gd`:** pasan a «toavía» `log_none`, `carta_bien_venancio`, `alcaldesa`, `end_next`, `pochi`, `angelus`, `fiesta`, `feliciano_semana`, `generic_m`, `chisme_movil_igual`, `ruta_colesterol` (camina gente de todas las edades) y `xandro_retry`. Siguen con «entoavía» `paca_coop`, `dolores`, `genaro` y `generic_old_f`.
+- **Prueba:** `_palabros_checks` falla si alguien que no es viejo dice «entoavía» o un viejo dice «toavía»; quién es viejo, en `HABLA_VIEJA` (`selftest.gd`: las charlas de mayores y los vecinos con voz `old_m`/`old_f`). `palabros` 3/3.
+- **Radio Patio** (con el sí de Luis; avisado Sistemas): en `guion/radio_patio.json`, «¡Muy buenas!» pasa a «¡Mu buenas!» (01) y «todavía» a «toavía» (03 y 04; Wences y La Justi son adultos). Vueltos a sacar los tres `.ogg` de `godot/radio/radio7/` con `tools/make_radio_patio.py --only 01 03 04`; duran lo mismo que antes (±0,1 s). Copia de los antiguos en el scratchpad de la sesión. No se han oído.
+- Escrito en `guion/palabros.md`. Sin commit.
+
+### Final norte de la vía de servicio y Avenida 115–119: 5 entradas (28/11, Claude · Texturas)
+
+- **Qué.** `constitucion_115/117/119`, `bah_t3` y `bah_8` al final de `casas_calles.gd`; en `calles.json`, 115 y 117 con `house_street.py --reach=16` (detrás de su jardín), y a mano `constitucion_119` (su muro oeste, retirado 25 m de la vía), `bah_t3` (`rc: None`, `deep` 0,8, sobre la línea de la punta de `bah_8`) y `bah_8`.
+- **Trucos.** El camino al norte de `bah_8` (z ≈ −993) no está en el mapa, así que `house_street` no le encuentra frente: va puesto a mano (de este a oeste, como se mira) y su punta a la vía sale como `lado`. Sin `alinea.py` para esos tres (no hay hilera). La nave del 119 necesitó 8 parches para pasar de las 12 piezas.
+- **Pruebas.** `casas solo=bah_8,bah_t3,constitucion_115,constitucion_117,constitucion_119` OK (una pasada salió con el menú de la mochila encima de las fotos del 119, mientras otra sesión editaba `selftest.gd`; repetida, limpia); `cache_casas_check` OK (3037 mallas, 1890182214; casas 3453, 2163427589) y `aceras-suelos` OK (12). APROBADO (28/11). Sin commit.
+
+### 28/11 · Sistemas (Claude): la 0.2.8, la flecha a la puerta de los locales y el alcalde en la escena de la noche
+
+- **Publicado en la 0.2.8** por orden de Luis: «En cuanto terminen texturas y pretil con sus trabajos actuales y les dé el visto bueno pasamos a la 0.2.8». Entra lo aprobado de Pretil (Colegio Público, Taller Lápiz, Miguel Ángel, Vivero de Empresas), de Texturas (Sueños, Ilusión, Santa Margarita, la vía de servicio y la Avenida 103–119) y de Worldbuilding (frases del colegio, «toavía»/«entoavía», Radio Patio).
+- **La flecha a la puerta.** `entradas.gd` `way_to(p)`: si `p` está a menos de 60 m (`SET_NEAR`) del `in_door` de un decorado (todos los de `shops()` más las tiendas de ropa aún cerradas), da su `door_out`; si no, `p`. `game.gd` `_reach(p)` lo usa fuera (`indoors` falso) en `_guide_target()` (flecha, ruta, minimapa), en la baliza de `set_target` y en `_map_missions`. `target` sigue siendo la posición de verdad (la llegada se mide con ella, ya dentro). Un decorado nuevo entra solo si está en `shops()`.
+- **La gente lejos.** En el bucle de vecinos de `game.gd`, la distancia que esconde (185 m) y aligera (55 m) es la menor entre el jugador y la cámara (`MapData.sunk_eye`). En una escena con el jugador aparcado en un decorado y la cámara en el pueblo, se ven los del pueblo.
+- **Pruebas tocadas.** `_recress_checks` pone `fondo_casa._rung` a verdadero (y lo devuelve al final) y `ocio_quiet`; `_reglas_checks` compara solo el día de la hoja. Cifras de la batería y de los arranques en `PROJECT_STATE.md`.

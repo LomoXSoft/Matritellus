@@ -2,7 +2,10 @@ extends Node
 ## Children at play in the town's nursery yards (the user, 16 November 2026: "creo que ya podríamos meter niños jugando
 ## en los sitios de niños, y hablando cosas de niños de pueblo"): the little ones of the nursery school on the Calle del
 ## Palo (calasanz.gd) and of the Caridad's nursery (caridad.gd) are out in their yards on school days in the middle of
-## the morning, not in the rain. The square's playground has its own children (plaza.gd).
+## the morning, not in the rain. The square's playground has its own children (plaza.gd). And the Colegio Público's
+## (colegiopub.gd; the user, 27 Nov 2026: "que funcione como Calasanz, niños jugando y dando vueltas durante el horario
+## escolar"), in school hours ("Horario escolar 9 a 14"; the nurseries' are ten to one): the little ones in its sandy
+## yard, the bigger ones on its pitch and its playground.
 ##
 ## They are neighbours like any other, made once when the game starts; out of hours they are at home (`away`), and they
 ## come out and go in only while nobody is looking at the yard, so nobody appears out of thin air. While out they run
@@ -54,6 +57,18 @@ func setup(game) -> void:
 	if w.caridad != null:                        # between its slide, swings, horses, sandpit, hopscotch and little goal
 		_add_yard("caridad", w.caridad, [Vector2(29.8, -1.4), Vector2(38.0, -1.8), Vector2(40.0, -2.2), Vector2(43.0, -1.8), Vector2(45.0, -2.2),
 			Vector2(46.6, -3.4), Vector2(41.5, -5.4), Vector2(43.6, -6.2), Vector2(49.2, -1.2)], float(w.caridad.fn), w.caridad.YARD)
+	if w.colegiopub != null:                    # its three yards (colegiopub.gd KID_YARDS) lie on the sloping ground: each child on the floor under it, no deck
+		var cp = w.colegiopub
+		for yd in cp.KID_YARDS:
+			var first: Vector2 = cp.map_at((yd[1][0] as Vector2).x, (yd[1][0] as Vector2).y)
+			_add_yard(String(yd[0]), cp, yd[1], MapData.foot(first) - float(cp.level), [], yd[2])
+			var made: Dictionary = yards.back()
+			made["slope"] = true
+			made["eye"] = cp.map_at((yd[3] as Vector2).x, (yd[3] as Vector2).y)      # (where its picture is taken from)
+			made["hours"] = Vector2(SCHOOL[0], SCHOOL[1])          # (the user, 27 Nov 2026: "Horario escolar 9 a 14")
+			made["out"] = play_time(made["hours"])
+			for k in made["kids"]:
+				_send(made, k, bool(made["out"]))
 	for y in yards:
 		_add_sound(y["name"], Vector3((y["c"] as Vector2).x, float(y["top"]) + 1.0, (y["c"] as Vector2).y), 1.12, func(): return bool(y["out"]))
 	if w.plaza != null:                          # (the square's children are plaza.gd's: heard while they are out)
@@ -91,7 +106,7 @@ func _hear(dt: float) -> void:
 		elif p.volume_db <= -59.0 and p.playing:
 			p.stop()
 
-func _add_yard(yard_name: String, place, local: Array, floor_y: float, outline: Array) -> void:
+func _add_yard(yard_name: String, place, local: Array, floor_y: float, outline: Array, size := Vector2(0.5, 0.58)) -> void:
 	var top: float = float(place.level) + floor_y
 	var spots: Array = []
 	var c := Vector2.ZERO
@@ -110,7 +125,7 @@ func _add_yard(yard_name: String, place, local: Array, floor_y: float, outline: 
 	for i in range(PER_YARD):
 		var look: Dictionary = G._neighbour_look("kid")
 		look["voice_i"] = kind
-		look["scale"] = randf_range(0.5, 0.58)  # (little ones: smaller than the square's)
+		look["scale"] = randf_range(size.x, size.y)  # (little ones: smaller than the square's; the Colegio Público's bigger ones as big as the street's)
 		look["hat"] = ""
 		var n = G.spawn_neighbour(spots[(i * 3) % spots.size()], true, look)
 		n.set_meta("crio", true)
@@ -149,11 +164,11 @@ func _street(out: bool) -> void:
 		if not out:
 			n.state = "idle"
 
-## school days, in the middle of the morning; never in the rain
-func play_time() -> bool:
+## school days, in the middle of the morning (or in `hours`: a yard of its own, the Colegio Público's); never in the rain
+func play_time(hours := Vector2(OUT_FROM, OUT_TO)) -> bool:
 	if G.rain > 0.3 or int(G.weekday) >= 5:
 		return false
-	return G.clock >= OUT_FROM and G.clock < OUT_TO
+	return G.clock >= hours.x and G.clock < hours.y
 
 func _process(dt: float) -> void:
 	if G == null:
@@ -165,8 +180,8 @@ func _process(dt: float) -> void:
 	if _t <= 0.0:
 		_t = LOOK_T
 		_street(street_time())
-		var want := play_time()
 		for y in yards:
+			var want := play_time(y.get("hours", Vector2(OUT_FROM, OUT_TO)))
 			if want != bool(y["out"]) and not _watched(y):
 				y["out"] = want
 				for k in y["kids"]:

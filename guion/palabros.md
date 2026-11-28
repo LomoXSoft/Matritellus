@@ -18,6 +18,12 @@ Copias descargadas (solo para consulta, no van en el juego): `tools/palabros_src
 Reglas de la casa que ya teníamos: «Enga» (no «Ea»), «La'é» (la he), «Lé» (lo he), «l'á» (le ha), participios en
 -ao / -ío, «pa», «tó», «ná», «tiés», «semos», «entoavía».
 
+**«Entoavía» solo lo dicen los viejos; los adultos y los jóvenes dicen «toavía»** (Luis, 28-11-2026: «"entoavía" solo
+para los viejos, los adultos y jóvenes que usen "toavía"»). Viejos son las charlas y murmullos de mayores (`generic_old*`,
+`whisper_old*`, `ouch_old`, `luto_*`) y los vecinos con voz de viejo (Dolores, Genaro, Josefa, la madre del alcalde,
+la Tía Paca, la Pili, Tomasa); la ruta del colesterol, los chismes, los avisos y Wences y La Justi, «toavía». La prueba
+`palabros` lo vigila (`HABLA_VIEJA` en `selftest.gd`).
+
 Y dos más (Luis, 12-11-2026):
 
 - **«vía»** en vez de «voy a».
@@ -95,6 +101,14 @@ llenarse. (Lo va contando Luis; los negocios llevan nombre cambiado, como todos.
   En el juego es la carretera que cruza el mapa de norte a sur por el este; los vecinos la nombran así (en los dichos
   de mayores, de los demás y de los críos), y los que andan por ella tienen sus frases (`ruta_colesterol` en loc.gd).
   Foto: `referencias/ruta_colesterol/`.
+- **El Colegio Público está hecho sobre el cementerio viejo** (Luis, 27-11-2026, por Pretil: «Está construido sobre las
+  ruinas del antiguo cementerio»). Es el colegio de entre la calle de los Huertos, la del Socorro y la del Santo; en el
+  juego se llama solo «Colegio Público» (su nombre real no sale). Pretil esconde unos huesos y una calavera en el que
+  construye a mano, como guiño. Da para que los críos se asusten unos a otros y los mayores se acuerden de cuando
+  aquello era camposanto.
+  Cinco frases con su visto bueno (Luis, 28-11-2026: «Me gustan todas menos» el murmullo de niño, que no entra): dos de
+  críos (los muertos bajo el arenero, el esqueleto de la reja), dos de mayores (allí se enterraba; el abuelo bajo la clase
+  de los de seis años) y una de vecinos (los huesos a capazos en las obras), en `generic_kid`, `generic_old` y `generic`.
 
 - **Gentilicios** (Luis, 23-11-2026):
 

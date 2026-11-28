@@ -2957,7 +2957,7 @@ func _ninos_checks(pictures := false) -> void:
 			var back: Vector2 = b.p - f * 7.0
 			await _view_at(Vector3(back.x, fy + 3.6, back.y), Vector3(play.x, fy + 0.4, play.y), "nino_negro_parque", 55.0)
 	# the nursery yards: out on a school morning, home in the afternoon and at the weekend
-	_check(N.yards.size() == 2, "the little ones play in the two nursery yards (%s)" % [N.yards.map(func(y): return y["name"])])
+	_check(N.yards.size() == 5, "the little ones play in the two nursery yards, and the Colegio Público's children in its three (%s)" % [N.yards.map(func(y): return y["name"])])
 	var wd_was = g.weekday
 	var rain_was: float = g.rain
 	var clock_was: float = g.clock
@@ -2985,7 +2985,7 @@ func _ninos_checks(pictures := false) -> void:
 		for k in y["kids"]:
 			var n = k["n"]
 			off = maxf(off, (n.p as Vector2).distance_to(y["c"]) - float(y["r"]))
-			high = maxf(high, absf(n.global_position.y - float(y["top"])))
+			high = maxf(high, absf(n.global_position.y - (MapData.foot(n.p) if y.get("slope", false) else float(y["top"]))))     # (a yard on sloping ground: the floor under each child)
 			if k["do"] == "run" or (n.p as Vector2).distance_to(n.home) > 0.1 or n.state == "idle":
 				moved += 1
 		where[y["name"]] = [off, high]
@@ -3043,7 +3043,7 @@ func _ninos_checks(pictures := false) -> void:
 			for y in N.yards:
 				var pc = y["place"]
 				var c: Vector2 = y["c"]
-				var from2: Vector2 = pc.spot(-3.0, 10.0) if y["name"] == "calasanz" else pc.spot(39.5, 7.5)
+				var from2: Vector2 = y["eye"] if y.has("eye") else (pc.spot(-3.0, 10.0) if y["name"] == "calasanz" else pc.spot(39.5, 7.5))
 				g.player.p = from2                                # (people far from you are not drawn)
 				g.player.sync()
 				await _frames(30)
@@ -3053,7 +3053,7 @@ func _ninos_checks(pictures := false) -> void:
 	g.rain = rain_was
 	g.set_time(clock_was)
 	for y in N.yards:
-		var out: bool = N.play_time()
+		var out: bool = N.play_time(y.get("hours", Vector2(N.OUT_FROM, N.OUT_TO)))
 		y["out"] = out
 		for k in y["kids"]:
 			N._send(y, k, out)
@@ -3363,6 +3363,313 @@ func _ies_checks() -> void:
 	var street: String = String(MapData.nearest_road(ie.door)["seg"].road["n"])
 	_check(ie.NAME == "I.E.S. VALDEACERO" and street.contains("Tembleque") and g.world.lamp_spots.has(ie.lamps[0]),
 		"its way in gives on to the %s, its name reads %s, and the floodlights of its courts are the town's" % [street, ie.NAME])
+
+## The Taller Lápiz and Dulces San Paquito (lapiz.gd): on their three houses of the map, which casas.gd no longer
+## draws (handed over as "obra"); its fronts stop you; its walk and its ramps are floors; nothing of it on the asphalt;
+## the tree and the bin of its photographs in the street; the hours of the two (Google Maps), and the shut and open
+## states following the clock.
+func _lapiz_checks() -> void:
+	var lp = g.world.get("lapiz")
+	var short = preload("res://scripts/casas_calles.gd").HOUSES
+	var given := 0
+	for id in ["md_9e", "md_9d", "md_9c"]:
+		var line = short.get(id, [])
+		if line is Array and (line as Array).size() == 1 and String(line[0]) == "obra":
+			given += 1
+	if lp == null:
+		print("  the Taller Lápiz: not built (%d of its 3 houses handed over)" % given)
+		return
+	_check(given == 3, "its three houses are handed over to it by Texturas, casas.gd no longer draws them (%d of 3)" % given)
+	_check(lp.pieces > 400 and lp.openings >= 9 and lp.NAME_T == "TALLER LÁPIZ" and lp.NAME_D == "DULCES SAN PAQUITO",
+		"the Taller Lápiz and Dulces San Paquito are built by hand (%d pieces, %d windows and doors), named as the user named them" % [lp.pieces, lp.openings])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var stops := 0
+	for x in [9.0, lp.B1 + 9.0, 40.0]:
+		var a: Vector2 = lp.spot(x, 2.2)
+		var b: Vector2 = lp.spot(x, -lp.BACK - 1.0)
+		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, lp.level + 1.5, a.y), Vector3(b.x, lp.level + 1.5, b.y), 1)).is_empty():
+			stops += 1
+	var nearest := 99.0
+	for p in lp.yard:
+		var d: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(stops == 3 and nearest > 0.0, "its fronts stop you (%d of 3), nothing of it on the asphalt (the nearest %.2f m)" % [stops, nearest])
+	var walk: float = MapData.foot(lp.spot(lp.B1 + 2.0, -lp.BACK + 0.4))
+	var ramp_top: float = MapData.foot(lp.spot(lp.B1 + 9.0, -lp.BACK + 0.15))
+	var ramp_mid: float = MapData.foot(lp.spot(lp.B1 + 9.0, (lp.ZF - lp.BACK) / 2.0))
+	var ramp_foot: float = MapData.foot(lp.spot(lp.B1 + 9.0, lp.ZF - 0.05))
+	var street: float = MapData.height(lp.spot(lp.B1 + 9.0, lp.ZF - 0.05))
+	_check(absf(walk - lp.walk_y) < 0.03 and ramp_top > ramp_mid and ramp_mid > ramp_foot and absf(ramp_foot - street) < 0.12 and absf(ramp_top - lp.walk_y) < 0.06,
+		"its walk behind the roses is a floor at the nave's (%.2f, wanted %.2f), and its big door's ramp falls to the street (%.2f, %.2f, %.2f; the street %.2f)" % [walk, lp.walk_y, ramp_top, ramp_mid, ramp_foot, street])
+	var tree := false
+	var tp: Vector2 = lp.spot(10.2, 2.4)
+	for t in g.world.tree_info:
+		if (t["p"] as Vector2).distance_to(tp) < 0.3:
+			tree = true
+	var bin := false
+	for e in g.world.extra_props:
+		if String(e[0]) == "container" and (e[1] as Vector2).distance_to(lp.spot(lp.N1 + 1.0, 2.2)) < 0.3:
+			bin = true
+	_check(tree and bin, "the tree before the workshop (%s) and the bin before the pier (%s) are in the street" % [tree, bin])
+	var hours: bool = lp.open_taller(0, 10.0) and not lp.open_taller(0, 21.0) and lp.open_taller(5, 13.0) and not lp.open_taller(5, 15.0) and not lp.open_taller(6, 12.0) \
+		and lp.open_dulces(6, 10.0) and not lp.open_dulces(6, 15.0) and lp.open_dulces(2, 17.0) and not lp.open_dulces(2, 20.5) and not lp.open_dulces(2, 8.5)
+	var wd_was = g.weekday
+	var clock_was: float = g.clock
+	g.weekday = 6
+	g.set_time(15.0)
+	await _frames(3)
+	var shut: bool = not lp.taller_open and not lp.dulces_open
+	g.weekday = 0
+	g.set_time(10.0)
+	await _frames(3)
+	var open_: bool = lp.taller_open and lp.dulces_open
+	g.weekday = wd_was
+	g.set_time(clock_was)
+	_check(hours and shut and open_, "their hours: the workshop Mon-Fri 9-20:45 and Sat 9-14, the sweet maker's every day 9-14 and 16-20 (%s); shut on a Sunday afternoon (%s), open on a Monday morning (%s)" % [hours, shut, open_])
+
+## The Burger Pizzería Miguel Ángel (miguelangel.gd): on its house of the map, which casas.gd no longer draws (handed over as
+## "obra"); its front stops you, the bay too (the map's wall round the block runs along the front: the porch is seen,
+## not walked into); its porch and its ramp are floors; nothing of it on the asphalt; the sign the user named; its hours (Google Maps) and the
+## shut and open states following the clock.
+func _miguelangel_checks() -> void:
+	var ma = g.world.get("miguelangel")
+	var line = preload("res://scripts/casas_calles.gd").HOUSES.get("tembleque_8", [])
+	var given: bool = line is Array and (line as Array).size() == 1 and String(line[0]) == "obra"
+	if ma == null:
+		print("  the Burger Pizzería Miguel Ángel: not built (its house handed over: %s)" % given)
+		return
+	_check(given, "its house is handed over to it by Texturas, casas.gd no longer draws it")
+	_check(ma.pieces > 200 and ma.openings >= 5 and ma.NAME == "Burger Pizzería Miguel Ángel" and ma.SIGN == ["BURGER", "PIZZERÍA", "Miguel Ángel"],
+		"the Burger Pizzería Miguel Ángel is built by hand (%d pieces, %d windows and doors), named as the user named it, its sign %s" % [ma.pieces, ma.openings, " / ".join(ma.SIGN)])
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var hit := func(u0: float, v0: float, u1: float, v1: float) -> bool:
+		var a: Vector2 = ma.spot(u0, v0)
+		var b: Vector2 = ma.spot(u1, v1)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, ma.level + 1.2, a.y), Vector3(b.x, ma.level + 1.2, b.y), 1)).is_empty()
+	var stops := 0
+	for x in [0.3, 4.6, 7.3]:
+		if hit.call(x, 2.0, x, -1.0):
+			stops += 1
+	var mx: float = ma.GAR.get_center().x
+	var wd_was = g.weekday
+	var clock_was: float = g.clock
+	g.weekday = 1
+	g.set_time(20.0)
+	await _frames(3)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var shut: bool = not ma.is_open and ma._shut.visible and not ma._lit.visible and hit.call(mx, 2.0, mx, -0.6)
+	g.weekday = 4
+	g.set_time(21.0)
+	await _frames(3)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var open_: bool = ma.is_open and not ma._shut.visible and ma._lit.visible and hit.call(mx, 2.0, mx, -0.6)
+	g.weekday = wd_was
+	g.set_time(clock_was)
+	var nearest := 99.0
+	for p in ma.yard:
+		var d: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(stops == 3 and nearest > 0.0, "its front stops you (%d of 3), nothing of it on the asphalt (the nearest %.2f m)" % [stops, nearest])
+	var porch: float = MapData.foot(ma.spot(mx, -0.6))
+	var ramp_top: float = MapData.foot(ma.spot(mx, 0.05))
+	var ramp_foot: float = MapData.foot(ma.spot(mx, 0.4))
+	var street: float = MapData.height(ma.spot(mx, 0.4))
+	_check(absf(porch - ma.level) < 0.03 and ramp_top > ramp_foot and absf(ramp_foot - street) < 0.12,
+		"its porch is a floor at the pizzeria's (%.2f, wanted %.2f), and its ramp falls to the pavement (%.2f, %.2f; the street %.2f)" % [porch, ma.level, ramp_top, ramp_foot, street])
+	var hours: bool = ma.open_at(0, 18.5) and not ma.open_at(0, 17.5) and not ma.open_at(1, 20.0) and not ma.open_at(2, 20.0) and ma.open_at(3, 19.5) \
+		and not ma.open_at(3, 18.5) and ma.open_at(6, 23.0) and not ma.open_at(6, 23.6) and not ma.open_at(5, 13.0)
+	var lamp := false
+	for q in g.world.lamp_spots:
+		if (q as Vector3).distance_to(ma.transform * Vector3(ma.LAMPS[1], ma.LAMP_Y + 0.15, 0.6)) < 0.05:
+			lamp = true
+	_check(hours and shut and open_ and lamp,
+		"its hours: Monday 18-23:30, Thursday to Sunday 19-23:30, shut Tuesday and Wednesday (%s); the roller down on a Tuesday night (%s), up and the dining room lit on a Friday night (%s), the block's wall in front of its porch either way; its lantern is the town's (%s)" % [hours, shut, open_, lamp])
+
+## The Vivero de Empresas (vivero.gd, vivero_dentro.gd): on its house of the map, handed over as "obra"; its front
+## stops you (the map's wall round the block runs along it: the porch is seen through the gate, not walked into);
+## nothing of it on the asphalt; its hours (Google Maps: Monday to Friday 9-14) and its gate shut or open with them;
+## its inside a set far off and closed, in the green arrows' list, its floor level, walked from room to room, the
+## stair roped off, the patio in the open air.
+func _vivero_checks() -> void:
+	var vi = g.world.get("vivero")
+	var line = preload("res://scripts/casas_calles.gd").HOUSES.get("rsof_10", [])
+	var given: bool = line is Array and (line as Array).size() == 1 and String(line[0]) == "obra"
+	if vi == null:
+		print("  the Vivero de Empresas: not built (its house handed over: %s)" % given)
+		return
+	var d = vi.dentro
+	_check(given, "its house is handed over to it by Texturas, casas.gd no longer draws it")
+	_check(vi.pieces > 250 and vi.openings >= 8 and vi.lattice_m2 > 60.0 and vi.NAME == "Vivero de Empresas" and d != null and d.props > 60 and d.desks == 14 and d.lamps >= 8,
+		"the Vivero de Empresas is built by hand (%d pieces, %d windows and doors, %.0f m2 of lattice), with its inside (%d pieces, %d pieces of furniture, %d places to work, %d lamps)" % [vi.pieces, vi.openings, vi.lattice_m2, (d.pieces if d != null else 0), (d.props if d != null else 0), (d.desks if d != null else 0), (d.lamps if d != null else 0)])
+	if d == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var hit := func(u0: float, v0: float, u1: float, v1: float) -> bool:
+		var a: Vector2 = vi.spot(u0, v0)
+		var b: Vector2 = vi.spot(u1, v1)
+		return not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, vi.level + 1.2, a.y), Vector3(b.x, vi.level + 1.2, b.y), 1)).is_empty()
+	var stops := 0
+	for x in [1.5, 4.0, 8.0, 11.0]:
+		if hit.call(x, 2.0, x, -1.0):
+			stops += 1
+	var nearest := 99.0
+	for p in vi.yard:
+		var dd: float = MapData.road_edge_dist(p)
+		if MapData.road_hit != null:
+			dd += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, dd)
+	var street := String(MapData.nearest_road(vi.door)["seg"].road["n"])
+	var sill: float = vi.level + vi.gate_y - MapData.height(vi.door)
+	_check(stops == 4 and nearest > 0.0 and street.contains("Reina") and sill > 0.0 and sill < 0.3, "its front stops you (%d of 4), nothing of it on the asphalt (the nearest %.2f m); it gives on to %s; its gate's sill is at the pavement before it (%.2f m over it)" % [stops, nearest, street, sill])
+	var good := true
+	for on in [true, false]:
+		vi.set_open(on)
+		if vi._lit.visible != on or vi._shut.visible == on or d.open != on:
+			good = false
+	vi.set_open(vi.open_at(g.weekday, g.clock))
+	var rule: bool = vi.open_at(0, 9.0) and vi.open_at(0, 13.9) and not vi.open_at(0, 8.9) and not vi.open_at(0, 14.0) and vi.open_at(4, 10.0) \
+		and not vi.open_at(4, 18.0) and not vi.open_at(5, 10.0) and not vi.open_at(6, 10.0)
+	_check(good and rule, "it keeps its hours (Monday to Friday 9:00-14:00, shut at the weekend): open, the gate swung in and the arrow's way in open; shut, the gate shut (%s, %s)" % [good, rule])
+	var far: float = (MapData.nearest_road(d.INSIDE, true)["p"] as Vector2).distance_to(d.INSIDE)
+	var from := Vector3(d.in_spawn.x, d.level + 1.0, d.in_spawn.y)
+	var walled := true
+	for to in [Vector3(9, 0, 0), Vector3(-11, 0, 0), Vector3(0, 0, -4), Vector3(0, 5, 0)]:
+		if space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + to, 1)).is_empty():
+			walled = false
+	var band := Vector3(d.INSIDE.x - 3.0, d.level + 1.3, d.INSIDE.y + 1.0)                  # (through the band of the front's windows)
+	if space.intersect_ray(PhysicsRayQueryParameters3D.create(band, band + Vector3(0, 0, -4), 1)).is_empty():
+		walled = false
+	var level_floor := true
+	for q in [Vector2(4.0, 1.6), Vector2(0.5, 9.0), Vector2(-3.5, 7.0), Vector2(0.5, 16.5), Vector2(3.0, 21.0)]:
+		if absf(MapData.foot(d.INSIDE + q) - d.level) > 0.01:
+			level_floor = false
+	var others := true
+	for other in g.entradas.shops():
+		if other != d and other.get("INSIDE") != null and (other.INSIDE as Vector2).distance_to(d.INSIDE) < 150.0:
+			others = false
+	_check(far > 200.0 and walled and level_floor and others and d.door_out.distance_to(vi.door) < 2.0 and g.entradas.is_shop(d),
+		"its inside is a set of its own far from the town (%.0f m from any street, no other set near: %s), closed all round (%s), its floor level (%s); it is one of the places with a green arrow, before its gate (%s)" % [far, others, walled, level_floor, g.entradas.is_shop(d)])
+	# from room to room: [from, to, the room you end in]
+	var was: Vector2 = g.player.p
+	var walks := [[Vector2(0.5, 4.0), Vector2(0.5, 9.0), "pasillo"], [Vector2(0.5, 9.0), Vector2(4.0, 6.0), "despacho1"], [Vector2(0.0, 8.9), Vector2(-1.9, 8.9), "patio"],
+		[Vector2(0.5, 12.0), Vector2(0.5, 16.5), "coworking"], [Vector2(1.6, 19.0), Vector2(1.6, 21.5), "reuniones"], [Vector2(-4.4, 19.0), Vector2(-4.4, 21.0), "office"]]
+	var reached: Array = []
+	for w in walks:
+		g.player.p = d.INSIDE + w[0]
+		await _frames(4)
+		var short: float = await _walk_at(d.INSIDE + w[1], 3.0)
+		if short < 0.5 and String(d.room_at(g.player.p)["name"]) == String(w[2]):
+			reached.append(w[2])
+	g.player.p = d.INSIDE + Vector2(3.6, 13.4)
+	await _frames(4)
+	var up: float = await _walk_at(d.INSIDE + Vector2(5.45, 16.5), 3.0)
+	g.player.p = was
+	var sun: bool = d._mats.has("baldosa_sol") and d._mats["baldosa_sol"] in d._sun
+	for c in d.get_children():
+		if c is MeshInstance3D and (c as MeshInstance3D).material_override == d._mats.get("baldosa_sol"):
+			sun = sun and (c as MeshInstance3D).layers == 1
+	_check(reached.size() == walks.size() and up > 1.5 and sun,
+		"you walk from the hall into the corridor, an office, the patio, the co-working room, the meeting room and the office (%s); the stair is roped off (you stop %.1f m from it); the patio is in the open air (%s)" % [", ".join(reached), up, sun])
+	var saf := false                                  # its hidden saffron (the user, 28 Nov 2026: «Ponlo»), behind the far olive tree's pot
+	var fl = null
+	for f in g.flowers:
+		if String(f.get("id", "")) == "vivero" and bool(f.get("hidden", false)) and (f["p"] as Vector2).distance_to(d.saffron_spot) < 0.01:
+			saf = true
+			fl = f
+	var reach := 99.0
+	var lit := false
+	if fl != null:
+		lit = true
+		for c in (fl["node"] as Node3D).get_children():
+			if c is MeshInstance3D and (c as MeshInstance3D).layers != 1:
+				lit = false
+		var was_gone = fl.get("gone", false)
+		fl["gone"] = true                               # (walking up to it must not take it: the test is not to have it)
+		var was3: Vector2 = g.player.p
+		g.player.p = d.INSIDE + Vector2(-3.4, 12.3)
+		await _frames(4)
+		reach = await _walk_at(d.saffron_spot, 3.0)
+		g.player.p = was3
+		fl["gone"] = was_gone
+	var in_patio: bool = String(d.room_at(d.saffron_spot)["name"]) == "patio"
+	_check(saf and in_patio and lit and reach < 1.2,
+		"a saffron flower is hidden in its patio, behind the far olive tree's pot (%s, in the patio %s, in the sun %s), and you get to it (%.2f m from it)" % [saf, in_patio, lit, reach])
+
+## The Colegio Público (colegiopub.gd): built; its buildings solid and known to the map; nothing of it in a roadway; its
+## name the game's; its floodlights the town's; the old cemetery's three skulls (the easter egg) inside its fence.
+func _colegiopub_checks() -> void:
+	var cp = g.world.get("colegiopub")
+	_check(cp != null and cp.pieces > 1500 and cp.blocks.size() >= 9, "the Colegio Público is built by hand (%d pieces, %d buildings)" % [(cp.pieces if cp != null else 0), (cp.blocks.size() if cp != null else 0)])
+	if cp == null:
+		return
+	var space := get_tree().root.get_world_3d().direct_space_state
+	var solid := 0
+	var known := 0
+	for b in cp.blocks:
+		var ring: PackedVector2Array = b[0]
+		var c: Vector2 = (ring[0] + ring[2]) / 2.0
+		var a: Vector2 = c + (ring[0] - c) * 1.15
+		var y: float = MapData.height(c) + 1.5
+		var hit: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(a.x, y, a.y), Vector3(c.x, y, c.y), 1)).is_empty()
+		solid += 1 if hit else 0
+		for o in MapData.outlines:
+			if o.size() == ring.size() and (o[0] as Vector2).is_equal_approx(ring[0]):
+				known += 1
+				break
+	var nearest := 99.0
+	for q in cp.yard:
+		var d: float = MapData.road_edge_dist(q)
+		if MapData.road_hit != null:
+			d += MapData.road_hit.hw - MapData.fitted_hw(MapData.road_hit)
+		nearest = minf(nearest, d)
+	_check(solid >= cp.blocks.size() - 1 and known == cp.blocks.size() and nearest > -0.05,
+		"%d of its %d buildings stop you and the map knows all of them (%d); nothing of it stands in a roadway (the nearest is %.2f m from one)" % [solid, cp.blocks.size(), known, nearest])
+	var inside := 0
+	for q in cp.bones:
+		if Geometry2D.is_point_in_polygon(q, PackedVector2Array(cp.FENCE)):
+			inside += 1
+	_check(cp.NAME == "COLEGIO PÚBLICO" and cp.lamps.size() == 3 and g.world.lamp_spots.has(cp.lamps[0]) and cp.bones.size() == 3 and inside == 3,
+		"its name reads %s, the floodlights of its playground are the town's (%d), and the old cemetery's skulls lie inside its fence (%d of %d)" % [cp.NAME, cp.lamps.size(), inside, cp.bones.size()])
+	var saf := false                                  # its hidden saffron (the user, 27 Nov 2026: «Si, pon uno»), in the sandbox's red bucket
+	for f in g.flowers:
+		if String(f.get("id", "")) == "colegiopub" and bool(f.get("hidden", false)) and (f["p"] as Vector2).distance_to(cp.saffron_spot) < 0.01:
+			saf = true
+	var pq := PhysicsPointQueryParameters3D.new()
+	pq.position = Vector3(cp.saffron_spot.x, MapData.foot(cp.saffron_spot) + 0.6, cp.saffron_spot.y)
+	pq.collision_mask = 1
+	var clear: bool = space.intersect_point(pq).is_empty()
+	var kids := 0                                     # and its children at play (ninos.gd), in its three yards
+	if g.ninos != null:
+		for y in g.ninos.yards:
+			if String(y["name"]).begins_with("colegiopub"):
+				kids += (y["kids"] as Array).size()
+	_check(saf and clear and Geometry2D.is_point_in_polygon(cp.saffron_spot, PackedVector2Array(cp.FENCE)) and kids == 3 * g.ninos.PER_YARD,
+		"its hidden saffron is in the game, in the sandbox's bucket inside its fence (%s), nothing solid over it to stop you taking it (%s); %d children play in its three yards" % [saf, clear, kids])
+	var hours_ok := false                             # out in school hours, nine to two (the user, 27 Nov 2026: «Horario escolar 9 a 14»), the nurseries' ten to one
+	if g.ninos != null:
+		var N = g.ninos
+		var wd_was = g.weekday
+		var rain_was: float = g.rain
+		var clock_was: float = g.clock
+		g.rain = 0.0
+		g.weekday = 1
+		var school := Vector2(N.SCHOOL[0], N.SCHOOL[1])
+		var at: Array = []
+		for t in [9.5, 13.5, 14.5]:
+			g.set_time(t)
+			at.append([N.play_time(school), N.play_time()])
+		var ours: Array = N.yards.filter(func(y): return String(y["name"]).begins_with("colegiopub"))
+		hours_ok = at[0] == [true, false] and at[1] == [true, false] and at[2] == [false, false] and ours.size() == 3 and ours.all(func(y): return y.get("hours") == school)
+		g.weekday = wd_was
+		g.rain = rain_was
+		g.set_time(clock_was)
+	_check(hours_ok, "its children are out on school days from nine to two (the nurseries' from ten to one)")
 
 ## The fairground and market (ferial.gd): built; its fountain in the roundabout's island, inside the ring and solid; its
 ## pergola of ivy and the frames of its market standing; nothing of it in a roadway; its lamps the town's; its containers
@@ -9184,7 +9491,8 @@ func _reglas_checks(pictures := false) -> void:
 		await _shot("hud_1_jugando")
 	_check(g.near_npc == paca and H.prompt.text == H.as_shown(H.prompt, Loc.t("p_talk")) and not H.prompt.text.contains(paca.shown_name()) and H.prompt.get_parsed_text().length() < 14,
 		"the tag over her head says only how to talk to her: %s" % H.prompt.text)
-	_check(H.toast_label.text != g._tag() and H.obj_tag.text == g._tag(), "the day is written in one place only, the calendar leaf in the corner (not on a notice as well)")
+	var day_word: String = Loc.t("wd_%d" % g.weekday).to_upper() + " · "      # (not the minutes: a game minute may turn between the leaf and this check)
+	_check(not H.toast_label.text.contains(day_word) and H.obj_tag.text.begins_with(day_word), "the day is written in one place only, the calendar leaf in the corner (not on a notice as well): %s" % H.obj_tag.text)
 	_check(H.card_box.modulate.a < 0.05, "the mission's card is not up yet: nobody has given you the mission")
 	g.folk.data.erase("paca")
 	g.floats.clear()
@@ -12342,6 +12650,8 @@ func _palabros_checks() -> void:
 		reglas[r] = RegEx.create_from_string(reglas[r])
 	var quoted := RegEx.create_from_string("«[^»]*»")
 	var broken := PackedStringArray()
+	var entoavia := RegEx.create_from_string("(?<!\\pL)entoav")
+	var toavia := RegEx.create_from_string("(?<!\\pL)toav")
 	for k in Loc.TX:
 		var es = Loc.TX[k].get("es")
 		if es == null or _habla_fina(String(k)):
@@ -12351,6 +12661,12 @@ func _palabros_checks() -> void:
 			var m: RegExMatch = reglas[r].search(text)
 			if m != null:
 				broken.append("%s «%s» (%s)" % [k, m.get_string(), r])
+		# «entoavía» is the old ones' word; the rest say «toavía» (the user, 28 Nov 2026)
+		var viejo := _habla_vieja(String(k))
+		if not viejo and entoavia.search(text) != null:
+			broken.append("%s «entoavía» (toavía: only the old say entoavía)" % k)
+		elif viejo and toavia.search(text) != null:
+			broken.append("%s «toavía» (entoavía: an old one speaks)" % k)
 	_check(broken.is_empty(), "everyone who speaks Manchego keeps the house rules of palabros.md (%s)" % ("; ".join(broken) if not broken.is_empty() else "all of them"))
 
 ## Who and what does not speak Manchego on purpose, for the house-rules check of _palabros_checks: the mayor talks
@@ -12362,6 +12678,14 @@ const HABLA_FINA := ["alcalde", "alcalde_", "carta_bien_alcalde", "carta_mal_alc
 	"food_sold_henry", "aj_q_no", "chino_", "firma_si_chino", "firma_no_chino",
 	"inv_n_galletas_perro", "vet_tag_buy", "p_buy_galletas", "t_galletas_buy"]
 
+
+## Who speaks as the old do («entoavía»): the old ones' pools and the named old neighbours (their voice is old_m/old_f
+## in game.gd); a key is theirs if it is the name or begins with it and "_".
+const HABLA_VIEJA := ["generic_old", "whisper_old", "ouch_old", "luto_", "dolores", "genaro", "josefa", "madre_alcalde",
+	"paca", "pili", "tomasa"]
+
+func _habla_vieja(k: String) -> bool:
+	return HABLA_VIEJA.any(func(p: String) -> bool: return k == p or k.begins_with(p if p.ends_with("_") else p + "_"))
 
 func _habla_fina(k: String) -> bool:
 	return HABLA_FINA.any(func(p: String) -> bool: return k == p or (p.ends_with("_") and k.begins_with(p)))
@@ -12829,6 +13153,13 @@ func _recress_checks() -> void:
 	g.police.reset()
 	g.traffic.clear()
 	g.traffic._spawn_t = 99999.0
+	# Tía Paca rings about the house 15 game minutes after the bridge (fondo_casa.gd CALL_AFTER_H), and puente_h is set
+	# to now just below: in the arcade's own mode she rang in the middle of the tournament, and with the phone ringing
+	# you could not go into the copy shop nor get Alberto's call. Her house call and her idle one kept quiet here.
+	var paca_rung_was: bool = g.fondo_casa._rung
+	g.fondo_casa._rung = true
+	g.fondo_casa.ocio_quiet = true                   # (the full run has it quiet from the title anyway)
+	await _hush_phone("the arcade's checks")
 	g.side = null
 	g.stats["puente"] = true
 	g.stats["puente_h"] = g.llamadas.now()
@@ -13124,6 +13455,7 @@ func _recress_checks() -> void:
 	await _frames(3)
 	_check(shut_morning and open_afternoon and waits and shut_after,
 		"the Recress keeps its hours: shut in the morning (%s), open from the afternoon (%s), and at closing time with you inside it waits for you to come out (%s, then %s)" % [shut_morning, open_afternoon, waits, shut_after])
+	g.fondo_casa._rung = paca_rung_was
 
 ## Tokken 9 (tokken.gd), the fighting game on the Recress's machines. The test plays for you against a machine's player
 ## that stands still, so that what each thing does is known; then the machine plays itself (without a screen, in no
@@ -20313,6 +20645,215 @@ func _run() -> void:
 		print("OPTICA %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 		get_tree().quit(1 if fails > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("--lapiz"):     # just the Taller Lápiz and Dulces San Paquito: from across the avenue, along it both ways, the workshop's bay and board, the nave and its roses, the pier's panel, the white house, from the air; shut (a Sunday afternoon) and by night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var lp = g.world.get("lapiz")
+		if lp == null:
+			print("LAPIZ FAILED (not built: its houses are not in this map)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = lp.map_at(24.0, 3.0)
+		var B1: float = lp.B1
+		var N1: float = lp.N1
+		# [name, eye (u, v), its height, where it looks (u, v), how high, fov]
+		var views := [["sur", Vector2(9.0, 13.0), 1.7, Vector2(9.0, 0.0), 3.0, 72.0], ["norte", Vector2(35.0, 12.0), 1.7, Vector2(35.0, 0.0), 2.6, 72.0],
+			["desde_sur", Vector2(-10.0, 6.5), 1.7, Vector2(16.0, 0.0), 3.0, 62.0], ["desde_norte", Vector2(58.0, 5.5), 1.7, Vector2(30.0, 0.0), 2.6, 62.0],
+			["taller", Vector2(4.0, 6.5), 1.6, Vector2(4.0, -1.0), 2.0, 68.0], ["rotulo", Vector2(7.4, 9.0), 1.7, Vector2(7.4, 0.0), 4.7, 48.0],
+			["azul", Vector2(B1 - 2.0, 6.0), 1.6, Vector2(B1 - 2.0, 0.0), 2.4, 68.0], ["nave", Vector2(B1 + 4.5, 6.0), 1.6, Vector2(B1 + 4.5, 0.0), 1.8, 72.0],
+			["puerta", Vector2(B1 + 9.0, 5.5), 1.6, Vector2(B1 + 9.0, 0.0), 2.2, 70.0], ["cartel", Vector2(N1 - 14.0, 5.2), 1.6, Vector2(N1, -1.2), 2.4, 46.0],
+			["casa", Vector2(41.0, 6.0), 1.6, Vector2(41.0, 0.0), 1.6, 68.0], ["aire", Vector2(24.0, 26.0), 24.0, Vector2(24.0, -6.0), 0.0, 60.0],
+			["aire_detras", Vector2(20.0, -40.0), 26.0, Vector2(24.0, -6.0), 0.0, 60.0]]
+		for moment in [["", 0, 12.0], ["_cerrado", 6, 15.0], ["_noche", 1, 22.5]]:
+			g.weekday = moment[1]
+			g.set_time(moment[2])
+			await _frames(6)
+			for v in views:
+				if moment[0] == "_cerrado" and not (v[0] in ["sur", "taller", "nave"]):
+					continue
+				if moment[0] == "_noche" and not (v[0] in ["sur", "norte"]):
+					continue
+				var eye: Vector2 = lp.map_at(v[1].x, v[1].y)
+				var at: Vector2 = lp.map_at(v[3].x, v[3].y)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, lp.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(8 if moment[0] != "_noche" else 30)
+				await _shot("lapiz_%s%s" % [v[0], moment[0]])
+		g.weekday = 0
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _lapiz_checks()
+		print("LAPIZ %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--miguelangel"):     # just the Burger Pizzería Miguel Ángel: its front, along the street both ways, the box sign from each side, the porch and the dining room, the flats' door, the floor above, from the air; open (a Monday evening), shut (a Tuesday noon) and by night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var ma = g.world.get("miguelangel")
+		if ma == null:
+			print("MIGUELANGEL FAILED (not built: its house is not in this map)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = ma.map_at(3.9, 6.0)
+		var sx: float = ma.SIGN_X
+		# [name, eye (u, v), its height, where it looks (u, v), how high, fov]
+		var views := [["frente", Vector2(3.9, 5.5), 1.7, Vector2(3.9, 0.0), 3.2, 80.0], ["desde_norte", Vector2(-12.0, 4.5), 1.7, Vector2(4.0, 0.0), 3.0, 58.0],
+			["desde_sur", Vector2(20.0, 4.5), 1.7, Vector2(4.0, 0.0), 3.0, 58.0], ["letrero", Vector2(-5.0, 2.6), 1.7, Vector2(sx, 0.65), 3.95, 38.0],
+			["letrero_sur", Vector2(12.5, 2.6), 1.7, Vector2(sx, 0.65), 3.95, 38.0], ["porche", Vector2(2.05, 3.2), 1.6, Vector2(2.05, -3.0), 1.2, 72.0],
+			["puerta", Vector2(5.85, 3.5), 1.6, Vector2(5.85, 0.0), 1.4, 64.0], ["arriba", Vector2(3.9, 5.2), 2.6, Vector2(3.9, 0.0), 5.0, 70.0],
+			["aire", Vector2(3.9, 20.0), 22.0, Vector2(3.9, -8.0), 0.0, 60.0], ["aire_detras", Vector2(4.0, -40.0), 24.0, Vector2(4.0, -10.0), 0.0, 60.0]]
+		for moment in [["", 0, 18.5], ["_cerrado", 1, 12.0], ["_noche", 4, 22.5]]:
+			g.weekday = moment[1]
+			g.set_time(moment[2])
+			await _frames(6)
+			for v in views:
+				if moment[0] == "_cerrado" and not (v[0] in ["frente", "desde_norte", "porche"]):
+					continue
+				if moment[0] == "_noche" and not (v[0] in ["frente", "desde_sur", "porche"]):
+					continue
+				var eye: Vector2 = ma.map_at(v[1].x, v[1].y)
+				var at: Vector2 = ma.map_at(v[3].x, v[3].y)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, ma.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(8 if moment[0] != "_noche" else 30)
+				await _shot("miguelangel_%s%s" % [v[0], moment[0]])
+		g.weekday = 0
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _miguelangel_checks()
+		print("MIGUELANGEL %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--vivero"):     # just the Vivero de Empresas: its front from across the avenue and along it both ways, the gate, the lattice, from the air; open (a Monday morning), shut (a Saturday) and by night; then its inside, room by room
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		var vi = g.world.get("vivero")
+		if vi == null or vi.get("dentro") == null:
+			print("VIVERO FAILED (not built: its house is not in this map)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = vi.map_at(6.0, 8.0)
+		# [name, eye (u, v), its height, where it looks (u, v), how high, fov]
+		var views := [["frente", Vector2(5.9, 11.0), 1.7, Vector2(5.9, 0.0), 3.6, 72.0], ["desde_oeste", Vector2(-14.0, 6.0), 1.7, Vector2(6.0, 0.0), 3.5, 58.0],
+			["desde_este", Vector2(26.0, 6.0), 1.7, Vector2(6.0, 0.0), 3.5, 58.0], ["puerta", Vector2(1.6, 3.6), 1.6, Vector2(1.6, 0.0), 1.3, 64.0],
+			["celosia", Vector2(7.0, 2.0), 1.6, Vector2(7.0, 0.0), 4.2, 72.0], ["aire", Vector2(6.0, 22.0), 20.0, Vector2(6.0, -10.0), 0.0, 60.0]]
+		for moment in [["", 0, 11.0], ["_cerrado", 5, 11.0], ["_noche", 0, 22.5]]:
+			g.weekday = moment[1]
+			g.set_time(moment[2])
+			await _frames(6)
+			for v in views:
+				if moment[0] != "" and not (v[0] in ["frente", "puerta"]):
+					continue
+				var eye: Vector2 = vi.map_at(v[1].x, v[1].y)
+				var at: Vector2 = vi.map_at(v[3].x, v[3].y)
+				g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+				g.cam.look_at(Vector3(at.x, vi.level + v[4], at.y))
+				g.cam.fov = v[5]
+				await _frames(8 if moment[0] != "_noche" else 30)
+				await _shot("vivero_%s%s" % [v[0], moment[0]])
+		g.weekday = 0
+		g.set_time(11.0)
+		await _frames(6)
+		var vd = vi.dentro
+		var o3 := Vector3(vd.INSIDE.x, vd.level, vd.INSIDE.y)
+		for v in [["dentro_recepcion", Vector3(0.5, 1.7, 0.4), Vector3(-3.0, 1.4, 5.0), 75.0], ["dentro_sillones", Vector3(-4.5, 1.7, 1.0), Vector3(4.5, 1.0, 4.0), 75.0],
+				["dentro_pasillo", Vector3(0.5, 1.7, 5.3), Vector3(0.5, 1.3, 13.0), 70.0], ["dentro_despacho", Vector3(2.3, 1.7, 5.7), Vector3(5.5, 1.0, 8.4), 75.0],
+				["dentro_patio", Vector3(-1.3, 1.7, 5.6), Vector3(-5.0, 2.0, 12.0), 75.0], ["dentro_patio_arriba", Vector3(-1.4, 1.6, 9.0), Vector3(-6.0, 4.6, 9.0), 80.0], ["dentro_azafran", Vector3(-3.7, 1.3, 12.72), Vector3(-5.35, 0.3, 12.68), 55.0],
+				["dentro_coworking", Vector3(1.0, 1.7, 13.3), Vector3(-3.0, 1.2, 19.5), 78.0], ["dentro_escalera", Vector3(0.6, 1.6, 15.0), Vector3(5.5, 2.4, 17.5), 70.0],
+				["dentro_reuniones", Vector3(1.2, 1.7, 20.4), Vector3(3.5, 1.5, 24.0), 70.0], ["dentro_office", Vector3(-3.6, 1.7, 20.4), Vector3(-5.0, 1.0, 24.0), 70.0],
+				["dentro_salida", Vector3(0.0, 1.7, 4.6), Vector3(4.0, 1.2, 0.0), 70.0]]:
+			g.cam.position = o3 + v[1]
+			g.cam.look_at(o3 + v[2])
+			g.cam.fov = v[3]
+			await _frames(8)
+			await _shot("vivero_%s" % v[0])
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _vivero_checks()
+		print("VIVERO %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
+	if OS.get_cmdline_user_args().has("--colegiopub"):     # just the Colegio Público: from its three streets and the lane, from the air, its playground, its porch, the old cemetery's bones, the floodlights by night
+		shots = true
+		g.menu.close()
+		g.phase = "selfshot"
+		g.hud.play_ui.visible = false
+		g.set_time(12.5)
+		var cp = g.world.get("colegiopub")
+		if cp == null:
+			print("COLEGIOPUB FAILED (not built)")
+			get_tree().quit(1)
+			return
+		for nb in g.npcs:
+			nb.visible = false
+		g.player.visible = false
+		g.player.p = cp.map_at(20.0, -60.0)
+		# [name, eye (u, v), its height, where it looks (u, v), how high, fov]
+		for v in [["aire", Vector2(120.0, 95.0), 95.0, Vector2(15.0, 20.0), 0.0, 55.0], ["aire_no", Vector2(-95.0, -70.0), 75.0, Vector2(10.0, 15.0), 0.0, 55.0],
+				["planta", Vector2(8.0, 22.0), 160.0, Vector2(8.0, 22.5), 0.0, 62.0], ["socorro", Vector2(32.0, -27.0), 1.7, Vector2(30.0, -5.0), 4.0, 75.0],
+				["socorro_oeste", Vector2(-5.0, -27.0), 1.7, Vector2(-18.0, -12.0), 4.0, 75.0], ["entrada", Vector2(64.5, -3.0), 1.7, Vector2(56.0, 4.5), 2.2, 70.0],
+				["callejon", Vector2(72.0, 32.0), 1.7, Vector2(52.0, 32.0), 3.0, 80.0], ["sur", Vector2(43.0, 70.0), 1.7, Vector2(40.0, 50.0), 2.5, 80.0],
+				["huertos", Vector2(-43.0, 22.0), 1.7, Vector2(-10.0, 22.0), 3.0, 80.0], ["patio", Vector2(-20.0, 50.0), 1.7, Vector2(-5.0, 8.0), 3.0, 80.0],
+				["porche", Vector2(14.0, 57.0), 1.7, Vector2(24.0, 45.0), 2.4, 75.0], ["patinillo", Vector2(27.2, 12.6), 1.5, Vector2(31.0, 12.6), 0.1, 55.0],
+				["arenero", Vector2(25.6, 55.9), 1.1, Vector2(24.2, 54.6), 0.0, 45.0], ["huerto", Vector2(13.6, -13.8), 1.4, Vector2(11.6, -11.0), 0.4, 50.0]]:
+			var eye: Vector2 = cp.map_at(v[1].x, v[1].y)
+			var at: Vector2 = cp.map_at(v[3].x, v[3].y)
+			g.cam.position = Vector3(eye.x, MapData.height(eye) + v[2], eye.y)
+			g.cam.look_at(Vector3(at.x, MapData.height(at) + v[4], at.y))
+			g.cam.fov = v[5]
+			await _frames(8)
+			await _shot("colegiopub_%s" % v[0])
+		g.set_time(22.5)
+		g.player.p = cp.map_at(-12.0, 30.0)     # (the real lights go to the lanterns nearest to you: standing in its playground, its floodlights)
+		var ne: Vector2 = cp.map_at(-20.0, 50.0)
+		var nt: Vector2 = cp.map_at(-5.0, 8.0)
+		g.cam.position = Vector3(ne.x, MapData.height(ne) + 1.7, ne.y)
+		g.cam.look_at(Vector3(nt.x, MapData.height(nt) + 3.0, nt.y))
+		g.cam.fov = 80.0
+		await _frames(30)
+		await _shot("colegiopub_noche")
+		g.set_time(12.0)
+		g.cam.fov = 70.0
+		for nb in g.npcs:
+			nb.visible = not nb.away
+		g.player.visible = true
+		g.phase = "free"
+		await _frames(4)
+		await _colegiopub_checks()
+		print("COLEGIOPUB %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
+		get_tree().quit(1 if fails > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("--requejo"):     # just the Plaza de Jesús Requejo: the Red Cross's block and the park behind it, from where the Street View pictures were taken (referencias/requejo), and from above
 		shots = true
 		g.menu.close()
@@ -24888,6 +25429,10 @@ func _run() -> void:
 	await _as_in_its_mode(_zonas_checks, "the zone change")
 	await _as_in_its_mode(_cementerio_checks, "the cemetery")
 	await _requejo_checks()
+	await _colegiopub_checks()
+	await _lapiz_checks()
+	await _miguelangel_checks()
+	await _vivero_checks()
 	await _rize_checks()
 	await _travesia_checks()
 	await _sopiss_checks()

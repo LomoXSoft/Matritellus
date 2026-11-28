@@ -74,7 +74,7 @@
       -0.227,
       0.974
      ],
-     "street": "Avenida de la Constitución",
+     "street": "Calle Ilusión",
      "to_centre": 7.32
     },
     {
@@ -91,7 +91,7 @@
       -0.974,
       -0.226
      ],
-     "street": "Avenida de la Constitución",
+     "street": "Calle Ilusión",
      "to_centre": 4.23
     },
     {
@@ -108,7 +108,7 @@
       0.234,
       -0.972
      ],
-     "street": "Avenida de la Constitución",
+     "street": "Calle Ilusión",
      "to_centre": 6.64
     },
     {
@@ -235,7 +235,7 @@
       -0.976,
       -0.219
      ],
-     "street": "Avenida de la Constitución",
+     "street": "Calle Ilusión",
      "to_centre": 9.05
     },
     {
@@ -252,7 +252,7 @@
       -0.234,
       0.972
      ],
-     "street": "Avenida de la Constitución",
+     "street": "Calle Ilusión",
      "to_centre": 6.64
     },
     {
@@ -269,7 +269,7 @@
       -0.974,
       -0.225
      ],
-     "street": "Avenida de la Constitución",
+     "street": "Calle Ilusión",
      "to_centre": 4.25
     },
     {
@@ -286,7 +286,7 @@
       0.228,
       -0.974
      ],
-     "street": "Avenida de la Constitución",
+     "street": "Calle Ilusión",
      "to_centre": 7.32
     },
     {
@@ -329,5 +329,11 @@
     23.51
    ]
   }
- ]
+ ],
+ "aerial": {
+  "x0": -68.98079474600551,
+  "z0": -669.5271614971239,
+  "mpp": 0.08,
+  "credit": "PNOA, (c) Instituto Geografico Nacional, CC BY 4.0"
+ }
 }

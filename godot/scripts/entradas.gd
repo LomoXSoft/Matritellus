@@ -112,9 +112,36 @@ func shops() -> Array:
 		out.append(cvs.dentro)
 		if cvs.dentro.get("azotea") != null:       # ...and the door from its mezzanine up to the roof: the same set, another way out (the user, 25 Nov 2026)
 			out.append(cvs.dentro.azotea)
+	var viv = G.world.get("vivero") if G.world != null else null
+	if viv != null and viv.get("dentro") != null:  # the Vivero de Empresas of the Avenida de la Reina Sofía, in its hours (its set: vivero_dentro.gd, several rooms)
+		out.append(viv.dentro)
 	if G.get("casa") != null:                    # your own house, Calle de Alemania 5 (casa_dentro.gd)
 		out.append(G.casa)
 	return out
+
+## Whoever you are sent to may be inside one of these sets, off the map (Edmundo Monedero at his desk in the bank): seen
+## from the town, the way to them is that set's door in the street, not the set itself 2 km out in the fields (a tester,
+## 28 Nov 2026: the Thursday ham for somebody inside a shop sent you off the map). Every set counts, shut or open, the
+## nearest door wins. A place in the town itself comes back as it is: the sets lie hundreds of metres from any
+## street, and SET_NEAR is well inside that.
+const SET_NEAR := 60.0
+
+func way_to(p: Vector2) -> Vector2:
+	var sets: Array = shops()
+	for k in ["maxiprecio", "tetoqa", "pisacastana", "optica"]:      # (shops() leaves out the clothes shops still shut to you)
+		var w = G.world.get(k) if G.world != null else null
+		if w != null and w.get("dentro") != null and not (w.dentro in sets):
+			sets.append(w.dentro)
+	var best = null
+	var bd := SET_NEAR
+	for place in sets:
+		if place == null or not (place.get("in_door") is Vector2) or not (place.get("door_out") is Vector2):
+			continue
+		var d: float = p.distance_to(place.in_door)
+		if d < bd:
+			bd = d
+			best = place
+	return best.door_out if best != null else p
 
 ## two doors of one set (the Merkocarry's, its front and its back): inside, either of them is a way out
 static func _same_set(a, b) -> bool:
